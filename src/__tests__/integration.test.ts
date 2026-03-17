@@ -2239,4 +2239,404 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
       expect(render.params[1]!.name).toBe('unit');
     });
   });
+
+  // -------------------------------------------------------------------------
+  // UC41: Readonly properties without visibility (ValueCard)
+  // -------------------------------------------------------------------------
+  describe('UC41: Readonly properties without visibility', () => {
+    it('renders ValueCard with label and value', async () => {
+      const result = await executor.execute({
+        type: 'classMethod',
+        file: example('ValueCard.php'),
+        class: 'App\\Components\\ValueCard',
+        callable: 'render',
+        args: { label: 'Temperature', value: '23.5', unit: '°C' },
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('value-card');
+      expect(result.html).toContain('Temperature');
+      expect(result.html).toContain('23.5');
+      expect(result.html).toContain('°C');
+    });
+
+    it('renders ValueCard with up trend', async () => {
+      const result = await executor.execute({
+        type: 'classMethod',
+        file: example('ValueCard.php'),
+        class: 'App\\Components\\ValueCard',
+        callable: 'render',
+        args: { label: 'Revenue', value: '$12,345', trend: '+12%' },
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('trend-up');
+      expect(result.html).toContain('+12%');
+    });
+
+    it('renders ValueCard with down trend', async () => {
+      const result = await executor.execute({
+        type: 'classMethod',
+        file: example('ValueCard.php'),
+        class: 'App\\Components\\ValueCard',
+        callable: 'render',
+        args: { label: 'Errors', value: '42', trend: '-8%' },
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('trend-down');
+      expect(result.html).toContain('-8%');
+    });
+
+    it('parser detects readonly without visibility as promoted', () => {
+      const meta = parsePhpFile(example('ValueCard.php'));
+      const cls = meta.classes[0]!;
+      expect(cls.name).toBe('ValueCard');
+      expect(cls.constructorParams).toHaveLength(4);
+      const label = cls.constructorParams.find((p) => p.name === 'label')!;
+      expect(label.isPromoted).toBe(true);
+      expect(label.type).toBe('string');
+      const trend = cls.constructorParams.find((p) => p.name === 'trend')!;
+      expect(trend.nullable).toBe(true);
+    });
+  });
+
+  // -------------------------------------------------------------------------
+  // UC42: Iterable/mixed type params (DataRenderer)
+  // -------------------------------------------------------------------------
+  describe('UC42: Iterable and mixed type params', () => {
+    it('renders DataRenderer with string items', async () => {
+      const result = await executor.execute({
+        type: 'classMethod',
+        file: example('DataRenderer.php'),
+        class: 'App\\Components\\DataRenderer',
+        callable: 'render',
+        args: { items: ['Alpha', 'Bravo', 'Charlie'] },
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('data-renderer');
+      expect(result.html).toContain('Alpha');
+      expect(result.html).toContain('Bravo');
+      expect(result.html).toContain('Charlie');
+    });
+
+    it('renders with uppercase transform', async () => {
+      const result = await executor.execute({
+        type: 'classMethod',
+        file: example('DataRenderer.php'),
+        class: 'App\\Components\\DataRenderer',
+        callable: 'render',
+        args: { items: ['hello', 'world'], transform: 'upper' },
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('HELLO');
+      expect(result.html).toContain('WORLD');
+    });
+
+    it('renders empty state', async () => {
+      const result = await executor.execute({
+        type: 'classMethod',
+        file: example('DataRenderer.php'),
+        class: 'App\\Components\\DataRenderer',
+        callable: 'render',
+        args: { items: [] },
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('data-empty');
+    });
+
+    it('renders with custom wrapper', async () => {
+      const result = await executor.execute({
+        type: 'classMethod',
+        file: example('DataRenderer.php'),
+        class: 'App\\Components\\DataRenderer',
+        callable: 'render',
+        args: { items: ['Item'], wrapper: 'section' },
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('<section');
+      expect(result.html).toContain('</section>');
+    });
+
+    it('parser detects iterable and mixed types', () => {
+      const meta = parsePhpFile(example('DataRenderer.php'));
+      const cls = meta.classes[0]!;
+      const items = cls.constructorParams.find((p) => p.name === 'items')!;
+      expect(items.type).toBe('iterable');
+      const render = cls.methods.find((m) => m.name === 'render')!;
+      const transform = render.params.find((p) => p.name === 'transform')!;
+      expect(transform.type).toBe('mixed');
+    });
+  });
+
+  // -------------------------------------------------------------------------
+  // UC43: Enum with match expression and multiple methods (Visibility)
+  // -------------------------------------------------------------------------
+  describe('UC43: Enum with match expression', () => {
+    it('renders Visibility::badge for public', async () => {
+      const result = await executor.execute({
+        type: 'enumMethod',
+        file: example('Visibility.php'),
+        class: 'App\\Components\\Visibility',
+        callable: 'badge',
+        args: { _case: 'public' },
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('visibility-badge');
+      expect(result.html).toContain('visibility-public');
+      expect(result.html).toContain('#22c55e');
+    });
+
+    it('renders Visibility::badge for private', async () => {
+      const result = await executor.execute({
+        type: 'enumMethod',
+        file: example('Visibility.php'),
+        class: 'App\\Components\\Visibility',
+        callable: 'badge',
+        args: { _case: 'private' },
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('visibility-private');
+      expect(result.html).toContain('#ef4444');
+    });
+
+    it('renders Visibility::description', async () => {
+      const result = await executor.execute({
+        type: 'enumMethod',
+        file: example('Visibility.php'),
+        class: 'App\\Components\\Visibility',
+        callable: 'description',
+        args: { _case: 'unlisted' },
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('visibility-desc');
+      expect(result.html).toContain('Accessible via direct link');
+    });
+
+    it('parser detects Visibility enum with all cases and methods', () => {
+      const meta = parsePhpFile(example('Visibility.php'));
+      const vis = meta.classes.find((c) => c.name === 'Visibility')!;
+      expect(vis.isEnum).toBe(true);
+      expect(vis.enumBackingType).toBe('string');
+      expect(vis.enumCases).toEqual(['Public', 'Private', 'Unlisted', 'Draft']);
+      expect(vis.methods).toHaveLength(2);
+      expect(vis.methods.map((m) => m.name).sort()).toEqual(['badge', 'description']);
+    });
+  });
+
+  // -------------------------------------------------------------------------
+  // UC44: Array return with 'html' key (Timeline)
+  // -------------------------------------------------------------------------
+  describe('UC44: Array return with html key', () => {
+    it('renders Timeline with events', async () => {
+      const result = await executor.execute({
+        type: 'classMethod',
+        file: example('Timeline.php'),
+        class: 'App\\Components\\Timeline',
+        callable: 'render',
+        args: {
+          events: [
+            { date: '2024-01', title: 'Start', description: 'Project started' },
+            { date: '2024-06', title: 'Launch', description: 'Public launch' },
+          ],
+        },
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('timeline');
+      expect(result.html).toContain('timeline-left');
+      expect(result.html).toContain('timeline-right');
+      expect(result.html).toContain('Start');
+      expect(result.html).toContain('Launch');
+      expect(result.html).toContain('2024-01');
+    });
+
+    it('renders empty Timeline', async () => {
+      const result = await executor.execute({
+        type: 'classMethod',
+        file: example('Timeline.php'),
+        class: 'App\\Components\\Timeline',
+        callable: 'render',
+        args: { events: [] },
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('timeline-empty');
+    });
+
+    it('renders reversed Timeline', async () => {
+      const result = await executor.execute({
+        type: 'classMethod',
+        file: example('Timeline.php'),
+        class: 'App\\Components\\Timeline',
+        callable: 'render',
+        args: {
+          events: [
+            { title: 'First' },
+            { title: 'Second' },
+          ],
+          reversed: true,
+        },
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('timeline');
+      expect(result.html).toContain('Second');
+      expect(result.html).toContain('First');
+    });
+  });
+
+  // -------------------------------------------------------------------------
+  // UC45: Echo/void return (EchoLayout)
+  // -------------------------------------------------------------------------
+  describe('UC45: Echo-based void return', () => {
+    it('renders EchoLayout with light theme', async () => {
+      const result = await executor.execute({
+        type: 'classMethod',
+        file: example('EchoLayout.php'),
+        class: 'App\\Components\\EchoLayout',
+        callable: 'render',
+        args: { title: 'My App' },
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('echo-layout');
+      expect(result.html).toContain('echo-layout-light');
+      expect(result.html).toContain('My App');
+    });
+
+    it('renders EchoLayout with dark theme and footer', async () => {
+      const result = await executor.execute({
+        type: 'classMethod',
+        file: example('EchoLayout.php'),
+        class: 'App\\Components\\EchoLayout',
+        callable: 'render',
+        args: { title: 'Dark Mode', theme: 'dark', footer: '© 2025' },
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('echo-layout-dark');
+      expect(result.html).toContain('echo-layout-footer');
+      expect(result.html).toContain('© 2025');
+    });
+
+    it('renders EchoLayout without footer', async () => {
+      const result = await executor.execute({
+        type: 'classMethod',
+        file: example('EchoLayout.php'),
+        class: 'App\\Components\\EchoLayout',
+        callable: 'render',
+        args: { title: 'No Footer' },
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).not.toContain('echo-layout-footer');
+    });
+  });
+
+  // -------------------------------------------------------------------------
+  // Vite plugin: virtual module generation for new examples
+  // -------------------------------------------------------------------------
+  describe('Vite plugin: UC41-UC45 virtual modules', () => {
+    const plugin = storybookPhpPlugin();
+    const resolveId = (plugin as any).resolveId.bind(plugin);
+    const load = (plugin as any).load.bind(plugin);
+
+    it('UC41: ValueCard@render generates classMethod with readonly params', () => {
+      const id = resolveId('./ValueCard.php@render', example('ValueCard.php'));
+      const code = load(id);
+      expect(code).toContain("__type: 'classMethod'");
+      expect(code).toContain('ValueCard');
+      expect(code).toContain('label:');
+      expect(code).toContain('value:');
+      expect(code).toContain('unit:');
+      expect(code).toContain('trend:');
+    });
+
+    it('UC42: DataRenderer@render generates classMethod with iterable/mixed', () => {
+      const id = resolveId('./DataRenderer.php@render', example('DataRenderer.php'));
+      const code = load(id);
+      expect(code).toContain("__type: 'classMethod'");
+      expect(code).toContain('items:');
+      expect(code).toContain('wrapper:');
+      expect(code).toContain('transform:');
+    });
+
+    it('UC43: Visibility@badge generates enumMethod', () => {
+      const id = resolveId('./Visibility.php@badge', example('Visibility.php'));
+      const code = load(id);
+      expect(code).toContain("__type: 'enumMethod'");
+      expect(code).toContain('_case:');
+    });
+
+    it('UC43: Visibility@description generates enumMethod', () => {
+      const id = resolveId('./Visibility.php@description', example('Visibility.php'));
+      const code = load(id);
+      expect(code).toContain("__type: 'enumMethod'");
+      expect(code).toContain('_case:');
+    });
+
+    it('UC44: Timeline@render generates classMethod', () => {
+      const id = resolveId('./Timeline.php@render', example('Timeline.php'));
+      const code = load(id);
+      expect(code).toContain("__type: 'classMethod'");
+      expect(code).toContain('events:');
+      expect(code).toContain('reversed:');
+    });
+
+    it('UC45: EchoLayout@render generates classMethod', () => {
+      const id = resolveId('./EchoLayout.php@render', example('EchoLayout.php'));
+      const code = load(id);
+      expect(code).toContain("__type: 'classMethod'");
+      expect(code).toContain('title:');
+      expect(code).toContain('theme:');
+      expect(code).toContain('footer:');
+    });
+  });
+
+  // -------------------------------------------------------------------------
+  // Parser: metadata extraction for new examples
+  // -------------------------------------------------------------------------
+  describe('Parser: new example metadata', () => {
+    it('parses ValueCard with readonly no-visibility params', () => {
+      const meta = parsePhpFile(example('ValueCard.php'));
+      const cls = meta.classes[0]!;
+      expect(cls.name).toBe('ValueCard');
+      expect(cls.constructorParams).toHaveLength(4);
+      const label = cls.constructorParams[0]!;
+      expect(label.name).toBe('label');
+      expect(label.isPromoted).toBe(true);
+      expect(label.type).toBe('string');
+      const trend = cls.constructorParams[3]!;
+      expect(trend.name).toBe('trend');
+      expect(trend.nullable).toBe(true);
+    });
+
+    it('parses DataRenderer with iterable and mixed types', () => {
+      const meta = parsePhpFile(example('DataRenderer.php'));
+      const cls = meta.classes[0]!;
+      expect(cls.constructorParams[0]!.type).toBe('iterable');
+      const render = cls.methods[0]!;
+      expect(render.params[0]!.type).toBe('mixed');
+    });
+
+    it('parses Visibility enum with multiple methods', () => {
+      const meta = parsePhpFile(example('Visibility.php'));
+      const vis = meta.classes[0]!;
+      expect(vis.isEnum).toBe(true);
+      expect(vis.enumBackingType).toBe('string');
+      expect(vis.enumCases).toHaveLength(4);
+      expect(vis.methods).toHaveLength(2);
+    });
+
+    it('parses Timeline with array return type', () => {
+      const meta = parsePhpFile(example('Timeline.php'));
+      const cls = meta.classes[0]!;
+      expect(cls.name).toBe('Timeline');
+      const render = cls.methods[0]!;
+      expect(render.returnType).toBe('array');
+    });
+
+    it('parses EchoLayout with void return type', () => {
+      const meta = parsePhpFile(example('EchoLayout.php'));
+      const cls = meta.classes[0]!;
+      expect(cls.name).toBe('EchoLayout');
+      const render = cls.methods[0]!;
+      expect(render.returnType).toBe('void');
+      expect(cls.constructorParams).toHaveLength(3);
+      const footer = cls.constructorParams[2]!;
+      expect(footer.nullable).toBe(true);
+    });
+  });
 });
