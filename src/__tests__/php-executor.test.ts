@@ -278,6 +278,191 @@ describe.skipIf(!hasPhp)('PhpExecutor', () => {
   });
 
   // ---------------------------------------------------------------------------
+  // Array return format
+  // ---------------------------------------------------------------------------
+  describe('array return', () => {
+    it('extracts html from array return value', async () => {
+      const request: PhpRenderRequest = {
+        type: 'classMethod',
+        file: fixture('ArrayReturn.php'),
+        class: 'App\\Components\\StatsCard',
+        callable: 'render',
+        args: { label: 'Users', value: 42 },
+      };
+
+      const result = await executor.execute(request);
+      expect(result.error).toBeUndefined();
+      expect(result.html).toBe('<div class="stats">Users: 42</div>');
+    });
+  });
+
+  // ---------------------------------------------------------------------------
+  // __toString return
+  // ---------------------------------------------------------------------------
+  describe('stringable return', () => {
+    it('converts __toString object to string', async () => {
+      const request: PhpRenderRequest = {
+        type: 'classMethod',
+        file: fixture('StringableReturn.php'),
+        class: 'App\\Components\\FragmentBuilder',
+        callable: 'render',
+        args: { heading: 'Title', body: 'Content' },
+      };
+
+      const result = await executor.execute(request);
+      expect(result.error).toBeUndefined();
+      expect(result.html).toBe('<article><h3>Title</h3><p>Content</p></article>');
+    });
+
+    it('handles __toString without body', async () => {
+      const request: PhpRenderRequest = {
+        type: 'classMethod',
+        file: fixture('StringableReturn.php'),
+        class: 'App\\Components\\FragmentBuilder',
+        callable: 'render',
+        args: { heading: 'Only Heading' },
+      };
+
+      const result = await executor.execute(request);
+      expect(result.error).toBeUndefined();
+      expect(result.html).toBe('<article><h3>Only Heading</h3></article>');
+    });
+  });
+
+  // ---------------------------------------------------------------------------
+  // Enum implementing interface
+  // ---------------------------------------------------------------------------
+  describe('enum with interface', () => {
+    it('renders enum method on enum implementing interface', async () => {
+      const request: PhpRenderRequest = {
+        type: 'enumMethod',
+        file: fixture('EnumInterface.php'),
+        class: 'App\\Components\\LogLevel',
+        callable: 'badge',
+        args: { _case: 'info' },
+      };
+
+      const result = await executor.execute(request);
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('log-info');
+      expect(result.html).toContain('Info');
+    });
+
+    it('renders enum interface method (label)', async () => {
+      const request: PhpRenderRequest = {
+        type: 'enumMethod',
+        file: fixture('EnumInterface.php'),
+        class: 'App\\Components\\LogLevel',
+        callable: 'label',
+        args: { _case: 'warning' },
+      };
+
+      const result = await executor.execute(request);
+      expect(result.error).toBeUndefined();
+      expect(result.html).toBe('Warning');
+    });
+  });
+
+  // ---------------------------------------------------------------------------
+  // Multiple static methods
+  // ---------------------------------------------------------------------------
+  describe('multiple static methods', () => {
+    it('renders button static method', async () => {
+      const request: PhpRenderRequest = {
+        type: 'staticMethod',
+        file: fixture('MultiStaticMethods.php'),
+        class: 'App\\Components\\MarkupHelper',
+        callable: 'button',
+        args: { label: 'Click', variant: 'danger' },
+      };
+
+      const result = await executor.execute(request);
+      expect(result.error).toBeUndefined();
+      expect(result.html).toBe('<button class="btn btn-danger">Click</button>');
+    });
+
+    it('renders link static method', async () => {
+      const request: PhpRenderRequest = {
+        type: 'staticMethod',
+        file: fixture('MultiStaticMethods.php'),
+        class: 'App\\Components\\MarkupHelper',
+        callable: 'link',
+        args: { text: 'Home', href: '/' },
+      };
+
+      const result = await executor.execute(request);
+      expect(result.error).toBeUndefined();
+      expect(result.html).toBe('<a href="/">Home</a>');
+    });
+
+    it('renders link with external flag', async () => {
+      const request: PhpRenderRequest = {
+        type: 'staticMethod',
+        file: fixture('MultiStaticMethods.php'),
+        class: 'App\\Components\\MarkupHelper',
+        callable: 'link',
+        args: { text: 'GitHub', href: 'https://github.com', external: true },
+      };
+
+      const result = await executor.execute(request);
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('target="_blank"');
+      expect(result.html).toContain('GitHub');
+    });
+
+    it('renders image static method with defaults', async () => {
+      const request: PhpRenderRequest = {
+        type: 'staticMethod',
+        file: fixture('MultiStaticMethods.php'),
+        class: 'App\\Components\\MarkupHelper',
+        callable: 'image',
+        args: { alt: 'Test' },
+      };
+
+      const result = await executor.execute(request);
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('200px');
+      expect(result.html).toContain('150px');
+      expect(result.html).toContain('Test');
+    });
+  });
+
+  // ---------------------------------------------------------------------------
+  // Multi-trait method resolution
+  // ---------------------------------------------------------------------------
+  describe('multi-trait methods', () => {
+    it('renders trait icon method on Widget class', async () => {
+      const request: PhpRenderRequest = {
+        type: 'classMethod',
+        file: fixture('MultiTraitClass.php'),
+        class: 'App\\Components\\Widget',
+        callable: 'icon',
+        args: { title: 'Test', name: 'star' },
+      };
+
+      const result = await executor.execute(request);
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('icon-star');
+      expect(result.html).toContain('24px');
+    });
+
+    it('renders trait badge method on Widget class', async () => {
+      const request: PhpRenderRequest = {
+        type: 'classMethod',
+        file: fixture('MultiTraitClass.php'),
+        class: 'App\\Components\\Widget',
+        callable: 'badge',
+        args: { title: 'Test', text: 'New' },
+      };
+
+      const result = await executor.execute(request);
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('New');
+      expect(result.html).toContain('blue');
+    });
+  });
+
+  // ---------------------------------------------------------------------------
   // PHP binary not found
   // ---------------------------------------------------------------------------
   describe('spawn failure', () => {

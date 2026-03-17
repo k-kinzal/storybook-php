@@ -3823,4 +3823,395 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
       expect(code).toContain('items:');
     });
   });
+
+  // -------------------------------------------------------------------------
+  // UC61: Enum implementing interface
+  // -------------------------------------------------------------------------
+  describe('UC61: Enum implementing interface', () => {
+    it('parses LogLevel enum with implements HasLabel', () => {
+      const meta = parsePhpFile(example('LogLevel.php'));
+      const logLevel = meta.classes.find(c => c.name === 'LogLevel');
+      expect(logLevel).toBeDefined();
+      expect(logLevel!.isEnum).toBe(true);
+      expect(logLevel!.enumBackingType).toBe('string');
+      expect(logLevel!.implements).toContain('HasLabel');
+      expect(logLevel!.enumCases).toContain('Debug');
+      expect(logLevel!.enumCases).toContain('Critical');
+    });
+
+    it('renders LogLevel::badge for info case', async () => {
+      const result = await executor.execute({
+        type: 'enumMethod',
+        file: example('LogLevel.php'),
+        class: 'App\\Components\\LogLevel',
+        callable: 'badge',
+        args: { _case: 'info' },
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('log-badge-info');
+      expect(result.html).toContain('Info');
+    });
+
+    it('renders LogLevel::entry with timestamp', async () => {
+      const result = await executor.execute({
+        type: 'enumMethod',
+        file: example('LogLevel.php'),
+        class: 'App\\Components\\LogLevel',
+        callable: 'entry',
+        args: { _case: 'error', message: 'DB down', timestamp: '2025-01-01 00:00:00' },
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('log-entry-error');
+      expect(result.html).toContain('DB down');
+      expect(result.html).toContain('2025-01-01');
+    });
+  });
+
+  // -------------------------------------------------------------------------
+  // UC62: Multiple traits in one class
+  // -------------------------------------------------------------------------
+  describe('UC62: Multiple traits', () => {
+    it('parses Widget with HasIcon, HasBadge, HasActions traits', () => {
+      const meta = parsePhpFile(example('Widget.php'));
+      const widget = meta.classes.find(c => c.name === 'Widget');
+      expect(widget).toBeDefined();
+      expect(widget!.traits).toContain('HasIcon');
+      expect(widget!.traits).toContain('HasBadge');
+      expect(widget!.traits).toContain('HasActions');
+    });
+
+    it('renders Widget@icon (from HasIcon trait)', async () => {
+      const result = await executor.execute({
+        type: 'classMethod',
+        file: example('Widget.php'),
+        class: 'App\\Components\\Widget',
+        callable: 'icon',
+        args: { title: 'Test', name: 'star', size: 32 },
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('icon-star');
+      expect(result.html).toContain('32px');
+    });
+
+    it('renders Widget@badge (from HasBadge trait)', async () => {
+      const result = await executor.execute({
+        type: 'classMethod',
+        file: example('Widget.php'),
+        class: 'App\\Components\\Widget',
+        callable: 'badge',
+        args: { title: 'Test', text: 'HOT', color: '#ef4444' },
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('HOT');
+      expect(result.html).toContain('#ef4444');
+    });
+
+    it('renders Widget@actionBar (from HasActions trait)', async () => {
+      const result = await executor.execute({
+        type: 'classMethod',
+        file: example('Widget.php'),
+        class: 'App\\Components\\Widget',
+        callable: 'actionBar',
+        args: { title: 'Test', primaryLabel: 'Save', secondaryLabel: 'Cancel' },
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('Save');
+      expect(result.html).toContain('Cancel');
+      expect(result.html).toContain('btn-primary');
+    });
+  });
+
+  // -------------------------------------------------------------------------
+  // UC63: Array return format
+  // -------------------------------------------------------------------------
+  describe('UC63: Array return with html key', () => {
+    it('parses StatsCard with array return type', () => {
+      const meta = parsePhpFile(example('ArrayReturn.php'));
+      const cls = meta.classes.find(c => c.name === 'StatsCard');
+      expect(cls).toBeDefined();
+      const render = cls!.methods.find(m => m.name === 'render');
+      expect(render).toBeDefined();
+      expect(render!.returnType).toBe('array');
+    });
+
+    it('renders StatsCard with change indicator', async () => {
+      const result = await executor.execute({
+        type: 'classMethod',
+        file: example('ArrayReturn.php'),
+        class: 'App\\Components\\StatsCard',
+        callable: 'render',
+        args: { label: 'Revenue', value: 12450, unit: 'USD', change: 12.5 },
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('Revenue');
+      expect(result.html).toContain('12,450');
+      expect(result.html).toContain('USD');
+      expect(result.html).toContain('12.5%');
+    });
+
+    it('renders StatsCard without change', async () => {
+      const result = await executor.execute({
+        type: 'classMethod',
+        file: example('ArrayReturn.php'),
+        class: 'App\\Components\\StatsCard',
+        callable: 'render',
+        args: { label: 'Uptime', value: 99.9, unit: '%' },
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('Uptime');
+      expect(result.html).toContain('99.9');
+    });
+  });
+
+  // -------------------------------------------------------------------------
+  // UC64: __toString object return
+  // -------------------------------------------------------------------------
+  describe('UC64: Stringable return', () => {
+    it('parses FragmentBuilder with HtmlFragment return type', () => {
+      const meta = parsePhpFile(example('HtmlFragment.php'));
+      const builder = meta.classes.find(c => c.name === 'FragmentBuilder');
+      expect(builder).toBeDefined();
+      const render = builder!.methods.find(m => m.name === 'render');
+      expect(render).toBeDefined();
+      expect(render!.returnType).toBe('HtmlFragment');
+    });
+
+    it('renders FragmentBuilder with heading and body', async () => {
+      const result = await executor.execute({
+        type: 'classMethod',
+        file: example('HtmlFragment.php'),
+        class: 'App\\Components\\FragmentBuilder',
+        callable: 'render',
+        args: { heading: 'My Title', body: 'My content' },
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('My Title');
+      expect(result.html).toContain('My content');
+      expect(result.html).toContain('<article>');
+    });
+
+    it('renders FragmentBuilder with heading only', async () => {
+      const result = await executor.execute({
+        type: 'classMethod',
+        file: example('HtmlFragment.php'),
+        class: 'App\\Components\\FragmentBuilder',
+        callable: 'render',
+        args: { heading: 'Solo Heading' },
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('Solo Heading');
+      expect(result.html).not.toContain('<p');
+    });
+  });
+
+  // -------------------------------------------------------------------------
+  // UC65: Multiple static methods utility class
+  // -------------------------------------------------------------------------
+  describe('UC65: Multiple static methods', () => {
+    it('parses MarkupHelper with three static methods', () => {
+      const meta = parsePhpFile(example('MarkupHelper.php'));
+      const cls = meta.classes.find(c => c.name === 'MarkupHelper');
+      expect(cls).toBeDefined();
+      expect(cls!.constructorParams).toHaveLength(0);
+      const statics = cls!.methods.filter(m => m.isStatic);
+      expect(statics).toHaveLength(3);
+    });
+
+    it('renders MarkupHelper::button', async () => {
+      const result = await executor.execute({
+        type: 'staticMethod',
+        file: example('MarkupHelper.php'),
+        class: 'App\\Components\\MarkupHelper',
+        callable: 'button',
+        args: { label: 'Submit', variant: 'danger' },
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('Submit');
+      expect(result.html).toContain('markup-btn-danger');
+    });
+
+    it('renders MarkupHelper::button disabled', async () => {
+      const result = await executor.execute({
+        type: 'staticMethod',
+        file: example('MarkupHelper.php'),
+        class: 'App\\Components\\MarkupHelper',
+        callable: 'button',
+        args: { label: 'Disabled', disabled: true },
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('disabled');
+      expect(result.html).toContain('not-allowed');
+    });
+
+    it('renders MarkupHelper::link external', async () => {
+      const result = await executor.execute({
+        type: 'staticMethod',
+        file: example('MarkupHelper.php'),
+        class: 'App\\Components\\MarkupHelper',
+        callable: 'link',
+        args: { text: 'GitHub', href: 'https://github.com', external: true },
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('target="_blank"');
+      expect(result.html).toContain('noopener');
+      expect(result.html).toContain('GitHub');
+    });
+
+    it('renders MarkupHelper::image with defaults', async () => {
+      const result = await executor.execute({
+        type: 'staticMethod',
+        file: example('MarkupHelper.php'),
+        class: 'App\\Components\\MarkupHelper',
+        callable: 'image',
+        args: { alt: 'Placeholder' },
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('200px');
+      expect(result.html).toContain('150px');
+      expect(result.html).toContain('Placeholder');
+    });
+  });
+
+  // -------------------------------------------------------------------------
+  // UC66: FAQ template
+  // -------------------------------------------------------------------------
+  describe('UC66: FAQ template', () => {
+    it('renders FAQ template with items', async () => {
+      const result = await executor.execute({
+        type: 'template',
+        file: resolve(examplesDir, 'templates/faq.php'),
+        class: null,
+        callable: null,
+        args: {
+          title: 'Help',
+          items: [
+            { question: 'How?', answer: 'Like this.' },
+            { question: 'Why?', answer: 'Because.' },
+          ],
+        },
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('Help');
+      expect(result.html).toContain('How?');
+      expect(result.html).toContain('Like this.');
+      expect(result.html).toContain('Why?');
+    });
+
+    it('renders FAQ template with numbered items', async () => {
+      const result = await executor.execute({
+        type: 'template',
+        file: resolve(examplesDir, 'templates/faq.php'),
+        class: null,
+        callable: null,
+        args: {
+          title: 'Steps',
+          numbered: true,
+          items: [
+            { question: 'First step', answer: 'Do this.' },
+          ],
+        },
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('1. First step');
+    });
+
+    it('renders FAQ template with empty items', async () => {
+      const result = await executor.execute({
+        type: 'template',
+        file: resolve(examplesDir, 'templates/faq.php'),
+        class: null,
+        callable: null,
+        args: { title: 'Empty FAQ', items: [] },
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('No questions yet');
+    });
+  });
+
+  // -------------------------------------------------------------------------
+  // Vite plugin: UC61-UC66 virtual modules
+  // -------------------------------------------------------------------------
+  describe('Vite plugin: UC61-UC66 virtual modules', () => {
+    const plugin = storybookPhpPlugin();
+    const resolveId = (plugin as any).resolveId.bind(plugin);
+    const load = (plugin as any).load.bind(plugin);
+
+    it('UC61: LogLevel@badge generates enumMethod', () => {
+      const id = resolveId('./LogLevel.php@badge', example('LogLevel.php'));
+      const code = load(id);
+      expect(code).toContain("__type: 'enumMethod'");
+      expect(code).toContain('LogLevel');
+      expect(code).toContain('_case:');
+    });
+
+    it('UC61: LogLevel@entry generates enumMethod with params', () => {
+      const id = resolveId('./LogLevel.php@entry', example('LogLevel.php'));
+      const code = load(id);
+      expect(code).toContain("__type: 'enumMethod'");
+      expect(code).toContain('message:');
+      expect(code).toContain('timestamp:');
+    });
+
+    it('UC62: Widget@icon generates classMethod from trait', () => {
+      const id = resolveId('./Widget.php@icon', example('Widget.php'));
+      const code = load(id);
+      expect(code).toContain("__type: 'classMethod'");
+      expect(code).toContain('Widget');
+      expect(code).toContain('name:');
+      expect(code).toContain('size:');
+    });
+
+    it('UC62: Widget@badge generates classMethod from second trait', () => {
+      const id = resolveId('./Widget.php@badge', example('Widget.php'));
+      const code = load(id);
+      expect(code).toContain("__type: 'classMethod'");
+      expect(code).toContain('text:');
+    });
+
+    it('UC62: Widget@actionBar generates classMethod from third trait', () => {
+      const id = resolveId('./Widget.php@actionBar', example('Widget.php'));
+      const code = load(id);
+      expect(code).toContain("__type: 'classMethod'");
+      expect(code).toContain('primaryLabel:');
+    });
+
+    it('UC63: ArrayReturn@render generates classMethod', () => {
+      const id = resolveId('./ArrayReturn.php@render', example('ArrayReturn.php'));
+      const code = load(id);
+      expect(code).toContain("__type: 'classMethod'");
+      expect(code).toContain('label:');
+      expect(code).toContain('value:');
+    });
+
+    it('UC64: HtmlFragment@render generates classMethod for FragmentBuilder', () => {
+      const id = resolveId('./HtmlFragment.php@render', example('HtmlFragment.php'));
+      const code = load(id);
+      expect(code).toContain("__type: 'classMethod'");
+      expect(code).toContain('heading:');
+    });
+
+    it('UC65: MarkupHelper@button generates staticMethod', () => {
+      const id = resolveId('./MarkupHelper.php@button', example('MarkupHelper.php'));
+      const code = load(id);
+      expect(code).toContain("__type: 'staticMethod'");
+      expect(code).toContain('label:');
+      expect(code).toContain('variant:');
+    });
+
+    it('UC65: MarkupHelper@link generates staticMethod', () => {
+      const id = resolveId('./MarkupHelper.php@link', example('MarkupHelper.php'));
+      const code = load(id);
+      expect(code).toContain("__type: 'staticMethod'");
+      expect(code).toContain('text:');
+      expect(code).toContain('href:');
+    });
+
+    it('UC65: MarkupHelper@image generates staticMethod', () => {
+      const id = resolveId('./MarkupHelper.php@image', example('MarkupHelper.php'));
+      const code = load(id);
+      expect(code).toContain("__type: 'staticMethod'");
+      expect(code).toContain('alt:');
+      expect(code).toContain('width:');
+    });
+  });
 });

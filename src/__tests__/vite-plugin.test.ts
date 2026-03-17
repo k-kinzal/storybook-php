@@ -224,6 +224,105 @@ describe('Vite Plugin', () => {
       // The name param should be required, no default
       expect(code).toContain("name: { type: 'string', required: true, position: 0, nullable: false }");
     });
+
+    it('generates enumMethod module for EnumInterface@badge', () => {
+      const plugin = storybookPhpPlugin();
+      const load = getLoad(plugin);
+
+      const filePath = resolve(FIXTURES, 'EnumInterface.php');
+      const virtualId = `${VIRTUAL_PREFIX}${filePath}?callable=badge`;
+      const code = load(virtualId);
+
+      expect(code).toBeTruthy();
+      expect(code).toContain("__type: 'enumMethod'");
+      expect(code).toContain('__class: "App\\\\Components\\\\LogLevel"');
+      expect(code).toContain('__callable: "badge"');
+      expect(code).toContain('_case:');
+      expect(code).toContain('export const LogLevel');
+    });
+
+    it('generates classMethod module for MultiTraitClass@icon (trait method)', () => {
+      const plugin = storybookPhpPlugin();
+      const load = getLoad(plugin);
+
+      const filePath = resolve(FIXTURES, 'MultiTraitClass.php');
+      const virtualId = `${VIRTUAL_PREFIX}${filePath}?callable=icon`;
+      const code = load(virtualId);
+
+      expect(code).toBeTruthy();
+      expect(code).toContain("__type: 'classMethod'");
+      expect(code).toContain('__class: "App\\\\Components\\\\Widget"');
+      expect(code).toContain('__callable: "icon"');
+      expect(code).toContain('name:');
+      expect(code).toContain('size:');
+      expect(code).toContain('export const Widget');
+    });
+
+    it('generates classMethod module for MultiTraitClass@badge (second trait)', () => {
+      const plugin = storybookPhpPlugin();
+      const load = getLoad(plugin);
+
+      const filePath = resolve(FIXTURES, 'MultiTraitClass.php');
+      const virtualId = `${VIRTUAL_PREFIX}${filePath}?callable=badge`;
+      const code = load(virtualId);
+
+      expect(code).toBeTruthy();
+      expect(code).toContain("__type: 'classMethod'");
+      expect(code).toContain('__callable: "badge"');
+      expect(code).toContain('text:');
+      expect(code).toContain('color:');
+    });
+
+    it('generates staticMethod for each MultiStaticMethods method', () => {
+      const plugin = storybookPhpPlugin();
+      const load = getLoad(plugin);
+
+      const filePath = resolve(FIXTURES, 'MultiStaticMethods.php');
+
+      const buttonCode = load(`${VIRTUAL_PREFIX}${filePath}?callable=button`);
+      expect(buttonCode).toContain("__type: 'staticMethod'");
+      expect(buttonCode).toContain('label:');
+      expect(buttonCode).toContain('variant:');
+
+      const linkCode = load(`${VIRTUAL_PREFIX}${filePath}?callable=link`);
+      expect(linkCode).toContain("__type: 'staticMethod'");
+      expect(linkCode).toContain('text:');
+      expect(linkCode).toContain('href:');
+      expect(linkCode).toContain('external:');
+
+      const imageCode = load(`${VIRTUAL_PREFIX}${filePath}?callable=image`);
+      expect(imageCode).toContain("__type: 'staticMethod'");
+      expect(imageCode).toContain('alt:');
+      expect(imageCode).toContain('width:');
+    });
+
+    it('generates classMethod module for ArrayReturn@render', () => {
+      const plugin = storybookPhpPlugin();
+      const load = getLoad(plugin);
+
+      const filePath = resolve(FIXTURES, 'ArrayReturn.php');
+      const virtualId = `${VIRTUAL_PREFIX}${filePath}?callable=render`;
+      const code = load(virtualId);
+
+      expect(code).toBeTruthy();
+      expect(code).toContain("__type: 'classMethod'");
+      expect(code).toContain('label:');
+      expect(code).toContain('value:');
+    });
+
+    it('generates classMethod module for StringableReturn@render', () => {
+      const plugin = storybookPhpPlugin();
+      const load = getLoad(plugin);
+
+      const filePath = resolve(FIXTURES, 'StringableReturn.php');
+      const virtualId = `${VIRTUAL_PREFIX}${filePath}?callable=render`;
+      const code = load(virtualId);
+
+      expect(code).toBeTruthy();
+      // Should generate for FragmentBuilder (the one with render method)
+      expect(code).toContain("__type: 'classMethod'");
+      expect(code).toContain('heading:');
+    });
   });
 
   // -----------------------------------------------------------------------

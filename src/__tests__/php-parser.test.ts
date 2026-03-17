@@ -1250,4 +1250,142 @@ class Tooltip {
       expect(slide.methods.some((m) => m.name === '__toString')).toBe(true);
     });
   });
+
+  // -----------------------------------------------------------------------
+  // EnumInterface
+  // -----------------------------------------------------------------------
+  describe('EnumInterface', () => {
+    it('parses enum implementing interface', () => {
+      const meta = parsePhpSource(fixture('EnumInterface.php'), 'EnumInterface.php');
+
+      // Should find the interface and the enum
+      expect(meta.classes.length).toBeGreaterThanOrEqual(2);
+
+      const iface = meta.classes.find((c) => c.name === 'HasLabel')!;
+      expect(iface).toBeDefined();
+
+      const logLevel = meta.classes.find((c) => c.name === 'LogLevel')!;
+      expect(logLevel).toBeDefined();
+      expect(logLevel.isEnum).toBe(true);
+      expect(logLevel.enumBackingType).toBe('string');
+      expect(logLevel.implements).toContain('HasLabel');
+      expect(logLevel.enumCases).toEqual(['Debug', 'Info', 'Warning', 'Error']);
+    });
+
+    it('parses enum methods including interface method', () => {
+      const meta = parsePhpSource(fixture('EnumInterface.php'), 'EnumInterface.php');
+      const logLevel = meta.classes.find((c) => c.name === 'LogLevel')!;
+
+      const label = logLevel.methods.find((m) => m.name === 'label')!;
+      expect(label).toBeDefined();
+      expect(label.isStatic).toBe(false);
+      expect(label.returnType).toBe('string');
+
+      const badge = logLevel.methods.find((m) => m.name === 'badge')!;
+      expect(badge).toBeDefined();
+    });
+  });
+
+  // -----------------------------------------------------------------------
+  // MultiTraitClass
+  // -----------------------------------------------------------------------
+  describe('MultiTraitClass', () => {
+    it('parses class using multiple traits', () => {
+      const meta = parsePhpSource(fixture('MultiTraitClass.php'), 'MultiTraitClass.php');
+
+      const widget = meta.classes.find((c) => c.name === 'Widget')!;
+      expect(widget).toBeDefined();
+      expect(widget.traits).toEqual(['HasIcon', 'HasBadge']);
+    });
+
+    it('parses methods from each trait', () => {
+      const meta = parsePhpSource(fixture('MultiTraitClass.php'), 'MultiTraitClass.php');
+
+      const hasIcon = meta.classes.find((c) => c.name === 'HasIcon')!;
+      expect(hasIcon).toBeDefined();
+      const iconMethod = hasIcon.methods.find((m) => m.name === 'icon')!;
+      expect(iconMethod).toBeDefined();
+      expect(iconMethod.params).toHaveLength(2);
+      expect(iconMethod.params[0]!.name).toBe('name');
+      expect(iconMethod.params[1]!.name).toBe('size');
+      expect(iconMethod.params[1]!.default).toBe('24');
+
+      const hasBadge = meta.classes.find((c) => c.name === 'HasBadge')!;
+      expect(hasBadge).toBeDefined();
+      const badgeMethod = hasBadge.methods.find((m) => m.name === 'badge')!;
+      expect(badgeMethod).toBeDefined();
+      expect(badgeMethod.params).toHaveLength(2);
+    });
+  });
+
+  // -----------------------------------------------------------------------
+  // ArrayReturn
+  // -----------------------------------------------------------------------
+  describe('ArrayReturn', () => {
+    it('parses class with array return type', () => {
+      const meta = parsePhpSource(fixture('ArrayReturn.php'), 'ArrayReturn.php');
+
+      const cls = meta.classes[0]!;
+      expect(cls.name).toBe('StatsCard');
+
+      const render = cls.methods.find((m) => m.name === 'render')!;
+      expect(render).toBeDefined();
+      expect(render.returnType).toBe('array');
+    });
+  });
+
+  // -----------------------------------------------------------------------
+  // StringableReturn
+  // -----------------------------------------------------------------------
+  describe('StringableReturn', () => {
+    it('parses HtmlFragment with __toString and FragmentBuilder', () => {
+      const meta = parsePhpSource(fixture('StringableReturn.php'), 'StringableReturn.php');
+
+      const fragment = meta.classes.find((c) => c.name === 'HtmlFragment')!;
+      expect(fragment).toBeDefined();
+      expect(fragment.methods.some((m) => m.name === '__toString')).toBe(true);
+      expect(fragment.methods.some((m) => m.name === 'append')).toBe(true);
+
+      const builder = meta.classes.find((c) => c.name === 'FragmentBuilder')!;
+      expect(builder).toBeDefined();
+      expect(builder.constructorParams).toHaveLength(2);
+      expect(builder.constructorParams[0]!.name).toBe('heading');
+
+      const render = builder.methods.find((m) => m.name === 'render')!;
+      expect(render).toBeDefined();
+      expect(render.returnType).toBe('HtmlFragment');
+    });
+  });
+
+  // -----------------------------------------------------------------------
+  // MultiStaticMethods
+  // -----------------------------------------------------------------------
+  describe('MultiStaticMethods', () => {
+    it('parses class with multiple static methods', () => {
+      const meta = parsePhpSource(fixture('MultiStaticMethods.php'), 'MultiStaticMethods.php');
+
+      const cls = meta.classes[0]!;
+      expect(cls.name).toBe('MarkupHelper');
+      expect(cls.constructorParams).toHaveLength(0);
+
+      const staticMethods = cls.methods.filter((m) => m.isStatic);
+      expect(staticMethods).toHaveLength(3);
+
+      const button = cls.methods.find((m) => m.name === 'button')!;
+      expect(button.isStatic).toBe(true);
+      expect(button.params).toHaveLength(2);
+      expect(button.params[0]!.name).toBe('label');
+      expect(button.params[1]!.name).toBe('variant');
+      // String literals are replaced with __PLACEHOLDER__ during preprocessing
+      expect(button.params[1]!.default).toBe("'__PLACEHOLDER__'");
+
+      const link = cls.methods.find((m) => m.name === 'link')!;
+      expect(link.isStatic).toBe(true);
+      expect(link.params).toHaveLength(3);
+
+      const image = cls.methods.find((m) => m.name === 'image')!;
+      expect(image.isStatic).toBe(true);
+      expect(image.params).toHaveLength(3);
+    });
+  });
 });
