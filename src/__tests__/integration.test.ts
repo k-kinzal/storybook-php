@@ -420,6 +420,189 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
   });
 
   // -------------------------------------------------------------------------
+  // UC13: Nullable parameters
+  // -------------------------------------------------------------------------
+  describe('UC13: Nullable parameters', () => {
+    it('renders Nav with all nullables omitted', async () => {
+      const result = await executor.execute({
+        type: 'classMethod',
+        file: example('Nav.php'),
+        class: 'App\\Components\\Nav',
+        callable: 'render',
+        args: { brand: 'My App' },
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('My App');
+      expect(result.html).toContain('nav');
+    });
+
+    it('renders Nav with nullable subtitle provided', async () => {
+      const result = await executor.execute({
+        type: 'classMethod',
+        file: example('Nav.php'),
+        class: 'App\\Components\\Nav',
+        callable: 'render',
+        args: { brand: 'My App', subtitle: 'Dashboard', activeItem: 'Settings' },
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('Dashboard');
+      expect(result.html).toContain('Settings');
+    });
+
+    it('renders Nav with sticky flag', async () => {
+      const result = await executor.execute({
+        type: 'classMethod',
+        file: example('Nav.php'),
+        class: 'App\\Components\\Nav',
+        callable: 'render',
+        args: { brand: 'App', sticky: true },
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('nav-sticky');
+    });
+  });
+
+  // -------------------------------------------------------------------------
+  // UC14: Array parameters
+  // -------------------------------------------------------------------------
+  describe('UC14: Array parameters', () => {
+    it('renders Table with headers and rows', async () => {
+      const result = await executor.execute({
+        type: 'classMethod',
+        file: example('Table.php'),
+        class: 'App\\Components\\Table',
+        callable: 'render',
+        args: {
+          headers: ['Name', 'Role'],
+          rows: [['Alice', 'Engineer'], ['Bob', 'Designer']],
+        },
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('Alice');
+      expect(result.html).toContain('Engineer');
+      expect(result.html).toContain('Bob');
+      expect(result.html).toContain('<table');
+    });
+
+    it('renders striped Table', async () => {
+      const result = await executor.execute({
+        type: 'classMethod',
+        file: example('Table.php'),
+        class: 'App\\Components\\Table',
+        callable: 'render',
+        args: {
+          headers: ['Item'],
+          rows: [['One'], ['Two']],
+          striped: true,
+        },
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('table-striped');
+    });
+  });
+
+  // -------------------------------------------------------------------------
+  // UC15: Enum method with additional params
+  // -------------------------------------------------------------------------
+  describe('UC15: Enum method with params', () => {
+    it('renders Status::label with default params', async () => {
+      const result = await executor.execute({
+        type: 'enumMethod',
+        file: example('Status.php'),
+        class: 'App\\Components\\Status',
+        callable: 'label',
+        args: { _case: 'active' },
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('Active');
+      expect(result.html).toContain('#22c55e');
+    });
+
+    it('renders Status::label with prefix and uppercase', async () => {
+      const result = await executor.execute({
+        type: 'enumMethod',
+        file: example('Status.php'),
+        class: 'App\\Components\\Status',
+        callable: 'label',
+        args: { _case: 'pending', prefix: 'Status', uppercase: true },
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('STATUS: PENDING');
+      expect(result.html).toContain('#f59e0b');
+    });
+  });
+
+  // -------------------------------------------------------------------------
+  // UC16: Multiple static methods from same class
+  // -------------------------------------------------------------------------
+  describe('UC16: Multiple static methods', () => {
+    it('renders Alert::success', async () => {
+      const result = await executor.execute({
+        type: 'staticMethod',
+        file: example('Alert.php'),
+        class: 'App\\Components\\Alert',
+        callable: 'success',
+        args: { message: 'Saved!', dismissible: true },
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('alert-success');
+      expect(result.html).toContain('Saved!');
+      expect(result.html).toContain('&times;');
+    });
+  });
+
+  // -------------------------------------------------------------------------
+  // UC17: Multiple namespaced functions from same file
+  // -------------------------------------------------------------------------
+  describe('UC17: Multiple functions from same file', () => {
+    it('renders tag() from helpers.php', async () => {
+      const result = await executor.execute({
+        type: 'function',
+        file: example('helpers.php'),
+        class: null,
+        callable: 'App\\Helpers\\tag',
+        args: { label: 'Feature', color: 'green' },
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('tag');
+      expect(result.html).toContain('Feature');
+      expect(result.html).toContain('green');
+    });
+  });
+
+  // -------------------------------------------------------------------------
+  // UC18: Additional template file
+  // -------------------------------------------------------------------------
+  describe('UC18: Profile template', () => {
+    it('renders profile template with variables', async () => {
+      const result = await executor.execute({
+        type: 'template',
+        file: example('templates/profile.php'),
+        class: null,
+        callable: null,
+        args: { name: 'Alice Johnson', role: 'Engineer' },
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('Alice Johnson');
+      expect(result.html).toContain('Engineer');
+      expect(result.html).toContain('profile-card');
+    });
+
+    it('renders profile with defaults for missing variables', async () => {
+      const result = await executor.execute({
+        type: 'template',
+        file: example('templates/profile.php'),
+        class: null,
+        callable: null,
+        args: { name: 'Bob' },
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('Bob');
+      expect(result.html).toContain('Member');
+    });
+  });
+
+  // -------------------------------------------------------------------------
   // Vite plugin: verify virtual modules generate correctly for all patterns
   // -------------------------------------------------------------------------
   describe('Vite plugin: virtual module generation', () => {
@@ -479,18 +662,65 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
       expect(code).toContain('config:');
       expect(code).toContain('status:');
     });
+
+    it('UC13: Nav@render generates classMethod with nullable params', () => {
+      const id = resolveId('./Nav.php@render', example('Nav.php'));
+      const code = load(id);
+      expect(code).toContain("__type: 'classMethod'");
+      expect(code).toContain('brand:');
+      expect(code).toContain('subtitle:');
+      expect(code).toContain('activeItem:');
+    });
+
+    it('UC14: Table@render generates classMethod with array params', () => {
+      const id = resolveId('./Table.php@render', example('Table.php'));
+      const code = load(id);
+      expect(code).toContain("__type: 'classMethod'");
+      expect(code).toContain('headers:');
+      expect(code).toContain('rows:');
+      expect(code).toContain('striped:');
+    });
+
+    it('UC15: Status@label generates enumMethod with extra params', () => {
+      const id = resolveId('./Status.php@label', example('Status.php'));
+      const code = load(id);
+      expect(code).toContain("__type: 'enumMethod'");
+      expect(code).toContain('_case:');
+      expect(code).toContain('prefix:');
+      expect(code).toContain('uppercase:');
+    });
+
+    it('UC16: Alert@success generates staticMethod', () => {
+      const id = resolveId('./Alert.php@success', example('Alert.php'));
+      const code = load(id);
+      expect(code).toContain("__type: 'staticMethod'");
+      expect(code).toContain("__callable: \"success\"");
+      expect(code).toContain('message:');
+      expect(code).toContain('dismissible:');
+    });
+
+    it('UC17: helpers.php@tag generates function for second function', () => {
+      const id = resolveId('./helpers.php@tag', example('helpers.php'));
+      const code = load(id);
+      expect(code).toContain("__type: 'function'");
+      expect(code).toContain('App\\\\Helpers\\\\tag');
+      expect(code).toContain('label:');
+      expect(code).toContain('color:');
+    });
   });
 
   // -------------------------------------------------------------------------
   // Parser: verify PHP parser extracts metadata correctly for all patterns
   // -------------------------------------------------------------------------
   describe('Parser: metadata extraction for all patterns', () => {
-    it('parses namespaced function correctly', () => {
+    it('parses namespaced functions correctly', () => {
       const meta = parsePhpFile(example('helpers.php'));
       expect(meta.namespace).toBe('App\\Helpers');
-      expect(meta.functions).toHaveLength(1);
+      expect(meta.functions).toHaveLength(2);
       expect(meta.functions[0]!.name).toBe('pill');
       expect(meta.functions[0]!.fqn).toBe('App\\Helpers\\pill');
+      expect(meta.functions[1]!.name).toBe('tag');
+      expect(meta.functions[1]!.fqn).toBe('App\\Helpers\\tag');
     });
 
     it('parses enum with methods and cases', () => {
@@ -533,6 +763,59 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
       const meta = parsePhpFile(example('InvocableGreeting.php'));
       const cls = meta.classes[0]!;
       expect(cls.methods.some(m => m.name === '__invoke')).toBe(true);
+    });
+
+    it('parses Nav with nullable constructor and method params', () => {
+      const meta = parsePhpFile(example('Nav.php'));
+      const nav = meta.classes.find(c => c.name === 'Nav');
+      expect(nav).toBeDefined();
+      const subtitle = nav!.constructorParams.find(p => p.name === 'subtitle');
+      expect(subtitle).toBeDefined();
+      expect(subtitle!.nullable).toBe(true);
+      const render = nav!.methods.find(m => m.name === 'render');
+      expect(render).toBeDefined();
+      const activeItem = render!.params.find(p => p.name === 'activeItem');
+      expect(activeItem).toBeDefined();
+      expect(activeItem!.nullable).toBe(true);
+    });
+
+    it('parses Table with array params', () => {
+      const meta = parsePhpFile(example('Table.php'));
+      const table = meta.classes.find(c => c.name === 'Table');
+      expect(table).toBeDefined();
+      const headers = table!.constructorParams.find(p => p.name === 'headers');
+      expect(headers).toBeDefined();
+      expect(headers!.type).toBe('array');
+      const rows = table!.constructorParams.find(p => p.name === 'rows');
+      expect(rows).toBeDefined();
+      expect(rows!.type).toBe('array');
+    });
+
+    it('parses Status enum with method params', () => {
+      const meta = parsePhpFile(example('Status.php'));
+      const status = meta.classes.find(c => c.name === 'Status');
+      expect(status).toBeDefined();
+      expect(status!.isEnum).toBe(true);
+      expect(status!.enumBackingType).toBe('string');
+      expect(status!.enumCases).toContain('Active');
+      expect(status!.enumCases).toContain('Inactive');
+      expect(status!.enumCases).toContain('Pending');
+      const label = status!.methods.find(m => m.name === 'label');
+      expect(label).toBeDefined();
+      expect(label!.params).toHaveLength(2);
+      expect(label!.params[0]!.name).toBe('prefix');
+      expect(label!.params[1]!.name).toBe('uppercase');
+    });
+
+    it('parses multiple functions from helpers.php', () => {
+      const meta = parsePhpFile(example('helpers.php'));
+      expect(meta.functions).toHaveLength(2);
+      const tag = meta.functions.find(f => f.name === 'tag');
+      expect(tag).toBeDefined();
+      expect(tag!.fqn).toBe('App\\Helpers\\tag');
+      expect(tag!.params).toHaveLength(2);
+      expect(tag!.params[0]!.name).toBe('label');
+      expect(tag!.params[1]!.name).toBe('color');
     });
   });
 });
