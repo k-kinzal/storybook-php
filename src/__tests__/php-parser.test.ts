@@ -2038,4 +2038,164 @@ class Tooltip {
       expect(info.methods.find(m => m.name === 'render')).toBeTruthy();
     });
   });
+
+  // -----------------------------------------------------------------------
+  // TraitAbstract: trait with abstract method + concrete render
+  // -----------------------------------------------------------------------
+  describe('TraitAbstract', () => {
+    it('parses trait with abstract and concrete methods, and class using it', () => {
+      const meta = parsePhpSource(fixture('TraitAbstract.php'), 'TraitAbstract.php');
+      expect(meta.classes).toHaveLength(2);
+
+      const trait = meta.classes.find(c => c.name === 'HasLayout')!;
+      expect(trait.isTrait).toBe(true);
+      // Trait should have both abstract content() and concrete render()
+      expect(trait.methods.some(m => m.name === 'content')).toBe(true);
+      expect(trait.methods.some(m => m.name === 'render')).toBe(true);
+      expect(trait.methods.find(m => m.name === 'render')!.returnType).toBe('string');
+
+      const cls = meta.classes.find(c => c.name === 'TraitAbstract')!;
+      expect(cls.traits).toContain('HasLayout');
+      expect(cls.constructorParams).toHaveLength(2);
+      expect(cls.constructorParams[0]!.name).toBe('title');
+      expect(cls.constructorParams[1]!.name).toBe('body');
+      // Class implements the abstract content() method
+      expect(cls.methods.some(m => m.name === 'content')).toBe(true);
+    });
+  });
+
+  // -----------------------------------------------------------------------
+  // DualCallable: class with both __invoke and render
+  // -----------------------------------------------------------------------
+  describe('DualCallable', () => {
+    it('parses class with both __invoke and render methods', () => {
+      const meta = parsePhpSource(fixture('DualCallable.php'), 'DualCallable.php');
+      expect(meta.classes).toHaveLength(1);
+
+      const cls = meta.classes[0]!;
+      expect(cls.name).toBe('DualCallable');
+      expect(cls.constructorParams).toHaveLength(2);
+      expect(cls.constructorParams[0]!.name).toBe('label');
+
+      // Should have both __invoke and render
+      expect(cls.methods).toHaveLength(2);
+      expect(cls.methods.some(m => m.name === '__invoke')).toBe(true);
+      expect(cls.methods.some(m => m.name === 'render')).toBe(true);
+
+      // __invoke has a wrapper param
+      const invoke = cls.methods.find(m => m.name === '__invoke')!;
+      expect(invoke.params).toHaveLength(1);
+      expect(invoke.params[0]!.name).toBe('wrapper');
+      expect(invoke.params[0]!.default).toBe("'__PLACEHOLDER__'");
+    });
+  });
+
+  // -----------------------------------------------------------------------
+  // CurrencyEnum: backed enum implementing Stringable
+  // -----------------------------------------------------------------------
+  describe('CurrencyEnum', () => {
+    it('parses backed enum with multiple instance and static methods', () => {
+      const meta = parsePhpSource(fixture('CurrencyEnum.php'), 'CurrencyEnum.php');
+      expect(meta.classes).toHaveLength(1);
+
+      const cls = meta.classes[0]!;
+      expect(cls.name).toBe('Currency');
+      expect(cls.isEnum).toBe(true);
+      expect(cls.enumBackingType).toBe('string');
+      expect(cls.enumCases).toEqual(['USD', 'EUR', 'GBP', 'JPY']);
+
+      // Should have label, symbol, format, table
+      expect(cls.methods.some(m => m.name === 'label')).toBe(true);
+      expect(cls.methods.some(m => m.name === 'symbol')).toBe(true);
+      expect(cls.methods.some(m => m.name === 'format')).toBe(true);
+      expect(cls.methods.some(m => m.name === 'table')).toBe(true);
+
+      // format has params
+      const format = cls.methods.find(m => m.name === 'format')!;
+      expect(format.params).toHaveLength(2);
+      expect(format.params[0]!.name).toBe('amount');
+      expect(format.params[0]!.type).toBe('float');
+      expect(format.params[1]!.name).toBe('decimals');
+      expect(format.params[1]!.default).toBe('2');
+
+      // table is static
+      const table = cls.methods.find(m => m.name === 'table')!;
+      expect(table.isStatic).toBe(true);
+    });
+  });
+
+  // -----------------------------------------------------------------------
+  // EnumDefaultFunc: function with enum-typed param and default
+  // -----------------------------------------------------------------------
+  describe('EnumDefaultFunc', () => {
+    it('parses enum and function with enum-typed param', () => {
+      const meta = parsePhpSource(fixture('EnumDefaultFunc.php'), 'EnumDefaultFunc.php');
+
+      // Should have the Align enum
+      expect(meta.classes).toHaveLength(1);
+      const align = meta.classes[0]!;
+      expect(align.name).toBe('Align');
+      expect(align.isEnum).toBe(true);
+      expect(align.enumCases).toEqual(['Left', 'Center', 'Right']);
+
+      // Should have the alignedBox function
+      expect(meta.functions).toHaveLength(1);
+      const fn = meta.functions[0]!;
+      expect(fn.name).toBe('alignedBox');
+      expect(fn.params).toHaveLength(3);
+
+      expect(fn.params[0]!.name).toBe('content');
+      expect(fn.params[0]!.type).toBe('string');
+      expect(fn.params[0]!.required).toBe(true);
+
+      expect(fn.params[1]!.name).toBe('align');
+      expect(fn.params[1]!.type).toBe('Align');
+      expect(fn.params[1]!.default).toBe('Align::Left');
+      expect(fn.params[1]!.required).toBe(false);
+
+      expect(fn.params[2]!.name).toBe('bg');
+      expect(fn.params[2]!.type).toBe('string');
+    });
+  });
+
+  // -----------------------------------------------------------------------
+  // SplitView: class with multiple named render methods
+  // -----------------------------------------------------------------------
+  describe('SplitView', () => {
+    it('parses class with renderFull and renderCompact methods', () => {
+      const meta = parsePhpSource(fixture('SplitView.php'), 'SplitView.php');
+      expect(meta.classes).toHaveLength(1);
+
+      const cls = meta.classes[0]!;
+      expect(cls.name).toBe('SplitView');
+      expect(cls.constructorParams).toHaveLength(3);
+
+      expect(cls.methods).toHaveLength(2);
+      expect(cls.methods.some(m => m.name === 'renderFull')).toBe(true);
+      expect(cls.methods.some(m => m.name === 'renderCompact')).toBe(true);
+      expect(cls.methods[0]!.returnType).toBe('string');
+      expect(cls.methods[1]!.returnType).toBe('string');
+    });
+  });
+
+  // -----------------------------------------------------------------------
+  // MixedOutput: class with echo (void) and return methods
+  // -----------------------------------------------------------------------
+  describe('MixedOutput', () => {
+    it('parses class with render (string) and renderEcho (void) methods', () => {
+      const meta = parsePhpSource(fixture('MixedOutput.php'), 'MixedOutput.php');
+      expect(meta.classes).toHaveLength(1);
+
+      const cls = meta.classes[0]!;
+      expect(cls.name).toBe('MixedOutput');
+      expect(cls.constructorParams).toHaveLength(3);
+
+      expect(cls.methods).toHaveLength(2);
+      const render = cls.methods.find(m => m.name === 'render')!;
+      expect(render.returnType).toBe('string');
+
+      const echo = cls.methods.find(m => m.name === 'renderEcho')!;
+      expect(echo.returnType).toBe('void');
+    });
+  });
 });

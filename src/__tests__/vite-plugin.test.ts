@@ -593,4 +593,175 @@ describe('Vite Plugin', () => {
       expect(code).toContain('content:');
     });
   });
+
+  // -----------------------------------------------------------------------
+  // TraitAbstract: trait with abstract method + class implementing it
+  // -----------------------------------------------------------------------
+  describe('trait with abstract method', () => {
+    it('resolves render() from trait on TraitAbstract class', () => {
+      const plugin = storybookPhpPlugin();
+      const load = getLoad(plugin);
+
+      const filePath = resolve(FIXTURES, 'TraitAbstract.php');
+      const code = load(`${VIRTUAL_PREFIX}${filePath}?callable=render`);
+
+      expect(code).toBeTruthy();
+      expect(code).toContain("__type: 'classMethod'");
+      expect(code).toContain('export const TraitAbstract');
+      expect(code).toContain('__callable: "render"');
+      expect(code).toContain('title:');
+      expect(code).toContain('body:');
+      // Should NOT export the trait itself
+      expect(code).not.toContain('export const HasLayout');
+    });
+  });
+
+  // -----------------------------------------------------------------------
+  // DualCallable: class with both __invoke and render
+  // -----------------------------------------------------------------------
+  describe('dual callable class', () => {
+    it('generates classMethod for DualCallable@render', () => {
+      const plugin = storybookPhpPlugin();
+      const load = getLoad(plugin);
+
+      const filePath = resolve(FIXTURES, 'DualCallable.php');
+      const code = load(`${VIRTUAL_PREFIX}${filePath}?callable=render`);
+
+      expect(code).toBeTruthy();
+      expect(code).toContain("__type: 'classMethod'");
+      expect(code).toContain('export const DualCallable');
+      expect(code).toContain('__callable: "render"');
+      expect(code).toContain('label:');
+    });
+
+    it('generates classMethod for DualCallable@__invoke', () => {
+      const plugin = storybookPhpPlugin();
+      const load = getLoad(plugin);
+
+      const filePath = resolve(FIXTURES, 'DualCallable.php');
+      const code = load(`${VIRTUAL_PREFIX}${filePath}?callable=__invoke`);
+
+      expect(code).toBeTruthy();
+      expect(code).toContain("__type: 'classMethod'");
+      expect(code).toContain('export const DualCallable');
+      expect(code).toContain('__callable: "__invoke"');
+      expect(code).toContain('wrapper:');
+    });
+  });
+
+  // -----------------------------------------------------------------------
+  // CurrencyEnum: backed enum implementing Stringable
+  // -----------------------------------------------------------------------
+  describe('currency enum', () => {
+    it('generates enumMethod for Currency@format', () => {
+      const plugin = storybookPhpPlugin();
+      const load = getLoad(plugin);
+
+      const filePath = resolve(FIXTURES, 'CurrencyEnum.php');
+      const code = load(`${VIRTUAL_PREFIX}${filePath}?callable=format`);
+
+      expect(code).toBeTruthy();
+      expect(code).toContain("__type: 'enumMethod'");
+      expect(code).toContain('export const Currency');
+      expect(code).toContain('_case:');
+      expect(code).toContain('amount:');
+      expect(code).toContain('decimals:');
+    });
+
+    it('generates staticMethod for Currency@table', () => {
+      const plugin = storybookPhpPlugin();
+      const load = getLoad(plugin);
+
+      const filePath = resolve(FIXTURES, 'CurrencyEnum.php');
+      const code = load(`${VIRTUAL_PREFIX}${filePath}?callable=table`);
+
+      expect(code).toBeTruthy();
+      expect(code).toContain("__type: 'staticMethod'");
+      expect(code).toContain('export const Currency');
+      expect(code).toContain('amount:');
+    });
+  });
+
+  // -----------------------------------------------------------------------
+  // EnumDefaultFunc: function with enum-typed param and default
+  // -----------------------------------------------------------------------
+  describe('function with enum default', () => {
+    it('generates function module for alignedBox', () => {
+      const plugin = storybookPhpPlugin();
+      const load = getLoad(plugin);
+
+      const filePath = resolve(FIXTURES, 'EnumDefaultFunc.php');
+      const code = load(`${VIRTUAL_PREFIX}${filePath}?callable=alignedBox`);
+
+      expect(code).toBeTruthy();
+      expect(code).toContain("__type: 'function'");
+      expect(code).toContain('export const alignedBox');
+      expect(code).toContain('content:');
+      expect(code).toContain('align:');
+      expect(code).toContain('bg:');
+    });
+  });
+
+  // -----------------------------------------------------------------------
+  // SplitView: class with multiple named render methods
+  // -----------------------------------------------------------------------
+  describe('split view multiple methods', () => {
+    it('generates classMethod for SplitView@renderFull', () => {
+      const plugin = storybookPhpPlugin();
+      const load = getLoad(plugin);
+
+      const filePath = resolve(FIXTURES, 'SplitView.php');
+      const code = load(`${VIRTUAL_PREFIX}${filePath}?callable=renderFull`);
+
+      expect(code).toBeTruthy();
+      expect(code).toContain("__type: 'classMethod'");
+      expect(code).toContain('export const SplitView');
+      expect(code).toContain('__callable: "renderFull"');
+      expect(code).toContain('title:');
+    });
+
+    it('generates classMethod for SplitView@renderCompact', () => {
+      const plugin = storybookPhpPlugin();
+      const load = getLoad(plugin);
+
+      const filePath = resolve(FIXTURES, 'SplitView.php');
+      const code = load(`${VIRTUAL_PREFIX}${filePath}?callable=renderCompact`);
+
+      expect(code).toBeTruthy();
+      expect(code).toContain("__type: 'classMethod'");
+      expect(code).toContain('export const SplitView');
+      expect(code).toContain('__callable: "renderCompact"');
+    });
+  });
+
+  // -----------------------------------------------------------------------
+  // MixedOutput: class with echo (void) and return methods
+  // -----------------------------------------------------------------------
+  describe('mixed output methods', () => {
+    it('generates classMethod for MixedOutput@render', () => {
+      const plugin = storybookPhpPlugin();
+      const load = getLoad(plugin);
+
+      const filePath = resolve(FIXTURES, 'MixedOutput.php');
+      const code = load(`${VIRTUAL_PREFIX}${filePath}?callable=render`);
+
+      expect(code).toBeTruthy();
+      expect(code).toContain("__type: 'classMethod'");
+      expect(code).toContain('export const MixedOutput');
+      expect(code).toContain('title:');
+    });
+
+    it('generates classMethod for MixedOutput@renderEcho', () => {
+      const plugin = storybookPhpPlugin();
+      const load = getLoad(plugin);
+
+      const filePath = resolve(FIXTURES, 'MixedOutput.php');
+      const code = load(`${VIRTUAL_PREFIX}${filePath}?callable=renderEcho`);
+
+      expect(code).toBeTruthy();
+      expect(code).toContain("__type: 'classMethod'");
+      expect(code).toContain('export const MixedOutput');
+      expect(code).toContain('__callable: "renderEcho"');
+    });
+  });
 });
