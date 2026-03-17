@@ -226,109 +226,112 @@ function resolveOutput(mixed $result, string $buffered): string
 // ---------------------------------------------------------------------------
 
 try {
-    $input = file_get_contents('php://stdin');
-    $data = json_decode($input, true, 512, JSON_THROW_ON_ERROR);
+    $__sb_input = file_get_contents('php://stdin');
+    $__sb_data = json_decode($__sb_input, true, 512, JSON_THROW_ON_ERROR);
 
-    $type        = $data['type'] ?? null;
-    $file        = $data['file'] ?? null;
-    $class       = $data['class'] ?? null;
-    $callable    = $data['callable'] ?? null;
-    $args        = $data['args'] ?? [];
-    $bootstrap   = $data['bootstrap'] ?? null;
-    $adapterPath = $data['adapter'] ?? null;
+    $__sb_type        = $__sb_data['type'] ?? null;
+    $__sb_file        = $__sb_data['file'] ?? null;
+    $__sb_class       = $__sb_data['class'] ?? null;
+    $__sb_callable    = $__sb_data['callable'] ?? null;
+    $__sb_args        = $__sb_data['args'] ?? [];
+    $__sb_bootstrap   = $__sb_data['bootstrap'] ?? null;
+    $__sb_adapterPath = $__sb_data['adapter'] ?? null;
 
     // Bootstrap file (autoloader, config, etc.)
-    if ($bootstrap !== null && $bootstrap !== '') {
-        require_once $bootstrap;
+    if ($__sb_bootstrap !== null && $__sb_bootstrap !== '') {
+        require_once $__sb_bootstrap;
     }
 
     // Load adapter if specified.
     // Adapter file must return a callable: fn(mixed $result, string $buffered, ?object $instance): string
-    $adapter = null;
-    if ($adapterPath !== null && $adapterPath !== '') {
-        $adapter = require $adapterPath;
-        if (! is_callable($adapter)) {
-            throw new \RuntimeException("Adapter file must return a callable: {$adapterPath}");
+    $__sb_adapter = null;
+    if ($__sb_adapterPath !== null && $__sb_adapterPath !== '') {
+        $__sb_adapter = require $__sb_adapterPath;
+        if (! is_callable($__sb_adapter)) {
+            throw new \RuntimeException("Adapter file must return a callable: {$__sb_adapterPath}");
         }
     }
 
     // Require the target file
-    if ($type !== 'template') {
-        require_once $file;
+    if ($__sb_type !== 'template') {
+        require_once $__sb_file;
     }
 
-    $html = '';
+    $__sb_html = '';
 
-    switch ($type) {
+    switch ($__sb_type) {
         case 'classMethod':
-            $ref = new ReflectionClass($class);
-            $constructor = $ref->getConstructor();
-            $instance = $constructor !== null
-                ? $ref->newInstanceArgs(matchArgs($constructor, $args))
-                : $ref->newInstance();
-            $method = $ref->getMethod($callable);
+            $__sb_ref = new ReflectionClass($__sb_class);
+            $__sb_constructor = $__sb_ref->getConstructor();
+            $__sb_instance = $__sb_constructor !== null
+                ? $__sb_ref->newInstanceArgs(matchArgs($__sb_constructor, $__sb_args))
+                : $__sb_ref->newInstance();
+            $__sb_method = $__sb_ref->getMethod($__sb_callable);
             ob_start();
-            $result = $method->invokeArgs($instance, matchArgs($method, $args));
-            $buffered = ob_get_clean();
-            $html = $adapter ? $adapter($result, $buffered, $instance) : resolveOutput($result, $buffered);
+            $__sb_result = $__sb_method->invokeArgs($__sb_instance, matchArgs($__sb_method, $__sb_args));
+            $__sb_buffered = ob_get_clean();
+            $__sb_html = $__sb_adapter ? $__sb_adapter($__sb_result, $__sb_buffered, $__sb_instance) : resolveOutput($__sb_result, $__sb_buffered);
             break;
 
         case 'staticMethod':
-            $ref = new ReflectionClass($class);
-            $method = $ref->getMethod($callable);
+            $__sb_ref = new ReflectionClass($__sb_class);
+            $__sb_method = $__sb_ref->getMethod($__sb_callable);
             ob_start();
-            $result = $method->invokeArgs(null, matchArgs($method, $args));
-            $buffered = ob_get_clean();
-            $html = $adapter ? $adapter($result, $buffered, null) : resolveOutput($result, $buffered);
+            $__sb_result = $__sb_method->invokeArgs(null, matchArgs($__sb_method, $__sb_args));
+            $__sb_buffered = ob_get_clean();
+            $__sb_html = $__sb_adapter ? $__sb_adapter($__sb_result, $__sb_buffered, null) : resolveOutput($__sb_result, $__sb_buffered);
             break;
 
         case 'function':
-            $ref = new ReflectionFunction($callable);
+            $__sb_ref = new ReflectionFunction($__sb_callable);
             ob_start();
-            $result = $ref->invokeArgs(matchArgs($ref, $args));
-            $buffered = ob_get_clean();
-            $html = $adapter ? $adapter($result, $buffered, null) : resolveOutput($result, $buffered);
+            $__sb_result = $__sb_ref->invokeArgs(matchArgs($__sb_ref, $__sb_args));
+            $__sb_buffered = ob_get_clean();
+            $__sb_html = $__sb_adapter ? $__sb_adapter($__sb_result, $__sb_buffered, null) : resolveOutput($__sb_result, $__sb_buffered);
             break;
 
         case 'template':
-            extract($args, EXTR_SKIP);
+            // Use prefixed variable for args to avoid collisions with template variables.
+            // extract() with EXTR_SKIP won't overwrite runner's prefixed vars since
+            // user templates won't use $__sb_ prefixed names.
+            extract($__sb_args, EXTR_SKIP);
             ob_start();
-            include $file;
-            $html = ob_get_clean();
+            include $__sb_file;
+            $__sb_html = ob_get_clean();
             break;
 
         case 'enumMethod':
-            $ref = new ReflectionEnum($class);
-            $caseValue = $args['_case'] ?? null;
+            $__sb_ref = new ReflectionEnum($__sb_class);
+            $__sb_caseValue = $__sb_args['_case'] ?? null;
             // Try backed enum ::from(), then fall back to name matching
             try {
-                $enumInstance = $class::from($caseValue);
+                $__sb_enumInstance = $__sb_class::from($__sb_caseValue);
             } catch (\Throwable) {
                 // Unit enum — match by name
-                $enumInstance = null;
-                foreach ($class::cases() as $case) {
-                    if ($case->name === $caseValue) {
-                        $enumInstance = $case;
+                $__sb_enumInstance = null;
+                foreach ($__sb_class::cases() as $__sb_case) {
+                    if ($__sb_case->name === $__sb_caseValue) {
+                        $__sb_enumInstance = $__sb_case;
                         break;
                     }
                 }
-                if ($enumInstance === null) {
-                    throw new \RuntimeException("Cannot resolve enum case '{$caseValue}' for {$class}");
+                if ($__sb_enumInstance === null) {
+                    throw new \RuntimeException("Cannot resolve enum case '{$__sb_caseValue}' for {$__sb_class}");
                 }
             }
-            $method = $ref->getMethod($callable);
-            $methodArgs = array_diff_key($args, ['_case' => true]);
+            $__sb_method = $__sb_ref->getMethod($__sb_callable);
+            $__sb_methodArgs = array_diff_key($__sb_args, ['_case' => true]);
             ob_start();
-            $result = $method->invokeArgs($enumInstance, matchArgs($method, $methodArgs));
-            $buffered = ob_get_clean();
-            $html = $adapter ? $adapter($result, $buffered, $enumInstance) : resolveOutput($result, $buffered);
+            $__sb_result = $__sb_method->invokeArgs($__sb_enumInstance, matchArgs($__sb_method, $__sb_methodArgs));
+            $__sb_buffered = ob_get_clean();
+            $__sb_html = $__sb_adapter ? $__sb_adapter($__sb_result, $__sb_buffered, $__sb_enumInstance) : resolveOutput($__sb_result, $__sb_buffered);
             break;
 
         default:
-            throw new \RuntimeException("Unknown type: {$type}");
+            throw new \RuntimeException("Unknown type: {$__sb_type}");
     }
 
-    echo json_encode(['html' => $html], JSON_THROW_ON_ERROR);
+    echo json_encode(['html' => $__sb_html], JSON_THROW_ON_ERROR);
 
 } catch (\Throwable $e) {
     echo json_encode([

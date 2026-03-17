@@ -370,6 +370,106 @@ describe('Vite Plugin', () => {
       expect(code).toContain('format:');
       expect(code).toContain('export const Serializer');
     });
+
+    it('generates classMethod module for no-namespace class', () => {
+      const plugin = storybookPhpPlugin();
+      const load = getLoad(plugin);
+
+      const filePath = resolve(FIXTURES, 'NoNamespaceClass.php');
+      const virtualId = `${VIRTUAL_PREFIX}${filePath}?callable=render`;
+      const code = load(virtualId);
+
+      expect(code).toBeTruthy();
+      expect(code).toContain("__type: 'classMethod'");
+      expect(code).toContain('__class: "NoNamespaceButton"');
+      expect(code).toContain('__callable: "render"');
+      expect(code).toContain('label:');
+      expect(code).toContain('variant:');
+      expect(code).toContain('disabled:');
+      expect(code).toContain('export const NoNamespaceButton');
+    });
+
+    it('generates classMethod module for ConstantDefaults@render', () => {
+      const plugin = storybookPhpPlugin();
+      const load = getLoad(plugin);
+
+      const filePath = resolve(FIXTURES, 'ConstantDefaults.php');
+      const virtualId = `${VIRTUAL_PREFIX}${filePath}?callable=render`;
+      const code = load(virtualId);
+
+      expect(code).toBeTruthy();
+      expect(code).toContain("__type: 'classMethod'");
+      expect(code).toContain('message:');
+      expect(code).toContain('level:');
+      expect(code).toContain('timeout:');
+      expect(code).toContain('export const ConstantDefaults');
+    });
+
+    it('generates multiple exports from MultiExportClasses@render', () => {
+      const plugin = storybookPhpPlugin();
+      const load = getLoad(plugin);
+
+      const filePath = resolve(FIXTURES, 'MultiExportClasses.php');
+      const virtualId = `${VIRTUAL_PREFIX}${filePath}?callable=render`;
+      const code = load(virtualId);
+
+      expect(code).toBeTruthy();
+      // All three classes have a render method
+      expect(code).toContain('export const PageHeader');
+      expect(code).toContain('export const PageFooter');
+      expect(code).toContain('export const PageSidebar');
+      // All should be classMethod type
+      expect(code!.match(/__type: 'classMethod'/g)).toHaveLength(3);
+    });
+
+    it('generates staticMethod from MultiExportClasses@collapsed', () => {
+      const plugin = storybookPhpPlugin();
+      const load = getLoad(plugin);
+
+      const filePath = resolve(FIXTURES, 'MultiExportClasses.php');
+      const virtualId = `${VIRTUAL_PREFIX}${filePath}?callable=collapsed`;
+      const code = load(virtualId);
+
+      expect(code).toBeTruthy();
+      expect(code).toContain("__type: 'staticMethod'");
+      expect(code).toContain('export const PageSidebar');
+      expect(code).toContain('icon:');
+    });
+
+    it('generates classMethod for NullableParams@render', () => {
+      const plugin = storybookPhpPlugin();
+      const load = getLoad(plugin);
+
+      const filePath = resolve(FIXTURES, 'NullableParams.php');
+      const virtualId = `${VIRTUAL_PREFIX}${filePath}?callable=render`;
+      const code = load(virtualId);
+
+      expect(code).toBeTruthy();
+      expect(code).toContain("__type: 'classMethod'");
+      expect(code).toContain('message:');
+      expect(code).toContain('title:');
+      expect(code).toContain('icon:');
+      expect(code).toContain('timeout:');
+      expect(code).toContain('footer:');
+      expect(code).toContain('export const NullableParams');
+    });
+
+    it('generates classMethod for StringableReturn2 StringableWrapper@render', () => {
+      const plugin = storybookPhpPlugin();
+      const load = getLoad(plugin);
+
+      const filePath = resolve(FIXTURES, 'StringableReturn2.php');
+      const virtualId = `${VIRTUAL_PREFIX}${filePath}?callable=render`;
+      const code = load(virtualId);
+
+      expect(code).toBeTruthy();
+      expect(code).toContain("__type: 'classMethod'");
+      expect(code).toContain('export const StringableWrapper');
+      expect(code).toContain('text:');
+      expect(code).toContain('tag:');
+      // HtmlElement has __toString, not render — should not appear
+      expect(code).not.toContain('export const HtmlElement');
+    });
   });
 
   // -----------------------------------------------------------------------

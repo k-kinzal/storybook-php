@@ -1677,4 +1677,159 @@ class Tooltip {
       expect(label.required).toBe(false);
     });
   });
+
+  // -----------------------------------------------------------------------
+  // NoNamespaceClass
+  // -----------------------------------------------------------------------
+  describe('NoNamespaceClass', () => {
+    it('parses class without namespace', () => {
+      const meta = parsePhpSource(fixture('NoNamespaceClass.php'), 'NoNamespaceClass.php');
+
+      expect(meta.namespace).toBeNull();
+      expect(meta.classes).toHaveLength(1);
+
+      const cls = meta.classes[0]!;
+      expect(cls.name).toBe('NoNamespaceButton');
+      expect(cls.fqn).toBe('NoNamespaceButton');
+      expect(cls.constructorParams).toHaveLength(3);
+
+      expect(cls.constructorParams[0]!.name).toBe('label');
+      expect(cls.constructorParams[0]!.type).toBe('string');
+      expect(cls.constructorParams[0]!.required).toBe(true);
+
+      expect(cls.constructorParams[1]!.name).toBe('variant');
+      expect(cls.constructorParams[1]!.default).toBe("'__PLACEHOLDER__'");
+
+      expect(cls.constructorParams[2]!.name).toBe('disabled');
+      expect(cls.constructorParams[2]!.type).toBe('bool');
+      expect(cls.constructorParams[2]!.default).toBe('false');
+
+      expect(cls.methods).toHaveLength(1);
+      expect(cls.methods[0]!.name).toBe('render');
+    });
+  });
+
+  // -----------------------------------------------------------------------
+  // ConstantDefaults
+  // -----------------------------------------------------------------------
+  describe('ConstantDefaults', () => {
+    it('parses class with self:: constant defaults', () => {
+      const meta = parsePhpSource(fixture('ConstantDefaults.php'), 'ConstantDefaults.php');
+
+      expect(meta.namespace).toBe('App\\Components');
+      expect(meta.classes).toHaveLength(1);
+
+      const cls = meta.classes[0]!;
+      expect(cls.name).toBe('ConstantDefaults');
+      expect(cls.constructorParams).toHaveLength(3);
+
+      const message = cls.constructorParams[0]!;
+      expect(message.name).toBe('message');
+      expect(message.required).toBe(true);
+
+      const level = cls.constructorParams[1]!;
+      expect(level.name).toBe('level');
+      expect(level.type).toBe('string');
+      expect(level.required).toBe(false);
+      expect(level.default).toBe('self::LEVEL_INFO');
+
+      const timeout = cls.constructorParams[2]!;
+      expect(timeout.name).toBe('timeout');
+      expect(timeout.type).toBe('int');
+      expect(timeout.default).toBe('5000');
+    });
+  });
+
+  // -----------------------------------------------------------------------
+  // NullableParams
+  // -----------------------------------------------------------------------
+  describe('NullableParams', () => {
+    it('parses various nullable parameter forms', () => {
+      const meta = parsePhpSource(fixture('NullableParams.php'), 'NullableParams.php');
+
+      expect(meta.classes).toHaveLength(1);
+      const cls = meta.classes[0]!;
+      expect(cls.constructorParams).toHaveLength(5);
+
+      // message: required string
+      expect(cls.constructorParams[0]!.name).toBe('message');
+      expect(cls.constructorParams[0]!.nullable).toBe(false);
+      expect(cls.constructorParams[0]!.required).toBe(true);
+
+      // ?string $title = null
+      const title = cls.constructorParams[1]!;
+      expect(title.name).toBe('title');
+      expect(title.nullable).toBe(true);
+      expect(title.required).toBe(false);
+
+      // ?string $icon = null
+      const icon = cls.constructorParams[2]!;
+      expect(icon.name).toBe('icon');
+      expect(icon.nullable).toBe(true);
+
+      // ?int $timeout = null
+      const timeout = cls.constructorParams[3]!;
+      expect(timeout.name).toBe('timeout');
+      expect(timeout.type).toBe('int');
+      expect(timeout.nullable).toBe(true);
+
+      // string|null $footer = null
+      const footer = cls.constructorParams[4]!;
+      expect(footer.name).toBe('footer');
+      expect(footer.nullable).toBe(true);
+    });
+  });
+
+  // -----------------------------------------------------------------------
+  // MultiExportClasses
+  // -----------------------------------------------------------------------
+  describe('MultiExportClasses', () => {
+    it('parses multiple independent classes from one file', () => {
+      const meta = parsePhpSource(fixture('MultiExportClasses.php'), 'MultiExportClasses.php');
+
+      expect(meta.namespace).toBe('App\\Components');
+      expect(meta.classes).toHaveLength(3);
+
+      const header = meta.classes.find(c => c.name === 'PageHeader')!;
+      expect(header.constructorParams).toHaveLength(2);
+      expect(header.constructorParams[0]!.name).toBe('title');
+      expect(header.methods).toHaveLength(1);
+      expect(header.methods[0]!.name).toBe('render');
+
+      const footer = meta.classes.find(c => c.name === 'PageFooter')!;
+      expect(footer.constructorParams).toHaveLength(2);
+      expect(footer.constructorParams[0]!.name).toBe('copyright');
+      expect(footer.methods).toHaveLength(1);
+
+      const sidebar = meta.classes.find(c => c.name === 'PageSidebar')!;
+      expect(sidebar.constructorParams).toHaveLength(1);
+      expect(sidebar.methods).toHaveLength(2);
+
+      const render = sidebar.methods.find(m => m.name === 'render')!;
+      expect(render.isStatic).toBe(false);
+      const collapsed = sidebar.methods.find(m => m.name === 'collapsed')!;
+      expect(collapsed.isStatic).toBe(true);
+    });
+  });
+
+  // -----------------------------------------------------------------------
+  // StringableReturn2
+  // -----------------------------------------------------------------------
+  describe('StringableReturn2', () => {
+    it('parses multiple classes including one with __toString', () => {
+      const meta = parsePhpSource(fixture('StringableReturn2.php'), 'StringableReturn2.php');
+
+      expect(meta.classes).toHaveLength(2);
+
+      const htmlEl = meta.classes.find(c => c.name === 'HtmlElement')!;
+      expect(htmlEl.constructorParams).toHaveLength(2);
+      expect(htmlEl.methods).toHaveLength(1);
+      expect(htmlEl.methods[0]!.name).toBe('__toString');
+
+      const wrapper = meta.classes.find(c => c.name === 'StringableWrapper')!;
+      expect(wrapper.constructorParams).toHaveLength(2);
+      expect(wrapper.methods).toHaveLength(1);
+      expect(wrapper.methods[0]!.name).toBe('render');
+    });
+  });
 });
