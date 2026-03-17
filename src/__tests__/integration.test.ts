@@ -8559,4 +8559,886 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
       expect(staticMethods).toHaveLength(1);
     });
   });
+
+  // -------------------------------------------------------------------------
+  // UC136: Pure enum with method params (Suit)
+  // -------------------------------------------------------------------------
+  describe('UC136: Pure enum with method params', () => {
+    it('renders Suit card with rank param', async () => {
+      const result = await executor.execute({
+        type: 'enumMethod',
+        file: example('Suit.php'),
+        class: 'App\\Components\\Suit',
+        callable: 'card',
+        args: { _case: 'Spades', rank: 'A' },
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('A');
+      expect(result.html).toContain('playing-card');
+    });
+
+    it('renders pure enum without backing value (name-based matching)', async () => {
+      const result = await executor.execute({
+        type: 'enumMethod',
+        file: example('Suit.php'),
+        class: 'App\\Components\\Suit',
+        callable: 'card',
+        args: { _case: 'Hearts', rank: 'Q' },
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('Q');
+      expect(result.html).toContain('#ef4444');
+    });
+
+    it('renders with default rank param', async () => {
+      const result = await executor.execute({
+        type: 'enumMethod',
+        file: example('Suit.php'),
+        class: 'App\\Components\\Suit',
+        callable: 'card',
+        args: { _case: 'Diamonds' },
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('A');
+    });
+
+    it('parses Suit pure enum', () => {
+      const meta = parsePhpFile(example('Suit.php'));
+      const cls = meta.classes.find(c => c.name === 'Suit')!;
+      expect(cls.isEnum).toBe(true);
+      expect(cls.enumBackingType).toBeNull();
+      expect(cls.enumCases).toEqual(['Hearts', 'Diamonds', 'Clubs', 'Spades']);
+      const cardMethod = cls.methods.find(m => m.name === 'card')!;
+      expect(cardMethod.params).toHaveLength(1);
+      expect(cardMethod.params[0]!.name).toBe('rank');
+    });
+
+    it('generates enumMethod module for Suit', () => {
+      const plugin = storybookPhpPlugin({});
+      const resolveId = (plugin as any).resolveId.bind(plugin);
+      const load = (plugin as any).load.bind(plugin);
+      const id = resolveId('./Suit.php@card', example('Suit.stories.ts'));
+      const code = load(id);
+      expect(code).toContain("__type: 'enumMethod'");
+      expect(code).toContain('rank:');
+      expect(code).toContain('_case:');
+    });
+  });
+
+  // -------------------------------------------------------------------------
+  // UC137: PHP 8.2 standalone types (true, false, null)
+  // -------------------------------------------------------------------------
+  describe('UC137: PHP 8.2 standalone types', () => {
+    it('renders StandaloneTypes with true/false params', async () => {
+      const result = await executor.execute({
+        type: 'classMethod',
+        file: example('StandaloneTypes.php'),
+        class: 'App\\Components\\StandaloneTypes',
+        callable: 'render',
+        args: { label: 'Test Button', variant: 'primary', visible: true, disabled: false },
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('Test Button');
+      expect(result.html).toContain('btn-primary');
+    });
+
+    it('renders with defaults for standalone types', async () => {
+      const result = await executor.execute({
+        type: 'classMethod',
+        file: example('StandaloneTypes.php'),
+        class: 'App\\Components\\StandaloneTypes',
+        callable: 'render',
+        args: { label: 'Default', variant: 'success' },
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('Default');
+      expect(result.html).toContain('btn-success');
+    });
+
+    it('parses standalone types from fixture', () => {
+      const meta = parsePhpFile(fixture('StandaloneTypes.php'));
+      const cls = meta.classes[0]!;
+      expect(cls.name).toBe('StandaloneTypes');
+      const params = cls.constructorParams;
+      expect(params).toHaveLength(3);
+      expect(params[0]!.type).toBe('string');
+      expect(params[1]!.type).toBe('true');
+      expect(params[2]!.type).toBe('false');
+    });
+
+    it('parses standalone types from example', () => {
+      const meta = parsePhpFile(example('StandaloneTypes.php'));
+      const cls = meta.classes[0]!;
+      expect(cls.constructorParams).toHaveLength(4);
+      const visible = cls.constructorParams.find(p => p.name === 'visible')!;
+      expect(visible.type).toBe('true');
+      expect(visible.required).toBe(false);
+      const disabled = cls.constructorParams.find(p => p.name === 'disabled')!;
+      expect(disabled.type).toBe('false');
+      expect(disabled.required).toBe(false);
+    });
+  });
+
+  // -------------------------------------------------------------------------
+  // UC138: Deeply nested namespace
+  // -------------------------------------------------------------------------
+  describe('UC138: Deeply nested namespace', () => {
+    it('renders TextInput from nested namespace', async () => {
+      const result = await executor.execute({
+        type: 'classMethod',
+        file: example('NestedNamespace.php'),
+        class: 'App\\UI\\Components\\Form\\TextInput',
+        callable: 'render',
+        args: { name: 'email', label: 'Email', placeholder: 'you@example.com' },
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('Email');
+      expect(result.html).toContain('you@example.com');
+      expect(result.html).toContain('form-field');
+    });
+
+    it('renders with required flag', async () => {
+      const result = await executor.execute({
+        type: 'classMethod',
+        file: example('NestedNamespace.php'),
+        class: 'App\\UI\\Components\\Form\\TextInput',
+        callable: 'render',
+        args: { name: 'password', required: true, helpText: 'Min 8 characters' },
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('*');
+      expect(result.html).toContain('Min 8 characters');
+    });
+
+    it('parses deeply nested namespace', () => {
+      const meta = parsePhpFile(fixture('NestedNamespace.php'));
+      expect(meta.namespace).toBe('App\\UI\\Components\\Form');
+      const cls = meta.classes[0]!;
+      expect(cls.name).toBe('TextInput');
+      expect(cls.fqn).toBe('App\\UI\\Components\\Form\\TextInput');
+    });
+
+    it('generates module with nested namespace FQN', () => {
+      const plugin = storybookPhpPlugin({});
+      const resolveId = (plugin as any).resolveId.bind(plugin);
+      const load = (plugin as any).load.bind(plugin);
+      const id = resolveId('./NestedNamespace.php@render', example('NestedNamespace.stories.ts'));
+      const code = load(id);
+      expect(code).toContain("__type: 'classMethod'");
+      expect(code).toContain('App\\\\UI\\\\Components\\\\Form\\\\TextInput');
+    });
+  });
+
+  // -------------------------------------------------------------------------
+  // UC139: Multiple render methods on same class
+  // -------------------------------------------------------------------------
+  describe('UC139: Multiple render methods', () => {
+    it('renders via render() method', async () => {
+      const result = await executor.execute({
+        type: 'classMethod',
+        file: example('MultiRender.php'),
+        class: 'App\\Components\\MultiRender',
+        callable: 'render',
+        args: { title: 'Feature', description: 'A great feature', icon: '🚀' },
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('multi-default');
+      expect(result.html).toContain('Feature');
+      expect(result.html).toContain('🚀');
+    });
+
+    it('renders via renderCard() method', async () => {
+      const result = await executor.execute({
+        type: 'classMethod',
+        file: example('MultiRender.php'),
+        class: 'App\\Components\\MultiRender',
+        callable: 'renderCard',
+        args: { title: 'Dashboard', description: 'Analytics', footer: 'Updated 5m ago' },
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('multi-card');
+      expect(result.html).toContain('Dashboard');
+      expect(result.html).toContain('Updated 5m ago');
+    });
+
+    it('renders via renderRow() method', async () => {
+      const result = await executor.execute({
+        type: 'classMethod',
+        file: example('MultiRender.php'),
+        class: 'App\\Components\\MultiRender',
+        callable: 'renderRow',
+        args: { title: 'Users', description: '1,234 active', striped: true },
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('Users');
+      expect(result.html).toContain('1,234 active');
+      expect(result.html).toContain('#f9fafb');
+    });
+
+    it('parses MultiRender with 3 public methods', () => {
+      const meta = parsePhpFile(example('MultiRender.php'));
+      const cls = meta.classes.find(c => c.name === 'MultiRender')!;
+      expect(cls).toBeDefined();
+      expect(cls.methods).toHaveLength(3);
+      expect(cls.methods.map(m => m.name).sort()).toEqual(['render', 'renderCard', 'renderRow']);
+    });
+
+    it('generates separate modules per method', () => {
+      const plugin = storybookPhpPlugin({});
+      const resolveId = (plugin as any).resolveId.bind(plugin);
+      const load = (plugin as any).load.bind(plugin);
+
+      const idRender = resolveId('./MultiRender.php@render', example('MultiRender.stories.ts'));
+      const codeRender = load(idRender);
+      expect(codeRender).toContain('__callable: "render"');
+
+      const idCard = resolveId('./MultiRender.php@renderCard', example('MultiRenderCard.stories.ts'));
+      const codeCard = load(idCard);
+      expect(codeCard).toContain('__callable: "renderCard"');
+      expect(codeCard).toContain('footer:');
+
+      const idRow = resolveId('./MultiRender.php@renderRow', example('MultiRenderRow.stories.ts'));
+      const codeRow = load(idRow);
+      expect(codeRow).toContain('__callable: "renderRow"');
+      expect(codeRow).toContain('striped:');
+    });
+  });
+
+  // -------------------------------------------------------------------------
+  // UC140: Enum with both static + instance methods
+  // -------------------------------------------------------------------------
+  describe('UC140: Enum with static + instance methods', () => {
+    it('renders badge via enum instance method', async () => {
+      const result = await executor.execute({
+        type: 'enumMethod',
+        file: example('EnumStaticInstance.php'),
+        class: 'App\\Components\\EnumStaticInstance',
+        callable: 'badge',
+        args: { _case: 'success' },
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('esi-badge-success');
+      expect(result.html).toContain('Success');
+    });
+
+    it('renders alert via enum instance method with params', async () => {
+      const result = await executor.execute({
+        type: 'enumMethod',
+        file: example('EnumStaticInstance.php'),
+        class: 'App\\Components\\EnumStaticInstance',
+        callable: 'render',
+        args: { _case: 'error', message: 'Something went wrong!' },
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('esi-alert-error');
+      expect(result.html).toContain('Something went wrong!');
+    });
+
+    it('renders all badges via static method', async () => {
+      const result = await executor.execute({
+        type: 'staticMethod',
+        file: example('EnumStaticInstance.php'),
+        class: 'App\\Components\\EnumStaticInstance',
+        callable: 'all',
+        args: {},
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('esi-all');
+      expect(result.html).toContain('esi-badge-info');
+      expect(result.html).toContain('esi-badge-error');
+    });
+
+    it('parses enum with both method types', () => {
+      const meta = parsePhpFile(example('EnumStaticInstance.php'));
+      const cls = meta.classes.find(c => c.name === 'EnumStaticInstance')!;
+      expect(cls.isEnum).toBe(true);
+      const instanceMethods = cls.methods.filter(m => !m.isStatic);
+      const staticMethods = cls.methods.filter(m => m.isStatic);
+      expect(instanceMethods).toHaveLength(2);
+      expect(staticMethods).toHaveLength(1);
+    });
+
+    it('generates enumMethod module for badge', () => {
+      const plugin = storybookPhpPlugin({});
+      const resolveId = (plugin as any).resolveId.bind(plugin);
+      const load = (plugin as any).load.bind(plugin);
+      const id = resolveId('./EnumStaticInstance.php@badge', example('EnumStaticInstance.stories.ts'));
+      const code = load(id);
+      expect(code).toContain("__type: 'enumMethod'");
+    });
+
+    it('generates staticMethod module for all', () => {
+      const plugin = storybookPhpPlugin({});
+      const resolveId = (plugin as any).resolveId.bind(plugin);
+      const load = (plugin as any).load.bind(plugin);
+      const id = resolveId('./EnumStaticInstance.php@all', example('EnumStaticInstanceAll.stories.ts'));
+      const code = load(id);
+      expect(code).toContain("__type: 'staticMethod'");
+    });
+  });
+
+  // -------------------------------------------------------------------------
+  // UC141: Class with enum-typed constructor parameter
+  // -------------------------------------------------------------------------
+  describe('UC141: Enum-typed constructor parameter', () => {
+    it('renders with default theme (Light)', async () => {
+      const result = await executor.execute({
+        type: 'classMethod',
+        file: example('EnumTypedConstructor.php'),
+        class: 'App\\Components\\EnumTypedConstructor',
+        callable: 'render',
+        args: { content: 'Hello world' },
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('Hello world');
+      expect(result.html).toContain('themed-light');
+      expect(result.html).toContain('#ffffff');
+    });
+
+    it('renders with dark theme', async () => {
+      const result = await executor.execute({
+        type: 'classMethod',
+        file: example('EnumTypedConstructor.php'),
+        class: 'App\\Components\\EnumTypedConstructor',
+        callable: 'render',
+        args: { content: 'Dark mode', theme: 'dark', size: 'lg' },
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('Dark mode');
+      expect(result.html).toContain('themed-dark');
+      expect(result.html).toContain('#1f2937');
+    });
+
+    it('renders with system theme', async () => {
+      const result = await executor.execute({
+        type: 'classMethod',
+        file: example('EnumTypedConstructor.php'),
+        class: 'App\\Components\\EnumTypedConstructor',
+        callable: 'render',
+        args: { content: 'System theme', theme: 'system' },
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('themed-system');
+    });
+
+    it('parses EnumTypedConstructor with enum param', () => {
+      const meta = parsePhpFile(example('EnumTypedConstructor.php'));
+      const cls = meta.classes.find(c => c.name === 'EnumTypedConstructor')!;
+      expect(cls).toBeDefined();
+      const themeParam = cls.constructorParams.find(p => p.name === 'theme')!;
+      expect(themeParam.type).toBe('Theme');
+      expect(themeParam.required).toBe(false);
+    });
+
+    it('parses Theme enum in same file', () => {
+      const meta = parsePhpFile(example('EnumTypedConstructor.php'));
+      const enumCls = meta.classes.find(c => c.name === 'Theme')!;
+      expect(enumCls.isEnum).toBe(true);
+      expect(enumCls.enumBackingType).toBe('string');
+      expect(enumCls.enumCases).toEqual(['Light', 'Dark', 'System']);
+    });
+  });
+
+  // -------------------------------------------------------------------------
+  // Parser: UC136-UC141 fixture metadata
+  // -------------------------------------------------------------------------
+  describe('Parser: UC136-UC141 fixture metadata', () => {
+    it('parses StandaloneTypes fixture', () => {
+      const meta = parsePhpFile(fixture('StandaloneTypes.php'));
+      const cls = meta.classes[0]!;
+      expect(cls.name).toBe('StandaloneTypes');
+      expect(cls.constructorParams).toHaveLength(3);
+      expect(cls.constructorParams[1]!.type).toBe('true');
+      expect(cls.constructorParams[2]!.type).toBe('false');
+    });
+
+    it('parses NestedNamespace fixture', () => {
+      const meta = parsePhpFile(fixture('NestedNamespace.php'));
+      expect(meta.namespace).toBe('App\\UI\\Components\\Form');
+      const cls = meta.classes[0]!;
+      expect(cls.fqn).toBe('App\\UI\\Components\\Form\\TextInput');
+      expect(cls.constructorParams).toHaveLength(4);
+    });
+
+    it('parses MultiRender fixture', () => {
+      const meta = parsePhpFile(fixture('MultiRender.php'));
+      const cls = meta.classes[0]!;
+      expect(cls.name).toBe('MultiRender');
+      expect(cls.methods).toHaveLength(3);
+      expect(cls.methods.map(m => m.name).sort()).toEqual(['render', 'renderCompact', 'renderDetailed']);
+      const detailed = cls.methods.find(m => m.name === 'renderDetailed')!;
+      expect(detailed.params).toHaveLength(1);
+      expect(detailed.params[0]!.name).toBe('footer');
+    });
+
+    it('parses EnumStaticInstance fixture', () => {
+      const meta = parsePhpFile(fixture('EnumStaticInstance.php'));
+      const cls = meta.classes[0]!;
+      expect(cls.isEnum).toBe(true);
+      expect(cls.enumCases).toEqual(['Info', 'Warning', 'Error']);
+      const statics = cls.methods.filter(m => m.isStatic);
+      const instances = cls.methods.filter(m => !m.isStatic);
+      expect(statics).toHaveLength(1);
+      expect(instances).toHaveLength(1);
+    });
+
+    it('parses EnumTypedConstructor fixture', () => {
+      const meta = parsePhpFile(fixture('EnumTypedConstructor.php'));
+      const enumCls = meta.classes.find(c => c.name === 'Theme')!;
+      expect(enumCls.isEnum).toBe(true);
+      expect(enumCls.enumCases).toEqual(['Light', 'Dark', 'System']);
+
+      const cls = meta.classes.find(c => c.name === 'EnumTypedConstructor')!;
+      expect(cls.constructorParams).toHaveLength(2);
+      const themeParam = cls.constructorParams.find(p => p.name === 'theme')!;
+      expect(themeParam.type).toBe('Theme');
+    });
+  });
+
+  // -------------------------------------------------------------------------
+  // UC142: Echo-based enum method (void return)
+  // -------------------------------------------------------------------------
+  describe('UC142: Echo-based enum method', () => {
+    it('renders echo-based enum alert for success', async () => {
+      const result = await executor.execute({
+        type: 'enumMethod',
+        file: example('EchoEnum.php'),
+        class: 'App\\Components\\EchoEnum',
+        callable: 'alert',
+        args: { _case: 'success', message: 'Done!' },
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('echo-enum-success');
+      expect(result.html).toContain('Done!');
+      expect(result.html).toContain('Success');
+    });
+
+    it('renders echo-based enum alert with dismissible flag', async () => {
+      const result = await executor.execute({
+        type: 'enumMethod',
+        file: example('EchoEnum.php'),
+        class: 'App\\Components\\EchoEnum',
+        callable: 'alert',
+        args: { _case: 'error', message: 'Something failed.', dismissible: true },
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('echo-enum-error');
+      expect(result.html).toContain('Something failed.');
+      expect(result.html).toContain('&times;');
+    });
+
+    it('renders without dismissible button by default', async () => {
+      const result = await executor.execute({
+        type: 'enumMethod',
+        file: example('EchoEnum.php'),
+        class: 'App\\Components\\EchoEnum',
+        callable: 'alert',
+        args: { _case: 'warning', message: 'Check this.' },
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('echo-enum-warning');
+      expect(result.html).not.toContain('&times;');
+    });
+
+    it('parses EchoEnum with void method', () => {
+      const meta = parsePhpFile(example('EchoEnum.php'));
+      const cls = meta.classes.find(c => c.name === 'EchoEnum')!;
+      expect(cls.isEnum).toBe(true);
+      expect(cls.enumBackingType).toBe('string');
+      expect(cls.enumCases).toEqual(['Success', 'Error', 'Warning', 'Info']);
+      const alertMethod = cls.methods.find(m => m.name === 'alert')!;
+      expect(alertMethod.params).toHaveLength(2);
+      expect(alertMethod.returnType).toBe('void');
+    });
+
+    it('generates enumMethod module for EchoEnum', () => {
+      const plugin = storybookPhpPlugin({});
+      const resolveId = (plugin as any).resolveId.bind(plugin);
+      const load = (plugin as any).load.bind(plugin);
+      const id = resolveId('./EchoEnum.php@alert', example('EchoEnum.stories.ts'));
+      const code = load(id);
+      expect(code).toContain("__type: 'enumMethod'");
+      expect(code).toContain('message:');
+      expect(code).toContain('dismissible:');
+    });
+  });
+
+  // -------------------------------------------------------------------------
+  // UC143: Invocable class with echo (void __invoke)
+  // -------------------------------------------------------------------------
+  describe('UC143: Invocable echo class', () => {
+    it('renders invocable echo with defaults', async () => {
+      const result = await executor.execute({
+        type: 'classMethod',
+        file: example('InvocableEcho.php'),
+        class: 'App\\Components\\InvocableEcho',
+        callable: '__invoke',
+        args: { message: 'Hello world' },
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('invocable-echo-info');
+      expect(result.html).toContain('Note:');
+      expect(result.html).toContain('Hello world');
+    });
+
+    it('renders invocable echo with custom prefix and variant', async () => {
+      const result = await executor.execute({
+        type: 'classMethod',
+        file: example('InvocableEcho.php'),
+        class: 'App\\Components\\InvocableEcho',
+        callable: '__invoke',
+        args: { prefix: 'Alert', variant: 'error', message: 'Oops!' },
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('invocable-echo-error');
+      expect(result.html).toContain('Alert:');
+      expect(result.html).toContain('Oops!');
+    });
+
+    it('renders invocable echo without icon', async () => {
+      const result = await executor.execute({
+        type: 'classMethod',
+        file: example('InvocableEcho.php'),
+        class: 'App\\Components\\InvocableEcho',
+        callable: '__invoke',
+        args: { message: 'Plain text', showIcon: false },
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('Plain text');
+      expect(result.html).toContain('Note:');
+    });
+
+    it('parses InvocableEcho with __invoke void', () => {
+      const meta = parsePhpFile(example('InvocableEcho.php'));
+      const cls = meta.classes.find(c => c.name === 'InvocableEcho')!;
+      expect(cls).toBeDefined();
+      expect(cls.constructorParams).toHaveLength(2);
+      const invoke = cls.methods.find(m => m.name === '__invoke')!;
+      expect(invoke).toBeDefined();
+      expect(invoke.params).toHaveLength(2);
+      expect(invoke.returnType).toBe('void');
+    });
+
+    it('generates classMethod module for __invoke', () => {
+      const plugin = storybookPhpPlugin({});
+      const resolveId = (plugin as any).resolveId.bind(plugin);
+      const load = (plugin as any).load.bind(plugin);
+      const id = resolveId('./InvocableEcho.php@__invoke', example('InvocableEcho.stories.ts'));
+      const code = load(id);
+      expect(code).toContain("__type: 'classMethod'");
+      expect(code).toContain('prefix:');
+      expect(code).toContain('message:');
+      expect(code).toContain('showIcon:');
+    });
+  });
+
+  // -------------------------------------------------------------------------
+  // UC144: Non-string scalar return (int, float)
+  // -------------------------------------------------------------------------
+  describe('UC144: Scalar return values', () => {
+    it('renders percent as integer', async () => {
+      const result = await executor.execute({
+        type: 'classMethod',
+        file: example('ScalarReturn.php'),
+        class: 'App\\Components\\ScalarReturn',
+        callable: 'renderPercent',
+        args: { current: 75, total: 100 },
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toBe('75');
+    });
+
+    it('renders zero percent for empty', async () => {
+      const result = await executor.execute({
+        type: 'classMethod',
+        file: example('ScalarReturn.php'),
+        class: 'App\\Components\\ScalarReturn',
+        callable: 'renderPercent',
+        args: { current: 0, total: 100 },
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toBe('0');
+    });
+
+    it('renders ratio as float', async () => {
+      const result = await executor.execute({
+        type: 'classMethod',
+        file: example('ScalarReturn.php'),
+        class: 'App\\Components\\ScalarReturn',
+        callable: 'renderRatio',
+        args: { current: 33, total: 100 },
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toBe('0.33');
+    });
+
+    it('renders full progress bar via render()', async () => {
+      const result = await executor.execute({
+        type: 'classMethod',
+        file: example('ScalarReturn.php'),
+        class: 'App\\Components\\ScalarReturn',
+        callable: 'render',
+        args: { current: 65, total: 100 },
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('scalar-return');
+      expect(result.html).toContain('65%');
+      expect(result.html).toContain('65/100');
+    });
+
+    it('parses ScalarReturn with multiple methods', () => {
+      const meta = parsePhpFile(example('ScalarReturn.php'));
+      const cls = meta.classes.find(c => c.name === 'ScalarReturn')!;
+      expect(cls.constructorParams).toHaveLength(2);
+      expect(cls.methods).toHaveLength(3);
+      const pct = cls.methods.find(m => m.name === 'renderPercent')!;
+      expect(pct.returnType).toBe('int');
+      const ratio = cls.methods.find(m => m.name === 'renderRatio')!;
+      expect(ratio.returnType).toBe('float');
+    });
+  });
+
+  // -------------------------------------------------------------------------
+  // UC145: Functions with array defaults
+  // -------------------------------------------------------------------------
+  describe('UC145: Functions with array defaults', () => {
+    it('renders nav with default items', async () => {
+      const result = await executor.execute({
+        type: 'function',
+        file: example('FunctionArrayDefault.php'),
+        class: null,
+        callable: 'App\\Helpers\\renderNav',
+        args: {},
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('fn-nav');
+      expect(result.html).toContain('Home');
+      expect(result.html).toContain('About');
+      expect(result.html).toContain('Contact');
+    });
+
+    it('renders nav with custom items', async () => {
+      const result = await executor.execute({
+        type: 'function',
+        file: example('FunctionArrayDefault.php'),
+        class: null,
+        callable: 'App\\Helpers\\renderNav',
+        args: { items: ['Dashboard', 'Settings'], separator: ' > ' },
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('Dashboard');
+      expect(result.html).toContain('Settings');
+      expect(result.html).toContain(' > ');
+    });
+
+    it('renders tag list with defaults', async () => {
+      const result = await executor.execute({
+        type: 'function',
+        file: example('FunctionArrayDefault.php'),
+        class: null,
+        callable: 'App\\Helpers\\renderTagList',
+        args: {},
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('fn-tags');
+      expect(result.html).toContain('php');
+      expect(result.html).toContain('storybook');
+      expect(result.html).toContain('vite');
+    });
+
+    it('renders tag list with custom tags and color', async () => {
+      const result = await executor.execute({
+        type: 'function',
+        file: example('FunctionArrayDefault.php'),
+        class: null,
+        callable: 'App\\Helpers\\renderTagList',
+        args: { tags: ['react', 'vue'], color: '#ec4899' },
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('react');
+      expect(result.html).toContain('vue');
+      expect(result.html).toContain('#ec4899');
+    });
+
+    it('parses FunctionArrayDefault with two functions', () => {
+      const meta = parsePhpFile(example('FunctionArrayDefault.php'));
+      expect(meta.namespace).toBe('App\\Helpers');
+      expect(meta.functions).toHaveLength(2);
+      const nav = meta.functions.find(f => f.name === 'renderNav')!;
+      expect(nav.params).toHaveLength(3);
+      expect(nav.params[0]!.type).toBe('array');
+      expect(nav.params[0]!.required).toBe(false);
+      const tags = meta.functions.find(f => f.name === 'renderTagList')!;
+      expect(tags.params).toHaveLength(2);
+      expect(tags.params[0]!.type).toBe('array');
+    });
+
+    it('generates function modules for each function', () => {
+      const plugin = storybookPhpPlugin({});
+      const resolveId = (plugin as any).resolveId.bind(plugin);
+      const load = (plugin as any).load.bind(plugin);
+
+      const idNav = resolveId('./FunctionArrayDefault.php@renderNav', example('FunctionArrayDefault.stories.ts'));
+      const codeNav = load(idNav);
+      expect(codeNav).toContain("__type: 'function'");
+      expect(codeNav).toContain('items:');
+      expect(codeNav).toContain('separator:');
+
+      const idTags = resolveId('./FunctionArrayDefault.php@renderTagList', example('FunctionArrayDefaultTags.stories.ts'));
+      const codeTags = load(idTags);
+      expect(codeTags).toContain("__type: 'function'");
+      expect(codeTags).toContain('tags:');
+    });
+  });
+
+  // -------------------------------------------------------------------------
+  // UC146: Enum with multiple typed method parameters
+  // -------------------------------------------------------------------------
+  describe('UC146: Enum with multiple typed method params', () => {
+    it('renders badge variant with label', async () => {
+      const result = await executor.execute({
+        type: 'enumMethod',
+        file: example('EnumMethodParams.php'),
+        class: 'App\\Components\\EnumMethodParams',
+        callable: 'render',
+        args: { _case: 'badge', label: 'New' },
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('emp-badge');
+      expect(result.html).toContain('New');
+    });
+
+    it('renders pill with custom color and size', async () => {
+      const result = await executor.execute({
+        type: 'enumMethod',
+        file: example('EnumMethodParams.php'),
+        class: 'App\\Components\\EnumMethodParams',
+        callable: 'render',
+        args: { _case: 'pill', label: 'Active', color: '#22c55e', size: 16 },
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('emp-pill');
+      expect(result.html).toContain('Active');
+      expect(result.html).toContain('#22c55e');
+      expect(result.html).toContain('16px');
+    });
+
+    it('renders tag with rounded=false', async () => {
+      const result = await executor.execute({
+        type: 'enumMethod',
+        file: example('EnumMethodParams.php'),
+        class: 'App\\Components\\EnumMethodParams',
+        callable: 'render',
+        args: { _case: 'tag', label: 'v2.0', rounded: false },
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('emp-tag');
+      expect(result.html).toContain('v2.0');
+      expect(result.html).toContain('4px');
+    });
+
+    it('renders showcase via static method', async () => {
+      const result = await executor.execute({
+        type: 'staticMethod',
+        file: example('EnumMethodParams.php'),
+        class: 'App\\Components\\EnumMethodParams',
+        callable: 'showcase',
+        args: { label: 'Test' },
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('emp-showcase');
+      expect(result.html).toContain('emp-badge');
+      expect(result.html).toContain('emp-pill');
+      expect(result.html).toContain('emp-tag');
+      expect(result.html).toContain('Test');
+    });
+
+    it('parses EnumMethodParams with multi-param method', () => {
+      const meta = parsePhpFile(example('EnumMethodParams.php'));
+      const cls = meta.classes.find(c => c.name === 'EnumMethodParams')!;
+      expect(cls.isEnum).toBe(true);
+      expect(cls.enumCases).toEqual(['Badge', 'Pill', 'Tag']);
+      const render = cls.methods.find(m => m.name === 'render')!;
+      expect(render.params).toHaveLength(4);
+      expect(render.params.map(p => p.name)).toEqual(['label', 'color', 'size', 'rounded']);
+      expect(render.params[2]!.type).toBe('int');
+      expect(render.params[3]!.type).toBe('bool');
+      const showcase = cls.methods.find(m => m.name === 'showcase')!;
+      expect(showcase.isStatic).toBe(true);
+    });
+
+    it('generates enumMethod for instance and staticMethod for static', () => {
+      const plugin = storybookPhpPlugin({});
+      const resolveId = (plugin as any).resolveId.bind(plugin);
+      const load = (plugin as any).load.bind(plugin);
+
+      const idRender = resolveId('./EnumMethodParams.php@render', example('EnumMethodParams.stories.ts'));
+      const codeRender = load(idRender);
+      expect(codeRender).toContain("__type: 'enumMethod'");
+
+      const idShowcase = resolveId('./EnumMethodParams.php@showcase', example('EnumMethodParamsShowcase.stories.ts'));
+      const codeShowcase = load(idShowcase);
+      expect(codeShowcase).toContain("__type: 'staticMethod'");
+    });
+  });
+
+  // -------------------------------------------------------------------------
+  // Parser: UC142-UC146 fixture metadata
+  // -------------------------------------------------------------------------
+  describe('Parser: UC142-UC146 fixture metadata', () => {
+    it('parses EchoEnum fixture', () => {
+      const meta = parsePhpFile(fixture('EchoEnum.php'));
+      const cls = meta.classes[0]!;
+      expect(cls.name).toBe('EchoEnum');
+      expect(cls.isEnum).toBe(true);
+      expect(cls.enumCases).toEqual(['Success', 'Error', 'Warning']);
+      const alert = cls.methods.find(m => m.name === 'alert')!;
+      expect(alert.params).toHaveLength(2);
+      expect(alert.returnType).toBe('void');
+    });
+
+    it('parses InvocableEcho fixture', () => {
+      const meta = parsePhpFile(fixture('InvocableEcho.php'));
+      const cls = meta.classes[0]!;
+      expect(cls.name).toBe('InvocableEcho');
+      expect(cls.constructorParams).toHaveLength(1);
+      const invoke = cls.methods.find(m => m.name === '__invoke')!;
+      expect(invoke).toBeDefined();
+      expect(invoke.params).toHaveLength(2);
+      expect(invoke.returnType).toBe('void');
+    });
+
+    it('parses ScalarReturn fixture', () => {
+      const meta = parsePhpFile(fixture('ScalarReturn.php'));
+      const cls = meta.classes[0]!;
+      expect(cls.name).toBe('ScalarReturn');
+      expect(cls.methods).toHaveLength(3);
+      const pct = cls.methods.find(m => m.name === 'renderPercent')!;
+      expect(pct.returnType).toBe('int');
+      const ratio = cls.methods.find(m => m.name === 'renderRatio')!;
+      expect(ratio.returnType).toBe('float');
+    });
+
+    it('parses FunctionArrayDefault fixture', () => {
+      const meta = parsePhpFile(fixture('FunctionArrayDefault.php'));
+      expect(meta.namespace).toBe('App\\Helpers');
+      expect(meta.functions).toHaveLength(2);
+      expect(meta.functions[0]!.name).toBe('renderNav');
+      expect(meta.functions[0]!.params[0]!.type).toBe('array');
+      expect(meta.functions[0]!.params[0]!.required).toBe(false);
+      expect(meta.functions[1]!.name).toBe('renderTagList');
+    });
+
+    it('parses EnumMethodParams fixture', () => {
+      const meta = parsePhpFile(fixture('EnumMethodParams.php'));
+      const cls = meta.classes[0]!;
+      expect(cls.name).toBe('EnumMethodParams');
+      expect(cls.isEnum).toBe(true);
+      expect(cls.enumCases).toEqual(['Badge', 'Pill', 'Tag']);
+      const render = cls.methods.find(m => m.name === 'render')!;
+      expect(render.params).toHaveLength(4);
+      const showcase = cls.methods.find(m => m.name === 'showcase')!;
+      expect(showcase.isStatic).toBe(true);
+    });
+  });
 });

@@ -28,6 +28,9 @@ function scoreTypeMatch(ReflectionNamedType $type, mixed $value): int
         'bool' => is_bool($value) ? 2 : 1,
         'array' => is_array($value) ? 2 : 0,
         'mixed' => 1,
+        'true' => $value === true ? 2 : (is_bool($value) ? 1 : 0),
+        'false' => $value === false ? 2 : (is_bool($value) ? 1 : 0),
+        'null' => $value === null ? 2 : 0,
         default => 0,
     };
 }
@@ -107,6 +110,15 @@ function castWithNamedType(ReflectionNamedType $type, mixed $value, ReflectionPa
             return is_array($value) ? $value : (array) $value;
         case 'mixed':
             return $value;
+        // PHP 8.2 standalone types
+        case 'true':
+            return true;
+        case 'false':
+            return false;
+        case 'null':
+            return null;
+        case 'never':
+            throw new \RuntimeException("Cannot provide a value for 'never' type parameter");
     }
 
     // Check for enum types
