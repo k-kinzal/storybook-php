@@ -1098,5 +1098,296 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
       expect(button).toBeDefined();
       expect(button!.params).toHaveLength(2);
     });
+
+    it('parses Accordion with trait usage', () => {
+      const meta = parsePhpFile(example('Accordion.php'));
+      const accordion = meta.classes.find(c => c.name === 'Accordion');
+      expect(accordion).toBeDefined();
+      expect(accordion!.traits).toContain('HasToggle');
+      expect(accordion!.constructorParams).toHaveLength(1);
+      expect(accordion!.constructorParams[0]!.name).toBe('label');
+      // Trait itself is parsed
+      const hasToggle = meta.classes.find(c => c.name === 'HasToggle');
+      expect(hasToggle).toBeDefined();
+      expect(hasToggle!.methods).toHaveLength(1);
+      expect(hasToggle!.methods[0]!.name).toBe('toggle');
+    });
+
+    it('parses Direction enum with implements', () => {
+      const meta = parsePhpFile(example('Direction.php'));
+      const dir = meta.classes.find(c => c.name === 'Direction');
+      expect(dir).toBeDefined();
+      expect(dir!.isEnum).toBe(true);
+      expect(dir!.implements).toContain('Renderable');
+      expect(dir!.enumCases).toContain('Up');
+      expect(dir!.enumCases).toContain('Down');
+      expect(dir!.enumCases).toContain('Left');
+      expect(dir!.enumCases).toContain('Right');
+    });
+
+    it('parses Sections file with two classes', () => {
+      const meta = parsePhpFile(example('Sections.php'));
+      expect(meta.classes).toHaveLength(2);
+      const header = meta.classes.find(c => c.name === 'SectionHeader');
+      expect(header).toBeDefined();
+      expect(header!.constructorParams).toHaveLength(2);
+      const footer = meta.classes.find(c => c.name === 'SectionFooter');
+      expect(footer).toBeDefined();
+      expect(footer!.constructorParams).toHaveLength(2);
+    });
+
+    it('parses Tooltip with Stringable return type', () => {
+      const meta = parsePhpFile(example('Tooltip.php'));
+      const tooltip = meta.classes.find(c => c.name === 'Tooltip');
+      expect(tooltip).toBeDefined();
+      expect(tooltip!.methods).toHaveLength(1);
+      expect(tooltip!.methods[0]!.name).toBe('render');
+      expect(tooltip!.methods[0]!.returnType).toBe('HtmlFragment');
+    });
+  });
+
+  // -------------------------------------------------------------------------
+  // UC24: Trait usage (class using trait method)
+  // -------------------------------------------------------------------------
+  describe('UC24: Trait usage', () => {
+    it('renders Accordion using trait toggle method', async () => {
+      const result = await executor.execute({
+        type: 'classMethod',
+        file: example('Accordion.php'),
+        class: 'App\\Components\\Accordion',
+        callable: 'toggle',
+        args: { label: 'Show Details', content: '<p>Hidden content</p>' },
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('toggle');
+      expect(result.html).toContain('Show Details');
+      expect(result.html).toContain('Hidden content');
+    });
+
+    it('renders Accordion with open=true', async () => {
+      const result = await executor.execute({
+        type: 'classMethod',
+        file: example('Accordion.php'),
+        class: 'App\\Components\\Accordion',
+        callable: 'toggle',
+        args: { label: 'FAQ', content: '<p>Answer</p>', open: true },
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('open');
+      expect(result.html).toContain('FAQ');
+      expect(result.html).toContain('Answer');
+    });
+  });
+
+  // -------------------------------------------------------------------------
+  // UC25: Multiple classes in one file (both exported)
+  // -------------------------------------------------------------------------
+  describe('UC25: Multiple classes in one file', () => {
+    it('renders SectionHeader', async () => {
+      const result = await executor.execute({
+        type: 'classMethod',
+        file: example('Sections.php'),
+        class: 'App\\Components\\SectionHeader',
+        callable: 'render',
+        args: { title: 'Welcome' },
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('section-header');
+      expect(result.html).toContain('Welcome');
+      expect(result.html).toContain('<h1');
+    });
+
+    it('renders SectionHeader with h2 level', async () => {
+      const result = await executor.execute({
+        type: 'classMethod',
+        file: example('Sections.php'),
+        class: 'App\\Components\\SectionHeader',
+        callable: 'render',
+        args: { title: 'Sub Title', level: 'h2' },
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('<h2');
+      expect(result.html).toContain('Sub Title');
+    });
+
+    it('renders SectionFooter', async () => {
+      const result = await executor.execute({
+        type: 'classMethod',
+        file: example('Sections.php'),
+        class: 'App\\Components\\SectionFooter',
+        callable: 'render',
+        args: { copyright: 'My Company' },
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('section-footer');
+      expect(result.html).toContain('My Company');
+      expect(result.html).toContain('2025');
+    });
+
+    it('renders SectionFooter with custom year', async () => {
+      const result = await executor.execute({
+        type: 'classMethod',
+        file: example('Sections.php'),
+        class: 'App\\Components\\SectionFooter',
+        callable: 'render',
+        args: { copyright: 'Acme Inc.', year: 2024 },
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('2024');
+      expect(result.html).toContain('Acme Inc.');
+    });
+  });
+
+  // -------------------------------------------------------------------------
+  // UC26: __toString / Stringable return
+  // -------------------------------------------------------------------------
+  describe('UC26: Stringable return', () => {
+    it('renders Tooltip with __toString conversion', async () => {
+      const result = await executor.execute({
+        type: 'classMethod',
+        file: example('Tooltip.php'),
+        class: 'App\\Components\\Tooltip',
+        callable: 'render',
+        args: { text: 'Helpful tip' },
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('tooltip');
+      expect(result.html).toContain('Helpful tip');
+      expect(result.html).toContain('tooltip-top');
+    });
+
+    it('renders Tooltip with bottom position', async () => {
+      const result = await executor.execute({
+        type: 'classMethod',
+        file: example('Tooltip.php'),
+        class: 'App\\Components\\Tooltip',
+        callable: 'render',
+        args: { text: 'More info', position: 'bottom' },
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('tooltip-bottom');
+      expect(result.html).toContain('More info');
+    });
+  });
+
+  // -------------------------------------------------------------------------
+  // UC27: Enum implementing interface
+  // -------------------------------------------------------------------------
+  describe('UC27: Enum implementing interface', () => {
+    it('renders Direction::render for Up', async () => {
+      const result = await executor.execute({
+        type: 'enumMethod',
+        file: example('Direction.php'),
+        class: 'App\\Components\\Direction',
+        callable: 'render',
+        args: { _case: 'up' },
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('direction-up');
+      expect(result.html).toContain('Up');
+    });
+
+    it('renders Direction::render for Left', async () => {
+      const result = await executor.execute({
+        type: 'enumMethod',
+        file: example('Direction.php'),
+        class: 'App\\Components\\Direction',
+        callable: 'render',
+        args: { _case: 'left' },
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('direction-left');
+      expect(result.html).toContain('Left');
+    });
+  });
+
+  // -------------------------------------------------------------------------
+  // UC28: Form template (complex nested data)
+  // -------------------------------------------------------------------------
+  describe('UC28: Form template', () => {
+    it('renders contact form with fields', async () => {
+      const result = await executor.execute({
+        type: 'template',
+        file: example('templates/form.php'),
+        class: null,
+        callable: null,
+        args: {
+          action: '/contact',
+          method: 'POST',
+          submitLabel: 'Send Message',
+          fields: [
+            { label: 'Name', name: 'name', type: 'text', placeholder: 'Your name' },
+            { label: 'Email', name: 'email', type: 'email', placeholder: 'you@example.com' },
+          ],
+        },
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('<form');
+      expect(result.html).toContain('/contact');
+      expect(result.html).toContain('Send Message');
+      expect(result.html).toContain('Name');
+      expect(result.html).toContain('Email');
+    });
+
+    it('renders form with textarea field', async () => {
+      const result = await executor.execute({
+        type: 'template',
+        file: example('templates/form.php'),
+        class: null,
+        callable: null,
+        args: {
+          action: '/feedback',
+          fields: [
+            { label: 'Message', name: 'message', type: 'textarea', placeholder: 'Your message...' },
+          ],
+        },
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('<textarea');
+      expect(result.html).toContain('Message');
+    });
+  });
+
+  // -------------------------------------------------------------------------
+  // Vite plugin: virtual module generation for new patterns
+  // -------------------------------------------------------------------------
+  describe('Vite plugin: new pattern virtual modules', () => {
+    const plugin = storybookPhpPlugin();
+    const resolveId = (plugin as any).resolveId.bind(plugin);
+    const load = (plugin as any).load.bind(plugin);
+
+    it('UC24: Accordion@toggle generates classMethod via trait', () => {
+      const id = resolveId('./Accordion.php@toggle', example('Accordion.php'));
+      const code = load(id);
+      expect(code).toContain("__type: 'classMethod'");
+      expect(code).toContain("__callable: \"toggle\"");
+      expect(code).toContain('label:');    // ctor arg
+      expect(code).toContain('content:');  // trait method arg
+      expect(code).toContain('open:');     // trait method arg
+    });
+
+    it('UC25: Sections.php@render generates both SectionHeader and SectionFooter', () => {
+      const id = resolveId('./Sections.php@render', example('Sections.php'));
+      const code = load(id);
+      expect(code).toContain('SectionHeader');
+      expect(code).toContain('SectionFooter');
+      expect(code).toContain("__type: 'classMethod'");
+    });
+
+    it('UC26: Tooltip@render generates classMethod', () => {
+      const id = resolveId('./Tooltip.php@render', example('Tooltip.php'));
+      const code = load(id);
+      expect(code).toContain("__type: 'classMethod'");
+      expect(code).toContain('Tooltip');
+      expect(code).toContain('text:');      // ctor arg
+      expect(code).toContain('position:');  // method arg
+    });
+
+    it('UC27: Direction@render generates enumMethod', () => {
+      const id = resolveId('./Direction.php@render', example('Direction.php'));
+      const code = load(id);
+      expect(code).toContain("__type: 'enumMethod'");
+      expect(code).toContain('_case:');
+    });
   });
 });

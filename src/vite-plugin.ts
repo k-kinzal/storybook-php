@@ -169,13 +169,28 @@ export function storybookPhpPlugin(options: FrameworkOptions = {}): Plugin {
         return generateTemplateModule(filePath!);
       }
 
-      // Helper: find a method on a class or its parents (within the same file)
+      // Helper: find a method on a class, its traits, or its parents (within the same file)
       const findMethodInHierarchy = (
         cls: PhpClassMeta,
         methodName: string,
       ): { cls: PhpClassMeta; method: PhpMethodMeta } | null => {
         const method = cls.methods.find((m) => m.name === methodName);
         if (method) return { cls, method };
+
+        // Traverse traits used by this class (within the same file)
+        if (cls.traits && cls.traits.length > 0) {
+          for (const traitName of cls.traits) {
+            const trait = meta.classes.find(
+              (c) => c.name === traitName || c.fqn === traitName,
+            );
+            if (trait) {
+              const traitMethod = trait.methods.find((m) => m.name === methodName);
+              if (traitMethod) {
+                return { cls, method: traitMethod };
+              }
+            }
+          }
+        }
 
         // Traverse parent class if it's in the same file
         if (cls.extends) {

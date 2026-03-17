@@ -647,6 +647,140 @@ trait HasSlug {
     });
   });
 
+  // -----------------------------------------------------------------------
+  // Trait usage
+  // -----------------------------------------------------------------------
+  describe('Trait usage', () => {
+    it('parses use TraitName in class body', () => {
+      const meta = parsePhpSource(fixture('TraitUsage.php'), 'TraitUsage.php');
+
+      const accordion = meta.classes.find((c) => c.name === 'Accordion')!;
+      expect(accordion).toBeDefined();
+      expect(accordion.traits).toEqual(['HasToggle']);
+      expect(accordion.constructorParams).toHaveLength(1);
+      expect(accordion.constructorParams[0]!.name).toBe('label');
+
+      const richWidget = meta.classes.find((c) => c.name === 'RichWidget')!;
+      expect(richWidget).toBeDefined();
+      expect(richWidget.traits).toEqual(['HasToggle', 'HasTooltip']);
+    });
+
+    it('traits have their methods parsed', () => {
+      const meta = parsePhpSource(fixture('TraitUsage.php'), 'TraitUsage.php');
+
+      const hasToggle = meta.classes.find((c) => c.name === 'HasToggle')!;
+      expect(hasToggle).toBeDefined();
+      expect(hasToggle.methods).toHaveLength(1);
+      expect(hasToggle.methods[0]!.name).toBe('toggle');
+      expect(hasToggle.methods[0]!.params).toHaveLength(2);
+      expect(hasToggle.methods[0]!.params[0]!.name).toBe('content');
+      expect(hasToggle.methods[0]!.params[1]!.name).toBe('open');
+    });
+
+    it('classes using traits have empty traits when none declared', () => {
+      const meta = parsePhpSource('<?php class Simple { public function render(): string { return ""; } }', 'test.php');
+      expect(meta.classes[0]!.traits).toEqual([]);
+    });
+  });
+
+  // -----------------------------------------------------------------------
+  // Enum implementing interface
+  // -----------------------------------------------------------------------
+  describe('Enum implementing interface', () => {
+    it('parses enum with implements', () => {
+      const source = `<?php
+namespace App\\Components;
+
+interface Renderable {
+    public function render(): string;
+}
+
+enum Direction: string implements Renderable {
+    case Up = 'up';
+    case Down = 'down';
+
+    public function render(): string {
+        return "<span>{$this->name}</span>";
+    }
+}
+`;
+      const meta = parsePhpSource(source, 'test.php');
+      const dir = meta.classes.find((c) => c.name === 'Direction')!;
+      expect(dir.isEnum).toBe(true);
+      expect(dir.enumBackingType).toBe('string');
+      expect(dir.implements).toContain('Renderable');
+      expect(dir.enumCases).toEqual(['Up', 'Down']);
+      expect(dir.methods).toHaveLength(1);
+      expect(dir.methods[0]!.name).toBe('render');
+    });
+  });
+
+  // -----------------------------------------------------------------------
+  // Multiple classes in one file
+  // -----------------------------------------------------------------------
+  describe('Multiple classes with different constructors', () => {
+    it('parses two classes from same file independently', () => {
+      const source = `<?php
+namespace App\\Components;
+
+class SectionHeader {
+    public function __construct(private string $title, private string $level = 'h1') {}
+    public function render(): string { return "<h1>{$this->title}</h1>"; }
+}
+
+class SectionFooter {
+    public function __construct(private string $copyright, private int $year = 2025) {}
+    public function render(): string { return "<footer>&copy; {$this->year} {$this->copyright}</footer>"; }
+}
+`;
+      const meta = parsePhpSource(source, 'test.php');
+      expect(meta.classes).toHaveLength(2);
+
+      const header = meta.classes.find((c) => c.name === 'SectionHeader')!;
+      expect(header.constructorParams).toHaveLength(2);
+      expect(header.constructorParams[0]!.name).toBe('title');
+      expect(header.constructorParams[1]!.name).toBe('level');
+
+      const footer = meta.classes.find((c) => c.name === 'SectionFooter')!;
+      expect(footer.constructorParams).toHaveLength(2);
+      expect(footer.constructorParams[0]!.name).toBe('copyright');
+      expect(footer.constructorParams[1]!.name).toBe('year');
+    });
+  });
+
+  // -----------------------------------------------------------------------
+  // __toString / Stringable return type
+  // -----------------------------------------------------------------------
+  describe('Stringable class', () => {
+    it('parses class implementing Stringable', () => {
+      const source = `<?php
+namespace App\\Components;
+
+class HtmlFragment implements \\Stringable {
+    public function __construct(private string $html) {}
+    public function __toString(): string { return $this->html; }
+}
+
+class Tooltip {
+    public function __construct(private string $text) {}
+    public function render(string $position = 'top'): HtmlFragment {
+        return new HtmlFragment("<span>{$this->text}</span>");
+    }
+}
+`;
+      const meta = parsePhpSource(source, 'test.php');
+      expect(meta.classes).toHaveLength(2);
+
+      const tooltip = meta.classes.find((c) => c.name === 'Tooltip')!;
+      expect(tooltip.methods).toHaveLength(1);
+      expect(tooltip.methods[0]!.name).toBe('render');
+      expect(tooltip.methods[0]!.returnType).toBe('HtmlFragment');
+      expect(tooltip.methods[0]!.params).toHaveLength(1);
+      expect(tooltip.methods[0]!.params[0]!.name).toBe('position');
+      expect(tooltip.methods[0]!.params[0]!.default).toBe("'__PLACEHOLDER__'");
+    });
+  });
+
   describe('filePath is passed through', () => {
     it('returns the filePath in the result', () => {
       const meta = parsePhpSource('<?php class A {}', '/path/to/file.php');

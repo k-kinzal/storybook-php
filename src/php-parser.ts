@@ -282,6 +282,17 @@ function extractClasses(source: string, ns: string | null): PhpClassMeta[] {
       }
     }
 
+    // Extract trait usage: use TraitName; or use TraitA, TraitB;
+    const traits: string[] = [];
+    if (keyword === 'class') {
+      const traitRe = /\buse\s+([\w\\]+(?:\s*,\s*[\w\\]+)*)\s*[;{]/g;
+      let traitMatch: RegExpExecArray | null;
+      while ((traitMatch = traitRe.exec(body)) !== null) {
+        const traitNames = traitMatch[1]!.split(',').map((s) => s.trim()).filter(Boolean);
+        traits.push(...traitNames);
+      }
+    }
+
     // Extract constructor params
     const constructorParams = extractConstructorParams(body);
 
@@ -298,6 +309,7 @@ function extractClasses(source: string, ns: string | null): PhpClassMeta[] {
       isReadonly,
       extends: extendsClass,
       implements: implementsList,
+      traits,
       constructorParams,
       methods,
       isEnum,
