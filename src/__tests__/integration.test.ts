@@ -6723,4 +6723,551 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
       expect(result.html).toContain('No changelog entries');
     });
   });
+
+  // -------------------------------------------------------------------------
+  // UC112: Float type parameters (FloatGauge)
+  // -------------------------------------------------------------------------
+  describe('UC112: Float type parameters', () => {
+    it('renders gauge with float value', async () => {
+      const result = await executor.execute({
+        type: 'classMethod',
+        file: example('FloatGauge.php'),
+        class: 'App\\Components\\FloatGauge',
+        callable: 'render',
+        args: { label: 'Progress', value: 73.5 },
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('Progress');
+      expect(result.html).toContain('73.5');
+      expect(result.html).toContain('float-gauge');
+    });
+
+    it('renders gauge with custom unit and precision', async () => {
+      const result = await executor.execute({
+        type: 'classMethod',
+        file: example('FloatGauge.php'),
+        class: 'App\\Components\\FloatGauge',
+        callable: 'render',
+        args: { label: 'CPU Temp', value: 67.3, min: 20.0, max: 105.0, unit: '°C', precision: 1 },
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('CPU Temp');
+      expect(result.html).toContain('67.3');
+      expect(result.html).toContain('°C');
+    });
+
+    it('renders gauge with high precision', async () => {
+      const result = await executor.execute({
+        type: 'classMethod',
+        file: example('FloatGauge.php'),
+        class: 'App\\Components\\FloatGauge',
+        callable: 'render',
+        args: { label: 'Accuracy', value: 99.847, precision: 3 },
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('99.847');
+    });
+
+    it('clamps gauge percentage at boundaries', async () => {
+      const result = await executor.execute({
+        type: 'classMethod',
+        file: example('FloatGauge.php'),
+        class: 'App\\Components\\FloatGauge',
+        callable: 'render',
+        args: { label: 'Over', value: 150.0 },
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('150.0');
+      expect(result.html).toContain('width: 100%');
+    });
+
+    it('parses FloatGauge.php with float params', () => {
+      const meta = parsePhpFile(example('FloatGauge.php'));
+      const cls = meta.classes.find(c => c.name === 'FloatGauge')!;
+      expect(cls).toBeDefined();
+      expect(cls.constructorParams).toHaveLength(6);
+      const valueParam = cls.constructorParams.find(p => p.name === 'value')!;
+      expect(valueParam.type).toBe('float');
+      expect(valueParam.required).toBe(true);
+      const minParam = cls.constructorParams.find(p => p.name === 'min')!;
+      expect(minParam.type).toBe('float');
+      expect(minParam.default).toBe('0.0');
+      const precisionParam = cls.constructorParams.find(p => p.name === 'precision')!;
+      expect(precisionParam.type).toBe('int');
+    });
+  });
+
+  // -------------------------------------------------------------------------
+  // UC113: Standalone readonly class (ReadonlyContact)
+  // -------------------------------------------------------------------------
+  describe('UC113: Standalone readonly class', () => {
+    it('renders contact card with defaults', async () => {
+      const result = await executor.execute({
+        type: 'classMethod',
+        file: example('ReadonlyContact.php'),
+        class: 'App\\Components\\ReadonlyContact',
+        callable: 'render',
+        args: { name: 'Jane Smith', email: 'jane@example.com' },
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('Jane Smith');
+      expect(result.html).toContain('jane@example.com');
+      expect(result.html).toContain('Member');
+      expect(result.html).toContain('contact-card');
+    });
+
+    it('renders contact card with role', async () => {
+      const result = await executor.execute({
+        type: 'classMethod',
+        file: example('ReadonlyContact.php'),
+        class: 'App\\Components\\ReadonlyContact',
+        callable: 'render',
+        args: { name: 'Alex Johnson', email: 'alex@example.com', role: 'Admin' },
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('Admin');
+    });
+
+    it('renders initials when no avatar', async () => {
+      const result = await executor.execute({
+        type: 'classMethod',
+        file: example('ReadonlyContact.php'),
+        class: 'App\\Components\\ReadonlyContact',
+        callable: 'render',
+        args: { name: 'Jane Smith', email: 'j@example.com' },
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('JS');
+    });
+
+    it('renders avatar image when provided', async () => {
+      const result = await executor.execute({
+        type: 'classMethod',
+        file: example('ReadonlyContact.php'),
+        class: 'App\\Components\\ReadonlyContact',
+        callable: 'render',
+        args: { name: 'Sam', email: 's@test.com', avatar: 'https://example.com/photo.jpg' },
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('<img');
+      expect(result.html).toContain('https://example.com/photo.jpg');
+    });
+
+    it('parses ReadonlyContact as readonly class', () => {
+      const meta = parsePhpFile(example('ReadonlyContact.php'));
+      const cls = meta.classes.find(c => c.name === 'ReadonlyContact')!;
+      expect(cls).toBeDefined();
+      expect(cls.isReadonly).toBe(true);
+      expect(cls.constructorParams).toHaveLength(4);
+      const avatarParam = cls.constructorParams.find(p => p.name === 'avatar')!;
+      expect(avatarParam.nullable).toBe(true);
+    });
+  });
+
+  // -------------------------------------------------------------------------
+  // UC114: Heredoc syntax (HeredocCard)
+  // -------------------------------------------------------------------------
+  describe('UC114: Heredoc syntax', () => {
+    it('renders card with heredoc output', async () => {
+      const result = await executor.execute({
+        type: 'classMethod',
+        file: example('HeredocCard.php'),
+        class: 'App\\Components\\HeredocCard',
+        callable: 'render',
+        args: { title: 'Test Card', body: 'Heredoc content here.' },
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('Test Card');
+      expect(result.html).toContain('Heredoc content here.');
+      expect(result.html).toContain('heredoc-card');
+    });
+
+    it('renders dark theme', async () => {
+      const result = await executor.execute({
+        type: 'classMethod',
+        file: example('HeredocCard.php'),
+        class: 'App\\Components\\HeredocCard',
+        callable: 'render',
+        args: { title: 'Dark', theme: 'dark' },
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('#1f2937');
+    });
+
+    it('renders with image block', async () => {
+      const result = await executor.execute({
+        type: 'classMethod',
+        file: example('HeredocCard.php'),
+        class: 'App\\Components\\HeredocCard',
+        callable: 'render',
+        args: { title: 'Featured', imageUrl: 'https://example.com/img.jpg' },
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('<img');
+      expect(result.html).toContain('https://example.com/img.jpg');
+    });
+
+    it('parses HeredocCard.php correctly', () => {
+      const meta = parsePhpFile(example('HeredocCard.php'));
+      const cls = meta.classes.find(c => c.name === 'HeredocCard')!;
+      expect(cls).toBeDefined();
+      expect(cls.constructorParams).toHaveLength(4);
+      const imageParam = cls.constructorParams.find(p => p.name === 'imageUrl')!;
+      expect(imageParam.nullable).toBe(true);
+    });
+  });
+
+  // -------------------------------------------------------------------------
+  // UC115: Enum with static method (EnumCompass)
+  // -------------------------------------------------------------------------
+  describe('UC115: Enum with static and instance methods', () => {
+    it('renders compass arrow via enum instance method', async () => {
+      const result = await executor.execute({
+        type: 'enumMethod',
+        file: example('EnumCompass.php'),
+        class: 'App\\Components\\Compass',
+        callable: 'arrow',
+        args: { _case: 'N' },
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('compass');
+      expect(result.html).toContain('North');
+      expect(result.html).toContain('rotate(0deg)');
+    });
+
+    it('renders east compass arrow', async () => {
+      const result = await executor.execute({
+        type: 'enumMethod',
+        file: example('EnumCompass.php'),
+        class: 'App\\Components\\Compass',
+        callable: 'arrow',
+        args: { _case: 'E' },
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('East');
+      expect(result.html).toContain('rotate(90deg)');
+    });
+
+    it('renders compass rose via static method', async () => {
+      const result = await executor.execute({
+        type: 'staticMethod',
+        file: example('EnumCompass.php'),
+        class: 'App\\Components\\Compass',
+        callable: 'rose',
+        args: { highlight: 'E' },
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('compass-rose');
+      expect(result.html).toContain('N');
+      expect(result.html).toContain('E');
+      expect(result.html).toContain('S');
+      expect(result.html).toContain('W');
+    });
+
+    it('parses Compass enum with both static and instance methods', () => {
+      const meta = parsePhpFile(example('EnumCompass.php'));
+      const cls = meta.classes.find(c => c.name === 'Compass')!;
+      expect(cls).toBeDefined();
+      expect(cls.isEnum).toBe(true);
+      expect(cls.enumBackingType).toBe('string');
+      expect(cls.enumCases).toEqual(['North', 'East', 'South', 'West']);
+      const arrowMethod = cls.methods.find(m => m.name === 'arrow')!;
+      expect(arrowMethod.isStatic).toBe(false);
+      const roseMethod = cls.methods.find(m => m.name === 'rose')!;
+      expect(roseMethod.isStatic).toBe(true);
+      expect(roseMethod.params).toHaveLength(1);
+    });
+  });
+
+  // -------------------------------------------------------------------------
+  // UC116: Array type parameters (ArrayBadgeList)
+  // -------------------------------------------------------------------------
+  describe('UC116: Array type parameters', () => {
+    it('renders badge list with items', async () => {
+      const result = await executor.execute({
+        type: 'classMethod',
+        file: example('ArrayBadgeList.php'),
+        class: 'App\\Components\\ArrayBadgeList',
+        callable: 'render',
+        args: { items: ['PHP', 'TypeScript', 'Storybook'] },
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('PHP');
+      expect(result.html).toContain('TypeScript');
+      expect(result.html).toContain('Storybook');
+      expect(result.html).toContain('badge-list');
+    });
+
+    it('renders empty badge list', async () => {
+      const result = await executor.execute({
+        type: 'classMethod',
+        file: example('ArrayBadgeList.php'),
+        class: 'App\\Components\\ArrayBadgeList',
+        callable: 'render',
+        args: { items: [] },
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('No items');
+    });
+
+    it('renders with custom title and color', async () => {
+      const result = await executor.execute({
+        type: 'classMethod',
+        file: example('ArrayBadgeList.php'),
+        class: 'App\\Components\\ArrayBadgeList',
+        callable: 'render',
+        args: { title: 'Stack', items: ['Laravel', 'React'], color: '#8b5cf6' },
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('Stack');
+      expect(result.html).toContain('#8b5cf6');
+    });
+
+    it('renders stacked layout', async () => {
+      const result = await executor.execute({
+        type: 'classMethod',
+        file: example('ArrayBadgeList.php'),
+        class: 'App\\Components\\ArrayBadgeList',
+        callable: 'render',
+        args: { items: ['A', 'B'], inline: false },
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('display: block');
+    });
+
+    it('parses ArrayBadgeList with array param', () => {
+      const meta = parsePhpFile(example('ArrayBadgeList.php'));
+      const cls = meta.classes.find(c => c.name === 'ArrayBadgeList')!;
+      expect(cls).toBeDefined();
+      const renderMethod = cls.methods.find(m => m.name === 'render')!;
+      expect(renderMethod.params).toHaveLength(2);
+      const itemsParam = renderMethod.params.find(p => p.name === 'items')!;
+      expect(itemsParam.type).toBe('array');
+    });
+  });
+
+  // -------------------------------------------------------------------------
+  // UC117: Self-return fluent builder (SelfChain)
+  // -------------------------------------------------------------------------
+  describe('UC117: Self-return fluent builder', () => {
+    it('renders content with tag', async () => {
+      const result = await executor.execute({
+        type: 'classMethod',
+        file: example('SelfChain.php'),
+        class: 'App\\Components\\SelfChain',
+        callable: 'render',
+        args: { content: 'Hello from builder', tag: 'div' },
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('<div');
+      expect(result.html).toContain('Hello from builder');
+    });
+
+    it('renders with custom tag and class', async () => {
+      const result = await executor.execute({
+        type: 'classMethod',
+        file: example('SelfChain.php'),
+        class: 'App\\Components\\SelfChain',
+        callable: 'render',
+        args: { content: 'Styled block', tag: 'section', className: 'highlight', style: 'padding: 16px;' },
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('<section');
+      expect(result.html).toContain('class="highlight"');
+      expect(result.html).toContain('style="padding: 16px;"');
+    });
+
+    it('parses SelfChain with self return type', () => {
+      const meta = parsePhpFile(example('SelfChain.php'));
+      const cls = meta.classes.find(c => c.name === 'SelfChain')!;
+      expect(cls).toBeDefined();
+      const addItem = cls.methods.find(m => m.name === 'addItem')!;
+      expect(addItem.returnType).toBe('self');
+      const render = cls.methods.find(m => m.name === 'render')!;
+      expect(render.returnType).toBe('string');
+    });
+  });
+
+  // -------------------------------------------------------------------------
+  // UC118: Accordion template with iteration
+  // -------------------------------------------------------------------------
+  describe('UC118: Accordion template', () => {
+    it('renders accordion with items', async () => {
+      const result = await executor.execute({
+        type: 'template',
+        file: example('templates/accordion.php'),
+        class: null,
+        callable: null,
+        args: {
+          items: [
+            { title: 'Question 1', content: 'Answer 1' },
+            { title: 'Question 2', content: 'Answer 2', open: true },
+          ],
+        },
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('Question 1');
+      expect(result.html).toContain('Answer 1');
+      expect(result.html).toContain('Question 2');
+      expect(result.html).toContain(' open');
+    });
+
+    it('renders bordered variant', async () => {
+      const result = await executor.execute({
+        type: 'template',
+        file: example('templates/accordion.php'),
+        class: null,
+        callable: null,
+        args: {
+          variant: 'bordered',
+          items: [
+            { title: 'Features', content: 'Many features.' },
+          ],
+        },
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('#3b82f6');
+      expect(result.html).toContain('#eff6ff');
+    });
+
+    it('renders empty state', async () => {
+      const result = await executor.execute({
+        type: 'template',
+        file: example('templates/accordion.php'),
+        class: null,
+        callable: null,
+        args: { items: [] },
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('No items to display');
+    });
+  });
+
+  // -------------------------------------------------------------------------
+  // UC119: Steps template with numbered items
+  // -------------------------------------------------------------------------
+  describe('UC119: Steps template', () => {
+    it('renders horizontal steps', async () => {
+      const result = await executor.execute({
+        type: 'template',
+        file: example('templates/steps.php'),
+        class: null,
+        callable: null,
+        args: {
+          current: 1,
+          steps: [
+            { label: 'Account', description: 'Create account' },
+            { label: 'Profile', description: 'Set up profile' },
+            { label: 'Done' },
+          ],
+        },
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('Account');
+      expect(result.html).toContain('Profile');
+      expect(result.html).toContain('Done');
+      // First step should be done (green checkmark)
+      expect(result.html).toContain('#22c55e');
+      // Second step should be active (blue)
+      expect(result.html).toContain('#3b82f6');
+    });
+
+    it('renders vertical steps', async () => {
+      const result = await executor.execute({
+        type: 'template',
+        file: example('templates/steps.php'),
+        class: null,
+        callable: null,
+        args: {
+          orientation: 'vertical',
+          current: 0,
+          steps: [
+            { label: 'First' },
+            { label: 'Second' },
+          ],
+        },
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('flex-direction: column');
+      expect(result.html).toContain('First');
+      expect(result.html).toContain('Second');
+    });
+
+    it('renders all completed steps', async () => {
+      const result = await executor.execute({
+        type: 'template',
+        file: example('templates/steps.php'),
+        class: null,
+        callable: null,
+        args: {
+          current: 3,
+          steps: [
+            { label: 'Step 1' },
+            { label: 'Step 2' },
+            { label: 'Step 3' },
+          ],
+        },
+      });
+      expect(result.error).toBeUndefined();
+      // All should show checkmarks (green)
+      expect(result.html).toContain('✓');
+    });
+  });
+
+  // -------------------------------------------------------------------------
+  // UC112-119: Vite plugin module generation
+  // -------------------------------------------------------------------------
+  describe('UC112-119: Vite plugin module generation', () => {
+    const plugin = storybookPhpPlugin() as any;
+
+    it('UC112: FloatGauge@render generates classMethod with float params', () => {
+      const id = plugin.resolveId('./FloatGauge.php@render', example('Button.stories.ts'));
+      const code = plugin.load(id);
+      expect(code).toContain("__type: 'classMethod'");
+      expect(code).toContain('__callable: "render"');
+      expect(code).toContain("type: 'float'");
+    });
+
+    it('UC113: ReadonlyContact@render generates classMethod for readonly class', () => {
+      const id = plugin.resolveId('./ReadonlyContact.php@render', example('Button.stories.ts'));
+      const code = plugin.load(id);
+      expect(code).toContain("__type: 'classMethod'");
+      expect(code).toContain('ReadonlyContact');
+    });
+
+    it('UC114: HeredocCard@render generates classMethod', () => {
+      const id = plugin.resolveId('./HeredocCard.php@render', example('Button.stories.ts'));
+      const code = plugin.load(id);
+      expect(code).toContain("__type: 'classMethod'");
+      expect(code).toContain('HeredocCard');
+    });
+
+    it('UC115: EnumCompass@arrow generates enumMethod', () => {
+      const id = plugin.resolveId('./EnumCompass.php@arrow', example('Button.stories.ts'));
+      const code = plugin.load(id);
+      expect(code).toContain("__type: 'enumMethod'");
+      expect(code).toContain('__callable: "arrow"');
+    });
+
+    it('UC115: EnumCompass@rose generates staticMethod', () => {
+      const id = plugin.resolveId('./EnumCompass.php@rose', example('Button.stories.ts'));
+      const code = plugin.load(id);
+      expect(code).toContain("__type: 'staticMethod'");
+      expect(code).toContain('__callable: "rose"');
+    });
+
+    it('UC116: ArrayBadgeList@render generates classMethod with array param', () => {
+      const id = plugin.resolveId('./ArrayBadgeList.php@render', example('Button.stories.ts'));
+      const code = plugin.load(id);
+      expect(code).toContain("__type: 'classMethod'");
+      expect(code).toContain("type: 'array'");
+    });
+
+    it('UC117: SelfChain@render generates classMethod', () => {
+      const id = plugin.resolveId('./SelfChain.php@render', example('Button.stories.ts'));
+      const code = plugin.load(id);
+      expect(code).toContain("__type: 'classMethod'");
+      expect(code).toContain('SelfChain');
+    });
+  });
 });

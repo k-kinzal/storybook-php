@@ -216,7 +216,11 @@ export function storybookPhpPlugin(options: FrameworkOptions = {}): Plugin {
         if (cls.isEnum) {
           const method = cls.methods.find((m) => m.name === callableName);
           if (method) {
-            modules.push(generateEnumMethodModule(filePath!, cls, method, callableName));
+            if (method.isStatic) {
+              modules.push(generateStaticMethodModule(filePath!, cls, method, callableName));
+            } else {
+              modules.push(generateEnumMethodModule(filePath!, cls, method, callableName));
+            }
           }
           continue;
         }
