@@ -323,6 +323,53 @@ describe('Vite Plugin', () => {
       expect(code).toContain("__type: 'classMethod'");
       expect(code).toContain('heading:');
     });
+
+    it('generates classMethod module for IntersectionType Collection@render', () => {
+      const plugin = storybookPhpPlugin();
+      const load = getLoad(plugin);
+
+      const filePath = resolve(FIXTURES, 'IntersectionType.php');
+      const virtualId = `${VIRTUAL_PREFIX}${filePath}?callable=render`;
+      const code = load(virtualId);
+
+      expect(code).toBeTruthy();
+      expect(code).toContain("__type: 'classMethod'");
+      expect(code).toContain('__callable: "render"');
+      expect(code).toContain('source:');
+      expect(code).toContain('title:');
+      expect(code).toContain('export const Collection');
+    });
+
+    it('generates classMethod module for MixedPromotion FormField@render', () => {
+      const plugin = storybookPhpPlugin();
+      const load = getLoad(plugin);
+
+      const filePath = resolve(FIXTURES, 'MixedPromotion.php');
+      const virtualId = `${VIRTUAL_PREFIX}${filePath}?callable=render`;
+      const code = load(virtualId);
+
+      expect(code).toBeTruthy();
+      expect(code).toContain("__type: 'classMethod'");
+      expect(code).toContain('__callable: "render"');
+      expect(code).toContain('label:');
+      expect(code).toContain('id:');
+      expect(code).toContain('export const FormField');
+    });
+
+    it('generates classMethod module for DnfType Serializer@render', () => {
+      const plugin = storybookPhpPlugin();
+      const load = getLoad(plugin);
+
+      const filePath = resolve(FIXTURES, 'DnfType.php');
+      const virtualId = `${VIRTUAL_PREFIX}${filePath}?callable=render`;
+      const code = load(virtualId);
+
+      expect(code).toBeTruthy();
+      expect(code).toContain("__type: 'classMethod'");
+      expect(code).toContain('data:');
+      expect(code).toContain('format:');
+      expect(code).toContain('export const Serializer');
+    });
   });
 
   // -----------------------------------------------------------------------

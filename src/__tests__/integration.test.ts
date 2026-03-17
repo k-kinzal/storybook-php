@@ -4846,5 +4846,256 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
       expect(code).toContain("__type: 'classMethod'");
       expect(code).toContain("export const Checklist");
     });
+
+    it('generates virtual module for AbstractShape.php@render (both subclasses)', () => {
+      const id = resolveId('./AbstractShape.php@render', example('AbstractShape.php'));
+      expect(id).toContain('storybook-php:');
+      const code = load(id);
+      expect(code).toContain("__type: 'classMethod'");
+      expect(code).toContain('export const Circle');
+      expect(code).toContain('export const Square');
+    });
+
+    it('generates virtual module for HttpStatus.php@badge (enum)', () => {
+      const id = resolveId('./HttpStatus.php@badge', example('HttpStatus.php'));
+      expect(id).toContain('storybook-php:');
+      const code = load(id);
+      expect(code).toContain("__type: 'enumMethod'");
+      expect(code).toContain('export const HttpStatus');
+      expect(code).toContain('_case:');
+    });
+
+    it('generates virtual module for FluentBuilder.php@heading (static)', () => {
+      const id = resolveId('./FluentBuilder.php@heading', example('FluentBuilder.php'));
+      expect(id).toContain('storybook-php:');
+      const code = load(id);
+      expect(code).toContain("__type: 'staticMethod'");
+      expect(code).toContain('export const FluentBuilder');
+      expect(code).toContain('text:');
+      expect(code).toContain('level:');
+    });
+
+    it('generates virtual module for FormField.php@render', () => {
+      const id = resolveId('./FormField.php@render', example('FormField.php'));
+      expect(id).toContain('storybook-php:');
+      const code = load(id);
+      expect(code).toContain("__type: 'classMethod'");
+      expect(code).toContain('export const FormField');
+      expect(code).toContain('label:');
+      expect(code).toContain('id:');
+    });
+  });
+
+  // -------------------------------------------------------------------------
+  // UC76: Abstract class with concrete subclasses
+  // -------------------------------------------------------------------------
+  describe('UC76: Abstract class with concrete subclasses', () => {
+    it('renders Circle with defaults', async () => {
+      const result = await executor.execute({
+        type: 'classMethod',
+        file: example('AbstractShape.php'),
+        class: 'App\\Components\\Circle',
+        callable: 'render',
+        args: { color: '#3b82f6', size: 80 },
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('shape-circle');
+      expect(result.html).toContain('80px');
+      expect(result.html).toContain('#3b82f6');
+    });
+
+    it('renders Square with border radius', async () => {
+      const result = await executor.execute({
+        type: 'classMethod',
+        file: example('AbstractShape.php'),
+        class: 'App\\Components\\Square',
+        callable: 'render',
+        args: { color: '#f59e0b', size: 100, radius: 16 },
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('shape-square');
+      expect(result.html).toContain('100px');
+      expect(result.html).toContain('border-radius: 16px');
+    });
+  });
+
+  // -------------------------------------------------------------------------
+  // UC77: Int-backed enum with match expression
+  // -------------------------------------------------------------------------
+  describe('UC77: Int-backed enum (HttpStatus)', () => {
+    it('renders HttpStatus::badge for 404', async () => {
+      const result = await executor.execute({
+        type: 'enumMethod',
+        file: example('HttpStatus.php'),
+        class: 'App\\Components\\HttpStatus',
+        callable: 'badge',
+        args: { _case: 404 },
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('404');
+      expect(result.html).toContain('NotFound');
+      expect(result.html).toContain('http-status');
+    });
+
+    it('renders HttpStatus::page for 500 with custom message', async () => {
+      const result = await executor.execute({
+        type: 'enumMethod',
+        file: example('HttpStatus.php'),
+        class: 'App\\Components\\HttpStatus',
+        callable: 'page',
+        args: { _case: 500, message: 'Service unavailable' },
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('500');
+      expect(result.html).toContain('ServerError');
+      expect(result.html).toContain('Service unavailable');
+    });
+
+    it('renders HttpStatus::page for 200 with default message', async () => {
+      const result = await executor.execute({
+        type: 'enumMethod',
+        file: example('HttpStatus.php'),
+        class: 'App\\Components\\HttpStatus',
+        callable: 'page',
+        args: { _case: 200 },
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('200');
+      expect(result.html).toContain('successful');
+    });
+  });
+
+  // -------------------------------------------------------------------------
+  // UC78: Mixed promoted/non-promoted constructor params
+  // -------------------------------------------------------------------------
+  describe('UC78: Mixed promoted/non-promoted params (FormField)', () => {
+    it('renders FormField with auto-generated id', async () => {
+      const result = await executor.execute({
+        type: 'classMethod',
+        file: example('FormField.php'),
+        class: 'App\\Components\\FormField',
+        callable: 'render',
+        args: { label: 'Email Address', type: 'email', required: true },
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('email-address');
+      expect(result.html).toContain('Email Address');
+      expect(result.html).toContain('type="email"');
+      expect(result.html).toContain('required');
+    });
+
+    it('renders FormField with explicit id and placeholder', async () => {
+      const result = await executor.execute({
+        type: 'classMethod',
+        file: example('FormField.php'),
+        class: 'App\\Components\\FormField',
+        callable: 'render',
+        args: { label: 'Phone', type: 'tel', id: 'user-phone', placeholder: '+1 555-0100' },
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('user-phone');
+      expect(result.html).toContain('Phone');
+      expect(result.html).toContain('+1 555-0100');
+    });
+  });
+
+  // -------------------------------------------------------------------------
+  // UC79: Static factory methods (FluentBuilder)
+  // -------------------------------------------------------------------------
+  describe('UC79: Static factory methods (FluentBuilder)', () => {
+    it('renders FluentBuilder::heading', async () => {
+      const result = await executor.execute({
+        type: 'staticMethod',
+        file: example('FluentBuilder.php'),
+        class: 'App\\Components\\FluentBuilder',
+        callable: 'heading',
+        args: { text: 'Welcome', level: 1 },
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('<h1');
+      expect(result.html).toContain('Welcome');
+    });
+
+    it('renders FluentBuilder::badge', async () => {
+      const result = await executor.execute({
+        type: 'staticMethod',
+        file: example('FluentBuilder.php'),
+        class: 'App\\Components\\FluentBuilder',
+        callable: 'badge',
+        args: { text: 'New', bg: '#22c55e' },
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('fb-badge');
+      expect(result.html).toContain('New');
+      expect(result.html).toContain('#22c55e');
+    });
+
+    it('renders FluentBuilder::divider', async () => {
+      const result = await executor.execute({
+        type: 'staticMethod',
+        file: example('FluentBuilder.php'),
+        class: 'App\\Components\\FluentBuilder',
+        callable: 'divider',
+        args: { style: 'dashed', color: '#3b82f6' },
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('fb-divider');
+      expect(result.html).toContain('dashed');
+      expect(result.html).toContain('#3b82f6');
+    });
+
+    it('renders FluentBuilder instance render', async () => {
+      const result = await executor.execute({
+        type: 'classMethod',
+        file: example('FluentBuilder.php'),
+        class: 'App\\Components\\FluentBuilder',
+        callable: 'render',
+        args: { text: 'Hello', bg: '#fef3c7', padding: 16 },
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('Hello');
+      expect(result.html).toContain('#fef3c7');
+    });
+  });
+
+  // -------------------------------------------------------------------------
+  // UC80: Contact form template
+  // -------------------------------------------------------------------------
+  describe('UC80: Contact template', () => {
+    it('renders empty contact form', async () => {
+      const result = await executor.execute({
+        type: 'template',
+        file: example('templates/contact.php'),
+        class: null,
+        callable: null,
+        args: {},
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('contact-form');
+      expect(result.html).toContain('Contact Us');
+      expect(result.html).toContain('Send Message');
+    });
+
+    it('renders prefilled contact form', async () => {
+      const result = await executor.execute({
+        type: 'template',
+        file: example('templates/contact.php'),
+        class: null,
+        callable: null,
+        args: {
+          name: 'Alice',
+          email: 'alice@example.com',
+          subject: 'Support',
+          message: 'Need help',
+          submitLabel: 'Submit',
+        },
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('Alice');
+      expect(result.html).toContain('alice@example.com');
+      expect(result.html).toContain('Support');
+      expect(result.html).toContain('Need help');
+      expect(result.html).toContain('Submit');
+    });
   });
 });

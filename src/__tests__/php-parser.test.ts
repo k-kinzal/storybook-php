@@ -1514,4 +1514,98 @@ class Tooltip {
       expect(origin.params).toHaveLength(0);
     });
   });
+
+  // -----------------------------------------------------------------------
+  // IntersectionType
+  // -----------------------------------------------------------------------
+  describe('IntersectionType', () => {
+    it('parses intersection type parameter', () => {
+      const meta = parsePhpSource(fixture('IntersectionType.php'), 'IntersectionType.php');
+
+      // Should have 3 class-like entries: Renderable (interface), Countable (interface), Collection (class)
+      expect(meta.classes).toHaveLength(3);
+
+      const collection = meta.classes.find(c => c.name === 'Collection')!;
+      expect(collection).toBeDefined();
+      expect(collection.constructorParams).toHaveLength(2);
+
+      const sourceParam = collection.constructorParams[0]!;
+      expect(sourceParam.name).toBe('source');
+      expect(sourceParam.type).toBe('Renderable&Countable');
+      expect(sourceParam.required).toBe(true);
+
+      const titleParam = collection.constructorParams[1]!;
+      expect(titleParam.name).toBe('title');
+      expect(titleParam.type).toBe('string');
+      expect(titleParam.default).toBe("'__PLACEHOLDER__'");
+    });
+  });
+
+  // -----------------------------------------------------------------------
+  // DnfType (Disjunctive Normal Form)
+  // -----------------------------------------------------------------------
+  describe('DnfType', () => {
+    it('parses DNF type parameter (A&B)|C', () => {
+      const meta = parsePhpSource(fixture('DnfType.php'), 'DnfType.php');
+
+      const serializer = meta.classes.find(c => c.name === 'Serializer')!;
+      expect(serializer).toBeDefined();
+      expect(serializer.constructorParams).toHaveLength(2);
+
+      const dataParam = serializer.constructorParams[0]!;
+      expect(dataParam.name).toBe('data');
+      // The DNF type should be captured as-is (parenthesized intersection | string)
+      expect(dataParam.type).toContain('Stringable');
+      expect(dataParam.type).toContain('Jsonable');
+      expect(dataParam.type).toContain('string');
+      expect(dataParam.required).toBe(true);
+
+      const formatParam = serializer.constructorParams[1]!;
+      expect(formatParam.name).toBe('format');
+      expect(formatParam.type).toBe('string');
+    });
+  });
+
+  // -----------------------------------------------------------------------
+  // MixedPromotion
+  // -----------------------------------------------------------------------
+  describe('MixedPromotion', () => {
+    it('parses class with mixed promoted and non-promoted params', () => {
+      const meta = parsePhpSource(fixture('MixedPromotion.php'), 'MixedPromotion.php');
+
+      expect(meta.classes).toHaveLength(1);
+      const cls = meta.classes[0]!;
+      expect(cls.name).toBe('FormField');
+      expect(cls.constructorParams).toHaveLength(4);
+
+      // label: public readonly string — promoted
+      const label = cls.constructorParams[0]!;
+      expect(label.name).toBe('label');
+      expect(label.type).toBe('string');
+      expect(label.isPromoted).toBe(true);
+      expect(label.visibility).toBe('public');
+      expect(label.required).toBe(true);
+
+      // type: private string — promoted
+      const type = cls.constructorParams[1]!;
+      expect(type.name).toBe('type');
+      expect(type.isPromoted).toBe(true);
+      expect(type.visibility).toBe('private');
+      expect(type.required).toBe(false);
+
+      // id: ?string — NOT promoted (no visibility modifier)
+      const id = cls.constructorParams[2]!;
+      expect(id.name).toBe('id');
+      expect(id.type).toBe('string');
+      expect(id.nullable).toBe(true);
+      expect(id.isPromoted).toBe(false);
+      expect(id.required).toBe(false);
+
+      // required: private bool — promoted
+      const required = cls.constructorParams[3]!;
+      expect(required.name).toBe('required');
+      expect(required.isPromoted).toBe(true);
+      expect(required.visibility).toBe('private');
+    });
+  });
 });
