@@ -1802,4 +1802,441 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
       expect(code).toContain('percent:');
     });
   });
+
+  // -------------------------------------------------------------------------
+  // UC36: Multi-trait usage (Modal with two traits)
+  // -------------------------------------------------------------------------
+  describe('UC36: Multi-trait usage', () => {
+    it('renders Modal via instance render()', async () => {
+      const result = await executor.execute({
+        type: 'classMethod',
+        file: example('Modal.php'),
+        class: 'App\\Components\\Modal',
+        callable: 'render',
+        args: { title: 'Confirm', body: 'Are you sure?', size: 'lg' },
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('modal-lg');
+      expect(result.html).toContain('Confirm');
+      expect(result.html).toContain('Are you sure?');
+    });
+
+    it('renders Modal with default body', async () => {
+      const result = await executor.execute({
+        type: 'classMethod',
+        file: example('Modal.php'),
+        class: 'App\\Components\\Modal',
+        callable: 'render',
+        args: { title: 'Empty Modal' },
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('modal-md');
+      expect(result.html).toContain('Empty Modal');
+    });
+
+    it('calls trait method animate() on Modal', async () => {
+      const result = await executor.execute({
+        type: 'classMethod',
+        file: example('Modal.php'),
+        class: 'App\\Components\\Modal',
+        callable: 'animate',
+        args: { title: 'Test', content: '<p>Animated</p>', effect: 'slide', duration: 500 },
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('animation-slide');
+      expect(result.html).toContain('500ms');
+      expect(result.html).toContain('Animated');
+    });
+
+    it('calls trait method overlay() on Modal', async () => {
+      const result = await executor.execute({
+        type: 'classMethod',
+        file: example('Modal.php'),
+        class: 'App\\Components\\Modal',
+        callable: 'overlay',
+        args: { title: 'Test', content: '<div>Overlay content</div>', opacity: '0.8' },
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('overlay');
+      expect(result.html).toContain('0.8');
+      expect(result.html).toContain('Overlay content');
+    });
+
+    it('parser detects multiple traits', () => {
+      const meta = parsePhpFile(example('Modal.php'));
+      const modal = meta.classes.find((c) => c.name === 'Modal')!;
+      expect(modal.traits).toEqual(['HasAnimation', 'HasOverlay']);
+    });
+  });
+
+  // -------------------------------------------------------------------------
+  // UC37: Class with constants and mixed type (Notification)
+  // -------------------------------------------------------------------------
+  describe('UC37: Class with constants and mixed type', () => {
+    it('renders Notification with defaults', async () => {
+      const result = await executor.execute({
+        type: 'classMethod',
+        file: example('Notification.php'),
+        class: 'App\\Components\\Notification',
+        callable: 'render',
+        args: { message: 'File saved successfully' },
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('notification-info');
+      expect(result.html).toContain('File saved successfully');
+      expect(result.html).toContain('data-timeout="5000"');
+    });
+
+    it('renders Notification with explicit type and metadata', async () => {
+      const result = await executor.execute({
+        type: 'classMethod',
+        file: example('Notification.php'),
+        class: 'App\\Components\\Notification',
+        callable: 'render',
+        args: { message: 'Disk full', type: 'error', metadata: 'disk-usage-95', timeout: 10000 },
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('notification-error');
+      expect(result.html).toContain('Disk full');
+      expect(result.html).toContain('data-meta="disk-usage-95"');
+      expect(result.html).toContain('data-timeout="10000"');
+    });
+
+    it('renders Notification with warning type', async () => {
+      const result = await executor.execute({
+        type: 'classMethod',
+        file: example('Notification.php'),
+        class: 'App\\Components\\Notification',
+        callable: 'render',
+        args: { message: 'Low battery', type: 'warning' },
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('notification-warning');
+    });
+
+    it('parser handles self::CONSTANT defaults', () => {
+      const meta = parsePhpFile(example('Notification.php'));
+      const cls = meta.classes[0]!;
+      expect(cls.name).toBe('Notification');
+      const typeParam = cls.constructorParams.find((p) => p.name === 'type')!;
+      expect(typeParam.default).toBe('self::TYPE_INFO');
+      const metaParam = cls.constructorParams.find((p) => p.name === 'metadata')!;
+      expect(metaParam.type).toBe('mixed');
+    });
+  });
+
+  // -------------------------------------------------------------------------
+  // UC38: Static + instance methods (Pagination)
+  // -------------------------------------------------------------------------
+  describe('UC38: Pagination with static and instance methods', () => {
+    it('renders paginated list via instance render()', async () => {
+      const result = await executor.execute({
+        type: 'classMethod',
+        file: example('Pagination.php'),
+        class: 'App\\Components\\Pagination',
+        callable: 'render',
+        args: { total: 50, perPage: 10, current: 3 },
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('pagination');
+      expect(result.html).toContain('Page 3 of 5');
+      expect(result.html).toContain('page-active');
+    });
+
+    it('renders first page with defaults', async () => {
+      const result = await executor.execute({
+        type: 'classMethod',
+        file: example('Pagination.php'),
+        class: 'App\\Components\\Pagination',
+        callable: 'render',
+        args: { total: 25 },
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('Page 1 of 3');
+    });
+
+    it('renders simple static pagination', async () => {
+      const result = await executor.execute({
+        type: 'staticMethod',
+        file: example('Pagination.php'),
+        class: 'App\\Components\\Pagination',
+        callable: 'simple',
+        args: { total: 100, current: 5 },
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('pagination-simple');
+      expect(result.html).toContain('page-prev');
+      expect(result.html).toContain('page-next');
+    });
+
+    it('renders simple pagination first page (no prev)', async () => {
+      const result = await executor.execute({
+        type: 'staticMethod',
+        file: example('Pagination.php'),
+        class: 'App\\Components\\Pagination',
+        callable: 'simple',
+        args: { total: 30, current: 1 },
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('pagination-simple');
+      expect(result.html).not.toContain('page-prev');
+      expect(result.html).toContain('page-next');
+    });
+  });
+
+  // -------------------------------------------------------------------------
+  // UC39: TagCloud (array of objects/strings, method params)
+  // -------------------------------------------------------------------------
+  describe('UC39: TagCloud component', () => {
+    it('renders simple string tags', async () => {
+      const result = await executor.execute({
+        type: 'classMethod',
+        file: example('TagCloud.php'),
+        class: 'App\\Components\\TagCloud',
+        callable: 'render',
+        args: { tags: ['PHP', 'TypeScript', 'Storybook'] },
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('tag-cloud');
+      expect(result.html).toContain('PHP');
+      expect(result.html).toContain('TypeScript');
+      expect(result.html).toContain('Storybook');
+      expect(result.html).toContain('tag-weight-1');
+    });
+
+    it('renders weighted tags', async () => {
+      const result = await executor.execute({
+        type: 'classMethod',
+        file: example('TagCloud.php'),
+        class: 'App\\Components\\TagCloud',
+        callable: 'render',
+        args: {
+          tags: [
+            { label: 'Popular', weight: 5 },
+            { label: 'New', weight: 2 },
+          ],
+          baseSize: '12',
+          maxWeight: 5,
+        },
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('tag-weight-5');
+      expect(result.html).toContain('tag-weight-2');
+      expect(result.html).toContain('Popular');
+      expect(result.html).toContain('New');
+    });
+
+    it('renders empty tag cloud', async () => {
+      const result = await executor.execute({
+        type: 'classMethod',
+        file: example('TagCloud.php'),
+        class: 'App\\Components\\TagCloud',
+        callable: 'render',
+        args: { tags: [] },
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('tag-cloud-empty');
+    });
+  });
+
+  // -------------------------------------------------------------------------
+  // UC40: Dashboard template (nested data, conditionals)
+  // -------------------------------------------------------------------------
+  describe('UC40: Dashboard template', () => {
+    it('renders dashboard with stats', async () => {
+      const result = await executor.execute({
+        type: 'template',
+        file: example('templates/dashboard.php'),
+        class: null,
+        callable: null,
+        args: {
+          title: 'Analytics',
+          stats: [
+            { label: 'Users', value: '1,234', change: 12 },
+            { label: 'Revenue', value: '$56K', change: -3 },
+          ],
+        },
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('dashboard');
+      expect(result.html).toContain('Analytics');
+      expect(result.html).toContain('Users');
+      expect(result.html).toContain('1,234');
+      expect(result.html).toContain('+12%');
+      expect(result.html).toContain('positive');
+      expect(result.html).toContain('-3%');
+      expect(result.html).toContain('negative');
+    });
+
+    it('renders empty dashboard', async () => {
+      const result = await executor.execute({
+        type: 'template',
+        file: example('templates/dashboard.php'),
+        class: null,
+        callable: null,
+        args: { title: 'Empty Dashboard' },
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('Empty Dashboard');
+      expect(result.html).toContain('dashboard-empty');
+    });
+
+    it('renders dashboard with chart', async () => {
+      const result = await executor.execute({
+        type: 'template',
+        file: example('templates/dashboard.php'),
+        class: null,
+        callable: null,
+        args: {
+          title: 'Chart View',
+          stats: [{ label: 'Visits', value: '500' }],
+          showChart: true,
+        },
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('dashboard-chart');
+      expect(result.html).toContain('Chart placeholder');
+      expect(result.html).toContain('Visits');
+    });
+
+    it('renders dashboard with default title', async () => {
+      const result = await executor.execute({
+        type: 'template',
+        file: example('templates/dashboard.php'),
+        class: null,
+        callable: null,
+        args: {},
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('Dashboard');
+      expect(result.html).toContain('dashboard-empty');
+    });
+  });
+
+  // -------------------------------------------------------------------------
+  // Vite plugin: new pattern virtual modules (UC36-UC40)
+  // -------------------------------------------------------------------------
+  describe('Vite plugin: UC36-UC40 virtual modules', () => {
+    const plugin = storybookPhpPlugin();
+    const resolveId = (plugin as any).resolveId.bind(plugin);
+    const load = (plugin as any).load.bind(plugin);
+
+    it('UC36: Modal@render generates classMethod', () => {
+      const id = resolveId('./Modal.php@render', example('Modal.php'));
+      const code = load(id);
+      expect(code).toContain("__type: 'classMethod'");
+      expect(code).toContain('Modal');
+      expect(code).toContain('title:');
+      expect(code).toContain('body:');
+      expect(code).toContain('size:');
+    });
+
+    it('UC36: Modal@animate generates classMethod via trait', () => {
+      const id = resolveId('./Modal.php@animate', example('Modal.php'));
+      const code = load(id);
+      expect(code).toContain("__type: 'classMethod'");
+      expect(code).toContain('Modal');
+      expect(code).toContain('content:');
+      expect(code).toContain('effect:');
+      expect(code).toContain('duration:');
+    });
+
+    it('UC36: Modal@overlay generates classMethod via second trait', () => {
+      const id = resolveId('./Modal.php@overlay', example('Modal.php'));
+      const code = load(id);
+      expect(code).toContain("__type: 'classMethod'");
+      expect(code).toContain('Modal');
+      expect(code).toContain('content:');
+      expect(code).toContain('opacity:');
+    });
+
+    it('UC37: Notification@render generates classMethod', () => {
+      const id = resolveId('./Notification.php@render', example('Notification.php'));
+      const code = load(id);
+      expect(code).toContain("__type: 'classMethod'");
+      expect(code).toContain('message:');
+      expect(code).toContain('type:');
+      expect(code).toContain('metadata:');
+      expect(code).toContain('timeout:');
+    });
+
+    it('UC38: Pagination@render generates classMethod', () => {
+      const id = resolveId('./Pagination.php@render', example('Pagination.php'));
+      const code = load(id);
+      expect(code).toContain("__type: 'classMethod'");
+      expect(code).toContain('total:');
+      expect(code).toContain('perPage:');
+      expect(code).toContain('current:');
+    });
+
+    it('UC38: Pagination@simple generates staticMethod', () => {
+      const id = resolveId('./Pagination.php@simple', example('Pagination.php'));
+      const code = load(id);
+      expect(code).toContain("__type: 'staticMethod'");
+      expect(code).toContain('total:');
+      expect(code).toContain('current:');
+    });
+
+    it('UC39: TagCloud@render generates classMethod', () => {
+      const id = resolveId('./TagCloud.php@render', example('TagCloud.php'));
+      const code = load(id);
+      expect(code).toContain("__type: 'classMethod'");
+      expect(code).toContain('tags:');
+      expect(code).toContain('baseSize:');
+      expect(code).toContain('maxWeight:');
+      expect(code).toContain('unit:');
+    });
+  });
+
+  // -------------------------------------------------------------------------
+  // Parser: metadata extraction for new patterns
+  // -------------------------------------------------------------------------
+  describe('Parser: new pattern metadata', () => {
+    it('parses Modal with multiple traits', () => {
+      const meta = parsePhpFile(example('Modal.php'));
+      const modal = meta.classes.find((c) => c.name === 'Modal')!;
+      expect(modal).toBeDefined();
+      expect(modal.traits).toEqual(['HasAnimation', 'HasOverlay']);
+      // Two traits also parsed
+      const anim = meta.classes.find((c) => c.name === 'HasAnimation')!;
+      expect(anim.methods[0]!.name).toBe('animate');
+      const overlay = meta.classes.find((c) => c.name === 'HasOverlay')!;
+      expect(overlay.methods[0]!.name).toBe('overlay');
+    });
+
+    it('parses Notification with constant defaults and mixed type', () => {
+      const meta = parsePhpFile(example('Notification.php'));
+      const cls = meta.classes[0]!;
+      expect(cls.name).toBe('Notification');
+      expect(cls.constructorParams).toHaveLength(4);
+      expect(cls.constructorParams[1]!.default).toBe('self::TYPE_INFO');
+      expect(cls.constructorParams[2]!.type).toBe('mixed');
+    });
+
+    it('parses Pagination with static and instance methods', () => {
+      const meta = parsePhpFile(example('Pagination.php'));
+      const cls = meta.classes[0]!;
+      expect(cls.name).toBe('Pagination');
+      expect(cls.constructorParams).toHaveLength(3);
+      const simple = cls.methods.find((m) => m.name === 'simple')!;
+      expect(simple.isStatic).toBe(true);
+      expect(simple.params[0]!.name).toBe('total');
+      const render = cls.methods.find((m) => m.name === 'render')!;
+      expect(render.isStatic).toBe(false);
+    });
+
+    it('parses TagCloud with array constructor and method params', () => {
+      const meta = parsePhpFile(example('TagCloud.php'));
+      const cls = meta.classes[0]!;
+      expect(cls.name).toBe('TagCloud');
+      expect(cls.constructorParams).toHaveLength(2);
+      expect(cls.constructorParams[0]!.name).toBe('tags');
+      expect(cls.constructorParams[0]!.type).toBe('array');
+      const render = cls.methods.find((m) => m.name === 'render')!;
+      expect(render.params).toHaveLength(2);
+      expect(render.params[0]!.name).toBe('maxWeight');
+      expect(render.params[0]!.type).toBe('int');
+      expect(render.params[1]!.name).toBe('unit');
+    });
+  });
 });

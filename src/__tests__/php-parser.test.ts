@@ -924,4 +924,185 @@ class Tooltip {
       expect(render.isStatic).toBe(false);
     });
   });
+
+  // -----------------------------------------------------------------------
+  // Multi-trait usage
+  // -----------------------------------------------------------------------
+  describe('MultiTrait', () => {
+    it('parses class using multiple traits', () => {
+      const meta = parsePhpSource(fixture('MultiTrait.php'), 'MultiTrait.php');
+
+      // Two traits + one class
+      expect(meta.classes).toHaveLength(3);
+
+      const modal = meta.classes.find((c) => c.name === 'Modal')!;
+      expect(modal).toBeDefined();
+      expect(modal.traits).toEqual(['HasAnimation', 'HasOverlay']);
+      expect(modal.constructorParams).toHaveLength(3);
+      expect(modal.constructorParams[0]!.name).toBe('title');
+      expect(modal.constructorParams[1]!.name).toBe('body');
+      expect(modal.constructorParams[1]!.nullable).toBe(true);
+      expect(modal.constructorParams[2]!.name).toBe('size');
+      expect(modal.constructorParams[2]!.default).toBe("'__PLACEHOLDER__'");
+
+      const anim = meta.classes.find((c) => c.name === 'HasAnimation')!;
+      expect(anim).toBeDefined();
+      expect(anim.methods).toHaveLength(1);
+      expect(anim.methods[0]!.name).toBe('animate');
+      expect(anim.methods[0]!.params).toHaveLength(3);
+      expect(anim.methods[0]!.params[0]!.name).toBe('content');
+      expect(anim.methods[0]!.params[1]!.name).toBe('effect');
+      expect(anim.methods[0]!.params[2]!.name).toBe('duration');
+
+      const overlay = meta.classes.find((c) => c.name === 'HasOverlay')!;
+      expect(overlay).toBeDefined();
+      expect(overlay.methods).toHaveLength(1);
+      expect(overlay.methods[0]!.name).toBe('overlay');
+      expect(overlay.methods[0]!.params).toHaveLength(2);
+    });
+  });
+
+  // -----------------------------------------------------------------------
+  // Class constants as defaults
+  // -----------------------------------------------------------------------
+  describe('ClassConstants', () => {
+    it('parses class with self::CONSTANT defaults', () => {
+      const meta = parsePhpSource(fixture('ClassConstants.php'), 'ClassConstants.php');
+
+      expect(meta.classes).toHaveLength(1);
+      const cls = meta.classes[0]!;
+      expect(cls.name).toBe('Notification');
+      expect(cls.constructorParams).toHaveLength(4);
+
+      const message = cls.constructorParams[0]!;
+      expect(message.name).toBe('message');
+      expect(message.type).toBe('string');
+      expect(message.required).toBe(true);
+
+      const type = cls.constructorParams[1]!;
+      expect(type.name).toBe('type');
+      expect(type.type).toBe('string');
+      expect(type.default).toBe('self::TYPE_INFO');
+
+      const metadata = cls.constructorParams[2]!;
+      expect(metadata.name).toBe('metadata');
+      expect(metadata.type).toBe('mixed');
+      expect(metadata.default).toBe('null');
+
+      const timeout = cls.constructorParams[3]!;
+      expect(timeout.name).toBe('timeout');
+      expect(timeout.type).toBe('int');
+      expect(timeout.default).toBe('5000');
+    });
+  });
+
+  // -----------------------------------------------------------------------
+  // Readonly without visibility keyword
+  // -----------------------------------------------------------------------
+  describe('ReadonlyNoVisibility', () => {
+    it('parses readonly without explicit visibility as promoted', () => {
+      const meta = parsePhpSource(fixture('ReadonlyNoVisibility.php'), 'ReadonlyNoVisibility.php');
+
+      expect(meta.classes).toHaveLength(1);
+      const cls = meta.classes[0]!;
+      expect(cls.name).toBe('ValueObject');
+      expect(cls.constructorParams).toHaveLength(3);
+
+      const id = cls.constructorParams[0]!;
+      expect(id.name).toBe('id');
+      expect(id.type).toBe('string');
+      expect(id.isPromoted).toBe(true);
+      expect(id.required).toBe(true);
+      // No explicit visibility
+      expect(id.visibility).toBeUndefined();
+
+      const value = cls.constructorParams[1]!;
+      expect(value.name).toBe('value');
+      expect(value.type).toBe('int');
+      expect(value.isPromoted).toBe(true);
+
+      const secret = cls.constructorParams[2]!;
+      expect(secret.name).toBe('secret');
+      expect(secret.type).toBe('string');
+      expect(secret.isPromoted).toBe(true);
+      expect(secret.visibility).toBe('private');
+      expect(secret.default).toBe("'__PLACEHOLDER__'");
+    });
+  });
+
+  // -----------------------------------------------------------------------
+  // Mixed, iterable, callable types
+  // -----------------------------------------------------------------------
+  describe('MixedTypes', () => {
+    it('parses mixed, iterable, and callable type params', () => {
+      const meta = parsePhpSource(fixture('MixedTypes.php'), 'MixedTypes.php');
+
+      expect(meta.classes).toHaveLength(1);
+      const cls = meta.classes[0]!;
+      expect(cls.name).toBe('DataRenderer');
+      expect(cls.constructorParams).toHaveLength(3);
+
+      const data = cls.constructorParams[0]!;
+      expect(data.name).toBe('data');
+      expect(data.type).toBe('mixed');
+      expect(data.required).toBe(true);
+
+      const items = cls.constructorParams[1]!;
+      expect(items.name).toBe('items');
+      expect(items.type).toBe('iterable');
+      expect(items.default).toBe('[]');
+
+      const formatter = cls.constructorParams[2]!;
+      expect(formatter.name).toBe('formatter');
+      expect(formatter.type).toBe('callable');
+      expect(formatter.nullable).toBe(true);
+      expect(formatter.default).toBe('null');
+
+      // Also check static method
+      expect(cls.methods).toHaveLength(2);
+      const fromArray = cls.methods.find((m) => m.name === 'fromArray')!;
+      expect(fromArray.isStatic).toBe(true);
+      expect(fromArray.params).toHaveLength(2);
+      expect(fromArray.params[0]!.type).toBe('array');
+      expect(fromArray.params[1]!.name).toBe('format');
+      expect(fromArray.params[1]!.default).toBe("'__PLACEHOLDER__'");
+    });
+  });
+
+  // -----------------------------------------------------------------------
+  // Static + instance method combo
+  // -----------------------------------------------------------------------
+  describe('StaticAndInstance', () => {
+    it('parses class with both static and instance methods', () => {
+      const meta = parsePhpSource(fixture('StaticAndInstance.php'), 'StaticAndInstance.php');
+
+      expect(meta.classes).toHaveLength(1);
+      const cls = meta.classes[0]!;
+      expect(cls.name).toBe('Pagination');
+      expect(cls.constructorParams).toHaveLength(3);
+
+      expect(cls.constructorParams[0]!.name).toBe('total');
+      expect(cls.constructorParams[0]!.type).toBe('int');
+      expect(cls.constructorParams[0]!.required).toBe(true);
+
+      expect(cls.constructorParams[1]!.name).toBe('perPage');
+      expect(cls.constructorParams[1]!.default).toBe('10');
+
+      expect(cls.constructorParams[2]!.name).toBe('current');
+      expect(cls.constructorParams[2]!.default).toBe('1');
+
+      expect(cls.methods).toHaveLength(2);
+
+      const simple = cls.methods.find((m) => m.name === 'simple')!;
+      expect(simple.isStatic).toBe(true);
+      expect(simple.params).toHaveLength(2);
+      expect(simple.params[0]!.name).toBe('total');
+      expect(simple.params[1]!.name).toBe('current');
+      expect(simple.params[1]!.default).toBe('1');
+
+      const render = cls.methods.find((m) => m.name === 'render')!;
+      expect(render.isStatic).toBe(false);
+      expect(render.returnType).toBe('string');
+    });
+  });
 });
