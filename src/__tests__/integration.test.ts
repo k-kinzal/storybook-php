@@ -5721,4 +5721,375 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
       expect(code).toContain('template');
     });
   });
+
+  // -------------------------------------------------------------------------
+  // UC96: String-backed enum
+  // -------------------------------------------------------------------------
+  describe('UC96: String-backed enum', () => {
+    it('renders Language::greeting for English', async () => {
+      const result = await executor.execute({
+        type: 'enumMethod',
+        file: example('Language.php'),
+        class: 'App\\Components\\Language',
+        callable: 'greeting',
+        args: { _case: 'en', name: 'World' },
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('Hello, World!');
+      expect(result.html).toContain('en');
+      expect(result.html).toContain('language-greeting');
+    });
+
+    it('renders Language::greeting for Japanese', async () => {
+      const result = await executor.execute({
+        type: 'enumMethod',
+        file: example('Language.php'),
+        class: 'App\\Components\\Language',
+        callable: 'greeting',
+        args: { _case: 'ja', name: '太郎' },
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('こんにちは');
+      expect(result.html).toContain('太郎');
+    });
+
+    it('renders Language::flag for Japanese', async () => {
+      const result = await executor.execute({
+        type: 'enumMethod',
+        file: example('Language.php'),
+        class: 'App\\Components\\Language',
+        callable: 'flag',
+        args: { _case: 'ja' },
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('lang-flag');
+    });
+
+    it('renders Language::greeting for Spanish', async () => {
+      const result = await executor.execute({
+        type: 'enumMethod',
+        file: example('Language.php'),
+        class: 'App\\Components\\Language',
+        callable: 'greeting',
+        args: { _case: 'es', name: 'Carlos' },
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('¡Hola, Carlos!');
+    });
+  });
+
+  // -------------------------------------------------------------------------
+  // UC97: Multi-trait with shared render method (trait method resolution)
+  // -------------------------------------------------------------------------
+  describe('UC97: Trait-based render method', () => {
+    it('renders Twitter::shareLink via HasShareLink trait', async () => {
+      const result = await executor.execute({
+        type: 'classMethod',
+        file: example('SocialShare.php'),
+        class: 'App\\Components\\Twitter',
+        callable: 'shareLink',
+        args: { url: 'https://example.com', label: 'Tweet' },
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('share-link');
+      expect(result.html).toContain('share-twitter');
+      expect(result.html).toContain('Tweet');
+      expect(result.html).toContain('https://example.com');
+    });
+
+    it('renders Facebook::shareLink via same HasShareLink trait', async () => {
+      const result = await executor.execute({
+        type: 'classMethod',
+        file: example('SocialShare.php'),
+        class: 'App\\Components\\Facebook',
+        callable: 'shareLink',
+        args: { url: 'https://example.com/post', label: 'Share' },
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('share-link');
+      expect(result.html).toContain('share-facebook');
+      expect(result.html).toContain('Share');
+      expect(result.html).toContain('#1877F2');
+    });
+  });
+
+  // -------------------------------------------------------------------------
+  // UC98: Object parameter with `new` expression default
+  // -------------------------------------------------------------------------
+  describe('UC98: Object param with new default', () => {
+    it('renders DateRange with default config', async () => {
+      const result = await executor.execute({
+        type: 'classMethod',
+        file: example('DateRange.php'),
+        class: 'App\\Components\\DateRange',
+        callable: 'render',
+        args: { start: '2025-01-01', end: '2025-12-31' },
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('date-range');
+      expect(result.html).toContain('2025-01-01');
+      expect(result.html).toContain('2025-12-31');
+    });
+
+    it('renders DateRange with custom config', async () => {
+      const result = await executor.execute({
+        type: 'classMethod',
+        file: example('DateRange.php'),
+        class: 'App\\Components\\DateRange',
+        callable: 'render',
+        args: { start: '2025-06-01', end: '2025-06-07', config: { format: 'M j', separator: ' ~ ' } },
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('Jun 1');
+      expect(result.html).toContain('Jun 7');
+      expect(result.html).toContain(' ~ ');
+    });
+  });
+
+  // -------------------------------------------------------------------------
+  // UC99: Multiple classes implementing interface (multi-export)
+  // -------------------------------------------------------------------------
+  describe('UC99: Multi-export interface implementations', () => {
+    it('renders InfoBox via render method', async () => {
+      const result = await executor.execute({
+        type: 'classMethod',
+        file: example('Renderable.php'),
+        class: 'App\\Components\\InfoBox',
+        callable: 'render',
+        args: { title: 'Information', message: 'This is a test.' },
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('info-box');
+      expect(result.html).toContain('Information');
+      expect(result.html).toContain('This is a test.');
+    });
+
+    it('renders InfoBox with custom icon', async () => {
+      const result = await executor.execute({
+        type: 'classMethod',
+        file: example('Renderable.php'),
+        class: 'App\\Components\\InfoBox',
+        callable: 'render',
+        args: { title: 'Done', message: 'All clear.', icon: '✅' },
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('✅');
+    });
+
+    it('renders WarningBox via same render method', async () => {
+      const result = await executor.execute({
+        type: 'classMethod',
+        file: example('Renderable.php'),
+        class: 'App\\Components\\WarningBox',
+        callable: 'render',
+        args: { title: 'Warning', message: 'Be careful!' },
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('warning-box');
+      expect(result.html).toContain('Warning');
+    });
+
+    it('renders WarningBox with urgent flag', async () => {
+      const result = await executor.execute({
+        type: 'classMethod',
+        file: example('Renderable.php'),
+        class: 'App\\Components\\WarningBox',
+        callable: 'render',
+        args: { title: 'Critical', message: 'Immediate action required!', urgent: true },
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('2px solid #f59e0b');
+      expect(result.html).toContain('⚠️');
+    });
+  });
+
+  // -------------------------------------------------------------------------
+  // UC100: Blog template with tags and conditionals
+  // -------------------------------------------------------------------------
+  describe('UC100: Blog template', () => {
+    it('renders blog post with tags', async () => {
+      const result = await executor.execute({
+        type: 'template',
+        file: example('templates/blog.php'),
+        class: null,
+        callable: null,
+        args: { title: 'Test Post', author: 'Alice', body: 'Hello world.', date: 'March 15, 2025', tags: ['PHP', 'Tutorial'] },
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('blog-post');
+      expect(result.html).toContain('Test Post');
+      expect(result.html).toContain('Alice');
+      expect(result.html).toContain('PHP');
+      expect(result.html).toContain('Tutorial');
+    });
+
+    it('renders blog post without tags', async () => {
+      const result = await executor.execute({
+        type: 'template',
+        file: example('templates/blog.php'),
+        class: null,
+        callable: null,
+        args: { title: 'Simple Post', author: 'Bob', body: 'No tags here.' },
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('Simple Post');
+      expect(result.html).toContain('Bob');
+      expect(result.html).not.toContain('blog-tags');
+    });
+  });
+
+  // -------------------------------------------------------------------------
+  // UC101: Gallery template with grid layout
+  // -------------------------------------------------------------------------
+  describe('UC101: Gallery template', () => {
+    it('renders gallery grid with images', async () => {
+      const result = await executor.execute({
+        type: 'template',
+        file: example('templates/gallery.php'),
+        class: null,
+        callable: null,
+        args: { images: [{ emoji: '🌄', caption: 'Sunrise' }, { emoji: '🏔️', caption: 'Mountain' }], columns: 2, gap: '12px' },
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('gallery');
+      expect(result.html).toContain('Sunrise');
+      expect(result.html).toContain('Mountain');
+      expect(result.html).toContain('repeat(2, 1fr)');
+    });
+
+    it('renders empty gallery', async () => {
+      const result = await executor.execute({
+        type: 'template',
+        file: example('templates/gallery.php'),
+        class: null,
+        callable: null,
+        args: { columns: 3 },
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('No images to display');
+    });
+  });
+
+  // -------------------------------------------------------------------------
+  // Vite plugin: UC96-UC101 virtual modules
+  // -------------------------------------------------------------------------
+  describe('Vite plugin: UC96-UC101 virtual modules', () => {
+    const plugin = storybookPhpPlugin({});
+    const resolveId = (plugin as any).resolveId.bind(plugin);
+    const load = (plugin as any).load.bind(plugin);
+
+    it('resolves Language.php@greeting as enumMethod', async () => {
+      const id = await resolveId('./Language.php@greeting', example('Language.stories.ts'));
+      expect(id).toBeDefined();
+      const code = await load(id);
+      expect(code).toContain("__type: 'enumMethod'");
+      expect(code).toContain('Language');
+      expect(code).toContain('_case:');
+      expect(code).toContain('name:');
+    });
+
+    it('resolves Language.php@flag as enumMethod', async () => {
+      const id = await resolveId('./Language.php@flag', example('LanguageFlag.stories.ts'));
+      expect(id).toBeDefined();
+      const code = await load(id);
+      expect(code).toContain("__type: 'enumMethod'");
+    });
+
+    it('resolves SocialShare.php@shareLink for Twitter (trait method)', async () => {
+      const id = await resolveId('./SocialShare.php@shareLink', example('TwitterShare.stories.ts'));
+      expect(id).toBeDefined();
+      const code = await load(id);
+      expect(code).toContain('Twitter');
+      expect(code).toContain('Facebook');
+      expect(code).toContain("__type: 'classMethod'");
+      expect(code).toContain('url:');
+      expect(code).toContain('label:');
+    });
+
+    it('resolves DateRange.php@render with new expression default', async () => {
+      const id = await resolveId('./DateRange.php@render', example('DateRange.stories.ts'));
+      expect(id).toBeDefined();
+      const code = await load(id);
+      expect(code).toContain('DateRange');
+      expect(code).toContain("__type: 'classMethod'");
+      expect(code).toContain('start:');
+      expect(code).toContain('end:');
+      expect(code).toContain('config:');
+    });
+
+    it('resolves Renderable.php@render with multi-export (InfoBox + WarningBox)', async () => {
+      const id = await resolveId('./Renderable.php@render', example('InfoBox.stories.ts'));
+      expect(id).toBeDefined();
+      const code = await load(id);
+      expect(code).toContain('InfoBox');
+      expect(code).toContain('WarningBox');
+      expect(code).toContain("__type: 'classMethod'");
+    });
+
+    it('resolves blog.php template', async () => {
+      const id = await resolveId('./blog.php', example('templates/blog.stories.ts'));
+      expect(id).toBeDefined();
+      const code = await load(id);
+      expect(code).toContain('template');
+    });
+
+    it('resolves gallery.php template', async () => {
+      const id = await resolveId('./gallery.php', example('templates/gallery.stories.ts'));
+      expect(id).toBeDefined();
+      const code = await load(id);
+      expect(code).toContain('template');
+    });
+  });
+
+  // -------------------------------------------------------------------------
+  // Parser: UC96-UC101 metadata
+  // -------------------------------------------------------------------------
+  describe('Parser: UC96-UC101 metadata', () => {
+    it('parses Language.php as string-backed enum', () => {
+      const meta = parsePhpFile(example('Language.php'));
+      expect(meta.classes).toHaveLength(1);
+      const lang = meta.classes[0]!;
+      expect(lang.name).toBe('Language');
+      expect(lang.isEnum).toBe(true);
+      expect(lang.enumBackingType).toBe('string');
+      expect(lang.enumCases).toEqual(['English', 'Japanese', 'French', 'Spanish', 'German']);
+      expect(lang.methods.some(m => m.name === 'greeting')).toBe(true);
+      expect(lang.methods.some(m => m.name === 'flag')).toBe(true);
+    });
+
+    it('parses SocialShare.php with traits and multiple classes', () => {
+      const meta = parsePhpFile(example('SocialShare.php'));
+      const classNames = meta.classes.map(c => c.name);
+      expect(classNames).toContain('Twitter');
+      expect(classNames).toContain('Facebook');
+      const twitter = meta.classes.find(c => c.name === 'Twitter')!;
+      expect(twitter.traits).toContain('HasShareLink');
+      expect(twitter.traits).toContain('HasIcon');
+      const facebook = meta.classes.find(c => c.name === 'Facebook')!;
+      expect(facebook.traits).toContain('HasShareLink');
+      expect(facebook.traits).toContain('HasIcon');
+    });
+
+    it('parses DateRange.php with new expression default', () => {
+      const meta = parsePhpFile(example('DateRange.php'));
+      const dr = meta.classes.find(c => c.name === 'DateRange')!;
+      expect(dr).toBeDefined();
+      const configParam = dr.constructorParams.find(p => p.name === 'config');
+      expect(configParam).toBeDefined();
+      expect(configParam!.type).toBe('DateConfig');
+      expect(configParam!.required).toBe(false);
+    });
+
+    it('parses Renderable.php with interface and multiple implementations', () => {
+      const meta = parsePhpFile(example('Renderable.php'));
+      const classNames = meta.classes.map(c => c.name);
+      expect(classNames).toContain('RenderableInterface');
+      expect(classNames).toContain('InfoBox');
+      expect(classNames).toContain('WarningBox');
+      const infoBox = meta.classes.find(c => c.name === 'InfoBox')!;
+      expect(infoBox.implements).toContain('RenderableInterface');
+      const warningBox = meta.classes.find(c => c.name === 'WarningBox')!;
+      expect(warningBox.implements).toContain('RenderableInterface');
+    });
+  });
 });
