@@ -3332,4 +3332,495 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
       expect(render!.params).toHaveLength(3);
     });
   });
+
+  // -------------------------------------------------------------------------
+  // UC56: Meter - int|float union type constructor param
+  // -------------------------------------------------------------------------
+  describe('UC56: Meter with int|float union type', () => {
+    it('renders Meter with int value', async () => {
+      const result = await executor.execute({
+        type: 'classMethod',
+        file: example('Meter.php'),
+        class: 'App\\Components\\Meter',
+        callable: 'render',
+        args: { value: 75 },
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('meter');
+      expect(result.html).toContain('meter-fill');
+      expect(result.html).toContain('75.0%');
+    });
+
+    it('renders Meter with float value and custom range', async () => {
+      const result = await executor.execute({
+        type: 'classMethod',
+        file: example('Meter.php'),
+        class: 'App\\Components\\Meter',
+        callable: 'render',
+        args: { value: 33.7, min: 0, max: 50, label: 'Temp' },
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('meter-label');
+      expect(result.html).toContain('Temp');
+      expect(result.html).toContain('67.4%');
+    });
+
+    it('renders Meter with custom color', async () => {
+      const result = await executor.execute({
+        type: 'classMethod',
+        file: example('Meter.php'),
+        class: 'App\\Components\\Meter',
+        callable: 'render',
+        args: { value: 100, color: '#3b82f6' },
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('#3b82f6');
+      expect(result.html).toContain('100.0%');
+    });
+
+    it('renders Meter with low value (red)', async () => {
+      const result = await executor.execute({
+        type: 'classMethod',
+        file: example('Meter.php'),
+        class: 'App\\Components\\Meter',
+        callable: 'render',
+        args: { value: 10 },
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('#ef4444');
+    });
+
+    it('parser detects int|float union type', () => {
+      const meta = parsePhpFile(example('Meter.php'));
+      const cls = meta.classes.find(c => c.name === 'Meter');
+      expect(cls).toBeDefined();
+      const value = cls!.constructorParams.find(p => p.name === 'value');
+      expect(value).toBeDefined();
+      expect(value!.type).toBe('int|float');
+      expect(value!.required).toBe(true);
+      const min = cls!.constructorParams.find(p => p.name === 'min');
+      expect(min!.type).toBe('int|float');
+      expect(min!.required).toBe(false);
+      const render = cls!.methods.find(m => m.name === 'render');
+      expect(render).toBeDefined();
+      expect(render!.params[0]!.name).toBe('color');
+      expect(render!.params[0]!.nullable).toBe(true);
+    });
+  });
+
+  // -------------------------------------------------------------------------
+  // UC57: Dropdown - class implementing multiple interfaces
+  // -------------------------------------------------------------------------
+  describe('UC57: Dropdown with multiple interfaces', () => {
+    it('renders Dropdown toggle closed', async () => {
+      const result = await executor.execute({
+        type: 'classMethod',
+        file: example('Dropdown.php'),
+        class: 'App\\Components\\Dropdown',
+        callable: 'toggle',
+        args: { label: 'Options', items: ['Edit', 'Delete'] },
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('dropdown-closed');
+      expect(result.html).toContain('Options');
+      expect(result.html).toContain('Edit');
+      expect(result.html).toContain('Delete');
+    });
+
+    it('renders Dropdown toggle open', async () => {
+      const result = await executor.execute({
+        type: 'classMethod',
+        file: example('Dropdown.php'),
+        class: 'App\\Components\\Dropdown',
+        callable: 'toggle',
+        args: { label: 'Actions', items: ['Copy', 'Move'], open: true },
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('dropdown-open');
+      expect(result.html).toContain('display: block');
+    });
+
+    it('renders Dropdown toggle with placeholder', async () => {
+      const result = await executor.execute({
+        type: 'classMethod',
+        file: example('Dropdown.php'),
+        class: 'App\\Components\\Dropdown',
+        callable: 'toggle',
+        args: { label: 'Filter', items: ['A'], open: true, placeholder: 'Pick one...' },
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('Pick one...');
+    });
+
+    it('renders Dropdown search with results', async () => {
+      const result = await executor.execute({
+        type: 'classMethod',
+        file: example('Dropdown.php'),
+        class: 'App\\Components\\Dropdown',
+        callable: 'search',
+        args: { label: 'Search', items: ['Apple', 'Banana', 'Cherry'], query: 'an' },
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('dropdown-search');
+      expect(result.html).toContain('Banana');
+    });
+
+    it('renders Dropdown search no results', async () => {
+      const result = await executor.execute({
+        type: 'classMethod',
+        file: example('Dropdown.php'),
+        class: 'App\\Components\\Dropdown',
+        callable: 'search',
+        args: { label: 'Search', items: ['One', 'Two'], query: 'xyz' },
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('dropdown-empty');
+      expect(result.html).toContain('xyz');
+    });
+
+    it('parser detects multiple interfaces', () => {
+      const meta = parsePhpFile(example('Dropdown.php'));
+      const cls = meta.classes.find(c => c.name === 'Dropdown');
+      expect(cls).toBeDefined();
+      expect(cls!.implements).toContain('Togglable');
+      expect(cls!.implements).toContain('Searchable');
+      expect(cls!.methods).toHaveLength(2);
+      expect(cls!.methods.map(m => m.name).sort()).toEqual(['search', 'toggle']);
+    });
+  });
+
+  // -------------------------------------------------------------------------
+  // UC58: TextFormatter - multiple global functions without namespace
+  // -------------------------------------------------------------------------
+  describe('UC58: TextFormatter global functions', () => {
+    it('renders truncate with short text', async () => {
+      const result = await executor.execute({
+        type: 'function',
+        file: example('TextFormatter.php'),
+        class: null,
+        callable: 'truncate',
+        args: { text: 'Hello' },
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('truncated-full');
+      expect(result.html).toContain('Hello');
+    });
+
+    it('renders truncate with long text', async () => {
+      const result = await executor.execute({
+        type: 'function',
+        file: example('TextFormatter.php'),
+        class: null,
+        callable: 'truncate',
+        args: { text: 'This is a very long string that should be truncated', length: 20 },
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('truncated-cut');
+      expect(result.html).toContain('...');
+    });
+
+    it('renders truncate with custom suffix', async () => {
+      const result = await executor.execute({
+        type: 'function',
+        file: example('TextFormatter.php'),
+        class: null,
+        callable: 'truncate',
+        args: { text: 'A really long piece of text for testing', length: 15, suffix: ' [more]' },
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('[more]');
+    });
+
+    it('renders highlight with matching term', async () => {
+      const result = await executor.execute({
+        type: 'function',
+        file: example('TextFormatter.php'),
+        class: null,
+        callable: 'highlight',
+        args: { text: 'The quick brown fox', term: 'fox' },
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('highlight-mark');
+      expect(result.html).toContain('fox');
+    });
+
+    it('renders highlight with custom color', async () => {
+      const result = await executor.execute({
+        type: 'function',
+        file: example('TextFormatter.php'),
+        class: null,
+        callable: 'highlight',
+        args: { text: 'Hello World', term: 'World', color: '#bbf7d0' },
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('#bbf7d0');
+    });
+
+    it('renders slugify', async () => {
+      const result = await executor.execute({
+        type: 'function',
+        file: example('TextFormatter.php'),
+        class: null,
+        callable: 'slugify',
+        args: { text: 'Hello World Example' },
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('slug');
+      expect(result.html).toContain('hello-world-example');
+    });
+
+    it('renders slugify with custom separator', async () => {
+      const result = await executor.execute({
+        type: 'function',
+        file: example('TextFormatter.php'),
+        class: null,
+        callable: 'slugify',
+        args: { text: 'My Blog Post', separator: '_' },
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('my_blog_post');
+    });
+
+    it('parser detects all three global functions', () => {
+      const meta = parsePhpFile(example('TextFormatter.php'));
+      expect(meta.namespace).toBeNull();
+      expect(meta.functions).toHaveLength(3);
+      const names = meta.functions.map(f => f.name);
+      expect(names).toContain('truncate');
+      expect(names).toContain('highlight');
+      expect(names).toContain('slugify');
+      // Verify FQN has no namespace prefix
+      const truncate = meta.functions.find(f => f.name === 'truncate')!;
+      expect(truncate.fqn).toBe('truncate');
+      expect(truncate.params).toHaveLength(3);
+      expect(truncate.params[0]!.type).toBe('string');
+      expect(truncate.params[1]!.type).toBe('int');
+    });
+  });
+
+  // -------------------------------------------------------------------------
+  // UC59: Pricing template with match expression
+  // -------------------------------------------------------------------------
+  describe('UC59: Pricing template', () => {
+    it('renders pricing grid with USD plans', async () => {
+      const result = await executor.execute({
+        type: 'template',
+        file: example('templates/pricing.php'),
+        class: null,
+        callable: null,
+        args: {
+          plans: [
+            { name: 'Starter', price: 9, features: ['5 Projects', '1 GB'] },
+            { name: 'Pro', price: 29, features: ['Unlimited', '10 GB', 'Support'] },
+          ],
+          currency: 'USD',
+          period: 'month',
+          highlighted: 'Pro',
+        },
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('pricing-grid');
+      expect(result.html).toContain('Starter');
+      expect(result.html).toContain('$9.00');
+      expect(result.html).toContain('$29.00');
+      expect(result.html).toContain('pricing-highlighted');
+      expect(result.html).toContain('Popular');
+      expect(result.html).toContain('/ month');
+    });
+
+    it('renders pricing with EUR currency', async () => {
+      const result = await executor.execute({
+        type: 'template',
+        file: example('templates/pricing.php'),
+        class: null,
+        callable: null,
+        args: {
+          plans: [{ name: 'Basic', price: 19, features: ['API'] }],
+          currency: 'EUR',
+          period: 'year',
+        },
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('€19.00');
+      expect(result.html).toContain('/ year');
+    });
+
+    it('renders pricing with JPY (no decimals)', async () => {
+      const result = await executor.execute({
+        type: 'template',
+        file: example('templates/pricing.php'),
+        class: null,
+        callable: null,
+        args: {
+          plans: [{ name: 'Plan', price: 980, features: [] }],
+          currency: 'JPY',
+        },
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('¥980');
+    });
+
+    it('renders empty pricing', async () => {
+      const result = await executor.execute({
+        type: 'template',
+        file: example('templates/pricing.php'),
+        class: null,
+        callable: null,
+        args: { plans: [] },
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('pricing-empty');
+    });
+  });
+
+  // -------------------------------------------------------------------------
+  // UC60: Carousel - variadic constructor params + __toString
+  // -------------------------------------------------------------------------
+  describe('UC60: Carousel with variadic params', () => {
+    it('renders Carousel with string items', async () => {
+      const result = await executor.execute({
+        type: 'classMethod',
+        file: example('Carousel.php'),
+        class: 'App\\Components\\Carousel',
+        callable: 'render',
+        args: { items: ['First', 'Second', 'Third'] },
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('carousel');
+      expect(result.html).toContain('carousel-active');
+      expect(result.html).toContain('First');
+      expect(result.html).toContain('Second');
+      expect(result.html).toContain('Slide 1 of 3');
+    });
+
+    it('renders Carousel with second slide active', async () => {
+      const result = await executor.execute({
+        type: 'classMethod',
+        file: example('Carousel.php'),
+        class: 'App\\Components\\Carousel',
+        callable: 'render',
+        args: { items: ['A', 'B'], activeIndex: 1 },
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('Slide 2 of 2');
+    });
+
+    it('renders Carousel with autoplay', async () => {
+      const result = await executor.execute({
+        type: 'classMethod',
+        file: example('Carousel.php'),
+        class: 'App\\Components\\Carousel',
+        callable: 'render',
+        args: { items: ['Slide'], autoplay: true },
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('data-autoplay="true"');
+    });
+
+    it('renders empty Carousel', async () => {
+      const result = await executor.execute({
+        type: 'classMethod',
+        file: example('Carousel.php'),
+        class: 'App\\Components\\Carousel',
+        callable: 'render',
+        args: { items: [] },
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('carousel-empty');
+    });
+
+    it('parser detects Carousel with variadic constructor and method params', () => {
+      const meta = parsePhpFile(example('Carousel.php'));
+      const cls = meta.classes.find(c => c.name === 'Carousel');
+      expect(cls).toBeDefined();
+      const ctorSlides = cls!.constructorParams.find(p => p.name === 'slides');
+      expect(ctorSlides).toBeDefined();
+      expect(ctorSlides!.isVariadic).toBe(true);
+      expect(ctorSlides!.type).toBe('Slide');
+      const render = cls!.methods.find(m => m.name === 'render');
+      expect(render).toBeDefined();
+      const items = render!.params.find(p => p.name === 'items');
+      expect(items).toBeDefined();
+      expect(items!.isVariadic).toBe(true);
+      expect(items!.type).toBe('string');
+    });
+
+    it('parser detects Slide class with __toString', () => {
+      const meta = parsePhpFile(example('Carousel.php'));
+      const slide = meta.classes.find(c => c.name === 'Slide');
+      expect(slide).toBeDefined();
+      expect(slide!.methods.some(m => m.name === '__toString')).toBe(true);
+    });
+  });
+
+  // -------------------------------------------------------------------------
+  // Vite plugin: virtual module generation for UC56-UC60
+  // -------------------------------------------------------------------------
+  describe('Vite plugin: UC56-UC60 virtual modules', () => {
+    const plugin = storybookPhpPlugin();
+    const resolveId = (plugin as any).resolveId.bind(plugin);
+    const load = (plugin as any).load.bind(plugin);
+
+    it('UC56: Meter@render generates classMethod with union type', () => {
+      const id = resolveId('./Meter.php@render', example('Meter.php'));
+      const code = load(id);
+      expect(code).toContain("__type: 'classMethod'");
+      expect(code).toContain('Meter');
+      expect(code).toContain('value:');
+      expect(code).toContain('min:');
+      expect(code).toContain('max:');
+      expect(code).toContain('color:');
+    });
+
+    it('UC57: Dropdown@toggle generates classMethod', () => {
+      const id = resolveId('./Dropdown.php@toggle', example('Dropdown.php'));
+      const code = load(id);
+      expect(code).toContain("__type: 'classMethod'");
+      expect(code).toContain('Dropdown');
+      expect(code).toContain('label:');
+      expect(code).toContain('items:');
+      expect(code).toContain('open:');
+    });
+
+    it('UC57: Dropdown@search generates classMethod for second interface method', () => {
+      const id = resolveId('./Dropdown.php@search', example('Dropdown.php'));
+      const code = load(id);
+      expect(code).toContain("__type: 'classMethod'");
+      expect(code).toContain('query:');
+    });
+
+    it('UC58: TextFormatter@truncate generates function', () => {
+      const id = resolveId('./TextFormatter.php@truncate', example('TextFormatter.php'));
+      const code = load(id);
+      expect(code).toContain("__type: 'function'");
+      expect(code).toContain('text:');
+      expect(code).toContain('length:');
+      expect(code).toContain('suffix:');
+    });
+
+    it('UC58: TextFormatter@highlight generates function', () => {
+      const id = resolveId('./TextFormatter.php@highlight', example('TextFormatter.php'));
+      const code = load(id);
+      expect(code).toContain("__type: 'function'");
+      expect(code).toContain('text:');
+      expect(code).toContain('term:');
+      expect(code).toContain('color:');
+    });
+
+    it('UC58: TextFormatter@slugify generates function', () => {
+      const id = resolveId('./TextFormatter.php@slugify', example('TextFormatter.php'));
+      const code = load(id);
+      expect(code).toContain("__type: 'function'");
+      expect(code).toContain('text:');
+      expect(code).toContain('separator:');
+    });
+
+    it('UC60: Carousel@render generates classMethod', () => {
+      const id = resolveId('./Carousel.php@render', example('Carousel.php'));
+      const code = load(id);
+      expect(code).toContain("__type: 'classMethod'");
+      expect(code).toContain('Carousel');
+      expect(code).toContain('items:');
+    });
+  });
 });

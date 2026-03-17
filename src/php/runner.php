@@ -10,6 +10,29 @@ declare(strict_types=1);
  */
 
 /**
+ * Score how well a named type matches a given value.
+ * Higher score = better match. Used to pick the best type in a union.
+ */
+function scoreTypeMatch(ReflectionNamedType $type, mixed $value): int
+{
+    $name = $type->getName();
+
+    if ($value === null) {
+        return $type->allowsNull() ? 2 : 0;
+    }
+
+    return match ($name) {
+        'int' => is_int($value) ? 2 : (is_numeric($value) && (int) $value == $value ? 1 : 0),
+        'float' => is_float($value) ? 2 : (is_numeric($value) ? 1 : 0),
+        'string' => is_string($value) ? 2 : 1,
+        'bool' => is_bool($value) ? 2 : 1,
+        'array' => is_array($value) ? 2 : 0,
+        'mixed' => 1,
+        default => 0,
+    };
+}
+
+/**
  * Cast a value to match the expected type of a reflection parameter.
  */
 function castArg(ReflectionParameter $param, mixed $value): mixed
@@ -25,7 +48,15 @@ function castArg(ReflectionParameter $param, mixed $value): mixed
     }
 
     if ($type instanceof ReflectionUnionType) {
-        foreach ($type->getTypes() as $unionType) {
+        $unionTypes = $type->getTypes();
+
+        // Prefer exact-match types to avoid lossy casts (e.g. float → int truncation).
+        // Sort so the best-matching type for the value comes first.
+        usort($unionTypes, function (ReflectionNamedType $a, ReflectionNamedType $b) use ($value) {
+            return scoreTypeMatch($b, $value) <=> scoreTypeMatch($a, $value);
+        });
+
+        foreach ($unionTypes as $unionType) {
             try {
                 return castWithNamedType($unionType, $value, $param);
             } catch (\Throwable) {

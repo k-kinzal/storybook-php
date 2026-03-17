@@ -1105,4 +1105,149 @@ class Tooltip {
       expect(render.returnType).toBe('string');
     });
   });
+
+  // -----------------------------------------------------------------------
+  // UnionTypeParams
+  // -----------------------------------------------------------------------
+  describe('UnionTypeParams', () => {
+    it('parses int|float union type constructor params', () => {
+      const meta = parsePhpSource(fixture('UnionTypeParams.php'), 'UnionTypeParams.php');
+
+      expect(meta.classes).toHaveLength(1);
+      const cls = meta.classes[0]!;
+      expect(cls.name).toBe('Meter');
+      expect(cls.constructorParams).toHaveLength(4);
+
+      const value = cls.constructorParams[0]!;
+      expect(value.name).toBe('value');
+      expect(value.type).toBe('int|float');
+      expect(value.required).toBe(true);
+
+      const min = cls.constructorParams[1]!;
+      expect(min.name).toBe('min');
+      expect(min.type).toBe('int|float');
+      expect(min.required).toBe(false);
+      expect(min.default).toBe('0');
+
+      const max = cls.constructorParams[2]!;
+      expect(max.name).toBe('max');
+      expect(max.type).toBe('int|float');
+      expect(max.default).toBe('100');
+
+      const render = cls.methods[0]!;
+      expect(render.name).toBe('render');
+      expect(render.params[0]!.name).toBe('color');
+      expect(render.params[0]!.nullable).toBe(true);
+      expect(render.params[0]!.type).toBe('string');
+    });
+  });
+
+  // -----------------------------------------------------------------------
+  // MultipleInterfaces
+  // -----------------------------------------------------------------------
+  describe('MultipleInterfaces', () => {
+    it('parses class implementing multiple interfaces', () => {
+      const meta = parsePhpSource(fixture('MultipleInterfaces.php'), 'MultipleInterfaces.php');
+
+      // Interfaces + class
+      const dropdown = meta.classes.find((c) => c.name === 'Dropdown');
+      expect(dropdown).toBeDefined();
+      expect(dropdown!.implements).toContain('Togglable');
+      expect(dropdown!.implements).toContain('Searchable');
+      expect(dropdown!.implements).toHaveLength(2);
+
+      expect(dropdown!.constructorParams).toHaveLength(3);
+      expect(dropdown!.constructorParams[0]!.name).toBe('label');
+      expect(dropdown!.constructorParams[2]!.name).toBe('placeholder');
+      expect(dropdown!.constructorParams[2]!.nullable).toBe(true);
+
+      expect(dropdown!.methods).toHaveLength(2);
+      const methodNames = dropdown!.methods.map((m) => m.name).sort();
+      expect(methodNames).toEqual(['search', 'toggle']);
+    });
+
+    it('parses interface declarations', () => {
+      const meta = parsePhpSource(fixture('MultipleInterfaces.php'), 'MultipleInterfaces.php');
+
+      const togglable = meta.classes.find((c) => c.name === 'Togglable');
+      expect(togglable).toBeDefined();
+
+      const searchable = meta.classes.find((c) => c.name === 'Searchable');
+      expect(searchable).toBeDefined();
+    });
+  });
+
+  // -----------------------------------------------------------------------
+  // GlobalFunctions (no namespace)
+  // -----------------------------------------------------------------------
+  describe('GlobalFunctions', () => {
+    it('parses multiple functions without namespace', () => {
+      const meta = parsePhpSource(fixture('GlobalFunctions.php'), 'GlobalFunctions.php');
+
+      expect(meta.namespace).toBeNull();
+      expect(meta.classes).toHaveLength(0);
+      expect(meta.functions).toHaveLength(3);
+
+      const truncate = meta.functions.find((f) => f.name === 'truncate')!;
+      expect(truncate.fqn).toBe('truncate');
+      expect(truncate.params).toHaveLength(3);
+      expect(truncate.params[0]!.type).toBe('string');
+      expect(truncate.params[0]!.required).toBe(true);
+      expect(truncate.params[1]!.type).toBe('int');
+      expect(truncate.params[1]!.default).toBe('50');
+      expect(truncate.params[2]!.type).toBe('string');
+      expect(truncate.returnType).toBe('string');
+
+      const highlight = meta.functions.find((f) => f.name === 'highlight')!;
+      expect(highlight.fqn).toBe('highlight');
+      expect(highlight.params).toHaveLength(3);
+      expect(highlight.params[1]!.name).toBe('term');
+      expect(highlight.params[1]!.required).toBe(true);
+
+      const slugify = meta.functions.find((f) => f.name === 'slugify')!;
+      expect(slugify.fqn).toBe('slugify');
+      expect(slugify.params).toHaveLength(2);
+    });
+  });
+
+  // -----------------------------------------------------------------------
+  // VariadicConstructor
+  // -----------------------------------------------------------------------
+  describe('VariadicConstructor', () => {
+    it('parses class with variadic constructor param', () => {
+      const meta = parsePhpSource(fixture('VariadicConstructor.php'), 'VariadicConstructor.php');
+
+      const carousel = meta.classes.find((c) => c.name === 'Carousel')!;
+      expect(carousel).toBeDefined();
+      expect(carousel.constructorParams).toHaveLength(3);
+
+      const activeIndex = carousel.constructorParams[0]!;
+      expect(activeIndex.name).toBe('activeIndex');
+      expect(activeIndex.type).toBe('int');
+      expect(activeIndex.isVariadic).toBe(false);
+
+      const slides = carousel.constructorParams[2]!;
+      expect(slides.name).toBe('slides');
+      expect(slides.type).toBe('Slide');
+      expect(slides.isVariadic).toBe(true);
+
+      const render = carousel.methods.find((m) => m.name === 'render')!;
+      expect(render).toBeDefined();
+      const items = render.params[0]!;
+      expect(items.name).toBe('items');
+      expect(items.type).toBe('string');
+      expect(items.isVariadic).toBe(true);
+    });
+
+    it('parses Slide class with __toString', () => {
+      const meta = parsePhpSource(fixture('VariadicConstructor.php'), 'VariadicConstructor.php');
+
+      const slide = meta.classes.find((c) => c.name === 'Slide')!;
+      expect(slide).toBeDefined();
+      expect(slide.constructorParams).toHaveLength(2);
+      expect(slide.constructorParams[0]!.name).toBe('content');
+      expect(slide.constructorParams[0]!.isPromoted).toBe(true);
+      expect(slide.methods.some((m) => m.name === '__toString')).toBe(true);
+    });
+  });
 });
