@@ -6381,4 +6381,346 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
       expect(result.html).toContain('Untitled Recipe');
     });
   });
+
+  // -------------------------------------------------------------------------
+  // UC107: Int-backed enum with methods
+  // -------------------------------------------------------------------------
+  describe('UC107: Int-backed enum (HttpCode)', () => {
+    it('renders badge for 200 OK', async () => {
+      const result = await executor.execute({
+        type: 'enumMethod',
+        file: example('HttpCode.php'),
+        class: 'App\\Components\\HttpCode',
+        callable: 'badge',
+        args: { _case: 200 },
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('200');
+      expect(result.html).toContain('OK');
+      expect(result.html).toContain('http-code');
+    });
+
+    it('renders badge for 404 Not Found', async () => {
+      const result = await executor.execute({
+        type: 'enumMethod',
+        file: example('HttpCode.php'),
+        class: 'App\\Components\\HttpCode',
+        callable: 'badge',
+        args: { _case: 404 },
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('404');
+      expect(result.html).toContain('Not Found');
+    });
+
+    it('renders badge for 500 Server Error', async () => {
+      const result = await executor.execute({
+        type: 'enumMethod',
+        file: example('HttpCode.php'),
+        class: 'App\\Components\\HttpCode',
+        callable: 'badge',
+        args: { _case: 500 },
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('500');
+      expect(result.html).toContain('Internal Server Error');
+    });
+
+    it('renders page for error code with message', async () => {
+      const result = await executor.execute({
+        type: 'enumMethod',
+        file: example('HttpCode.php'),
+        class: 'App\\Components\\HttpCode',
+        callable: 'page',
+        args: { _case: 404, message: 'Page not found.' },
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('404');
+      expect(result.html).toContain('Not Found');
+      expect(result.html).toContain('Page not found.');
+      expect(result.html).toContain('http-page');
+    });
+
+    it('renders page for success code with default message', async () => {
+      const result = await executor.execute({
+        type: 'enumMethod',
+        file: example('HttpCode.php'),
+        class: 'App\\Components\\HttpCode',
+        callable: 'page',
+        args: { _case: 200 },
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('200');
+      expect(result.html).toContain('OK');
+    });
+
+    it('parses HttpCode.php as int-backed enum', () => {
+      const meta = parsePhpFile(example('HttpCode.php'));
+      const enumCls = meta.classes.find(c => c.name === 'HttpCode')!;
+      expect(enumCls.isEnum).toBe(true);
+      expect(enumCls.enumBackingType).toBe('int');
+      expect(enumCls.enumCases).toEqual(['Ok', 'Created', 'BadRequest', 'NotFound', 'ServerError']);
+      const methodNames = enumCls.methods.map(m => m.name);
+      expect(methodNames).toContain('badge');
+      expect(methodNames).toContain('label');
+      expect(methodNames).toContain('page');
+    });
+  });
+
+  // -------------------------------------------------------------------------
+  // UC108: Void/echo standalone functions
+  // -------------------------------------------------------------------------
+  describe('UC108: Echo-based standalone functions (renderHtml)', () => {
+    it('renders banner with title only', async () => {
+      const result = await executor.execute({
+        type: 'function',
+        file: example('renderHtml.php'),
+        class: null,
+        callable: 'renderBanner',
+        args: { title: 'Hello' },
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('Hello');
+      expect(result.html).toContain('banner');
+    });
+
+    it('renders banner with subtitle', async () => {
+      const result = await executor.execute({
+        type: 'function',
+        file: example('renderHtml.php'),
+        class: null,
+        callable: 'renderBanner',
+        args: { title: 'Sale', subtitle: '50% off', bg: '#dc2626' },
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('Sale');
+      expect(result.html).toContain('50% off');
+      expect(result.html).toContain('#dc2626');
+    });
+
+    it('renders alert with default type', async () => {
+      const result = await executor.execute({
+        type: 'function',
+        file: example('renderHtml.php'),
+        class: null,
+        callable: 'renderAlert',
+        args: { message: 'Saved.' },
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('Saved.');
+      expect(result.html).toContain('echo-alert');
+    });
+
+    it('renders alert with error type', async () => {
+      const result = await executor.execute({
+        type: 'function',
+        file: example('renderHtml.php'),
+        class: null,
+        callable: 'renderAlert',
+        args: { message: 'Connection lost.', type: 'error' },
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('Connection lost.');
+      expect(result.html).toContain('#ef4444');
+    });
+
+    it('parses renderHtml.php as global void functions', () => {
+      const meta = parsePhpFile(example('renderHtml.php'));
+      expect(meta.namespace).toBeNull();
+      expect(meta.functions).toHaveLength(2);
+      const banner = meta.functions.find(f => f.name === 'renderBanner')!;
+      expect(banner.params).toHaveLength(3);
+      expect(banner.returnType).toBe('void');
+      const alert = meta.functions.find(f => f.name === 'renderAlert')!;
+      expect(alert.params).toHaveLength(2);
+      expect(alert.returnType).toBe('void');
+    });
+  });
+
+  // -------------------------------------------------------------------------
+  // UC109: Variadic standalone functions
+  // -------------------------------------------------------------------------
+  describe('UC109: Variadic standalone functions (joinItems)', () => {
+    it('joins items with separator', async () => {
+      const result = await executor.execute({
+        type: 'function',
+        file: example('joinItems.php'),
+        class: null,
+        callable: 'App\\Helpers\\joinItems',
+        args: { separator: ', ', items: ['A', 'B', 'C'] },
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('A');
+      expect(result.html).toContain('B');
+      expect(result.html).toContain('C');
+      expect(result.html).toContain('join-items');
+    });
+
+    it('renders empty state', async () => {
+      const result = await executor.execute({
+        type: 'function',
+        file: example('joinItems.php'),
+        class: null,
+        callable: 'App\\Helpers\\joinItems',
+        args: { separator: ', ', items: [] },
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('join-empty');
+      expect(result.html).toContain('No items');
+    });
+
+    it('wraps each item in a tag', async () => {
+      const result = await executor.execute({
+        type: 'function',
+        file: example('joinItems.php'),
+        class: null,
+        callable: 'App\\Helpers\\wrapEach',
+        args: { tag: 'li', className: 'item', items: ['X', 'Y'] },
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('<li class="item">X</li>');
+      expect(result.html).toContain('<li class="item">Y</li>');
+    });
+
+    it('parses joinItems.php with variadic functions', () => {
+      const meta = parsePhpFile(example('joinItems.php'));
+      expect(meta.namespace).toBe('App\\Helpers');
+      expect(meta.functions).toHaveLength(2);
+      const join = meta.functions.find(f => f.name === 'joinItems')!;
+      expect(join.params[0]!.name).toBe('separator');
+      expect(join.params[0]!.isVariadic).toBe(false);
+      expect(join.params[1]!.name).toBe('items');
+      expect(join.params[1]!.isVariadic).toBe(true);
+      expect(join.params[1]!.type).toBe('string');
+    });
+  });
+
+  // -------------------------------------------------------------------------
+  // UC110: Union type parameters (string|int|null)
+  // -------------------------------------------------------------------------
+  describe('UC110: Union type params (FlexibleInput)', () => {
+    it('renders with string value', async () => {
+      const result = await executor.execute({
+        type: 'classMethod',
+        file: example('FlexibleInput.php'),
+        class: 'App\\Components\\FlexibleInput',
+        callable: 'render',
+        args: { name: 'Email', value: 'test@example.com', type: 'email' },
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('Email');
+      expect(result.html).toContain('test@example.com');
+      expect(result.html).toContain('flexible-input');
+    });
+
+    it('renders with integer value', async () => {
+      const result = await executor.execute({
+        type: 'classMethod',
+        file: example('FlexibleInput.php'),
+        class: 'App\\Components\\FlexibleInput',
+        callable: 'render',
+        args: { name: 'Age', value: 25, type: 'number' },
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('Age');
+      expect(result.html).toContain('25');
+    });
+
+    it('renders with null value', async () => {
+      const result = await executor.execute({
+        type: 'classMethod',
+        file: example('FlexibleInput.php'),
+        class: 'App\\Components\\FlexibleInput',
+        callable: 'render',
+        args: { name: 'Optional', value: null },
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('Optional');
+    });
+
+    it('renders with maxLength and required', async () => {
+      const result = await executor.execute({
+        type: 'classMethod',
+        file: example('FlexibleInput.php'),
+        class: 'App\\Components\\FlexibleInput',
+        callable: 'render',
+        args: { name: 'Bio', maxLength: 280, required: true },
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('maxlength="280"');
+      expect(result.html).toContain('required');
+      expect(result.html).toContain('Max 280 characters');
+    });
+
+    it('parses FlexibleInput.php with union types', () => {
+      const meta = parsePhpFile(example('FlexibleInput.php'));
+      const cls = meta.classes.find(c => c.name === 'FlexibleInput')!;
+      expect(cls.constructorParams).toHaveLength(5);
+      const valueParam = cls.constructorParams.find(p => p.name === 'value')!;
+      expect(valueParam.type).toBe('string|int|null');
+      expect(valueParam.nullable).toBe(true);
+      const maxParam = cls.constructorParams.find(p => p.name === 'maxLength')!;
+      expect(maxParam.type).toBe('int|null');
+      expect(maxParam.nullable).toBe(true);
+    });
+  });
+
+  // -------------------------------------------------------------------------
+  // UC111: Changelog template
+  // -------------------------------------------------------------------------
+  describe('UC111: Changelog template', () => {
+    it('renders changelog with entries', async () => {
+      const result = await executor.execute({
+        type: 'template',
+        file: example('templates/changelog.php'),
+        class: null,
+        callable: null,
+        args: {
+          version: '2.1.0',
+          entries: [
+            { type: 'added', description: 'Dark mode' },
+            { type: 'fixed', description: 'Login bug' },
+          ],
+        },
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('Changelog');
+      expect(result.html).toContain('v2.1.0');
+      expect(result.html).toContain('Added');
+      expect(result.html).toContain('Dark mode');
+      expect(result.html).toContain('Fixed');
+      expect(result.html).toContain('Login bug');
+    });
+
+    it('renders compact changelog', async () => {
+      const result = await executor.execute({
+        type: 'template',
+        file: example('templates/changelog.php'),
+        class: null,
+        callable: null,
+        args: {
+          version: '1.0.1',
+          compact: true,
+          entries: [
+            { type: 'fixed', description: 'Crash on startup' },
+          ],
+        },
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('v1.0.1');
+      expect(result.html).toContain('Crash on startup');
+    });
+
+    it('renders empty changelog', async () => {
+      const result = await executor.execute({
+        type: 'template',
+        file: example('templates/changelog.php'),
+        class: null,
+        callable: null,
+        args: { version: '3.0.0', entries: [] },
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('No changelog entries');
+    });
+  });
 });
