@@ -236,6 +236,13 @@ export function storybookPhpPlugin(options: FrameworkOptions = {}): Plugin {
 
       // Search classes/enums for the callable
       for (const cls of meta.classes) {
+        // Traits and interfaces cannot be instantiated — skip them.
+        // Their methods are resolved through the classes/enums that use them
+        // via findMethodInHierarchy / findEnumMethod.
+        if (cls.isTrait || cls.isInterface) {
+          continue;
+        }
+
         if (cls.isEnum) {
           const method = findEnumMethod(cls, callableName);
           if (method) {

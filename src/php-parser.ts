@@ -267,6 +267,8 @@ function extractClasses(source: string, ns: string | null): PhpClassMeta[] {
     const afterName = match[6]!;
 
     const isEnum = keyword === 'enum';
+    const isTrait = keyword === 'trait';
+    const isInterface = keyword === 'interface';
 
     // Extract the body using brace counting
     const bodyStart = match.index + match[0].length;
@@ -333,6 +335,8 @@ function extractClasses(source: string, ns: string | null): PhpClassMeta[] {
       isAbstract,
       isFinal,
       isReadonly,
+      isTrait,
+      isInterface,
       extends: extendsClass,
       implements: implementsList,
       traits,

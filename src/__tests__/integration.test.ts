@@ -10021,4 +10021,532 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
       expect(render.params[1]!.default).toBe('self::MAX_LENGTH');
     });
   });
+
+  // -------------------------------------------------------------------------
+  // UC152: PHP 8 attributes on constructor params and methods
+  // -------------------------------------------------------------------------
+  describe('UC152: PHP 8 attributes (AttributeCard)', () => {
+    it('renders AttributeCard with attributes stripped', async () => {
+      const result = await executor.execute({
+        type: 'classMethod',
+        file: example('AttributeCard.php'),
+        class: 'App\\Components\\AttributeCard',
+        callable: 'render',
+        args: { title: 'Attribute Test', body: 'Attributes stripped', variant: 'primary' },
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('Attribute Test');
+      expect(result.html).toContain('Attributes stripped');
+      expect(result.html).toContain('attr-card-primary');
+    });
+
+    it('renders with default args', async () => {
+      const result = await executor.execute({
+        type: 'classMethod',
+        file: example('AttributeCard.php'),
+        class: 'App\\Components\\AttributeCard',
+        callable: 'render',
+        args: { title: 'Minimal' },
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('Minimal');
+      expect(result.html).toContain('attr-card-default');
+    });
+
+    it('renders with elevated flag', async () => {
+      const result = await executor.execute({
+        type: 'classMethod',
+        file: example('AttributeCard.php'),
+        class: 'App\\Components\\AttributeCard',
+        callable: 'render',
+        args: { title: 'Elevated', elevated: true },
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('box-shadow');
+    });
+
+    it('parses AttributeCard correctly (attributes stripped)', () => {
+      const meta = parsePhpFile(example('AttributeCard.php'));
+      // CardStyle is an attribute class, AttributeCard is the main class
+      const cls = meta.classes.find(c => c.name === 'AttributeCard');
+      expect(cls).toBeDefined();
+      expect(cls!.constructorParams).toHaveLength(4);
+
+      const title = cls!.constructorParams.find(p => p.name === 'title')!;
+      expect(title.type).toBe('string');
+      expect(title.required).toBe(true);
+
+      const variant = cls!.constructorParams.find(p => p.name === 'variant')!;
+      expect(variant.default).toBeDefined();
+
+      const render = cls!.methods.find(m => m.name === 'render');
+      expect(render).toBeDefined();
+      expect(render!.returnType).toBe('string');
+    });
+
+    it('parses AttributeClass fixture: attributes on params and methods', () => {
+      const meta = parsePhpFile(fixture('AttributeClass.php'));
+      const cls = meta.classes.find(c => c.name === 'AttributeClass');
+      expect(cls).toBeDefined();
+      expect(cls!.constructorParams).toHaveLength(2);
+      expect(cls!.constructorParams[0]!.name).toBe('title');
+      expect(cls!.constructorParams[1]!.name).toBe('body');
+      expect(cls!.methods).toHaveLength(1);
+      expect(cls!.methods[0]!.name).toBe('render');
+    });
+
+    it('generates virtual module for AttributeCard', () => {
+      const plugin = storybookPhpPlugin({});
+      const resolveId = (plugin as any).resolveId.bind(plugin);
+      const load = (plugin as any).load.bind(plugin);
+      const id = resolveId('./AttributeCard.php@render', example('Button.stories.ts'));
+      const code = load(id);
+      expect(code).toContain('export const AttributeCard');
+      expect(code).toContain("__type: 'classMethod'");
+      expect(code).toContain('title');
+      expect(code).toContain('variant');
+    });
+  });
+
+  // -------------------------------------------------------------------------
+  // UC153: Stringable return from class method (EnumToString)
+  // -------------------------------------------------------------------------
+  describe('UC153: Stringable return from class method (EnumToString)', () => {
+    it('renders Mood enum via render method', async () => {
+      const result = await executor.execute({
+        type: 'enumMethod',
+        file: example('EnumToString.php'),
+        class: 'App\\Components\\Mood',
+        callable: 'render',
+        args: { _case: 'happy' },
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('mood');
+      expect(result.html).toContain('Happy');
+    });
+
+    it('renders MoodCard with enum param', async () => {
+      const result = await executor.execute({
+        type: 'classMethod',
+        file: example('EnumToString.php'),
+        class: 'App\\Components\\MoodCard',
+        callable: 'render',
+        args: { mood: 'excited', message: 'Woohoo!' },
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('mood-card');
+      expect(result.html).toContain('Excited');
+      expect(result.html).toContain('Woohoo!');
+    });
+
+    it('renders MoodCard badge method (returns Stringable object)', async () => {
+      const result = await executor.execute({
+        type: 'classMethod',
+        file: example('EnumToString.php'),
+        class: 'App\\Components\\MoodCard',
+        callable: 'badge',
+        args: { mood: 'sad' },
+      });
+      expect(result.error).toBeUndefined();
+      // badge() returns a MoodBadge (Stringable), runner converts via __toString
+      expect(result.html).toContain('Sad');
+    });
+
+    it('parses Mood enum and MoodCard class', () => {
+      const meta = parsePhpFile(example('EnumToString.php'));
+      const mood = meta.classes.find(c => c.name === 'Mood');
+      expect(mood).toBeDefined();
+      expect(mood!.isEnum).toBe(true);
+      expect(mood!.enumBackingType).toBe('string');
+      expect(mood!.enumCases).toEqual(['Happy', 'Sad', 'Neutral', 'Excited']);
+
+      const moodBadge = meta.classes.find(c => c.name === 'MoodBadge');
+      expect(moodBadge).toBeDefined();
+      expect(moodBadge!.implements).toContain('\\Stringable');
+
+      const moodCard = meta.classes.find(c => c.name === 'MoodCard');
+      expect(moodCard).toBeDefined();
+      expect(moodCard!.constructorParams).toHaveLength(2);
+      expect(moodCard!.methods).toHaveLength(2);
+    });
+
+    it('parses EnumStringable fixture', () => {
+      const meta = parsePhpFile(fixture('EnumStringable.php'));
+      const wrapper = meta.classes.find(c => c.name === 'StringableWrapper');
+      expect(wrapper).toBeDefined();
+      expect(wrapper!.implements).toContain('\\Stringable');
+
+      const badge = meta.classes.find(c => c.name === 'Badge');
+      expect(badge).toBeDefined();
+      expect(badge!.isEnum).toBe(true);
+
+      const holder = meta.classes.find(c => c.name === 'BadgeHolder');
+      expect(holder).toBeDefined();
+      expect(holder!.constructorParams[0]!.type).toBe('Badge');
+    });
+
+    it('generates enumMethod module for Mood and classMethod for MoodCard', () => {
+      const plugin = storybookPhpPlugin({});
+      const resolveId = (plugin as any).resolveId.bind(plugin);
+      const load = (plugin as any).load.bind(plugin);
+      const id = resolveId('./EnumToString.php@render', example('Button.stories.ts'));
+      const code = load(id);
+      expect(code).toContain('export const Mood');
+      expect(code).toContain("__type: 'enumMethod'");
+      expect(code).toContain('export const MoodCard');
+      expect(code).toContain("__type: 'classMethod'");
+      // MoodBadge is a Stringable value object, not a component — should not be exported
+      // (it has no render method matching 'render' since its constructor takes 3 required args)
+    });
+  });
+
+  // -------------------------------------------------------------------------
+  // UC154: Enum with trait providing static method
+  // -------------------------------------------------------------------------
+  describe('UC154: Enum with trait static method (TraitStaticEnum)', () => {
+    it('renders Palette swatch via enum instance method', async () => {
+      const result = await executor.execute({
+        type: 'enumMethod',
+        file: example('TraitStaticEnum.php'),
+        class: 'App\\Components\\Palette',
+        callable: 'swatch',
+        args: { _case: '#f43f5e' },
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('swatch');
+      expect(result.html).toContain('Rose');
+    });
+
+    it('renders Palette showcase via trait static method', async () => {
+      const result = await executor.execute({
+        type: 'staticMethod',
+        file: example('TraitStaticEnum.php'),
+        class: 'App\\Components\\Palette',
+        callable: 'showcase',
+        args: {},
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('showcase');
+      expect(result.html).toContain('Rose');
+      expect(result.html).toContain('Emerald');
+    });
+
+    it('parses Palette enum and HasShowcase trait', () => {
+      const meta = parsePhpFile(example('TraitStaticEnum.php'));
+      const trait = meta.classes.find(c => c.name === 'HasShowcase');
+      expect(trait).toBeDefined();
+      expect(trait!.isTrait).toBe(true);
+      expect(trait!.methods).toHaveLength(1);
+      expect(trait!.methods[0]!.name).toBe('showcase');
+      expect(trait!.methods[0]!.isStatic).toBe(true);
+
+      const palette = meta.classes.find(c => c.name === 'Palette');
+      expect(palette).toBeDefined();
+      expect(palette!.isEnum).toBe(true);
+      expect(palette!.traits).toContain('HasShowcase');
+      expect(palette!.enumCases).toEqual(['Rose', 'Sky', 'Amber', 'Emerald', 'Violet']);
+    });
+
+    it('parses TraitStaticEnum fixture', () => {
+      const meta = parsePhpFile(fixture('TraitStaticEnum.php'));
+      const trait = meta.classes.find(c => c.name === 'HasShowcase');
+      expect(trait).toBeDefined();
+      expect(trait!.isTrait).toBe(true);
+
+      const swatch = meta.classes.find(c => c.name === 'Swatch');
+      expect(swatch).toBeDefined();
+      expect(swatch!.traits).toContain('HasShowcase');
+    });
+
+    it('generates staticMethod module for showcase (from trait)', () => {
+      const plugin = storybookPhpPlugin({});
+      const resolveId = (plugin as any).resolveId.bind(plugin);
+      const load = (plugin as any).load.bind(plugin);
+      const id = resolveId('./TraitStaticEnum.php@showcase', example('Button.stories.ts'));
+      const code = load(id);
+      expect(code).toContain('export const Palette');
+      expect(code).toContain("__type: 'staticMethod'");
+      // Trait should NOT be exported
+      expect(code).not.toContain('export const HasShowcase');
+    });
+  });
+
+  // -------------------------------------------------------------------------
+  // UC155: PHP constant expression defaults
+  // -------------------------------------------------------------------------
+  describe('UC155: Constant expression defaults (ConstExprDefaults)', () => {
+    it('renders ConstExprDefaults with PHP constant defaults', async () => {
+      const result = await executor.execute({
+        type: 'classMethod',
+        file: example('ConstExprDefaults.php'),
+        class: 'App\\Components\\ConstExprDefaults',
+        callable: 'render',
+        args: { title: 'Config Display' },
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('Config Display');
+      expect(result.html).toContain('const-defaults');
+    });
+
+    it('renders with custom separator', async () => {
+      const result = await executor.execute({
+        type: 'classMethod',
+        file: example('ConstExprDefaults.php'),
+        class: 'App\\Components\\ConstExprDefaults',
+        callable: 'render',
+        args: { title: 'Custom', separator: ', ' },
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('comma-space');
+    });
+
+    it('parses PHP constant defaults correctly', () => {
+      const meta = parsePhpFile(example('ConstExprDefaults.php'));
+      const cls = meta.classes.find(c => c.name === 'ConstExprDefaults')!;
+      expect(cls.constructorParams).toHaveLength(5);
+
+      const separator = cls.constructorParams.find(p => p.name === 'separator')!;
+      expect(separator.default).toBe('PHP_EOL');
+      expect(separator.required).toBe(false);
+
+      const maxItems = cls.constructorParams.find(p => p.name === 'maxItems')!;
+      expect(maxItems.default).toBe('PHP_INT_SIZE');
+      expect(maxItems.type).toBe('int');
+
+      const version = cls.constructorParams.find(p => p.name === 'version')!;
+      expect(version.default).toBe('PHP_VERSION');
+      expect(version.type).toBe('string');
+    });
+
+    it('parses ConstExprDefaults fixture', () => {
+      const meta = parsePhpFile(fixture('ConstExprDefaults.php'));
+      const cls = meta.classes[0]!;
+      expect(cls.constructorParams[1]!.default).toBe('PHP_EOL');
+      expect(cls.constructorParams[2]!.default).toBe('PHP_INT_SIZE');
+      expect(cls.constructorParams[3]!.default).toBe('PHP_VERSION');
+    });
+  });
+
+  // -------------------------------------------------------------------------
+  // UC156: Abstract parent with trait, concrete child inherits method
+  // -------------------------------------------------------------------------
+  describe('UC156: Abstract parent with trait method (AbstractTraitChild)', () => {
+    it('renders ArticleCard (inherits render from trait via abstract parent)', async () => {
+      const result = await executor.execute({
+        type: 'classMethod',
+        file: example('AbstractTraitChild.php'),
+        class: 'App\\Components\\ArticleCard',
+        callable: 'render',
+        args: { title: 'Test Article', excerpt: 'An excerpt.', author: 'Alice' },
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('layout-card');
+      expect(result.html).toContain('Test Article');
+      expect(result.html).toContain('An excerpt.');
+      expect(result.html).toContain('By Alice');
+    });
+
+    it('renders QuoteCard (another child of same abstract+trait)', async () => {
+      const result = await executor.execute({
+        type: 'classMethod',
+        file: example('AbstractTraitChild.php'),
+        class: 'App\\Components\\QuoteCard',
+        callable: 'render',
+        args: { title: 'Quote', quote: 'To be or not to be.', source: 'Shakespeare' },
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('layout-card');
+      expect(result.html).toContain('To be or not to be.');
+      expect(result.html).toContain('Shakespeare');
+    });
+
+    it('parses AbstractTraitChild with trait, abstract, and concrete classes', () => {
+      const meta = parsePhpFile(example('AbstractTraitChild.php'));
+
+      const trait = meta.classes.find(c => c.name === 'HasCardLayout');
+      expect(trait).toBeDefined();
+      expect(trait!.isTrait).toBe(true);
+      expect(trait!.methods.some(m => m.name === 'render')).toBe(true);
+
+      const abstract = meta.classes.find(c => c.name === 'AbstractLayoutCard');
+      expect(abstract).toBeDefined();
+      expect(abstract!.isAbstract).toBe(true);
+      expect(abstract!.traits).toContain('HasCardLayout');
+
+      const article = meta.classes.find(c => c.name === 'ArticleCard');
+      expect(article).toBeDefined();
+      expect(article!.extends).toBe('AbstractLayoutCard');
+      expect(article!.constructorParams).toHaveLength(3);
+
+      const quote = meta.classes.find(c => c.name === 'QuoteCard');
+      expect(quote).toBeDefined();
+      expect(quote!.extends).toBe('AbstractLayoutCard');
+      expect(quote!.constructorParams).toHaveLength(3);
+    });
+
+    it('generates classMethod modules for concrete children (not trait or abstract)', () => {
+      const plugin = storybookPhpPlugin({});
+      const resolveId = (plugin as any).resolveId.bind(plugin);
+      const load = (plugin as any).load.bind(plugin);
+      const id = resolveId('./AbstractTraitChild.php@render', example('Button.stories.ts'));
+      const code = load(id);
+
+      // Concrete children should be exported
+      expect(code).toContain('export const ArticleCard');
+      expect(code).toContain('export const QuoteCard');
+
+      // Trait and abstract class should NOT be exported
+      expect(code).not.toContain('export const HasCardLayout');
+      expect(code).not.toContain('export const AbstractLayoutCard');
+    });
+
+    it('parses TraitInterface fixture: trait, interface, abstract, concrete', () => {
+      const meta = parsePhpFile(fixture('TraitInterface.php'));
+
+      const iface = meta.classes.find(c => c.name === 'Displayable');
+      expect(iface).toBeDefined();
+      expect(iface!.isInterface).toBe(true);
+
+      const trait = meta.classes.find(c => c.name === 'HasRender');
+      expect(trait).toBeDefined();
+      expect(trait!.isTrait).toBe(true);
+      expect(trait!.methods).toHaveLength(2);
+
+      const abstract = meta.classes.find(c => c.name === 'AbstractWidget');
+      expect(abstract).toBeDefined();
+      expect(abstract!.isAbstract).toBe(true);
+      expect(abstract!.traits).toContain('HasRender');
+
+      const concrete = meta.classes.find(c => c.name === 'ConcreteWidget');
+      expect(concrete).toBeDefined();
+      expect(concrete!.extends).toBe('AbstractWidget');
+      expect(concrete!.implements).toContain('Displayable');
+    });
+
+    it('skips trait and interface in virtual module generation', () => {
+      const plugin = storybookPhpPlugin({});
+      const resolveId = (plugin as any).resolveId.bind(plugin);
+      const load = (plugin as any).load.bind(plugin);
+      const id = resolveId(fixture('TraitInterface.php') + '@render', undefined);
+      const code = load(id.replace(fixture('TraitInterface.php'), fixture('TraitInterface.php')));
+
+      // Should NOT contain trait or interface exports
+      expect(code).not.toContain('export const HasRender');
+      expect(code).not.toContain('export const Displayable');
+      // Should contain concrete class
+      expect(code).toContain('export const ConcreteWidget');
+    });
+  });
+
+  // -------------------------------------------------------------------------
+  // UC157: Intersection type parameters (updated Intersection.php)
+  // -------------------------------------------------------------------------
+  describe('UC157: Intersection type parameters (Intersection)', () => {
+    it('renders IntersectionBadge with string fallback', async () => {
+      const result = await executor.execute({
+        type: 'classMethod',
+        file: example('Intersection.php'),
+        class: 'App\\Components\\IntersectionBadge',
+        callable: 'render',
+        args: { tag: 'TypeSafe', color: '#3b82f6' },
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('TypeSafe');
+      expect(result.html).toContain('#3b82f6');
+    });
+
+    it('renders with default values', async () => {
+      const result = await executor.execute({
+        type: 'classMethod',
+        file: example('Intersection.php'),
+        class: 'App\\Components\\IntersectionBadge',
+        callable: 'render',
+        args: {},
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('default');
+    });
+
+    it('parses intersection/DNF type in method params', () => {
+      const meta = parsePhpFile(example('Intersection.php'));
+      const cls = meta.classes.find(c => c.name === 'IntersectionBadge')!;
+      const render = cls.methods.find(m => m.name === 'render')!;
+      expect(render.params).toHaveLength(2);
+
+      const tag = render.params[0]!;
+      expect(tag.name).toBe('tag');
+      // The type should capture the DNF intersection type
+      expect(tag.type).toContain('HasLabel');
+      expect(tag.type).toContain('HasColor');
+    });
+  });
+
+  // -------------------------------------------------------------------------
+  // UC152-157: Parser isTrait and isInterface flags
+  // -------------------------------------------------------------------------
+  describe('UC152-157: Parser isTrait and isInterface', () => {
+    it('marks traits with isTrait=true', () => {
+      const meta = parsePhpFile(example('TraitAccordion.php'));
+      const trait = meta.classes.find(c => c.name === 'HasToggle');
+      expect(trait).toBeDefined();
+      expect(trait!.isTrait).toBe(true);
+      expect(trait!.isInterface).toBe(false);
+      expect(trait!.isEnum).toBe(false);
+
+      const cls = meta.classes.find(c => c.name === 'AccordionPanel');
+      expect(cls).toBeDefined();
+      expect(cls!.isTrait).toBe(false);
+    });
+
+    it('marks interfaces with isInterface=true', () => {
+      const meta = parsePhpFile(example('Renderable.php'));
+      const iface = meta.classes.find(c => c.name === 'RenderableInterface');
+      expect(iface).toBeDefined();
+      expect(iface!.isInterface).toBe(true);
+      expect(iface!.isTrait).toBe(false);
+    });
+
+    it('skips trait exports in vite plugin', () => {
+      const plugin = storybookPhpPlugin({});
+      const resolveId = (plugin as any).resolveId.bind(plugin);
+      const load = (plugin as any).load.bind(plugin);
+      const id = resolveId('./TraitAccordion.php@toggle', example('Button.stories.ts'));
+      const code = load(id);
+
+      // Traits should not appear as exports
+      expect(code).not.toContain('export const HasToggle');
+      expect(code).not.toContain('export const HasTooltip');
+
+      // Classes using the trait should be exported
+      expect(code).toContain('export const AccordionPanel');
+      expect(code).toContain('export const RichWidget');
+    });
+
+    it('skips interface exports in vite plugin', () => {
+      const plugin = storybookPhpPlugin({});
+      const resolveId = (plugin as any).resolveId.bind(plugin);
+      const load = (plugin as any).load.bind(plugin);
+      const id = resolveId('./Renderable.php@render', example('Button.stories.ts'));
+      const code = load(id);
+
+      // Interface should not appear
+      expect(code).not.toContain('export const RenderableInterface');
+
+      // Implementing classes should be exported
+      expect(code).toContain('export const InfoBox');
+      expect(code).toContain('export const WarningBox');
+    });
+
+    it('marks EnumWithTrait trait correctly', () => {
+      const meta = parsePhpFile(example('EnumWithTrait.php'));
+      const trait = meta.classes.find(c => c.name === 'HasStatusBadge');
+      expect(trait).toBeDefined();
+      expect(trait!.isTrait).toBe(true);
+
+      const enumCls = meta.classes.find(c => c.name === 'TaskPriority');
+      expect(enumCls).toBeDefined();
+      expect(enumCls!.isEnum).toBe(true);
+      expect(enumCls!.isTrait).toBe(false);
+    });
+  });
 });

@@ -67,6 +67,8 @@ export interface PhpClassMeta {
   isAbstract: boolean;
   isFinal: boolean;
   isReadonly: boolean;
+  isTrait: boolean;
+  isInterface: boolean;
   extends: string | null;
   implements: string[];
   traits: string[];

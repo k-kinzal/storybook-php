@@ -639,11 +639,15 @@ trait HasSlug {
       const renderable = meta.classes.find((c) => c.name === 'Renderable')!;
       expect(renderable).toBeDefined();
       expect(renderable.methods).toHaveLength(1);
+      expect(renderable.isInterface).toBe(true);
+      expect(renderable.isTrait).toBe(false);
 
       const hasSlug = meta.classes.find((c) => c.name === 'HasSlug')!;
       expect(hasSlug).toBeDefined();
       expect(hasSlug.methods).toHaveLength(1);
       expect(hasSlug.methods[0]!.name).toBe('slug');
+      expect(hasSlug.isTrait).toBe(true);
+      expect(hasSlug.isInterface).toBe(false);
     });
   });
 
