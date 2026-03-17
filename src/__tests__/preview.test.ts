@@ -185,7 +185,52 @@ describe('renderToCanvas', () => {
 });
 
 describe('render', () => {
-  it('returns empty string', () => {
-    expect(render({})).toBe('');
+  it('returns placeholder comment', () => {
+    const result = render({});
+    expect(result).toContain('storybook-php-content');
+    expect(result).toMatch(/^<!--.*-->$/);
+  });
+});
+
+describe('decorator support', () => {
+  it('injects PHP HTML into decorator wrapper via placeholder', async () => {
+    const canvas = document.createElement('div');
+    const ctx = {
+      storyContext: { component: phpComponent, args: {}, name: 'Test', title: 'Test', id: 'test' },
+      storyFn: () => `<div class="wrapper">${render({})}</div>`,
+      showMain: mockShowMain,
+      showError: mockShowError,
+    };
+
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
+      json: () => Promise.resolve({ html: '<p>PHP output</p>' }),
+    }));
+
+    await renderToCanvas(ctx, canvas);
+
+    expect(canvas.innerHTML).toContain('<div class="wrapper">');
+    expect(canvas.innerHTML).toContain('<p>PHP output</p>');
+    expect(canvas.innerHTML).toContain('</div>');
+    expect(canvas.innerHTML).not.toContain('storybook-php-content');
+    expect(mockShowMain).toHaveBeenCalled();
+  });
+
+  it('falls back to raw PHP HTML when no placeholder in storyFn output', async () => {
+    const canvas = document.createElement('div');
+    const ctx = {
+      storyContext: { component: phpComponent, args: {}, name: 'Test', title: 'Test', id: 'test' },
+      storyFn: () => '<p>no placeholder here</p>',
+      showMain: mockShowMain,
+      showError: mockShowError,
+    };
+
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
+      json: () => Promise.resolve({ html: '<p>PHP output</p>' }),
+    }));
+
+    await renderToCanvas(ctx, canvas);
+
+    expect(canvas.innerHTML).toBe('<p>PHP output</p>');
+    expect(mockShowMain).toHaveBeenCalled();
   });
 });

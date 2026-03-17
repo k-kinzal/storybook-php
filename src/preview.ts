@@ -1,6 +1,7 @@
 import type { PhpComponent, PhpRenderRequest } from './types.js';
 
 const RENDER_ENDPOINT = '/__storybook_php/render';
+const PHP_PLACEHOLDER = '<!-- storybook-php-content -->';
 
 let currentAbortController: AbortController | null = null;
 
@@ -29,6 +30,9 @@ export async function renderToCanvas(
     showMain();
     return;
   }
+
+  // Get the decorated story output (includes placeholder wrapped by decorators)
+  const decoratedOutput = storyFn();
 
   // Cancel any in-flight request
   if (currentAbortController) {
@@ -67,7 +71,12 @@ export async function renderToCanvas(
       return;
     }
 
-    canvasElement.innerHTML = result.html;
+    // If decorators wrapped the placeholder, inject PHP HTML into the wrapper
+    if (decoratedOutput.includes(PHP_PLACEHOLDER)) {
+      canvasElement.innerHTML = decoratedOutput.replace(PHP_PLACEHOLDER, result.html);
+    } else {
+      canvasElement.innerHTML = result.html;
+    }
     reExecuteScripts(canvasElement);
     showMain();
   } catch (err: unknown) {
@@ -98,9 +107,10 @@ function isPhpComponent(value: unknown): value is PhpComponent {
   return typeof value === 'object' && value !== null && '__php' in value && (value as Record<string, unknown>).__php === true;
 }
 
-/** Default render function for Storybook */
+/** Default render function for Storybook — returns a placeholder that
+ *  decorators can wrap. renderToCanvas replaces it with the PHP output. */
 export function render(_args: Record<string, unknown>): string {
-  return ''; // Actual rendering is handled by renderToCanvas
+  return PHP_PLACEHOLDER;
 }
 
 export const parameters = {

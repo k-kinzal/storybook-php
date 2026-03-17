@@ -4618,5 +4618,233 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
       expect(severity.enumCases).toEqual(['Info', 'Warning', 'Error', 'Critical']);
       expect(severity.methods).toHaveLength(2);
     });
+
+    it('parses Settings as readonly class', () => {
+      const meta = parsePhpFile(example('Settings.php'));
+      const cls = meta.classes[0]!;
+      expect(cls.name).toBe('Settings');
+      expect(cls.isReadonly).toBe(true);
+      expect(cls.isFinal).toBe(false);
+      expect(cls.constructorParams).toHaveLength(3);
+      expect(cls.constructorParams.map(p => p.name)).toEqual(['theme', 'fontSize', 'animations']);
+    });
+
+    it('parses StyledCard with object param and new default', () => {
+      const meta = parsePhpFile(example('StyledCard.php'));
+      const cardStyle = meta.classes.find(c => c.name === 'CardStyle')!;
+      expect(cardStyle.isReadonly).toBe(true);
+      expect(cardStyle.constructorParams).toHaveLength(4);
+      const styledCard = meta.classes.find(c => c.name === 'StyledCard')!;
+      const styleParam = styledCard.constructorParams.find(p => p.name === 'style')!;
+      expect(styleParam.type).toBe('CardStyle');
+      expect(styleParam.required).toBe(false);
+    });
+
+    it('parses Checklist with variadic constructor and Generator return', () => {
+      const meta = parsePhpFile(example('Checklist.php'));
+      const cls = meta.classes[0]!;
+      expect(cls.name).toBe('Checklist');
+      const itemsParam = cls.constructorParams.find(p => p.name === 'items')!;
+      expect(itemsParam.isVariadic).toBe(true);
+      const renderMethod = cls.methods.find(m => m.name === 'render')!;
+      expect(renderMethod.returnType).toBe('\\Generator');
+    });
+  });
+
+  // -------------------------------------------------------------------------
+  // UC72: Readonly class (non-final)
+  // -------------------------------------------------------------------------
+  describe('UC72: Readonly class', () => {
+    it('renders Settings with default args', async () => {
+      const result = await executor.execute({
+        type: 'classMethod',
+        file: example('Settings.php'),
+        class: 'App\\Components\\Settings',
+        callable: 'render',
+        args: {},
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('light');
+      expect(result.html).toContain('14px');
+      expect(result.html).toContain('enabled');
+    });
+
+    it('renders Settings with dark theme', async () => {
+      const result = await executor.execute({
+        type: 'classMethod',
+        file: example('Settings.php'),
+        class: 'App\\Components\\Settings',
+        callable: 'render',
+        args: { theme: 'dark', fontSize: 18, animations: false },
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('dark');
+      expect(result.html).toContain('18px');
+      expect(result.html).toContain('disabled');
+      expect(result.html).toContain('#1f2937');
+    });
+  });
+
+  // -------------------------------------------------------------------------
+  // UC73: Object params with new default expression
+  // -------------------------------------------------------------------------
+  describe('UC73: Object params with new default', () => {
+    it('renders StyledCard with default CardStyle', async () => {
+      const result = await executor.execute({
+        type: 'classMethod',
+        file: example('StyledCard.php'),
+        class: 'App\\Components\\StyledCard',
+        callable: 'render',
+        args: { title: 'Hello' },
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('Hello');
+      expect(result.html).toContain('styled-card');
+    });
+
+    it('renders StyledCard with body text', async () => {
+      const result = await executor.execute({
+        type: 'classMethod',
+        file: example('StyledCard.php'),
+        class: 'App\\Components\\StyledCard',
+        callable: 'render',
+        args: { title: 'Card', body: 'Body text here' },
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('Card');
+      expect(result.html).toContain('Body text here');
+    });
+  });
+
+  // -------------------------------------------------------------------------
+  // UC74: Generator return
+  // -------------------------------------------------------------------------
+  describe('UC74: Generator return', () => {
+    it('renders Checklist with items via yield', async () => {
+      const result = await executor.execute({
+        type: 'classMethod',
+        file: example('Checklist.php'),
+        class: 'App\\Components\\Checklist',
+        callable: 'render',
+        args: { title: 'Tasks', items: ['A', 'B', 'C'] },
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('Tasks');
+      expect(result.html).toContain('<li');
+      expect(result.html).toContain('A');
+      expect(result.html).toContain('B');
+      expect(result.html).toContain('C');
+    });
+
+    it('renders Checklist as numbered list', async () => {
+      const result = await executor.execute({
+        type: 'classMethod',
+        file: example('Checklist.php'),
+        class: 'App\\Components\\Checklist',
+        callable: 'render',
+        args: { title: 'Steps', items: ['First', 'Second'], numbered: true },
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('<ol');
+      expect(result.html).toContain('First');
+    });
+
+    it('renders empty Checklist', async () => {
+      const result = await executor.execute({
+        type: 'classMethod',
+        file: example('Checklist.php'),
+        class: 'App\\Components\\Checklist',
+        callable: 'render',
+        args: { title: 'Empty' },
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('No items');
+    });
+  });
+
+  // -------------------------------------------------------------------------
+  // UC75: Inventory template
+  // -------------------------------------------------------------------------
+  describe('UC75: Inventory template', () => {
+    it('renders inventory with products', async () => {
+      const result = await executor.execute({
+        type: 'template',
+        file: example('templates/inventory.php'),
+        class: null,
+        callable: null,
+        args: {
+          products: [
+            { name: 'Widget', price: 19.99, stock: 10 },
+          ],
+          currency: 'USD',
+          showStock: true,
+        },
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('Widget');
+      expect(result.html).toContain('19.99');
+      expect(result.html).toContain('Stock');
+    });
+
+    it('renders inventory without stock column', async () => {
+      const result = await executor.execute({
+        type: 'template',
+        file: example('templates/inventory.php'),
+        class: null,
+        callable: null,
+        args: {
+          products: [{ name: 'Item', price: 5.00 }],
+          showStock: false,
+        },
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('Item');
+      expect(result.html).not.toContain('Stock');
+    });
+
+    it('renders empty inventory', async () => {
+      const result = await executor.execute({
+        type: 'template',
+        file: example('templates/inventory.php'),
+        class: null,
+        callable: null,
+        args: { products: [] },
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('No products');
+    });
+  });
+
+  // -------------------------------------------------------------------------
+  // Vite plugin: new examples
+  // -------------------------------------------------------------------------
+  describe('Vite plugin: new example virtual modules', () => {
+    const plugin = storybookPhpPlugin();
+    const resolveId = (plugin as any).resolveId.bind(plugin);
+    const load = (plugin as any).load.bind(plugin);
+
+    it('generates virtual module for Settings.php@render', () => {
+      const id = resolveId('./Settings.php@render', example('Settings.php'));
+      expect(id).toContain('storybook-php:');
+      const code = load(id);
+      expect(code).toContain("__type: 'classMethod'");
+      expect(code).toContain("export const Settings");
+    });
+
+    it('generates virtual module for StyledCard.php@render', () => {
+      const id = resolveId('./StyledCard.php@render', example('StyledCard.php'));
+      expect(id).toContain('storybook-php:');
+      const code = load(id);
+      expect(code).toContain("__type: 'classMethod'");
+      expect(code).toContain("export const StyledCard");
+    });
+
+    it('generates virtual module for Checklist.php@render', () => {
+      const id = resolveId('./Checklist.php@render', example('Checklist.php'));
+      expect(id).toContain('storybook-php:');
+      const code = load(id);
+      expect(code).toContain("__type: 'classMethod'");
+      expect(code).toContain("export const Checklist");
+    });
   });
 });
