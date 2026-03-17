@@ -7269,5 +7269,175 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
       expect(code).toContain("__type: 'classMethod'");
       expect(code).toContain('SelfChain');
     });
+
+    it('UC118: ValueObject@render generates classMethod with readonly-no-visibility params', () => {
+      const id = plugin.resolveId('./ValueObject.php@render', example('Button.stories.ts'));
+      const code = plugin.load(id);
+      expect(code).toContain("__type: 'classMethod'");
+      expect(code).toContain('ValueObject');
+      expect(code).toContain('id:');
+      expect(code).toContain('value:');
+      expect(code).toContain('unit:');
+    });
+
+    it('UC119: NewDefaults@render generates classMethod for new-expression default', () => {
+      const id = plugin.resolveId('./NewDefaults.php@render', example('Button.stories.ts'));
+      const code = plugin.load(id);
+      expect(code).toContain("__type: 'classMethod'");
+      expect(code).toContain('StyledBox');
+      expect(code).toContain('title:');
+      expect(code).toContain('options:');
+    });
+
+    it('UC120: DnfParam@render generates classMethod for DNF type param', () => {
+      const id = plugin.resolveId('./DnfParam.php@render', example('Button.stories.ts'));
+      const code = plugin.load(id);
+      expect(code).toContain("__type: 'classMethod'");
+      expect(code).toContain('DnfParam');
+      expect(code).toContain('title:');
+      expect(code).toContain('badge:');
+      expect(code).toContain('compact:');
+    });
+  });
+
+  // -------------------------------------------------------------------------
+  // UC118: Readonly without visibility
+  // -------------------------------------------------------------------------
+  describe('UC118: Readonly without visibility', () => {
+    it('renders ValueObject with all args', async () => {
+      const result = await executor.execute({
+        type: 'classMethod',
+        file: example('ValueObject.php'),
+        class: 'App\\Components\\ValueObject',
+        callable: 'render',
+        args: { id: 'temperature', value: 72, unit: 'F' },
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('temperature');
+      expect(result.html).toContain('72');
+      expect(result.html).toContain('F');
+    });
+
+    it('renders ValueObject without optional unit', async () => {
+      const result = await executor.execute({
+        type: 'classMethod',
+        file: example('ValueObject.php'),
+        class: 'App\\Components\\ValueObject',
+        callable: 'render',
+        args: { id: 'visitors', value: 1453 },
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('visitors');
+      expect(result.html).toContain('1453');
+    });
+
+    it('parses ValueObject readonly-no-visibility params', () => {
+      const meta = parsePhpFile(example('ValueObject.php'));
+      const cls = meta.classes.find(c => c.name === 'ValueObject')!;
+      expect(cls).toBeDefined();
+      expect(cls.constructorParams).toHaveLength(3);
+      const idParam = cls.constructorParams.find(p => p.name === 'id')!;
+      expect(idParam.type).toBe('string');
+      expect(idParam.isPromoted).toBe(true);
+      expect(idParam.required).toBe(true);
+      const unitParam = cls.constructorParams.find(p => p.name === 'unit')!;
+      expect(unitParam.required).toBe(false);
+    });
+  });
+
+  // -------------------------------------------------------------------------
+  // UC119: new expression in default parameter
+  // -------------------------------------------------------------------------
+  describe('UC119: New expression in default parameter', () => {
+    it('renders StyledBox with defaults', async () => {
+      const result = await executor.execute({
+        type: 'classMethod',
+        file: example('NewDefaults.php'),
+        class: 'App\\Components\\StyledBox',
+        callable: 'render',
+        args: { title: 'Notice' },
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('Notice');
+      expect(result.html).toContain('#3b82f6');
+      expect(result.html).toContain('styled-box');
+    });
+
+    it('renders StyledBox with content', async () => {
+      const result = await executor.execute({
+        type: 'classMethod',
+        file: example('NewDefaults.php'),
+        class: 'App\\Components\\StyledBox',
+        callable: 'render',
+        args: { title: 'Info', content: 'Details here' },
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('Info');
+      expect(result.html).toContain('Details here');
+    });
+
+    it('parses StyledBox with new BoxOptions() default', () => {
+      const meta = parsePhpFile(example('NewDefaults.php'));
+      const cls = meta.classes.find(c => c.name === 'StyledBox')!;
+      expect(cls).toBeDefined();
+      const optionsParam = cls.constructorParams.find(p => p.name === 'options')!;
+      expect(optionsParam.type).toBe('BoxOptions');
+      expect(optionsParam.required).toBe(false);
+      expect(optionsParam.default).toContain('new BoxOptions()');
+    });
+  });
+
+  // -------------------------------------------------------------------------
+  // UC120: DNF (Disjunctive Normal Form) type parameters
+  // -------------------------------------------------------------------------
+  describe('UC120: DNF type parameters', () => {
+    it('renders DnfParam with string badge', async () => {
+      const result = await executor.execute({
+        type: 'classMethod',
+        file: example('DnfParam.php'),
+        class: 'App\\Components\\DnfParam',
+        callable: 'render',
+        args: { title: 'Feature', badge: 'new' },
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('Feature');
+      expect(result.html).toContain('new');
+    });
+
+    it('renders DnfParam with defaults', async () => {
+      const result = await executor.execute({
+        type: 'classMethod',
+        file: example('DnfParam.php'),
+        class: 'App\\Components\\DnfParam',
+        callable: 'render',
+        args: { title: 'DNF Types' },
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('DNF Types');
+      expect(result.html).toContain('default');
+    });
+
+    it('renders DnfParam in compact mode', async () => {
+      const result = await executor.execute({
+        type: 'classMethod',
+        file: example('DnfParam.php'),
+        class: 'App\\Components\\DnfParam',
+        callable: 'render',
+        args: { title: 'Compact', badge: 'beta', compact: true },
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('Compact');
+      expect(result.html).toContain('beta');
+      expect(result.html).toContain('font-size: 13px');
+    });
+
+    it('parses DnfParam with DNF type', () => {
+      const meta = parsePhpFile(example('DnfParam.php'));
+      const cls = meta.classes.find(c => c.name === 'DnfParam')!;
+      expect(cls).toBeDefined();
+      const badgeParam = cls.constructorParams.find(p => p.name === 'badge')!;
+      expect(badgeParam).toBeDefined();
+      expect(badgeParam.required).toBe(false);
+    });
   });
 });

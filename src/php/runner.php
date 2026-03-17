@@ -50,15 +50,24 @@ function castArg(ReflectionParameter $param, mixed $value): mixed
     if ($type instanceof ReflectionUnionType) {
         $unionTypes = $type->getTypes();
 
+        // Filter to only ReflectionNamedType for scoring (skip intersection types in DNF)
+        $namedTypes = array_filter($unionTypes, fn($t) => $t instanceof ReflectionNamedType);
+        $otherTypes = array_filter($unionTypes, fn($t) => !($t instanceof ReflectionNamedType));
+
         // Prefer exact-match types to avoid lossy casts (e.g. float → int truncation).
         // Sort so the best-matching type for the value comes first.
-        usort($unionTypes, function (ReflectionNamedType $a, ReflectionNamedType $b) use ($value) {
+        usort($namedTypes, function (ReflectionNamedType $a, ReflectionNamedType $b) use ($value) {
             return scoreTypeMatch($b, $value) <=> scoreTypeMatch($a, $value);
         });
 
-        foreach ($unionTypes as $unionType) {
+        // Try named types first (sorted by match score), then any remaining types
+        foreach ([...$namedTypes, ...$otherTypes] as $unionType) {
             try {
-                return castWithNamedType($unionType, $value, $param);
+                if ($unionType instanceof ReflectionNamedType) {
+                    return castWithNamedType($unionType, $value, $param);
+                }
+                // For intersection types in DNF, return value as-is
+                return $value;
             } catch (\Throwable) {
                 // try next
             }
