@@ -2198,4 +2198,167 @@ class Tooltip {
       expect(echo.returnType).toBe('void');
     });
   });
+
+  // -----------------------------------------------------------------------
+  // ConcreteWidget: Interface + Trait + Abstract + Concrete hierarchy
+  // -----------------------------------------------------------------------
+  describe('ConcreteWidget', () => {
+    it('parses all 4 class-like declarations', () => {
+      const meta = parsePhpSource(fixture('ConcreteWidget.php'), 'ConcreteWidget.php');
+      expect(meta.classes).toHaveLength(4);
+
+      const iface = meta.classes.find(c => c.name === 'Displayable')!;
+      expect(iface.isInterface).toBe(true);
+      expect(iface.methods).toHaveLength(1);
+      expect(iface.methods[0]!.name).toBe('display');
+
+      const trait = meta.classes.find(c => c.name === 'HasContainer')!;
+      expect(trait.isTrait).toBe(true);
+      expect(trait.methods).toHaveLength(1);
+      expect(trait.methods[0]!.name).toBe('wrap');
+      expect(trait.methods[0]!.params).toHaveLength(2);
+
+      const abstract = meta.classes.find(c => c.name === 'BaseElement')!;
+      expect(abstract.isAbstract).toBe(true);
+      expect(abstract.traits).toContain('HasContainer');
+      expect(abstract.constructorParams).toHaveLength(2);
+
+      const concrete = meta.classes.find(c => c.name === 'ConcreteWidget')!;
+      expect(concrete.isAbstract).toBe(false);
+      expect(concrete.extends).toBe('BaseElement');
+      expect(concrete.implements).toContain('Displayable');
+      expect(concrete.constructorParams).toHaveLength(4);
+      expect(concrete.methods.map(m => m.name)).toEqual(
+        expect.arrayContaining(['body', 'display', 'render']),
+      );
+    });
+  });
+
+  // -----------------------------------------------------------------------
+  // ExpandableList: Class implementing 3 interfaces
+  // -----------------------------------------------------------------------
+  describe('ExpandableList', () => {
+    it('parses 3 interfaces and 1 implementing class', () => {
+      const meta = parsePhpSource(fixture('ExpandableList.php'), 'ExpandableList.php');
+
+      const interfaces = meta.classes.filter(c => c.isInterface);
+      expect(interfaces).toHaveLength(3);
+      expect(interfaces.map(i => i.name).sort()).toEqual(['Expandable', 'Filterable', 'Sortable']);
+
+      const cls = meta.classes.find(c => c.name === 'ExpandableList')!;
+      expect(cls.implements).toHaveLength(3);
+      expect(cls.implements).toContain('Expandable');
+      expect(cls.implements).toContain('Filterable');
+      expect(cls.implements).toContain('Sortable');
+      expect(cls.constructorParams).toHaveLength(3);
+      expect(cls.methods).toHaveLength(3);
+      expect(cls.methods.map(m => m.name).sort()).toEqual(['expand', 'filter', 'sort']);
+    });
+  });
+
+  // -----------------------------------------------------------------------
+  // UtilFormat: Multiple standalone functions in one file
+  // -----------------------------------------------------------------------
+  describe('UtilFormat', () => {
+    it('parses 3 standalone functions', () => {
+      const meta = parsePhpSource(fixture('UtilFormat.php'), 'UtilFormat.php');
+      expect(meta.namespace).toBe('App\\Helpers');
+      expect(meta.functions).toHaveLength(3);
+
+      const currency = meta.functions.find(f => f.name === 'formatCurrency')!;
+      expect(currency.fqn).toBe('App\\Helpers\\formatCurrency');
+      expect(currency.params).toHaveLength(3);
+      expect(currency.params[0]!.type).toBe('float');
+      expect(currency.params[1]!.type).toBe('string');
+      expect(currency.params[2]!.type).toBe('int');
+
+      const date = meta.functions.find(f => f.name === 'formatDate')!;
+      expect(date.params).toHaveLength(2);
+      expect(date.returnType).toBe('string');
+
+      const fileSize = meta.functions.find(f => f.name === 'formatFileSize')!;
+      expect(fileSize.params).toHaveLength(2);
+      expect(fileSize.params[0]!.type).toBe('int');
+    });
+  });
+
+  // -----------------------------------------------------------------------
+  // EnumPermission: Enum with instance, param, and static methods
+  // -----------------------------------------------------------------------
+  describe('EnumPermission', () => {
+    it('parses enum with badge, includes, and matrix methods', () => {
+      const meta = parsePhpSource(fixture('EnumPermission.php'), 'EnumPermission.php');
+      expect(meta.classes).toHaveLength(1);
+
+      const cls = meta.classes[0]!;
+      expect(cls.isEnum).toBe(true);
+      expect(cls.name).toBe('Permission');
+      expect(cls.enumBackingType).toBe('string');
+      expect(cls.enumCases).toEqual(['Read', 'Write', 'Delete', 'Admin']);
+
+      expect(cls.methods).toHaveLength(3);
+      const badge = cls.methods.find(m => m.name === 'badge')!;
+      expect(badge.isStatic).toBe(false);
+      expect(badge.params).toHaveLength(0);
+
+      const includes = cls.methods.find(m => m.name === 'includes')!;
+      expect(includes.isStatic).toBe(false);
+      expect(includes.params).toHaveLength(1);
+      expect(includes.params[0]!.type).toBe('string');
+
+      const matrix = cls.methods.find(m => m.name === 'matrix')!;
+      expect(matrix.isStatic).toBe(true);
+    });
+  });
+
+  // -----------------------------------------------------------------------
+  // NestedCompose: 3-level deep object composition
+  // -----------------------------------------------------------------------
+  describe('NestedCompose', () => {
+    it('parses 2 readonly classes and 1 regular class', () => {
+      const meta = parsePhpSource(fixture('NestedCompose.php'), 'NestedCompose.php');
+      expect(meta.classes).toHaveLength(3);
+
+      const country = meta.classes.find(c => c.name === 'Country')!;
+      expect(country.isReadonly).toBe(true);
+      expect(country.constructorParams).toHaveLength(2);
+      expect(country.constructorParams[0]!.name).toBe('code');
+      expect(country.constructorParams[1]!.name).toBe('name');
+
+      const address = meta.classes.find(c => c.name === 'Address')!;
+      expect(address.isReadonly).toBe(true);
+      expect(address.constructorParams).toHaveLength(3);
+      expect(address.constructorParams[2]!.type).toBe('Country');
+
+      const compose = meta.classes.find(c => c.name === 'NestedCompose')!;
+      expect(compose.isReadonly).toBe(false);
+      expect(compose.constructorParams).toHaveLength(3);
+      expect(compose.constructorParams[1]!.type).toBe('Address');
+    });
+  });
+
+  // -----------------------------------------------------------------------
+  // EnumWorkflow: Enum state machine with transitions
+  // -----------------------------------------------------------------------
+  describe('EnumWorkflow', () => {
+    it('parses enum with 5 cases and 3 methods (2 instance, 1 static)', () => {
+      const meta = parsePhpSource(fixture('EnumWorkflow.php'), 'EnumWorkflow.php');
+      expect(meta.classes).toHaveLength(1);
+
+      const cls = meta.classes[0]!;
+      expect(cls.isEnum).toBe(true);
+      expect(cls.name).toBe('WorkflowState');
+      expect(cls.enumBackingType).toBe('string');
+      expect(cls.enumCases).toEqual(['Draft', 'Review', 'Approved', 'Published', 'Archived']);
+
+      const badge = cls.methods.find(m => m.name === 'badge')!;
+      expect(badge.isStatic).toBe(false);
+
+      const transitions = cls.methods.find(m => m.name === 'transitions')!;
+      expect(transitions.isStatic).toBe(false);
+
+      const diagram = cls.methods.find(m => m.name === 'diagram')!;
+      expect(diagram.isStatic).toBe(true);
+    });
+  });
 });
