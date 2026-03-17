@@ -10549,4 +10549,495 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
       expect(enumCls!.isTrait).toBe(false);
     });
   });
+
+  // -------------------------------------------------------------------------
+  // UC158: Standalone function with nullable parameters
+  // -------------------------------------------------------------------------
+  describe('UC158: Nullable function params', () => {
+    it('renders nullableLabel with text only', async () => {
+      const result = await executor.execute({
+        type: 'function',
+        file: example('nullableLabel.php'),
+        class: null,
+        callable: 'App\\Helpers\\nullableLabel',
+        args: { text: 'Status' },
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('Status');
+      expect(result.html).toContain('nullable-label');
+    });
+
+    it('renders nullableLabel with all params', async () => {
+      const result = await executor.execute({
+        type: 'function',
+        file: example('nullableLabel.php'),
+        class: null,
+        callable: 'App\\Helpers\\nullableLabel',
+        args: { text: 'Alert', icon: '!', color: '#ef4444', subtitle: 'Important' },
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('Alert');
+      expect(result.html).toContain('!');
+      expect(result.html).toContain('#ef4444');
+      expect(result.html).toContain('Important');
+    });
+
+    it('renders nullableLabel with null icon', async () => {
+      const result = await executor.execute({
+        type: 'function',
+        file: example('nullableLabel.php'),
+        class: null,
+        callable: 'App\\Helpers\\nullableLabel',
+        args: { text: 'Test', icon: null },
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('Test');
+      expect(result.html).not.toContain('<span style="margin-right');
+    });
+
+    it('parses nullable function params', () => {
+      const meta = parsePhpFile(example('nullableLabel.php'));
+      expect(meta.functions).toHaveLength(1);
+      const fn = meta.functions[0]!;
+      expect(fn.name).toBe('nullableLabel');
+      expect(fn.params).toHaveLength(4);
+
+      const textParam = fn.params[0]!;
+      expect(textParam.name).toBe('text');
+      expect(textParam.type).toBe('string');
+      expect(textParam.required).toBe(true);
+      expect(textParam.nullable).toBe(false);
+
+      const iconParam = fn.params[1]!;
+      expect(iconParam.name).toBe('icon');
+      expect(iconParam.nullable).toBe(true);
+      expect(iconParam.required).toBe(false);
+
+      const colorParam = fn.params[2]!;
+      expect(colorParam.name).toBe('color');
+      expect(colorParam.nullable).toBe(true);
+
+      const subtitleParam = fn.params[3]!;
+      expect(subtitleParam.name).toBe('subtitle');
+      expect(subtitleParam.nullable).toBe(true);
+    });
+
+    it('generates function module for nullableLabel', () => {
+      const plugin = storybookPhpPlugin({});
+      const resolveId = (plugin as any).resolveId.bind(plugin);
+      const load = (plugin as any).load.bind(plugin);
+      const id = resolveId('./nullableLabel.php@nullableLabel', example('Button.stories.ts'));
+      const code = load(id);
+      expect(code).toContain("__type: 'function'");
+      expect(code).toContain('nullableLabel');
+      expect(code).toContain('text:');
+      expect(code).toContain('icon:');
+    });
+
+    it('parses NullableFunction fixture', () => {
+      const meta = parsePhpFile(fixture('NullableFunction.php'));
+      expect(meta.functions).toHaveLength(1);
+      const fn = meta.functions[0]!;
+      expect(fn.params).toHaveLength(4);
+      expect(fn.params[1]!.nullable).toBe(true);
+      expect(fn.params[2]!.nullable).toBe(true);
+      expect(fn.params[3]!.nullable).toBe(true);
+    });
+  });
+
+  // -------------------------------------------------------------------------
+  // UC159: Echo-based standalone function (void return)
+  // -------------------------------------------------------------------------
+  describe('UC159: Echo-based standalone function', () => {
+    it('renders echoGreet with banner style', async () => {
+      const result = await executor.execute({
+        type: 'function',
+        file: example('echoGreet.php'),
+        class: null,
+        callable: 'App\\Helpers\\echoGreet',
+        args: { name: 'World', style: 'banner' },
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('Hello, <strong>World</strong>!');
+      expect(result.html).toContain('echo-greet-banner');
+    });
+
+    it('renders echoGreet with toast style', async () => {
+      const result = await executor.execute({
+        type: 'function',
+        file: example('echoGreet.php'),
+        class: null,
+        callable: 'App\\Helpers\\echoGreet',
+        args: { name: 'Dev', style: 'toast' },
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('echo-greet-toast');
+      expect(result.html).toContain('Dev');
+    });
+
+    it('parses echoGreet function with void return', () => {
+      const meta = parsePhpFile(example('echoGreet.php'));
+      expect(meta.functions).toHaveLength(1);
+      const fn = meta.functions[0]!;
+      expect(fn.name).toBe('echoGreet');
+      expect(fn.returnType).toBe('void');
+      expect(fn.params).toHaveLength(2);
+    });
+
+    it('generates function module for echoGreet', () => {
+      const plugin = storybookPhpPlugin({});
+      const resolveId = (plugin as any).resolveId.bind(plugin);
+      const load = (plugin as any).load.bind(plugin);
+      const id = resolveId('./echoGreet.php@echoGreet', example('Button.stories.ts'));
+      const code = load(id);
+      expect(code).toContain("__type: 'function'");
+      expect(code).toContain('echoGreet');
+    });
+
+    it('parses EchoFunction fixture', () => {
+      const meta = parsePhpFile(fixture('EchoFunction.php'));
+      expect(meta.functions).toHaveLength(1);
+      const fn = meta.functions[0]!;
+      expect(fn.name).toBe('echoGreet');
+      expect(fn.returnType).toBe('void');
+    });
+  });
+
+  // -------------------------------------------------------------------------
+  // UC160: Variadic string constructor params
+  // -------------------------------------------------------------------------
+  describe('UC160: Variadic string constructor', () => {
+    it('renders VariadicCrumb with segments', async () => {
+      const result = await executor.execute({
+        type: 'classMethod',
+        file: example('VariadicCrumb.php'),
+        class: 'App\\Components\\VariadicCrumb',
+        callable: 'render',
+        args: { segments: ['Home', 'Products', 'Widget'], separator: ' / ' },
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('Home');
+      expect(result.html).toContain('Products');
+      expect(result.html).toContain('Widget');
+    });
+
+    it('renders VariadicCrumb with empty segments', async () => {
+      const result = await executor.execute({
+        type: 'classMethod',
+        file: example('VariadicCrumb.php'),
+        class: 'App\\Components\\VariadicCrumb',
+        callable: 'render',
+        args: {},
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('No breadcrumbs');
+    });
+
+    it('renders VariadicCrumb with single segment', async () => {
+      const result = await executor.execute({
+        type: 'classMethod',
+        file: example('VariadicCrumb.php'),
+        class: 'App\\Components\\VariadicCrumb',
+        callable: 'render',
+        args: { segments: ['Home'] },
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('Home');
+    });
+
+    it('parses VariadicCrumb with variadic string param', () => {
+      const meta = parsePhpFile(example('VariadicCrumb.php'));
+      const cls = meta.classes[0]!;
+      expect(cls.name).toBe('VariadicCrumb');
+      expect(cls.constructorParams).toHaveLength(2);
+
+      const sep = cls.constructorParams[0]!;
+      expect(sep.name).toBe('separator');
+      expect(sep.isVariadic).toBe(false);
+
+      const segments = cls.constructorParams[1]!;
+      expect(segments.name).toBe('segments');
+      expect(segments.isVariadic).toBe(true);
+      expect(segments.type).toBe('string');
+    });
+
+    it('generates classMethod module for VariadicCrumb', () => {
+      const plugin = storybookPhpPlugin({});
+      const resolveId = (plugin as any).resolveId.bind(plugin);
+      const load = (plugin as any).load.bind(plugin);
+      const id = resolveId('./VariadicCrumb.php@render', example('Button.stories.ts'));
+      const code = load(id);
+      expect(code).toContain("__type: 'classMethod'");
+      expect(code).toContain('VariadicCrumb');
+    });
+
+    it('parses VariadicCrumb fixture', () => {
+      const meta = parsePhpFile(fixture('VariadicCrumb.php'));
+      const cls = meta.classes[0]!;
+      expect(cls.constructorParams).toHaveLength(2);
+      expect(cls.constructorParams[1]!.isVariadic).toBe(true);
+    });
+  });
+
+  // -------------------------------------------------------------------------
+  // UC161: Enum returning array with 'html' key
+  // -------------------------------------------------------------------------
+  describe('UC161: Enum array return', () => {
+    it('renders EnumArrayReturn success card', async () => {
+      const result = await executor.execute({
+        type: 'enumMethod',
+        file: example('EnumArrayReturn.php'),
+        class: 'App\\Components\\EnumArrayReturn',
+        callable: 'card',
+        args: { _case: 'success', message: 'Saved!' },
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('Saved!');
+      expect(result.html).toContain('enum-card-success');
+    });
+
+    it('renders EnumArrayReturn error card', async () => {
+      const result = await executor.execute({
+        type: 'enumMethod',
+        file: example('EnumArrayReturn.php'),
+        class: 'App\\Components\\EnumArrayReturn',
+        callable: 'card',
+        args: { _case: 'error', message: 'Failed!' },
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('Failed!');
+      expect(result.html).toContain('enum-card-error');
+    });
+
+    it('renders EnumArrayReturn with default message', async () => {
+      const result = await executor.execute({
+        type: 'enumMethod',
+        file: example('EnumArrayReturn.php'),
+        class: 'App\\Components\\EnumArrayReturn',
+        callable: 'card',
+        args: { _case: 'warning' },
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('warning notification');
+    });
+
+    it('parses EnumArrayReturn', () => {
+      const meta = parsePhpFile(example('EnumArrayReturn.php'));
+      const cls = meta.classes[0]!;
+      expect(cls.isEnum).toBe(true);
+      expect(cls.enumBackingType).toBe('string');
+      expect(cls.enumCases).toEqual(['Success', 'Warning', 'Error']);
+      const card = cls.methods.find(m => m.name === 'card')!;
+      expect(card.returnType).toBe('array');
+      expect(card.params).toHaveLength(1);
+    });
+
+    it('generates enumMethod module for EnumArrayReturn', () => {
+      const plugin = storybookPhpPlugin({});
+      const resolveId = (plugin as any).resolveId.bind(plugin);
+      const load = (plugin as any).load.bind(plugin);
+      const id = resolveId('./EnumArrayReturn.php@card', example('Button.stories.ts'));
+      const code = load(id);
+      expect(code).toContain("__type: 'enumMethod'");
+      expect(code).toContain('EnumArrayReturn');
+    });
+
+    it('parses EnumArrayReturn fixture', () => {
+      const meta = parsePhpFile(fixture('EnumArrayReturn.php'));
+      const cls = meta.classes[0]!;
+      expect(cls.isEnum).toBe(true);
+      const card = cls.methods.find(m => m.name === 'card')!;
+      expect(card.returnType).toBe('array');
+    });
+  });
+
+  // -------------------------------------------------------------------------
+  // UC162: Class with match expression rendering
+  // -------------------------------------------------------------------------
+  describe('UC162: Match expression rendering', () => {
+    it('renders MatchPanel with default variant', async () => {
+      const result = await executor.execute({
+        type: 'classMethod',
+        file: example('MatchPanel.php'),
+        class: 'App\\Components\\MatchPanel',
+        callable: 'render',
+        args: { variant: 'default', title: 'Test', content: 'Body' },
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('Test');
+      expect(result.html).toContain('Body');
+      expect(result.html).toContain('match-panel');
+    });
+
+    it('renders MatchPanel with card variant', async () => {
+      const result = await executor.execute({
+        type: 'classMethod',
+        file: example('MatchPanel.php'),
+        class: 'App\\Components\\MatchPanel',
+        callable: 'render',
+        args: { variant: 'card', title: 'Card', content: 'Content' },
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('match-card');
+    });
+
+    it('renders MatchPanel with banner variant', async () => {
+      const result = await executor.execute({
+        type: 'classMethod',
+        file: example('MatchPanel.php'),
+        class: 'App\\Components\\MatchPanel',
+        callable: 'render',
+        args: { variant: 'banner', title: 'Banner', content: 'Announcement' },
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('match-banner');
+    });
+
+    it('renders MatchPanel with minimal variant', async () => {
+      const result = await executor.execute({
+        type: 'classMethod',
+        file: example('MatchPanel.php'),
+        class: 'App\\Components\\MatchPanel',
+        callable: 'render',
+        args: { variant: 'minimal', title: 'Compact', content: 'Inline' },
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('match-minimal');
+    });
+
+    it('parses MatchPanel class', () => {
+      const meta = parsePhpFile(example('MatchPanel.php'));
+      const cls = meta.classes[0]!;
+      expect(cls.name).toBe('MatchPanel');
+      expect(cls.constructorParams).toHaveLength(3);
+      expect(cls.constructorParams[0]!.name).toBe('variant');
+    });
+
+    it('generates classMethod module for MatchPanel', () => {
+      const plugin = storybookPhpPlugin({});
+      const resolveId = (plugin as any).resolveId.bind(plugin);
+      const load = (plugin as any).load.bind(plugin);
+      const id = resolveId('./MatchPanel.php@render', example('Button.stories.ts'));
+      const code = load(id);
+      expect(code).toContain("__type: 'classMethod'");
+      expect(code).toContain('MatchPanel');
+    });
+
+    it('parses MatchPanel fixture', () => {
+      const meta = parsePhpFile(fixture('MatchPanel.php'));
+      const cls = meta.classes[0]!;
+      expect(cls.name).toBe('MatchPanel');
+      expect(cls.constructorParams).toHaveLength(3);
+    });
+  });
+
+  // -------------------------------------------------------------------------
+  // UC163: Multiple functions in one file
+  // -------------------------------------------------------------------------
+  describe('UC163: Multiple functions in one file', () => {
+    it('renders calcDiscount', async () => {
+      const result = await executor.execute({
+        type: 'function',
+        file: example('scalarFunc.php'),
+        class: null,
+        callable: 'App\\Helpers\\calcDiscount',
+        args: { price: 100, percent: 20 },
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('calc-discount');
+      expect(result.html).toContain('80');
+    });
+
+    it('renders formatBytes', async () => {
+      const result = await executor.execute({
+        type: 'function',
+        file: example('scalarFunc.php'),
+        class: null,
+        callable: 'App\\Helpers\\formatBytes',
+        args: { bytes: 2048, precision: 1 },
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('KB');
+    });
+
+    it('parses multiple functions in scalarFunc', () => {
+      const meta = parsePhpFile(example('scalarFunc.php'));
+      expect(meta.functions).toHaveLength(2);
+      expect(meta.functions.map(f => f.name).sort()).toEqual(['calcDiscount', 'formatBytes']);
+    });
+
+    it('generates function module for calcDiscount', () => {
+      const plugin = storybookPhpPlugin({});
+      const resolveId = (plugin as any).resolveId.bind(plugin);
+      const load = (plugin as any).load.bind(plugin);
+      const id = resolveId('./scalarFunc.php@calcDiscount', example('Button.stories.ts'));
+      const code = load(id);
+      expect(code).toContain("__type: 'function'");
+      expect(code).toContain('calcDiscount');
+    });
+
+    it('generates function module for formatBytes', () => {
+      const plugin = storybookPhpPlugin({});
+      const resolveId = (plugin as any).resolveId.bind(plugin);
+      const load = (plugin as any).load.bind(plugin);
+      const id = resolveId('./scalarFunc.php@formatBytes', example('Button.stories.ts'));
+      const code = load(id);
+      expect(code).toContain("__type: 'function'");
+      expect(code).toContain('formatBytes');
+    });
+
+    it('parses MultiFunctionFile fixture', () => {
+      const meta = parsePhpFile(fixture('MultiFunctionFile.php'));
+      expect(meta.functions).toHaveLength(2);
+      expect(meta.functions.map(f => f.name).sort()).toEqual(['calcDiscount', 'formatBytes']);
+    });
+  });
+
+  // -------------------------------------------------------------------------
+  // UC164: Portfolio template with loops and arrays
+  // -------------------------------------------------------------------------
+  describe('UC164: Portfolio template', () => {
+    it('renders portfolio with all params', async () => {
+      const result = await executor.execute({
+        type: 'template',
+        file: resolve(examplesDir, 'templates/portfolio.php'),
+        class: null,
+        callable: null,
+        args: { name: 'Jane', role: 'Dev', skills: ['PHP', 'TS'], projects: ['App'], showContact: true },
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('Jane');
+      expect(result.html).toContain('Dev');
+      expect(result.html).toContain('PHP');
+      expect(result.html).toContain('TS');
+      expect(result.html).toContain('App');
+      expect(result.html).toContain('Get in touch');
+    });
+
+    it('renders portfolio without contact', async () => {
+      const result = await executor.execute({
+        type: 'template',
+        file: resolve(examplesDir, 'templates/portfolio.php'),
+        class: null,
+        callable: null,
+        args: { name: 'Alex', showContact: false },
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('Alex');
+      expect(result.html).not.toContain('Get in touch');
+    });
+
+    it('renders portfolio with defaults', async () => {
+      const result = await executor.execute({
+        type: 'template',
+        file: resolve(examplesDir, 'templates/portfolio.php'),
+        class: null,
+        callable: null,
+        args: {},
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('Jane Developer');
+      expect(result.html).toContain('Full-Stack Engineer');
+    });
+  });
 });
