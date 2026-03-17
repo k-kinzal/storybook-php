@@ -5442,6 +5442,180 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
   });
 
   // -------------------------------------------------------------------------
+  // UC91: Multiple classes in one file (PageHeader)
+  // -------------------------------------------------------------------------
+  describe('UC91: Multiple classes in one file (PageHeader)', () => {
+    it('renders PageHeader with title and logo', async () => {
+      const result = await executor.execute({
+        type: 'classMethod',
+        file: example('PageSection.php'),
+        class: 'App\\Components\\PageHeader',
+        callable: 'render',
+        args: { title: 'Home', logo: 'Acme' },
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('Acme');
+      expect(result.html).toContain('Home');
+      expect(result.html).toContain('header');
+    });
+
+    it('renders sticky PageHeader', async () => {
+      const result = await executor.execute({
+        type: 'classMethod',
+        file: example('PageSection.php'),
+        class: 'App\\Components\\PageHeader',
+        callable: 'render',
+        args: { title: 'Dashboard', logo: 'MyApp', sticky: true },
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('sticky');
+      expect(result.html).toContain('MyApp');
+    });
+  });
+
+  // -------------------------------------------------------------------------
+  // UC92: Multiple classes in one file (PageFooter)
+  // -------------------------------------------------------------------------
+  describe('UC92: Multiple classes in one file (PageFooter)', () => {
+    it('renders dark PageFooter', async () => {
+      const result = await executor.execute({
+        type: 'classMethod',
+        file: example('PageSection.php'),
+        class: 'App\\Components\\PageFooter',
+        callable: 'render',
+        args: { copyright: 'Acme Inc', year: 2025 },
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('Acme Inc');
+      expect(result.html).toContain('2025');
+      expect(result.html).toContain('footer');
+    });
+
+    it('renders light PageFooter', async () => {
+      const result = await executor.execute({
+        type: 'classMethod',
+        file: example('PageSection.php'),
+        class: 'App\\Components\\PageFooter',
+        callable: 'render',
+        args: { copyright: 'Test Corp', theme: 'light' },
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('Test Corp');
+      expect(result.html).toContain('#f9fafb');
+    });
+  });
+
+  // -------------------------------------------------------------------------
+  // UC93: No-namespace class (SimpleBox)
+  // -------------------------------------------------------------------------
+  describe('UC93: No-namespace class (SimpleBox)', () => {
+    it('renders SimpleBox with content', async () => {
+      const result = await executor.execute({
+        type: 'classMethod',
+        file: example('SimpleBox.php'),
+        class: 'SimpleBox',
+        callable: 'render',
+        args: { content: 'Hello Box' },
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('Hello Box');
+      expect(result.html).toContain('simple-box');
+    });
+
+    it('renders SimpleBox with custom style', async () => {
+      const result = await executor.execute({
+        type: 'classMethod',
+        file: example('SimpleBox.php'),
+        class: 'SimpleBox',
+        callable: 'render',
+        args: { content: 'Styled', borderColor: '#3b82f6', padding: 24 },
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('#3b82f6');
+      expect(result.html).toContain('24px');
+    });
+  });
+
+  // -------------------------------------------------------------------------
+  // UC94: Sidebar template
+  // -------------------------------------------------------------------------
+  describe('UC94: Sidebar template', () => {
+    it('renders sidebar with items and active state', async () => {
+      const result = await executor.execute({
+        type: 'template',
+        file: example('templates/sidebar.php'),
+        class: null,
+        callable: null,
+        args: { title: 'Navigation', items: ['Dashboard', 'Projects', 'Settings'], activeItem: 'Dashboard' },
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('Navigation');
+      expect(result.html).toContain('Dashboard');
+      expect(result.html).toContain('Projects');
+      expect(result.html).toContain('sidebar');
+    });
+
+    it('renders dark sidebar', async () => {
+      const result = await executor.execute({
+        type: 'template',
+        file: example('templates/sidebar.php'),
+        class: null,
+        callable: null,
+        args: { title: 'Menu', items: ['Home', 'About'], theme: 'dark' },
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('Menu');
+      expect(result.html).toContain('#1f2937');
+    });
+  });
+
+  // -------------------------------------------------------------------------
+  // UC95: Weather template
+  // -------------------------------------------------------------------------
+  describe('UC95: Weather template', () => {
+    it('renders sunny weather card', async () => {
+      const result = await executor.execute({
+        type: 'template',
+        file: example('templates/weather.php'),
+        class: null,
+        callable: null,
+        args: { city: 'Tokyo', temperature: 28, condition: 'sunny', humidity: 55, windSpeed: 8 },
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('Tokyo');
+      expect(result.html).toContain('28');
+      expect(result.html).toContain('weather-card');
+    });
+
+    it('renders snowy weather card', async () => {
+      const result = await executor.execute({
+        type: 'template',
+        file: example('templates/weather.php'),
+        class: null,
+        callable: null,
+        args: { city: 'Helsinki', temperature: -5, condition: 'snowy', humidity: 70, windSpeed: 15 },
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('Helsinki');
+      expect(result.html).toContain('-5');
+      expect(result.html).toContain('#3b82f6');
+    });
+
+    it('renders with default values', async () => {
+      const result = await executor.execute({
+        type: 'template',
+        file: example('templates/weather.php'),
+        class: null,
+        callable: null,
+        args: {},
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('Tokyo');
+      expect(result.html).toContain('22');
+    });
+  });
+
+  // -------------------------------------------------------------------------
   // Vite plugin: UC81-UC90 virtual modules
   // -------------------------------------------------------------------------
   describe('Vite plugin: UC81-UC90 virtual modules', () => {
@@ -5510,6 +5684,41 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
       expect(id).toBeDefined();
       const code = await load(id);
       expect(code).toContain('Duration');
+    });
+
+    it('resolves PageSection.php@render for PageHeader', async () => {
+      const id = await resolveId('./PageSection.php@render', example('PageSectionHeader.stories.ts'));
+      expect(id).toBeDefined();
+      const code = await load(id);
+      expect(code).toContain('PageHeader');
+    });
+
+    it('resolves PageSection.php@render for PageFooter', async () => {
+      const id = await resolveId('./PageSection.php@render', example('PageSectionFooter.stories.ts'));
+      expect(id).toBeDefined();
+      const code = await load(id);
+      expect(code).toContain('PageFooter');
+    });
+
+    it('resolves SimpleBox.php@render (no namespace)', async () => {
+      const id = await resolveId('./SimpleBox.php@render', example('SimpleBox.stories.ts'));
+      expect(id).toBeDefined();
+      const code = await load(id);
+      expect(code).toContain('SimpleBox');
+    });
+
+    it('resolves sidebar.php template', async () => {
+      const id = await resolveId('./sidebar.php', example('templates/sidebar.stories.ts'));
+      expect(id).toBeDefined();
+      const code = await load(id);
+      expect(code).toContain('template');
+    });
+
+    it('resolves weather.php template', async () => {
+      const id = await resolveId('./weather.php', example('templates/weather.stories.ts'));
+      expect(id).toBeDefined();
+      const code = await load(id);
+      expect(code).toContain('template');
     });
   });
 });
