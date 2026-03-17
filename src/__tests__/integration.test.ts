@@ -12137,4 +12137,501 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
       expect(info.extends).toBe('AbstractPanel');
     });
   });
+
+  // -------------------------------------------------------------------------
+  // UC178: Static method with void/echo return
+  // -------------------------------------------------------------------------
+  describe('UC178: Static echo method', () => {
+    it('renders StaticEcho::banner via echo', async () => {
+      const result = await executor.execute({
+        type: 'staticMethod',
+        file: example('StaticEcho.php'),
+        class: 'App\\Components\\StaticEcho',
+        callable: 'banner',
+        args: { title: 'Hello' },
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('static-banner');
+      expect(result.html).toContain('Hello');
+    });
+
+    it('renders StaticEcho::banner with custom color', async () => {
+      const result = await executor.execute({
+        type: 'staticMethod',
+        file: example('StaticEcho.php'),
+        class: 'App\\Components\\StaticEcho',
+        callable: 'banner',
+        args: { title: 'Alert', color: '#ef4444' },
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('#ef4444');
+      expect(result.html).toContain('Alert');
+    });
+
+    it('renders StaticEcho::notice with type', async () => {
+      const result = await executor.execute({
+        type: 'staticMethod',
+        file: example('StaticEcho.php'),
+        class: 'App\\Components\\StaticEcho',
+        callable: 'notice',
+        args: { message: 'Test message', type: 'success' },
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('static-notice-success');
+      expect(result.html).toContain('Test message');
+      expect(result.html).toContain('Success:');
+    });
+
+    it('renders StaticEcho::notice with default type', async () => {
+      const result = await executor.execute({
+        type: 'staticMethod',
+        file: example('StaticEcho.php'),
+        class: 'App\\Components\\StaticEcho',
+        callable: 'notice',
+        args: { message: 'Default notice' },
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('static-notice-info');
+      expect(result.html).toContain('Info:');
+    });
+
+    it('parses StaticEcho correctly', () => {
+      const meta = parsePhpFile(example('StaticEcho.php'));
+      const cls = meta.classes.find(c => c.name === 'StaticEcho');
+      expect(cls).toBeDefined();
+      expect(cls!.methods).toHaveLength(2);
+
+      const banner = cls!.methods.find(m => m.name === 'banner');
+      expect(banner).toBeDefined();
+      expect(banner!.isStatic).toBe(true);
+      expect(banner!.returnType).toBe('void');
+      expect(banner!.params).toHaveLength(2);
+      expect(banner!.params[0]!.name).toBe('title');
+      expect(banner!.params[1]!.name).toBe('color');
+      expect(banner!.params[1]!.required).toBe(false);
+
+      const notice = cls!.methods.find(m => m.name === 'notice');
+      expect(notice).toBeDefined();
+      expect(notice!.isStatic).toBe(true);
+      expect(notice!.returnType).toBe('void');
+    });
+
+    it('parses StaticEcho fixture', () => {
+      const meta = parsePhpFile(fixture('StaticEcho.php'));
+      const cls = meta.classes.find(c => c.name === 'StaticEcho');
+      expect(cls).toBeDefined();
+      expect(cls!.methods).toHaveLength(2);
+      expect(cls!.methods.every(m => m.isStatic)).toBe(true);
+      expect(cls!.methods.every(m => m.returnType === 'void')).toBe(true);
+    });
+
+    it('generates static method module via vite plugin', () => {
+      const plugin = storybookPhpPlugin();
+      const resolveId = (source: string, importer: string) =>
+        (plugin.resolveId as Function)(source, importer);
+      const load = (id: string) => (plugin.load as Function)(id);
+
+      const bannerId = resolveId('./StaticEcho.php@banner', example('StaticEcho.stories.ts'));
+      expect(bannerId).toContain('StaticEcho.php');
+      const bannerCode = load(bannerId);
+      expect(bannerCode).toContain("__type: 'staticMethod'");
+      expect(bannerCode).toContain('StaticEcho');
+      expect(bannerCode).toContain('title');
+
+      const noticeId = resolveId('./StaticEcho.php@notice', example('StaticEchoNotice.stories.ts'));
+      const noticeCode = load(noticeId);
+      expect(noticeCode).toContain("__type: 'staticMethod'");
+      expect(noticeCode).toContain('message');
+    });
+  });
+
+  // -------------------------------------------------------------------------
+  // UC179: Trait template method pattern (abstract hooks in trait)
+  // -------------------------------------------------------------------------
+  describe('UC179: Trait template method pattern', () => {
+    it('renders InfoSection via trait render method', async () => {
+      const result = await executor.execute({
+        type: 'classMethod',
+        file: example('TraitTemplate.php'),
+        class: 'App\\Components\\InfoSection',
+        callable: 'render',
+        args: { title: 'Overview', content: 'This is the body.' },
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('section-card');
+      expect(result.html).toContain('Overview');
+      expect(result.html).toContain('This is the body.');
+    });
+
+    it('renders with optional footer note', async () => {
+      const result = await executor.execute({
+        type: 'classMethod',
+        file: example('TraitTemplate.php'),
+        class: 'App\\Components\\InfoSection',
+        callable: 'render',
+        args: { title: 'Note', content: 'Details here.', note: 'Updated recently' },
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('Updated recently');
+    });
+
+    it('omits footer when note is null', async () => {
+      const result = await executor.execute({
+        type: 'classMethod',
+        file: example('TraitTemplate.php'),
+        class: 'App\\Components\\InfoSection',
+        callable: 'render',
+        args: { title: 'Test', content: 'Body' },
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('section-card');
+      expect(result.html).not.toContain('<footer');
+    });
+
+    it('parses trait with abstract methods and class', () => {
+      const meta = parsePhpFile(example('TraitTemplate.php'));
+
+      const trait = meta.classes.find(c => c.name === 'HasSection');
+      expect(trait).toBeDefined();
+      expect(trait!.isTrait).toBe(true);
+      // The trait has render() and footer() as concrete methods,
+      // plus heading() and body() as abstract methods (all extracted by parser)
+      expect(trait!.methods.some(m => m.name === 'render')).toBe(true);
+      expect(trait!.methods.some(m => m.name === 'footer')).toBe(true);
+
+      const cls = meta.classes.find(c => c.name === 'InfoSection');
+      expect(cls).toBeDefined();
+      expect(cls!.traits).toContain('HasSection');
+      expect(cls!.constructorParams).toHaveLength(3);
+      expect(cls!.constructorParams[0]!.name).toBe('title');
+      expect(cls!.constructorParams[1]!.name).toBe('content');
+      expect(cls!.constructorParams[2]!.name).toBe('note');
+      expect(cls!.constructorParams[2]!.nullable).toBe(true);
+    });
+
+    it('parses TraitTemplate fixture', () => {
+      const meta = parsePhpFile(fixture('TraitTemplate.php'));
+      const trait = meta.classes.find(c => c.name === 'HasSection');
+      expect(trait?.isTrait).toBe(true);
+      expect(trait!.methods.some(m => m.name === 'render')).toBe(true);
+
+      const cls = meta.classes.find(c => c.name === 'InfoSection');
+      expect(cls).toBeDefined();
+      expect(cls!.traits).toContain('HasSection');
+    });
+
+    it('generates classMethod module resolving render from trait', () => {
+      const plugin = storybookPhpPlugin();
+      const resolveId = (source: string, importer: string) =>
+        (plugin.resolveId as Function)(source, importer);
+      const load = (id: string) => (plugin.load as Function)(id);
+
+      const resolved = resolveId('./TraitTemplate.php@render', example('TraitTemplate.stories.ts'));
+      expect(resolved).toContain('TraitTemplate.php');
+      const code = load(resolved);
+      expect(code).toContain("__type: 'classMethod'");
+      expect(code).toContain('InfoSection');
+      // Should NOT export the trait itself
+      expect(code).not.toContain('export const HasSection');
+    });
+  });
+
+  // -------------------------------------------------------------------------
+  // UC180: Function returning ['html' => '...'] array
+  // -------------------------------------------------------------------------
+  describe('UC180: Function returning html array', () => {
+    it('renders statusCard via array return', async () => {
+      const result = await executor.execute({
+        type: 'function',
+        file: example('funcHtmlArray.php'),
+        class: null,
+        callable: 'statusCard',
+        args: { title: 'Users', status: 'active', count: 42 },
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('status-card');
+      expect(result.html).toContain('Users');
+      expect(result.html).toContain('42');
+      expect(result.html).toContain('active');
+    });
+
+    it('uses default status and count', async () => {
+      const result = await executor.execute({
+        type: 'function',
+        file: example('funcHtmlArray.php'),
+        class: null,
+        callable: 'statusCard',
+        args: { title: 'Items' },
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('Items');
+      expect(result.html).toContain('active');
+    });
+
+    it('renders with pending status', async () => {
+      const result = await executor.execute({
+        type: 'function',
+        file: example('funcHtmlArray.php'),
+        class: null,
+        callable: 'statusCard',
+        args: { title: 'Orders', status: 'pending', count: 7 },
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('pending');
+      expect(result.html).toContain('#f59e0b');
+    });
+
+    it('parses function correctly', () => {
+      const meta = parsePhpFile(example('funcHtmlArray.php'));
+      expect(meta.functions).toHaveLength(1);
+      expect(meta.functions[0]!.name).toBe('statusCard');
+      expect(meta.functions[0]!.params).toHaveLength(3);
+      expect(meta.functions[0]!.params[0]!.name).toBe('title');
+      expect(meta.functions[0]!.params[0]!.type).toBe('string');
+      expect(meta.functions[0]!.params[0]!.required).toBe(true);
+      expect(meta.functions[0]!.params[1]!.name).toBe('status');
+      expect(meta.functions[0]!.params[1]!.required).toBe(false);
+      expect(meta.functions[0]!.params[2]!.name).toBe('count');
+      expect(meta.functions[0]!.params[2]!.type).toBe('int');
+      expect(meta.functions[0]!.returnType).toBe('array');
+    });
+
+    it('parses FuncHtmlArray fixture', () => {
+      const meta = parsePhpFile(fixture('FuncHtmlArray.php'));
+      expect(meta.functions).toHaveLength(1);
+      expect(meta.functions[0]!.name).toBe('statusCard');
+      expect(meta.functions[0]!.returnType).toBe('array');
+    });
+
+    it('generates function module via vite plugin', () => {
+      const plugin = storybookPhpPlugin();
+      const resolveId = (source: string, importer: string) =>
+        (plugin.resolveId as Function)(source, importer);
+      const load = (id: string) => (plugin.load as Function)(id);
+
+      const resolved = resolveId('./funcHtmlArray.php@statusCard', example('funcHtmlArray.stories.ts'));
+      expect(resolved).toContain('funcHtmlArray.php');
+      const code = load(resolved);
+      expect(code).toContain("__type: 'function'");
+      expect(code).toContain('statusCard');
+      expect(code).toContain('title');
+    });
+  });
+
+  // -------------------------------------------------------------------------
+  // UC181: Enum with interface AND trait combined
+  // -------------------------------------------------------------------------
+  describe('UC181: Enum with interface and trait', () => {
+    it('renders Palette::swatch for red', async () => {
+      const result = await executor.execute({
+        type: 'enumMethod',
+        file: example('EnumInterfaceTrait.php'),
+        class: 'App\\Components\\Palette',
+        callable: 'swatch',
+        args: { _case: 'red' },
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('palette-swatch');
+      expect(result.html).toContain('#ef4444');
+      expect(result.html).toContain('Red');
+    });
+
+    it('renders swatch with custom size', async () => {
+      const result = await executor.execute({
+        type: 'enumMethod',
+        file: example('EnumInterfaceTrait.php'),
+        class: 'App\\Components\\Palette',
+        callable: 'swatch',
+        args: { _case: 'blue', size: '64px' },
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('64px');
+      expect(result.html).toContain('#3b82f6');
+    });
+
+    it('renders yellow swatch', async () => {
+      const result = await executor.execute({
+        type: 'enumMethod',
+        file: example('EnumInterfaceTrait.php'),
+        class: 'App\\Components\\Palette',
+        callable: 'swatch',
+        args: { _case: 'yellow', size: '32px' },
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('#f59e0b');
+      expect(result.html).toContain('Yellow');
+    });
+
+    it('parses enum with interface and trait', () => {
+      const meta = parsePhpFile(example('EnumInterfaceTrait.php'));
+
+      const iface = meta.classes.find(c => c.name === 'Describable');
+      expect(iface).toBeDefined();
+      expect(iface!.isInterface).toBe(true);
+
+      const trait = meta.classes.find(c => c.name === 'HasColorCode');
+      expect(trait).toBeDefined();
+      expect(trait!.isTrait).toBe(true);
+      expect(trait!.methods.some(m => m.name === 'colorCode')).toBe(true);
+
+      const enumCls = meta.classes.find(c => c.name === 'Palette');
+      expect(enumCls).toBeDefined();
+      expect(enumCls!.isEnum).toBe(true);
+      expect(enumCls!.enumBackingType).toBe('string');
+      expect(enumCls!.implements).toContain('Describable');
+      expect(enumCls!.traits).toContain('HasColorCode');
+      expect(enumCls!.enumCases).toEqual(['Red', 'Green', 'Blue', 'Yellow']);
+      expect(enumCls!.methods.some(m => m.name === 'describe')).toBe(true);
+      expect(enumCls!.methods.some(m => m.name === 'swatch')).toBe(true);
+    });
+
+    it('parses EnumInterfaceTrait fixture', () => {
+      const meta = parsePhpFile(fixture('EnumInterfaceTrait.php'));
+      const enumCls = meta.classes.find(c => c.name === 'Palette');
+      expect(enumCls?.isEnum).toBe(true);
+      expect(enumCls?.implements).toContain('Describable');
+      expect(enumCls?.traits).toContain('HasColorCode');
+    });
+
+    it('generates enum method module via vite plugin', () => {
+      const plugin = storybookPhpPlugin();
+      const resolveId = (source: string, importer: string) =>
+        (plugin.resolveId as Function)(source, importer);
+      const load = (id: string) => (plugin.load as Function)(id);
+
+      const swatchId = resolveId('./EnumInterfaceTrait.php@swatch', example('EnumInterfaceTrait.stories.ts'));
+      expect(swatchId).toContain('EnumInterfaceTrait.php');
+      const swatchCode = load(swatchId);
+      expect(swatchCode).toContain("__type: 'enumMethod'");
+      expect(swatchCode).toContain('Palette');
+      // Should NOT export the interface or trait
+      expect(swatchCode).not.toContain('export const Describable');
+      expect(swatchCode).not.toContain('export const HasColorCode');
+    });
+
+    it('resolves colorCode from trait for enum', () => {
+      const plugin = storybookPhpPlugin();
+      const resolveId = (source: string, importer: string) =>
+        (plugin.resolveId as Function)(source, importer);
+      const load = (id: string) => (plugin.load as Function)(id);
+
+      // colorCode comes from the HasColorCode trait
+      const colorCodeId = resolveId('./EnumInterfaceTrait.php@colorCode', example('EnumInterfaceTrait.stories.ts'));
+      const colorCodeCode = load(colorCodeId);
+      expect(colorCodeCode).toContain("__type: 'enumMethod'");
+      expect(colorCodeCode).toContain('Palette');
+    });
+  });
+
+  // -------------------------------------------------------------------------
+  // UC182: Class overriding trait method
+  // -------------------------------------------------------------------------
+  describe('UC182: Class overriding trait method', () => {
+    it('uses class render() over trait render()', async () => {
+      const result = await executor.execute({
+        type: 'classMethod',
+        file: example('OverrideTrait.php'),
+        class: 'App\\Components\\OverrideTrait',
+        callable: 'render',
+        args: { title: 'Custom' },
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('override-card');
+      expect(result.html).toContain('Custom');
+      // Should NOT contain default render from trait
+      expect(result.html).not.toContain('Default render from trait');
+    });
+
+    it('renders with secondary variant', async () => {
+      const result = await executor.execute({
+        type: 'classMethod',
+        file: example('OverrideTrait.php'),
+        class: 'App\\Components\\OverrideTrait',
+        callable: 'render',
+        args: { title: 'Fallback', variant: 'secondary' },
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('#6b7280');
+      expect(result.html).toContain('Fallback');
+    });
+
+    it('still uses trait badge() method via render', async () => {
+      const result = await executor.execute({
+        type: 'classMethod',
+        file: example('OverrideTrait.php'),
+        class: 'App\\Components\\OverrideTrait',
+        callable: 'render',
+        args: { title: 'Test' },
+      });
+      expect(result.error).toBeUndefined();
+      // The class render() calls $this->badge() which comes from the trait
+      expect(result.html).toContain('default-badge');
+    });
+
+    it('can call trait badge() directly', async () => {
+      const result = await executor.execute({
+        type: 'classMethod',
+        file: example('OverrideTrait.php'),
+        class: 'App\\Components\\OverrideTrait',
+        callable: 'badge',
+        args: { title: 'Test' },
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('default-badge');
+      expect(result.html).toContain('default');
+    });
+
+    it('parses class with overridden trait method', () => {
+      const meta = parsePhpFile(example('OverrideTrait.php'));
+
+      const trait = meta.classes.find(c => c.name === 'HasDefaultRender');
+      expect(trait).toBeDefined();
+      expect(trait!.isTrait).toBe(true);
+      expect(trait!.methods.some(m => m.name === 'render')).toBe(true);
+      expect(trait!.methods.some(m => m.name === 'badge')).toBe(true);
+
+      const cls = meta.classes.find(c => c.name === 'OverrideTrait');
+      expect(cls).toBeDefined();
+      expect(cls!.traits).toContain('HasDefaultRender');
+      // The class defines its own render() method
+      expect(cls!.methods.some(m => m.name === 'render')).toBe(true);
+      // badge() is only in the trait, not in the class directly
+      expect(cls!.methods.some(m => m.name === 'badge')).toBe(false);
+      expect(cls!.constructorParams).toHaveLength(2);
+    });
+
+    it('parses OverrideTrait fixture', () => {
+      const meta = parsePhpFile(fixture('OverrideTrait.php'));
+      const cls = meta.classes.find(c => c.name === 'OverrideTrait');
+      expect(cls).toBeDefined();
+      expect(cls!.methods.some(m => m.name === 'render')).toBe(true);
+      expect(cls!.traits).toContain('HasDefaultRender');
+    });
+
+    it('generates classMethod module using class render (not trait render)', () => {
+      const plugin = storybookPhpPlugin();
+      const resolveId = (source: string, importer: string) =>
+        (plugin.resolveId as Function)(source, importer);
+      const load = (id: string) => (plugin.load as Function)(id);
+
+      const renderId = resolveId('./OverrideTrait.php@render', example('OverrideTrait.stories.ts'));
+      const renderCode = load(renderId);
+      expect(renderCode).toContain("__type: 'classMethod'");
+      expect(renderCode).toContain('OverrideTrait');
+      // Should NOT export the trait
+      expect(renderCode).not.toContain('export const HasDefaultRender');
+    });
+
+    it('generates classMethod module for trait badge via class', () => {
+      const plugin = storybookPhpPlugin();
+      const resolveId = (source: string, importer: string) =>
+        (plugin.resolveId as Function)(source, importer);
+      const load = (id: string) => (plugin.load as Function)(id);
+
+      const badgeId = resolveId('./OverrideTrait.php@badge', example('OverrideTraitBadge.stories.ts'));
+      const badgeCode = load(badgeId);
+      expect(badgeCode).toContain("__type: 'classMethod'");
+      expect(badgeCode).toContain('OverrideTrait');
+    });
+  });
 });
