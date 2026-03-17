@@ -169,6 +169,32 @@ export function storybookPhpPlugin(options: FrameworkOptions = {}): Plugin {
         return generateTemplateModule(filePath!);
       }
 
+      // Helper: recursively find a method in a trait's own trait chain
+      const findMethodInTraitChain = (
+        traitCls: PhpClassMeta,
+        methodName: string,
+        visited: Set<string> = new Set(),
+      ): PhpMethodMeta | null => {
+        if (visited.has(traitCls.fqn)) return null;
+        visited.add(traitCls.fqn);
+
+        const method = traitCls.methods.find((m) => m.name === methodName);
+        if (method) return method;
+
+        if (traitCls.traits && traitCls.traits.length > 0) {
+          for (const innerTraitName of traitCls.traits) {
+            const innerTrait = meta.classes.find(
+              (c) => c.name === innerTraitName || c.fqn === innerTraitName,
+            );
+            if (innerTrait) {
+              const found = findMethodInTraitChain(innerTrait, methodName, visited);
+              if (found) return found;
+            }
+          }
+        }
+        return null;
+      };
+
       // Helper: find a method on a class, its traits, or its parents (within the same file)
       const findMethodInHierarchy = (
         cls: PhpClassMeta,
@@ -177,14 +203,14 @@ export function storybookPhpPlugin(options: FrameworkOptions = {}): Plugin {
         const method = cls.methods.find((m) => m.name === methodName);
         if (method) return { cls, method };
 
-        // Traverse traits used by this class (within the same file)
+        // Traverse traits used by this class (within the same file), recursively
         if (cls.traits && cls.traits.length > 0) {
           for (const traitName of cls.traits) {
             const trait = meta.classes.find(
               (c) => c.name === traitName || c.fqn === traitName,
             );
             if (trait) {
-              const traitMethod = trait.methods.find((m) => m.name === methodName);
+              const traitMethod = findMethodInTraitChain(trait, methodName);
               if (traitMethod) {
                 return { cls, method: traitMethod };
               }
@@ -211,7 +237,7 @@ export function storybookPhpPlugin(options: FrameworkOptions = {}): Plugin {
       // Collect ALL matching exports (multiple classes may have the same method)
       const modules: string[] = [];
 
-      // Helper: find a method on an enum, checking traits if needed
+      // Helper: find a method on an enum, checking traits recursively if needed
       const findEnumMethod = (
         cls: PhpClassMeta,
         methodName: string,
@@ -219,14 +245,14 @@ export function storybookPhpPlugin(options: FrameworkOptions = {}): Plugin {
         const method = cls.methods.find((m) => m.name === methodName);
         if (method) return method;
 
-        // Traverse traits used by this enum (within the same file)
+        // Traverse traits used by this enum (within the same file), recursively
         if (cls.traits && cls.traits.length > 0) {
           for (const traitName of cls.traits) {
             const trait = meta.classes.find(
               (c) => c.name === traitName || c.fqn === traitName,
             );
             if (trait) {
-              const traitMethod = trait.methods.find((m) => m.name === methodName);
+              const traitMethod = findMethodInTraitChain(trait, methodName);
               if (traitMethod) return traitMethod;
             }
           }

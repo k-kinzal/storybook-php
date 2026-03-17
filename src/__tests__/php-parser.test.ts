@@ -1956,4 +1956,86 @@ class Tooltip {
       expect(maxLen.required).toBe(false);
     });
   });
+
+  // NestedTrait: trait using another trait
+  describe('NestedTrait', () => {
+    it('parses trait-of-trait use statements', () => {
+      const meta = parsePhpSource(fixture('NestedTrait.php'), 'NestedTrait.php');
+      const hasBorder = meta.classes.find(c => c.name === 'HasBorder')!;
+      expect(hasBorder.isTrait).toBe(true);
+      expect(hasBorder.traits).toEqual([]);
+      expect(hasBorder.methods).toHaveLength(1);
+      expect(hasBorder.methods[0]!.name).toBe('border');
+
+      const hasCard = meta.classes.find(c => c.name === 'HasCard')!;
+      expect(hasCard.isTrait).toBe(true);
+      expect(hasCard.traits).toEqual(['HasBorder']);
+      expect(hasCard.methods).toHaveLength(1);
+      expect(hasCard.methods[0]!.name).toBe('card');
+
+      const widget = meta.classes.find(c => c.name === 'NestedTraitWidget')!;
+      expect(widget.isTrait).toBe(false);
+      expect(widget.traits).toEqual(['HasCard']);
+    });
+  });
+
+  // UnitEnumStatic: unit enum with static and instance methods
+  describe('UnitEnumStatic', () => {
+    it('parses unit enum with no backing type', () => {
+      const meta = parsePhpSource(fixture('UnitEnumStatic.php'), 'UnitEnumStatic.php');
+      const dir = meta.classes.find(c => c.name === 'Direction')!;
+      expect(dir.isEnum).toBe(true);
+      expect(dir.enumBackingType).toBeNull();
+      expect(dir.enumCases).toEqual(['North', 'South', 'East', 'West']);
+    });
+
+    it('parses both static and instance methods on unit enum', () => {
+      const meta = parsePhpSource(fixture('UnitEnumStatic.php'), 'UnitEnumStatic.php');
+      const dir = meta.classes.find(c => c.name === 'Direction')!;
+      const arrow = dir.methods.find(m => m.name === 'arrow')!;
+      expect(arrow.isStatic).toBe(false);
+      const compass = dir.methods.find(m => m.name === 'compass')!;
+      expect(compass.isStatic).toBe(true);
+    });
+  });
+
+  // ComposedClass: same-file class used as typed constructor param
+  describe('ComposedClass', () => {
+    it('parses both classes and their constructor relationships', () => {
+      const meta = parsePhpSource(fixture('ComposedClass.php'), 'ComposedClass.php');
+      expect(meta.classes).toHaveLength(2);
+
+      const address = meta.classes.find(c => c.name === 'Address')!;
+      expect(address.constructorParams).toHaveLength(2);
+      expect(address.constructorParams[0]!.name).toBe('city');
+      expect(address.constructorParams[0]!.default).toBe("'__PLACEHOLDER__'");
+
+      const contact = meta.classes.find(c => c.name === 'Contact')!;
+      expect(contact.constructorParams).toHaveLength(2);
+      const addrParam = contact.constructorParams.find(p => p.name === 'address')!;
+      expect(addrParam.type).toBe('Address');
+      expect(addrParam.required).toBe(false);
+    });
+  });
+
+  // AbstractInterface: abstract class + interface + concrete child
+  describe('AbstractInterface', () => {
+    it('parses interface, abstract class, and concrete child', () => {
+      const meta = parsePhpSource(fixture('AbstractInterface.php'), 'AbstractInterface.php');
+      expect(meta.classes).toHaveLength(3);
+
+      const iface = meta.classes.find(c => c.name === 'Renderable')!;
+      expect(iface.isInterface).toBe(true);
+
+      const abstract = meta.classes.find(c => c.name === 'AbstractPanel')!;
+      expect(abstract.isAbstract).toBe(true);
+      expect(abstract.implements).toContain('Renderable');
+      expect(abstract.methods.find(m => m.name === 'types')!.isStatic).toBe(true);
+
+      const info = meta.classes.find(c => c.name === 'InfoPanel')!;
+      expect(info.isAbstract).toBe(false);
+      expect(info.extends).toBe('AbstractPanel');
+      expect(info.methods.find(m => m.name === 'render')).toBeTruthy();
+    });
+  });
 });

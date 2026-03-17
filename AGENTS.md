@@ -16,7 +16,7 @@ Storybook 10 framework addon that renders PHP components as Storybook stories. U
 
 ```bash
 npm run build      # tsup → dist/
-npm test           # vitest run (319 tests, ~6s)
+npm test           # vitest run (1071 tests, ~23s)
 npm run test:watch # vitest --watch
 npm run lint       # eslint src/
 npm run typecheck  # tsc --noEmit

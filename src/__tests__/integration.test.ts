@@ -11720,4 +11720,421 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
       expect(result.html).toContain('settings-panel');
     });
   });
+
+  // -------------------------------------------------------------------------
+  // UC174: Nested trait chain (TraitChain)
+  // -------------------------------------------------------------------------
+  describe('UC174: Nested trait chain (TraitChain)', () => {
+    it('renders TraitChain.render using method from own class', async () => {
+      const result = await executor.execute({
+        type: 'classMethod',
+        file: example('TraitChain.php'),
+        class: 'App\\Components\\TraitChain',
+        callable: 'render',
+        args: { title: 'Info', key: 'Status', value: 'Active' },
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('Info');
+      expect(result.html).toContain('Status');
+      expect(result.html).toContain('Active');
+    });
+
+    it('renders TraitChain.row from middle trait (HasLayout)', async () => {
+      const result = await executor.execute({
+        type: 'classMethod',
+        file: example('TraitChain.php'),
+        class: 'App\\Components\\TraitChain',
+        callable: 'row',
+        args: { left: 'Label', right: 'Value' },
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('Label');
+      expect(result.html).toContain('Value');
+    });
+
+    it('renders TraitChain.styled from deepest trait (HasStyle)', async () => {
+      const result = await executor.execute({
+        type: 'classMethod',
+        file: example('TraitChain.php'),
+        class: 'App\\Components\\TraitChain',
+        callable: 'styled',
+        args: { text: 'Deep trait', color: '#ef4444' },
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('Deep trait');
+      expect(result.html).toContain('#ef4444');
+    });
+
+    it('renders TraitChain.container from direct trait (HasContainer)', async () => {
+      const result = await executor.execute({
+        type: 'classMethod',
+        file: example('TraitChain.php'),
+        class: 'App\\Components\\TraitChain',
+        callable: 'container',
+        args: { title: 'Box', content: '<p>Inside</p>' },
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('Box');
+      expect(result.html).toContain('Inside');
+    });
+
+    it('parses TraitChain with nested trait usage', () => {
+      const meta = parsePhpFile(example('TraitChain.php'));
+      const hasStyle = meta.classes.find(c => c.name === 'HasStyle')!;
+      expect(hasStyle.isTrait).toBe(true);
+      expect(hasStyle.methods).toHaveLength(1);
+      expect(hasStyle.methods[0]!.name).toBe('styled');
+
+      const hasLayout = meta.classes.find(c => c.name === 'HasLayout')!;
+      expect(hasLayout.isTrait).toBe(true);
+      expect(hasLayout.traits).toContain('HasStyle');
+      expect(hasLayout.methods[0]!.name).toBe('row');
+
+      const hasContainer = meta.classes.find(c => c.name === 'HasContainer')!;
+      expect(hasContainer.isTrait).toBe(true);
+      expect(hasContainer.traits).toContain('HasLayout');
+
+      const cls = meta.classes.find(c => c.name === 'TraitChain')!;
+      expect(cls.traits).toContain('HasContainer');
+    });
+
+    it('vite plugin resolves nested trait methods', () => {
+      const plugin = storybookPhpPlugin();
+      const resolveId = (source: string, importer: string) =>
+        (plugin.resolveId as Function)(source, importer);
+      const load = (id: string) => (plugin.load as Function)(id);
+
+      // styled is 3 levels deep: TraitChain -> HasContainer -> HasLayout -> HasStyle
+      const styledId = resolveId('./TraitChain.php@styled', example('TraitChain.stories.ts'));
+      expect(styledId).toBeTruthy();
+      const styledCode = load(styledId);
+      expect(styledCode).toContain('export const TraitChain');
+      expect(styledCode).toContain("__type: 'classMethod'");
+      expect(styledCode).toContain('text');
+
+      // row is 2 levels deep: TraitChain -> HasContainer -> HasLayout
+      const rowId = resolveId('./TraitChain.php@row', example('TraitChain.stories.ts'));
+      const rowCode = load(rowId);
+      expect(rowCode).toContain('export const TraitChain');
+      expect(rowCode).toContain('left');
+    });
+
+    it('parses NestedTrait fixture', () => {
+      const meta = parsePhpFile(fixture('NestedTrait.php'));
+      const hasBorder = meta.classes.find(c => c.name === 'HasBorder')!;
+      expect(hasBorder.isTrait).toBe(true);
+
+      const hasCard = meta.classes.find(c => c.name === 'HasCard')!;
+      expect(hasCard.isTrait).toBe(true);
+      expect(hasCard.traits).toContain('HasBorder');
+
+      const widget = meta.classes.find(c => c.name === 'NestedTraitWidget')!;
+      expect(widget.traits).toContain('HasCard');
+    });
+  });
+
+  // -------------------------------------------------------------------------
+  // UC175: Unit enum with static method (Season)
+  // -------------------------------------------------------------------------
+  describe('UC175: Unit enum with static method (Season)', () => {
+    it('renders Season.render instance method', async () => {
+      const result = await executor.execute({
+        type: 'enumMethod',
+        file: example('Season.php'),
+        class: 'App\\Components\\Season',
+        callable: 'render',
+        args: { _case: 'Spring', description: 'Flowers bloom' },
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('Spring');
+      expect(result.html).toContain('Flowers bloom');
+    });
+
+    it('renders Season.render for Winter', async () => {
+      const result = await executor.execute({
+        type: 'enumMethod',
+        file: example('Season.php'),
+        class: 'App\\Components\\Season',
+        callable: 'render',
+        args: { _case: 'Winter' },
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('Winter');
+      expect(result.html).toContain('&#x2744;');
+    });
+
+    it('renders Season::grid static method', async () => {
+      const result = await executor.execute({
+        type: 'staticMethod',
+        file: example('Season.php'),
+        class: 'App\\Components\\Season',
+        callable: 'grid',
+        args: {},
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('season-grid');
+      expect(result.html).toContain('Spring');
+      expect(result.html).toContain('Summer');
+      expect(result.html).toContain('Autumn');
+      expect(result.html).toContain('Winter');
+    });
+
+    it('renders Season::current static method', async () => {
+      const result = await executor.execute({
+        type: 'staticMethod',
+        file: example('Season.php'),
+        class: 'App\\Components\\Season',
+        callable: 'current',
+        args: { hemisphere: 'north' },
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('season');
+      expect(result.html).toContain('northern hemisphere');
+    });
+
+    it('parses Season as unit enum with static and instance methods', () => {
+      const meta = parsePhpFile(example('Season.php'));
+      const cls = meta.classes.find(c => c.name === 'Season')!;
+      expect(cls.isEnum).toBe(true);
+      expect(cls.enumBackingType).toBeNull();
+      expect(cls.enumCases).toEqual(['Spring', 'Summer', 'Autumn', 'Winter']);
+
+      const staticMethods = cls.methods.filter(m => m.isStatic);
+      expect(staticMethods.map(m => m.name)).toContain('grid');
+      expect(staticMethods.map(m => m.name)).toContain('current');
+
+      const instanceMethods = cls.methods.filter(m => !m.isStatic);
+      expect(instanceMethods.map(m => m.name)).toContain('render');
+      expect(instanceMethods.map(m => m.name)).toContain('emoji');
+      expect(instanceMethods.map(m => m.name)).toContain('label');
+    });
+
+    it('vite plugin generates enumMethod for instance and staticMethod for static', () => {
+      const plugin = storybookPhpPlugin();
+      const resolveId = (source: string, importer: string) =>
+        (plugin.resolveId as Function)(source, importer);
+      const load = (id: string) => (plugin.load as Function)(id);
+
+      const renderId = resolveId('./Season.php@render', example('Season.stories.ts'));
+      const renderCode = load(renderId);
+      expect(renderCode).toContain("__type: 'enumMethod'");
+      expect(renderCode).toContain('_case');
+
+      const gridId = resolveId('./Season.php@grid', example('SeasonGrid.stories.ts'));
+      const gridCode = load(gridId);
+      expect(gridCode).toContain("__type: 'staticMethod'");
+
+      const currentId = resolveId('./Season.php@current', example('SeasonCurrent.stories.ts'));
+      const currentCode = load(currentId);
+      expect(currentCode).toContain("__type: 'staticMethod'");
+    });
+
+    it('parses UnitEnumStatic fixture', () => {
+      const meta = parsePhpFile(fixture('UnitEnumStatic.php'));
+      const cls = meta.classes.find(c => c.name === 'Direction')!;
+      expect(cls.isEnum).toBe(true);
+      expect(cls.enumBackingType).toBeNull();
+      expect(cls.enumCases).toEqual(['North', 'South', 'East', 'West']);
+      expect(cls.methods.find(m => m.name === 'arrow')).toBeTruthy();
+      expect(cls.methods.find(m => m.name === 'compass')!.isStatic).toBe(true);
+    });
+  });
+
+  // -------------------------------------------------------------------------
+  // UC176: Class composition — same-file class as typed constructor param (ComposedCard)
+  // -------------------------------------------------------------------------
+  describe('UC176: Class composition (ComposedCard)', () => {
+    it('renders ComposedCard with Author object', async () => {
+      const result = await executor.execute({
+        type: 'classMethod',
+        file: example('ComposedCard.php'),
+        class: 'App\\Components\\ComposedCard',
+        callable: 'render',
+        args: {
+          title: 'Test Post',
+          author: { name: 'Alice', role: 'Admin' },
+          body: 'Post body text.',
+        },
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('Test Post');
+      expect(result.html).toContain('Alice');
+      expect(result.html).toContain('Admin');
+      expect(result.html).toContain('Post body text.');
+    });
+
+    it('renders ComposedCard with date', async () => {
+      const result = await executor.execute({
+        type: 'classMethod',
+        file: example('ComposedCard.php'),
+        class: 'App\\Components\\ComposedCard',
+        callable: 'render',
+        args: {
+          title: 'Release',
+          author: { name: 'Bob' },
+          date: '2025-03-01',
+        },
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('Release');
+      expect(result.html).toContain('Bob');
+      expect(result.html).toContain('Contributor');
+      expect(result.html).toContain('2025-03-01');
+    });
+
+    it('parses ComposedCard with Author class in same file', () => {
+      const meta = parsePhpFile(example('ComposedCard.php'));
+      const author = meta.classes.find(c => c.name === 'Author')!;
+      expect(author.constructorParams).toHaveLength(3);
+      expect(author.constructorParams[0]!.name).toBe('name');
+
+      const card = meta.classes.find(c => c.name === 'ComposedCard')!;
+      expect(card.constructorParams).toHaveLength(4);
+      const authorParam = card.constructorParams.find(p => p.name === 'author')!;
+      expect(authorParam.type).toBe('Author');
+    });
+
+    it('parses ComposedClass fixture', () => {
+      const meta = parsePhpFile(fixture('ComposedClass.php'));
+      const address = meta.classes.find(c => c.name === 'Address')!;
+      expect(address.constructorParams).toHaveLength(2);
+
+      const contact = meta.classes.find(c => c.name === 'Contact')!;
+      const addrParam = contact.constructorParams.find(p => p.name === 'address')!;
+      expect(addrParam.type).toBe('Address');
+    });
+
+    it('renders ComposedClass fixture with recursive instantiation', async () => {
+      const result = await executor.execute({
+        type: 'classMethod',
+        file: fixture('ComposedClass.php'),
+        class: 'App\\Components\\Contact',
+        callable: 'render',
+        args: {
+          name: 'Taro',
+          address: { city: 'Osaka', country: 'Japan' },
+        },
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('Taro');
+      expect(result.html).toContain('Osaka');
+      expect(result.html).toContain('Japan');
+    });
+
+    it('renders ComposedClass with default address', async () => {
+      const result = await executor.execute({
+        type: 'classMethod',
+        file: fixture('ComposedClass.php'),
+        class: 'App\\Components\\Contact',
+        callable: 'render',
+        args: { name: 'Default User' },
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('Default User');
+      expect(result.html).toContain('Tokyo');
+    });
+  });
+
+  // -------------------------------------------------------------------------
+  // UC177: Abstract class + interface + concrete children (AbstractWidget)
+  // -------------------------------------------------------------------------
+  describe('UC177: Abstract class + interface + concrete children (AbstractWidget)', () => {
+    it('renders InfoWidget.display', async () => {
+      const result = await executor.execute({
+        type: 'classMethod',
+        file: example('AbstractWidget.php'),
+        class: 'App\\Components\\InfoWidget',
+        callable: 'display',
+        args: { title: 'Notice', message: 'Test message', variant: 'primary' },
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('Notice');
+      expect(result.html).toContain('Test message');
+      expect(result.html).toContain('widget-primary');
+    });
+
+    it('renders CounterWidget.display', async () => {
+      const result = await executor.execute({
+        type: 'classMethod',
+        file: example('AbstractWidget.php'),
+        class: 'App\\Components\\CounterWidget',
+        callable: 'display',
+        args: { title: 'Progress', count: 75, max: 100, variant: 'success' },
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('Progress');
+      expect(result.html).toContain('75/100');
+      expect(result.html).toContain('75%');
+      expect(result.html).toContain('widget-success');
+    });
+
+    it('renders BaseWidget::availableVariants static method', async () => {
+      const result = await executor.execute({
+        type: 'staticMethod',
+        file: example('AbstractWidget.php'),
+        class: 'App\\Components\\BaseWidget',
+        callable: 'availableVariants',
+        args: {},
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('default');
+      expect(result.html).toContain('primary');
+      expect(result.html).toContain('success');
+      expect(result.html).toContain('danger');
+    });
+
+    it('parses AbstractWidget with interface and abstract class', () => {
+      const meta = parsePhpFile(example('AbstractWidget.php'));
+
+      const iface = meta.classes.find(c => c.name === 'Displayable')!;
+      expect(iface.isInterface).toBe(true);
+
+      const abstract = meta.classes.find(c => c.name === 'BaseWidget')!;
+      expect(abstract.isAbstract).toBe(true);
+      expect(abstract.implements).toContain('Displayable');
+
+      const info = meta.classes.find(c => c.name === 'InfoWidget')!;
+      expect(info.isAbstract).toBe(false);
+      expect(info.extends).toBe('BaseWidget');
+
+      const counter = meta.classes.find(c => c.name === 'CounterWidget')!;
+      expect(counter.extends).toBe('BaseWidget');
+    });
+
+    it('vite plugin generates classMethod for concrete children, staticMethod for abstract', () => {
+      const plugin = storybookPhpPlugin();
+      const resolveId = (source: string, importer: string) =>
+        (plugin.resolveId as Function)(source, importer);
+      const load = (id: string) => (plugin.load as Function)(id);
+
+      // display is inherited from BaseWidget, but exported for InfoWidget and CounterWidget
+      const displayId = resolveId('./AbstractWidget.php@display', example('AbstractWidget.stories.ts'));
+      const displayCode = load(displayId);
+      expect(displayCode).toContain('export const InfoWidget');
+      expect(displayCode).toContain('export const CounterWidget');
+      expect(displayCode).toContain("__type: 'classMethod'");
+      // Abstract class should NOT be exported as classMethod
+      expect(displayCode).not.toContain('export const BaseWidget');
+
+      // availableVariants is a static method on the abstract class
+      const variantsId = resolveId('./AbstractWidget.php@availableVariants', example('AbstractWidgetVariants.stories.ts'));
+      const variantsCode = load(variantsId);
+      expect(variantsCode).toContain('export const BaseWidget');
+      expect(variantsCode).toContain("__type: 'staticMethod'");
+    });
+
+    it('parses AbstractInterface fixture', () => {
+      const meta = parsePhpFile(fixture('AbstractInterface.php'));
+
+      const iface = meta.classes.find(c => c.name === 'Renderable')!;
+      expect(iface.isInterface).toBe(true);
+
+      const abstract = meta.classes.find(c => c.name === 'AbstractPanel')!;
+      expect(abstract.isAbstract).toBe(true);
+      expect(abstract.implements).toContain('Renderable');
+
+      const info = meta.classes.find(c => c.name === 'InfoPanel')!;
+      expect(info.extends).toBe('AbstractPanel');
+    });
+  });
 });
