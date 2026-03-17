@@ -2639,4 +2639,697 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
       expect(footer.nullable).toBe(true);
     });
   });
+
+  // -------------------------------------------------------------------------
+  // UC46: Float parameter + static factory (Temperature)
+  // -------------------------------------------------------------------------
+  describe('UC46: Float parameter + static factory', () => {
+    it('renders Temperature with float value', async () => {
+      const result = await executor.execute({
+        type: 'classMethod',
+        file: example('Temperature.php'),
+        class: 'App\\Components\\Temperature',
+        callable: 'render',
+        args: { value: 22.5, unit: 'C' },
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('22.5');
+      expect(result.html).toContain('temperature');
+    });
+
+    it('renders Temperature below zero with blue color', async () => {
+      const result = await executor.execute({
+        type: 'classMethod',
+        file: example('Temperature.php'),
+        class: 'App\\Components\\Temperature',
+        callable: 'render',
+        args: { value: -5.0, unit: 'C' },
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('-5.0');
+      expect(result.html).toContain('#3b82f6');
+    });
+
+    it('renders Temperature via static fromFahrenheit', async () => {
+      const result = await executor.execute({
+        type: 'staticMethod',
+        file: example('Temperature.php'),
+        class: 'App\\Components\\Temperature',
+        callable: 'fromFahrenheit',
+        args: { degrees: 212 },
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('100.0');
+      expect(result.html).toContain('temperature');
+    });
+
+    it('renders Temperature via static fromCelsius', async () => {
+      const result = await executor.execute({
+        type: 'staticMethod',
+        file: example('Temperature.php'),
+        class: 'App\\Components\\Temperature',
+        callable: 'fromCelsius',
+        args: { degrees: 38.0 },
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('38.0');
+      expect(result.html).toContain('#ef4444');
+    });
+  });
+
+  // -------------------------------------------------------------------------
+  // UC47: Multiple render methods from same class (MediaCard)
+  // -------------------------------------------------------------------------
+  describe('UC47: Multiple render methods', () => {
+    it('renders MediaCard full view', async () => {
+      const result = await executor.execute({
+        type: 'classMethod',
+        file: example('MediaCard.php'),
+        class: 'App\\Components\\MediaCard',
+        callable: 'full',
+        args: { title: 'Test Article', description: 'Some description', category: 'tech' },
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('media-card-full');
+      expect(result.html).toContain('Test Article');
+      expect(result.html).toContain('Some description');
+      expect(result.html).toContain('tech');
+    });
+
+    it('renders MediaCard compact view', async () => {
+      const result = await executor.execute({
+        type: 'classMethod',
+        file: example('MediaCard.php'),
+        class: 'App\\Components\\MediaCard',
+        callable: 'compact',
+        args: { title: 'Quick Update', category: 'news' },
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('media-card-compact');
+      expect(result.html).toContain('Quick Update');
+      expect(result.html).toContain('news');
+    });
+
+    it('renders MediaCard header view', async () => {
+      const result = await executor.execute({
+        type: 'classMethod',
+        file: example('MediaCard.php'),
+        class: 'App\\Components\\MediaCard',
+        callable: 'header',
+        args: { title: 'Featured' },
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('media-card-header');
+      expect(result.html).toContain('Featured');
+      expect(result.html).toContain('<h2');
+    });
+  });
+
+  // -------------------------------------------------------------------------
+  // UC48: Template with conditionals (hero)
+  // -------------------------------------------------------------------------
+  describe('UC48: Template with conditionals', () => {
+    it('renders hero template with light theme', async () => {
+      const result = await executor.execute({
+        type: 'template',
+        file: example('templates/hero.php'),
+        class: null,
+        callable: null,
+        args: { title: 'Welcome', subtitle: 'Get Started', ctaLabel: 'Learn More', theme: 'light' },
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('hero-light');
+      expect(result.html).toContain('Welcome');
+      expect(result.html).toContain('Get Started');
+      expect(result.html).toContain('Learn More');
+    });
+
+    it('renders hero template with dark theme', async () => {
+      const result = await executor.execute({
+        type: 'template',
+        file: example('templates/hero.php'),
+        class: null,
+        callable: null,
+        args: { title: 'Dark Hero', theme: 'dark' },
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('hero-dark');
+      expect(result.html).toContain('#1f2937');
+    });
+
+    it('renders hero template with gradient theme', async () => {
+      const result = await executor.execute({
+        type: 'template',
+        file: example('templates/hero.php'),
+        class: null,
+        callable: null,
+        args: { title: 'Gradient', theme: 'gradient' },
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('hero-gradient');
+      expect(result.html).toContain('linear-gradient');
+    });
+
+    it('renders hero without optional elements', async () => {
+      const result = await executor.execute({
+        type: 'template',
+        file: example('templates/hero.php'),
+        class: null,
+        callable: null,
+        args: { title: 'Minimal' },
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('Minimal');
+      expect(result.html).not.toContain('hero-cta');
+    });
+  });
+
+  // -------------------------------------------------------------------------
+  // UC49: Stats template with grid and conditionals
+  // -------------------------------------------------------------------------
+  describe('UC49: Stats template', () => {
+    it('renders stats grid with items', async () => {
+      const result = await executor.execute({
+        type: 'template',
+        file: example('templates/stats.php'),
+        class: null,
+        callable: null,
+        args: {
+          items: [
+            { label: 'Users', value: '12,345' },
+            { label: 'Revenue', value: '$89K' },
+          ],
+          columns: 2,
+        },
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('stats-grid');
+      expect(result.html).toContain('12,345');
+      expect(result.html).toContain('$89K');
+    });
+
+    it('renders colored variant with icons', async () => {
+      const result = await executor.execute({
+        type: 'template',
+        file: example('templates/stats.php'),
+        class: null,
+        callable: null,
+        args: {
+          items: [{ label: 'Downloads', value: '1M', icon: '📦' }],
+          columns: 1,
+          variant: 'colored',
+        },
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('stats-colored');
+      expect(result.html).toContain('stat-icon');
+    });
+
+    it('renders empty stats', async () => {
+      const result = await executor.execute({
+        type: 'template',
+        file: example('templates/stats.php'),
+        class: null,
+        callable: null,
+        args: { items: [], columns: 3 },
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('stats-empty');
+    });
+  });
+
+  // -------------------------------------------------------------------------
+  // UC50: Unit enum with multiple methods (HttpMethod)
+  // -------------------------------------------------------------------------
+  describe('UC50: Unit enum with multiple methods', () => {
+    it('renders HttpMethod::badge for GET', async () => {
+      const result = await executor.execute({
+        type: 'enumMethod',
+        file: example('HttpMethod.php'),
+        class: 'App\\Components\\HttpMethod',
+        callable: 'badge',
+        args: { _case: 'GET' },
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('http-method-GET');
+      expect(result.html).toContain('#22c55e');
+      expect(result.html).toContain('GET');
+    });
+
+    it('renders HttpMethod::badge for DELETE', async () => {
+      const result = await executor.execute({
+        type: 'enumMethod',
+        file: example('HttpMethod.php'),
+        class: 'App\\Components\\HttpMethod',
+        callable: 'badge',
+        args: { _case: 'DELETE' },
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('http-method-DELETE');
+      expect(result.html).toContain('#ef4444');
+    });
+
+    it('renders HttpMethod::endpoint with path and description', async () => {
+      const result = await executor.execute({
+        type: 'enumMethod',
+        file: example('HttpMethod.php'),
+        class: 'App\\Components\\HttpMethod',
+        callable: 'endpoint',
+        args: { _case: 'POST', path: '/api/users', description: 'Create user' },
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('endpoint');
+      expect(result.html).toContain('/api/users');
+      expect(result.html).toContain('Create user');
+      expect(result.html).toContain('POST');
+    });
+
+    it('renders HttpMethod::endpoint without description', async () => {
+      const result = await executor.execute({
+        type: 'enumMethod',
+        file: example('HttpMethod.php'),
+        class: 'App\\Components\\HttpMethod',
+        callable: 'endpoint',
+        args: { _case: 'GET', path: '/api/health' },
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('/api/health');
+      expect(result.html).not.toContain('endpoint-desc');
+    });
+  });
+
+  // -------------------------------------------------------------------------
+  // UC51: Generator return (Tabs)
+  // -------------------------------------------------------------------------
+  describe('UC51: Generator return with complex iteration', () => {
+    it('renders Tabs with active tab', async () => {
+      const result = await executor.execute({
+        type: 'classMethod',
+        file: example('Tabs.php'),
+        class: 'App\\Components\\Tabs',
+        callable: 'render',
+        args: {
+          tabs: [
+            { label: 'Overview', content: '<p>Overview</p>' },
+            { label: 'Details', content: '<p>Details</p>' },
+          ],
+          activeIndex: 0,
+        },
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('tabs-nav');
+      expect(result.html).toContain('tab-active');
+      expect(result.html).toContain('Overview');
+      expect(result.html).toContain('tab-panel');
+    });
+
+    it('renders Tabs with second tab active', async () => {
+      const result = await executor.execute({
+        type: 'classMethod',
+        file: example('Tabs.php'),
+        class: 'App\\Components\\Tabs',
+        callable: 'render',
+        args: {
+          tabs: [
+            { label: 'Code', content: '<pre>code</pre>' },
+            { label: 'Preview', content: '<p>preview</p>' },
+          ],
+          activeIndex: 1,
+        },
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('Preview');
+    });
+
+    it('renders empty Tabs', async () => {
+      const result = await executor.execute({
+        type: 'classMethod',
+        file: example('Tabs.php'),
+        class: 'App\\Components\\Tabs',
+        callable: 'render',
+        args: { tabs: [] },
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('tabs-empty');
+    });
+  });
+
+  // -------------------------------------------------------------------------
+  // UC52: Invocable class with enum param (Divider)
+  // -------------------------------------------------------------------------
+  describe('UC52: Invocable class with enum param', () => {
+    it('renders Divider with solid style', async () => {
+      const result = await executor.execute({
+        type: 'classMethod',
+        file: example('Divider.php'),
+        class: 'App\\Components\\Divider',
+        callable: '__invoke',
+        args: { style: 'solid' },
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('divider');
+      expect(result.html).toContain('solid');
+    });
+
+    it('renders Divider with dashed style and custom color', async () => {
+      const result = await executor.execute({
+        type: 'classMethod',
+        file: example('Divider.php'),
+        class: 'App\\Components\\Divider',
+        callable: '__invoke',
+        args: { style: 'dashed', color: '#3b82f6' },
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('dashed');
+      expect(result.html).toContain('#3b82f6');
+    });
+
+    it('renders Divider with label', async () => {
+      const result = await executor.execute({
+        type: 'classMethod',
+        file: example('Divider.php'),
+        class: 'App\\Components\\Divider',
+        callable: '__invoke',
+        args: { label: 'OR', style: 'solid' },
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('divider-labeled');
+      expect(result.html).toContain('OR');
+    });
+  });
+
+  // -------------------------------------------------------------------------
+  // UC53: Void return countdown (echo-based with loop)
+  // -------------------------------------------------------------------------
+  describe('UC53: Void return countdown', () => {
+    it('renders Countdown from 10', async () => {
+      const result = await executor.execute({
+        type: 'classMethod',
+        file: example('Countdown.php'),
+        class: 'App\\Components\\Countdown',
+        callable: 'render',
+        args: { from: 5, finishMessage: 'Go!' },
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('countdown');
+      expect(result.html).toContain('countdown-num');
+      expect(result.html).toContain('countdown-finish');
+      expect(result.html).toContain('Go!');
+    });
+
+    it('renders Countdown without zero', async () => {
+      const result = await executor.execute({
+        type: 'classMethod',
+        file: example('Countdown.php'),
+        class: 'App\\Components\\Countdown',
+        callable: 'render',
+        args: { from: 3, showZero: false },
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('countdown-num');
+    });
+  });
+
+  // -------------------------------------------------------------------------
+  // UC54: Global function with array param (KeyValue)
+  // -------------------------------------------------------------------------
+  describe('UC54: Global function with array param', () => {
+    it('renders key-value list', async () => {
+      const result = await executor.execute({
+        type: 'function',
+        file: example('KeyValue.php'),
+        class: null,
+        callable: 'keyValueList',
+        args: { items: { Name: 'John', Email: 'john@example.com' } },
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('kv-list');
+      expect(result.html).toContain('John');
+      expect(result.html).toContain('john@example.com');
+      expect(result.html).toContain('<dl');
+    });
+
+    it('renders horizontal key-value list', async () => {
+      const result = await executor.execute({
+        type: 'function',
+        file: example('KeyValue.php'),
+        class: null,
+        callable: 'keyValueList',
+        args: { items: { Status: 'Active' }, horizontal: true },
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('flex');
+    });
+
+    it('renders empty key-value list', async () => {
+      const result = await executor.execute({
+        type: 'function',
+        file: example('KeyValue.php'),
+        class: null,
+        callable: 'keyValueList',
+        args: { items: {}, emptyMessage: 'Nothing here' },
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('kv-empty');
+      expect(result.html).toContain('Nothing here');
+    });
+  });
+
+  // -------------------------------------------------------------------------
+  // UC55: Class with self-return methods (FlexGrid)
+  // -------------------------------------------------------------------------
+  describe('UC55: Class with method params', () => {
+    it('renders FlexGrid with items', async () => {
+      const result = await executor.execute({
+        type: 'classMethod',
+        file: example('FlexGrid.php'),
+        class: 'App\\Components\\FlexGrid',
+        callable: 'render',
+        args: { id: 'test-grid', items: ['A', 'B', 'C'], columns: 3, gap: '16px' },
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('flex-grid');
+      expect(result.html).toContain('test-grid');
+      expect(result.html).toContain('flex-grid-item');
+    });
+
+    it('renders empty FlexGrid', async () => {
+      const result = await executor.execute({
+        type: 'classMethod',
+        file: example('FlexGrid.php'),
+        class: 'App\\Components\\FlexGrid',
+        callable: 'render',
+        args: { items: [] },
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('flex-grid-empty');
+    });
+
+    it('renders FlexGrid with two columns', async () => {
+      const result = await executor.execute({
+        type: 'classMethod',
+        file: example('FlexGrid.php'),
+        class: 'App\\Components\\FlexGrid',
+        callable: 'render',
+        args: { id: 'two', items: ['X', 'Y'], columns: 2 },
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('repeat(2, 1fr)');
+    });
+  });
+
+  // -------------------------------------------------------------------------
+  // Vite plugin: virtual module generation for UC46-UC55
+  // -------------------------------------------------------------------------
+  describe('Vite plugin: UC46-UC55 virtual modules', () => {
+    const plugin = storybookPhpPlugin();
+    const resolveId = (plugin as any).resolveId.bind(plugin);
+    const load = (plugin as any).load.bind(plugin);
+
+    it('UC46: Temperature@render generates classMethod with float param', () => {
+      const id = resolveId('./Temperature.php@render', example('Temperature.php'));
+      const code = load(id);
+      expect(code).toContain("__type: 'classMethod'");
+      expect(code).toContain('value:');
+      expect(code).toContain('unit:');
+    });
+
+    it('UC46: Temperature@fromFahrenheit generates staticMethod', () => {
+      const id = resolveId('./Temperature.php@fromFahrenheit', example('Temperature.php'));
+      const code = load(id);
+      expect(code).toContain("__type: 'staticMethod'");
+      expect(code).toContain('degrees:');
+    });
+
+    it('UC47: MediaCard@full generates classMethod', () => {
+      const id = resolveId('./MediaCard.php@full', example('MediaCard.php'));
+      const code = load(id);
+      expect(code).toContain("__type: 'classMethod'");
+      expect(code).toContain('title:');
+      expect(code).toContain('description:');
+      expect(code).toContain('category:');
+    });
+
+    it('UC47: MediaCard@compact generates classMethod', () => {
+      const id = resolveId('./MediaCard.php@compact', example('MediaCard.php'));
+      const code = load(id);
+      expect(code).toContain("__type: 'classMethod'");
+      expect(code).toContain("__callable: \"compact\"");
+    });
+
+    it('UC47: MediaCard@header generates classMethod', () => {
+      const id = resolveId('./MediaCard.php@header', example('MediaCard.php'));
+      const code = load(id);
+      expect(code).toContain("__type: 'classMethod'");
+      expect(code).toContain("__callable: \"header\"");
+    });
+
+    it('UC50: HttpMethod@badge generates enumMethod for unit enum', () => {
+      const id = resolveId('./HttpMethod.php@badge', example('HttpMethod.php'));
+      const code = load(id);
+      expect(code).toContain("__type: 'enumMethod'");
+      expect(code).toContain('_case:');
+    });
+
+    it('UC50: HttpMethod@endpoint generates enumMethod with params', () => {
+      const id = resolveId('./HttpMethod.php@endpoint', example('HttpMethod.php'));
+      const code = load(id);
+      expect(code).toContain("__type: 'enumMethod'");
+      expect(code).toContain('_case:');
+      expect(code).toContain('path:');
+      expect(code).toContain('description:');
+    });
+
+    it('UC51: Tabs@render generates classMethod', () => {
+      const id = resolveId('./Tabs.php@render', example('Tabs.php'));
+      const code = load(id);
+      expect(code).toContain("__type: 'classMethod'");
+      expect(code).toContain('tabs:');
+      expect(code).toContain('activeIndex:');
+    });
+
+    it('UC52: Divider@__invoke generates classMethod', () => {
+      const id = resolveId('./Divider.php@__invoke', example('Divider.php'));
+      const code = load(id);
+      expect(code).toContain("__type: 'classMethod'");
+      expect(code).toContain("__callable: \"__invoke\"");
+      expect(code).toContain('style:');
+      expect(code).toContain('label:');
+    });
+
+    it('UC54: KeyValue@keyValueList generates function', () => {
+      const id = resolveId('./KeyValue.php@keyValueList', example('KeyValue.php'));
+      const code = load(id);
+      expect(code).toContain("__type: 'function'");
+      expect(code).toContain('items:');
+      expect(code).toContain('horizontal:');
+    });
+
+    it('UC55: FlexGrid@render generates classMethod', () => {
+      const id = resolveId('./FlexGrid.php@render', example('FlexGrid.php'));
+      const code = load(id);
+      expect(code).toContain("__type: 'classMethod'");
+      expect(code).toContain('items:');
+      expect(code).toContain('columns:');
+    });
+  });
+
+  // -------------------------------------------------------------------------
+  // Parser: metadata extraction for UC46-UC55
+  // -------------------------------------------------------------------------
+  describe('Parser: UC46-UC55 metadata', () => {
+    it('parses Temperature with float param and static methods', () => {
+      const meta = parsePhpFile(example('Temperature.php'));
+      const cls = meta.classes.find(c => c.name === 'Temperature');
+      expect(cls).toBeDefined();
+      const value = cls!.constructorParams.find(p => p.name === 'value');
+      expect(value).toBeDefined();
+      expect(value!.type).toBe('float');
+      const staticMethods = cls!.methods.filter(m => m.isStatic);
+      expect(staticMethods).toHaveLength(2);
+      expect(staticMethods.map(m => m.name)).toContain('fromFahrenheit');
+      expect(staticMethods.map(m => m.name)).toContain('fromCelsius');
+    });
+
+    it('parses MediaCard with three render methods', () => {
+      const meta = parsePhpFile(example('MediaCard.php'));
+      const cls = meta.classes.find(c => c.name === 'MediaCard');
+      expect(cls).toBeDefined();
+      expect(cls!.constructorParams).toHaveLength(4);
+      const methodNames = cls!.methods.map(m => m.name);
+      expect(methodNames).toContain('compact');
+      expect(methodNames).toContain('full');
+      expect(methodNames).toContain('header');
+    });
+
+    it('parses HttpMethod as unit enum with multiple methods', () => {
+      const meta = parsePhpFile(example('HttpMethod.php'));
+      const cls = meta.classes.find(c => c.name === 'HttpMethod');
+      expect(cls).toBeDefined();
+      expect(cls!.isEnum).toBe(true);
+      expect(cls!.enumBackingType).toBeNull();
+      expect(cls!.enumCases).toHaveLength(5);
+      expect(cls!.enumCases).toContain('GET');
+      expect(cls!.enumCases).toContain('DELETE');
+      expect(cls!.methods).toHaveLength(2);
+      const endpoint = cls!.methods.find(m => m.name === 'endpoint');
+      expect(endpoint).toBeDefined();
+      expect(endpoint!.params).toHaveLength(2);
+    });
+
+    it('parses Tabs with Generator return type', () => {
+      const meta = parsePhpFile(example('Tabs.php'));
+      const cls = meta.classes.find(c => c.name === 'Tabs');
+      expect(cls).toBeDefined();
+      const render = cls!.methods.find(m => m.name === 'render');
+      expect(render).toBeDefined();
+      expect(render!.returnType).toContain('Generator');
+    });
+
+    it('parses Divider class and DividerStyle enum', () => {
+      const meta = parsePhpFile(example('Divider.php'));
+      const divEnum = meta.classes.find(c => c.name === 'DividerStyle');
+      expect(divEnum).toBeDefined();
+      expect(divEnum!.isEnum).toBe(true);
+      expect(divEnum!.enumBackingType).toBe('string');
+      expect(divEnum!.enumCases).toHaveLength(4);
+      const divider = meta.classes.find(c => c.name === 'Divider');
+      expect(divider).toBeDefined();
+      const invoke = divider!.methods.find(m => m.name === '__invoke');
+      expect(invoke).toBeDefined();
+    });
+
+    it('parses Countdown with void return and int params', () => {
+      const meta = parsePhpFile(example('Countdown.php'));
+      const cls = meta.classes.find(c => c.name === 'Countdown');
+      expect(cls).toBeDefined();
+      const render = cls!.methods.find(m => m.name === 'render');
+      expect(render!.returnType).toBe('void');
+      const from = cls!.constructorParams.find(p => p.name === 'from');
+      expect(from!.type).toBe('int');
+    });
+
+    it('parses keyValueList global function', () => {
+      const meta = parsePhpFile(example('KeyValue.php'));
+      expect(meta.functions).toHaveLength(1);
+      const fn = meta.functions[0]!;
+      expect(fn.name).toBe('keyValueList');
+      expect(fn.params).toHaveLength(3);
+      expect(fn.params[0]!.type).toBe('array');
+      expect(fn.params[1]!.name).toBe('horizontal');
+      expect(fn.params[1]!.type).toBe('bool');
+    });
+
+    it('parses FlexGrid with self return type method', () => {
+      const meta = parsePhpFile(example('FlexGrid.php'));
+      const cls = meta.classes.find(c => c.name === 'FlexGrid');
+      expect(cls).toBeDefined();
+      const configure = cls!.methods.find(m => m.name === 'configure');
+      expect(configure).toBeDefined();
+      expect(configure!.returnType).toBe('self');
+      const render = cls!.methods.find(m => m.name === 'render');
+      expect(render).toBeDefined();
+      expect(render!.params).toHaveLength(3);
+    });
+  });
 });
