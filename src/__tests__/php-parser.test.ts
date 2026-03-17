@@ -2361,4 +2361,209 @@ class Tooltip {
       expect(diagram.isStatic).toBe(true);
     });
   });
+
+  // -----------------------------------------------------------------------
+  // StandaloneBoolType: PHP 8.2 true/false/null standalone types
+  // -----------------------------------------------------------------------
+  describe('StandaloneBoolType', () => {
+    it('parses true, false, null as standalone parameter types', () => {
+      const meta = parsePhpSource(fixture('StandaloneBoolType.php'), 'StandaloneBoolType.php');
+      expect(meta.classes).toHaveLength(1);
+
+      const cls = meta.classes[0]!;
+      expect(cls.name).toBe('StandaloneBoolType');
+
+      // Constructor params
+      expect(cls.constructorParams).toHaveLength(2);
+      expect(cls.constructorParams[0]!.name).toBe('label');
+      expect(cls.constructorParams[0]!.type).toBe('string');
+      expect(cls.constructorParams[1]!.name).toBe('color');
+      expect(cls.constructorParams[1]!.type).toBe('string');
+
+      // Methods
+      expect(cls.methods).toHaveLength(3);
+
+      const renderEnabled = cls.methods.find(m => m.name === 'renderEnabled')!;
+      expect(renderEnabled.isStatic).toBe(false);
+      expect(renderEnabled.params).toHaveLength(1);
+      expect(renderEnabled.params[0]!.type).toBe('true');
+      expect(renderEnabled.params[0]!.name).toBe('state');
+      expect(renderEnabled.params[0]!.default).toBe('true');
+
+      const renderDisabled = cls.methods.find(m => m.name === 'renderDisabled')!;
+      expect(renderDisabled.isStatic).toBe(false);
+      expect(renderDisabled.params).toHaveLength(1);
+      expect(renderDisabled.params[0]!.type).toBe('false');
+      expect(renderDisabled.params[0]!.name).toBe('state');
+      expect(renderDisabled.params[0]!.default).toBe('false');
+
+      const renderNull = cls.methods.find(m => m.name === 'renderNull')!;
+      expect(renderNull.isStatic).toBe(true);
+      expect(renderNull.params).toHaveLength(1);
+      expect(renderNull.params[0]!.type).toBe('null');
+      expect(renderNull.params[0]!.name).toBe('value');
+      expect(renderNull.params[0]!.default).toBe('null');
+    });
+  });
+
+  // -----------------------------------------------------------------------
+  // TraitConflict: insteadof / as resolution
+  // -----------------------------------------------------------------------
+  describe('TraitConflict', () => {
+    it('parses class with two traits using insteadof/as conflict resolution', () => {
+      const meta = parsePhpSource(fixture('TraitConflict.php'), 'TraitConflict.php');
+
+      // Should find 2 traits + 1 class
+      expect(meta.classes).toHaveLength(3);
+
+      const htmlTrait = meta.classes.find(c => c.name === 'HasHtmlRender')!;
+      expect(htmlTrait.isTrait).toBe(true);
+      expect(htmlTrait.methods).toHaveLength(1);
+      expect(htmlTrait.methods[0]!.name).toBe('render');
+
+      const mdTrait = meta.classes.find(c => c.name === 'HasMarkdownRender')!;
+      expect(mdTrait.isTrait).toBe(true);
+      expect(mdTrait.methods).toHaveLength(1);
+      expect(mdTrait.methods[0]!.name).toBe('render');
+
+      const cls = meta.classes.find(c => c.name === 'TraitConflict')!;
+      expect(cls.isTrait).toBe(false);
+      expect(cls.traits).toContain('HasHtmlRender');
+      expect(cls.traits).toContain('HasMarkdownRender');
+      expect(cls.constructorParams).toHaveLength(1);
+      expect(cls.constructorParams[0]!.name).toBe('title');
+    });
+  });
+
+  // -----------------------------------------------------------------------
+  // EnumArrayParam: enum method with array typed param
+  // -----------------------------------------------------------------------
+  describe('EnumArrayParam', () => {
+    it('parses enum with methods taking array parameters', () => {
+      const meta = parsePhpSource(fixture('EnumArrayParam.php'), 'EnumArrayParam.php');
+      expect(meta.classes).toHaveLength(1);
+
+      const cls = meta.classes[0]!;
+      expect(cls.isEnum).toBe(true);
+      expect(cls.name).toBe('ListStyle');
+      expect(cls.enumBackingType).toBe('string');
+      expect(cls.enumCases).toEqual(['Bullet', 'Number', 'None']);
+
+      const renderList = cls.methods.find(m => m.name === 'renderList')!;
+      expect(renderList.isStatic).toBe(false);
+      expect(renderList.params).toHaveLength(2);
+      expect(renderList.params[0]!.type).toBe('array');
+      expect(renderList.params[0]!.name).toBe('items');
+      expect(renderList.params[1]!.type).toBe('string');
+      expect(renderList.params[1]!.name).toBe('class');
+
+      const preview = cls.methods.find(m => m.name === 'preview')!;
+      expect(preview.isStatic).toBe(true);
+      expect(preview.params).toHaveLength(1);
+      expect(preview.params[0]!.type).toBe('array');
+      expect(preview.params[0]!.name).toBe('items');
+    });
+  });
+
+  // -----------------------------------------------------------------------
+  // AbstractMultiChild: abstract base + 3 concrete children
+  // -----------------------------------------------------------------------
+  describe('AbstractMultiChild', () => {
+    it('parses abstract class and 3 concrete children', () => {
+      const meta = parsePhpSource(fixture('AbstractMultiChild.php'), 'AbstractMultiChild.php');
+      expect(meta.classes).toHaveLength(4);
+
+      const base = meta.classes.find(c => c.name === 'AbstractPanel')!;
+      expect(base.isAbstract).toBe(true);
+      expect(base.constructorParams).toHaveLength(2);
+      expect(base.methods.find(m => m.name === 'render')).toBeTruthy();
+
+      const info = meta.classes.find(c => c.name === 'InfoPanel')!;
+      expect(info.isAbstract).toBe(false);
+      expect(info.extends).toBe('AbstractPanel');
+      expect(info.methods.find(m => m.name === 'render')).toBeTruthy();
+
+      const warning = meta.classes.find(c => c.name === 'WarningPanel')!;
+      expect(warning.extends).toBe('AbstractPanel');
+      expect(warning.constructorParams).toHaveLength(3);
+      expect(warning.constructorParams[2]!.name).toBe('icon');
+
+      const error = meta.classes.find(c => c.name === 'ErrorPanel')!;
+      expect(error.extends).toBe('AbstractPanel');
+      expect(error.constructorParams).toHaveLength(3);
+      expect(error.constructorParams[2]!.name).toBe('code');
+    });
+  });
+
+  // -----------------------------------------------------------------------
+  // SelfStaticReturn: self and static return types
+  // -----------------------------------------------------------------------
+  describe('SelfStaticReturn', () => {
+    it('parses methods with self and static return types', () => {
+      const meta = parsePhpSource(fixture('SelfStaticReturn.php'), 'SelfStaticReturn.php');
+      expect(meta.classes).toHaveLength(1);
+
+      const cls = meta.classes[0]!;
+      expect(cls.name).toBe('SelfStaticReturn');
+
+      const add = cls.methods.find(m => m.name === 'add')!;
+      expect(add.returnType).toBe('self');
+      expect(add.params).toHaveLength(1);
+      expect(add.params[0]!.type).toBe('string');
+
+      const merge = cls.methods.find(m => m.name === 'merge')!;
+      expect(merge.returnType).toBe('static');
+      expect(merge.params).toHaveLength(1);
+      expect(merge.params[0]!.type).toBe('array');
+
+      const render = cls.methods.find(m => m.name === 'render')!;
+      expect(render.returnType).toBe('string');
+    });
+  });
+
+  // -----------------------------------------------------------------------
+  // FunctionIntersectionParam: function with intersection type param
+  // -----------------------------------------------------------------------
+  describe('FunctionIntersectionParam', () => {
+    it('parses function with intersection type parameter', () => {
+      const meta = parsePhpSource(fixture('FunctionIntersectionParam.php'), 'FunctionIntersectionParam.php');
+
+      // 2 interfaces + 1 function
+      expect(meta.classes).toHaveLength(2);
+      expect(meta.functions).toHaveLength(1);
+
+      const fn = meta.functions[0]!;
+      expect(fn.name).toBe('renderTagged');
+      expect(fn.params).toHaveLength(2);
+      expect(fn.params[0]!.type).toBe('HasLabel&HasColor');
+      expect(fn.params[0]!.name).toBe('item');
+      expect(fn.params[1]!.type).toBe('string');
+      expect(fn.params[1]!.name).toBe('size');
+      expect(fn.returnType).toBe('string');
+    });
+  });
+
+  // -----------------------------------------------------------------------
+  // VoidNeverReturn: void and never return types
+  // -----------------------------------------------------------------------
+  describe('VoidNeverReturn', () => {
+    it('parses methods with void and never return types', () => {
+      const meta = parsePhpSource(fixture('VoidNeverReturn.php'), 'VoidNeverReturn.php');
+      expect(meta.classes).toHaveLength(1);
+
+      const cls = meta.classes[0]!;
+      expect(cls.name).toBe('VoidNeverReturn');
+
+      const renderEcho = cls.methods.find(m => m.name === 'renderEcho')!;
+      expect(renderEcho.returnType).toBe('void');
+      expect(renderEcho.params).toHaveLength(0);
+
+      const render = cls.methods.find(m => m.name === 'render')!;
+      expect(render.returnType).toBe('string');
+
+      const fail = cls.methods.find(m => m.name === 'fail')!;
+      expect(fail.returnType).toBe('never');
+      expect(fail.params).toHaveLength(0);
+    });
+  });
 });

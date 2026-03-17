@@ -764,4 +764,166 @@ describe('Vite Plugin', () => {
       expect(code).toContain('__callable: "renderEcho"');
     });
   });
+
+  // -----------------------------------------------------------------------
+  // StandaloneBoolType: true/false/null standalone types
+  // -----------------------------------------------------------------------
+  describe('standalone bool types', () => {
+    it('generates classMethod for renderEnabled with true type', () => {
+      const plugin = storybookPhpPlugin();
+      const load = getLoad(plugin);
+
+      const filePath = resolve(FIXTURES, 'StandaloneBoolType.php');
+      const code = load(`${VIRTUAL_PREFIX}${filePath}?callable=renderEnabled`);
+
+      expect(code).toBeTruthy();
+      expect(code).toContain("__type: 'classMethod'");
+      expect(code).toContain('export const StandaloneBoolType');
+      expect(code).toContain("type: 'true'");
+    });
+
+    it('generates staticMethod for renderNull with null type', () => {
+      const plugin = storybookPhpPlugin();
+      const load = getLoad(plugin);
+
+      const filePath = resolve(FIXTURES, 'StandaloneBoolType.php');
+      const code = load(`${VIRTUAL_PREFIX}${filePath}?callable=renderNull`);
+
+      expect(code).toBeTruthy();
+      expect(code).toContain("__type: 'staticMethod'");
+      expect(code).toContain("type: 'null'");
+    });
+  });
+
+  // -----------------------------------------------------------------------
+  // TraitConflict: insteadof/as conflict resolution
+  // -----------------------------------------------------------------------
+  describe('trait conflict resolution', () => {
+    it('resolves render method from trait chain with insteadof', () => {
+      const plugin = storybookPhpPlugin();
+      const load = getLoad(plugin);
+
+      const filePath = resolve(FIXTURES, 'TraitConflict.php');
+      const code = load(`${VIRTUAL_PREFIX}${filePath}?callable=render`);
+
+      expect(code).toBeTruthy();
+      expect(code).toContain("__type: 'classMethod'");
+      expect(code).toContain('export const TraitConflict');
+      expect(code).toContain('text:');
+    });
+  });
+
+  // -----------------------------------------------------------------------
+  // EnumArrayParam: enum method with array param
+  // -----------------------------------------------------------------------
+  describe('enum array param', () => {
+    it('generates enumMethod for renderList with array param', () => {
+      const plugin = storybookPhpPlugin();
+      const load = getLoad(plugin);
+
+      const filePath = resolve(FIXTURES, 'EnumArrayParam.php');
+      const code = load(`${VIRTUAL_PREFIX}${filePath}?callable=renderList`);
+
+      expect(code).toBeTruthy();
+      expect(code).toContain("__type: 'enumMethod'");
+      expect(code).toContain('export const ListStyle');
+      expect(code).toContain("type: 'array'");
+    });
+
+    it('generates staticMethod for preview', () => {
+      const plugin = storybookPhpPlugin();
+      const load = getLoad(plugin);
+
+      const filePath = resolve(FIXTURES, 'EnumArrayParam.php');
+      const code = load(`${VIRTUAL_PREFIX}${filePath}?callable=preview`);
+
+      expect(code).toBeTruthy();
+      expect(code).toContain("__type: 'staticMethod'");
+      expect(code).toContain("type: 'array'");
+    });
+  });
+
+  // -----------------------------------------------------------------------
+  // AbstractMultiChild: multiple exports from abstract hierarchy
+  // -----------------------------------------------------------------------
+  describe('abstract multi child', () => {
+    it('generates classMethod exports for all 3 concrete children', () => {
+      const plugin = storybookPhpPlugin();
+      const load = getLoad(plugin);
+
+      const filePath = resolve(FIXTURES, 'AbstractMultiChild.php');
+      const code = load(`${VIRTUAL_PREFIX}${filePath}?callable=render`);
+
+      expect(code).toBeTruthy();
+      expect(code).toContain('export const InfoPanel');
+      expect(code).toContain('export const WarningPanel');
+      expect(code).toContain('export const ErrorPanel');
+      // Abstract class should NOT be exported as classMethod
+      expect(code).not.toContain('export const AbstractPanel');
+    });
+  });
+
+  // -----------------------------------------------------------------------
+  // SelfStaticReturn: self/static return types
+  // -----------------------------------------------------------------------
+  describe('self/static return types', () => {
+    it('generates classMethod for render (methods with self/static return exist)', () => {
+      const plugin = storybookPhpPlugin();
+      const load = getLoad(plugin);
+
+      const filePath = resolve(FIXTURES, 'SelfStaticReturn.php');
+      const code = load(`${VIRTUAL_PREFIX}${filePath}?callable=render`);
+
+      expect(code).toBeTruthy();
+      expect(code).toContain("__type: 'classMethod'");
+      expect(code).toContain('export const SelfStaticReturn');
+    });
+  });
+
+  // -----------------------------------------------------------------------
+  // FunctionIntersectionParam: function with intersection type
+  // -----------------------------------------------------------------------
+  describe('function intersection param', () => {
+    it('generates function module with intersection type param', () => {
+      const plugin = storybookPhpPlugin();
+      const load = getLoad(plugin);
+
+      const filePath = resolve(FIXTURES, 'FunctionIntersectionParam.php');
+      const code = load(`${VIRTUAL_PREFIX}${filePath}?callable=renderTagged`);
+
+      expect(code).toBeTruthy();
+      expect(code).toContain("__type: 'function'");
+      expect(code).toContain('export const renderTagged');
+      expect(code).toContain("type: 'HasLabel&HasColor'");
+    });
+  });
+
+  // -----------------------------------------------------------------------
+  // VoidNeverReturn: void/never return types
+  // -----------------------------------------------------------------------
+  describe('void/never return types', () => {
+    it('generates classMethod for renderEcho (void return)', () => {
+      const plugin = storybookPhpPlugin();
+      const load = getLoad(plugin);
+
+      const filePath = resolve(FIXTURES, 'VoidNeverReturn.php');
+      const code = load(`${VIRTUAL_PREFIX}${filePath}?callable=renderEcho`);
+
+      expect(code).toBeTruthy();
+      expect(code).toContain("__type: 'classMethod'");
+      expect(code).toContain('export const VoidNeverReturn');
+    });
+
+    it('generates classMethod for fail (never return)', () => {
+      const plugin = storybookPhpPlugin();
+      const load = getLoad(plugin);
+
+      const filePath = resolve(FIXTURES, 'VoidNeverReturn.php');
+      const code = load(`${VIRTUAL_PREFIX}${filePath}?callable=fail`);
+
+      expect(code).toBeTruthy();
+      expect(code).toContain("__type: 'classMethod'");
+      expect(code).toContain('__callable: "fail"');
+    });
+  });
 });

@@ -13585,4 +13585,308 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
       expect(result.html).not.toContain('#d1d5db');
     });
   });
+
+  // -------------------------------------------------------------------------
+  // UC196: PHP 8.2 standalone true/false/null types
+  // -------------------------------------------------------------------------
+  describe('UC196: Standalone bool types', () => {
+    it('renders BoolToggle enabled state', async () => {
+      const result = await executor.execute({
+        type: 'classMethod',
+        file: example('BoolToggle.php'),
+        class: 'App\\Components\\BoolToggle',
+        callable: 'renderEnabled',
+        args: { label: 'Dark Mode' },
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('Dark Mode');
+      expect(result.html).toContain('Enabled');
+    });
+
+    it('renders BoolToggle disabled state', async () => {
+      const result = await executor.execute({
+        type: 'classMethod',
+        file: example('BoolToggle.php'),
+        class: 'App\\Components\\BoolToggle',
+        callable: 'renderDisabled',
+        args: { label: 'Legacy Feature' },
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('Legacy Feature');
+      expect(result.html).toContain('Disabled');
+    });
+
+    it('renders BoolToggle null state via static method', async () => {
+      const result = await executor.execute({
+        type: 'staticMethod',
+        file: example('BoolToggle.php'),
+        class: 'App\\Components\\BoolToggle',
+        callable: 'renderNull',
+        args: {},
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('No value provided');
+    });
+
+    it('generates correct module types for standalone bool types', () => {
+      const plugin = storybookPhpPlugin();
+      const resolveId = (source: string, importer: string) =>
+        (plugin.resolveId as Function)(source, importer);
+      const load = (id: string) => (plugin.load as Function)(id);
+
+      const enabledId = resolveId('./BoolToggle.php@renderEnabled', example('BoolToggle.stories.ts'));
+      const enabledCode = load(enabledId);
+      expect(enabledCode).toContain("__type: 'classMethod'");
+      expect(enabledCode).toContain("type: 'true'");
+
+      const nullId = resolveId('./BoolToggle.php@renderNull', example('BoolToggleNull.stories.ts'));
+      const nullCode = load(nullId);
+      expect(nullCode).toContain("__type: 'staticMethod'");
+      expect(nullCode).toContain("type: 'null'");
+    });
+  });
+
+  // -------------------------------------------------------------------------
+  // UC197: Trait conflict resolution with insteadof/as
+  // -------------------------------------------------------------------------
+  describe('UC197: Trait conflict resolution', () => {
+    it('renders TraitConflict with HTML format (insteadof winner)', async () => {
+      const result = await executor.execute({
+        type: 'classMethod',
+        file: example('TraitConflict.php'),
+        class: 'App\\Components\\TraitConflict',
+        callable: 'render',
+        args: { content: 'Test content', mode: 'html' },
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('Test content');
+      expect(result.html).toContain('html-output');
+    });
+
+    it('renders TraitConflict with plain format (as alias)', async () => {
+      const result = await executor.execute({
+        type: 'classMethod',
+        file: example('TraitConflict.php'),
+        class: 'App\\Components\\TraitConflict',
+        callable: 'render',
+        args: { content: 'Code here', mode: 'plain' },
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('Code here');
+      expect(result.html).toContain('plain-output');
+    });
+
+    it('renders TraitConflict format method directly (from winning trait)', async () => {
+      const result = await executor.execute({
+        type: 'classMethod',
+        file: example('TraitConflict.php'),
+        class: 'App\\Components\\TraitConflict',
+        callable: 'format',
+        args: { text: 'Direct format call' },
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('Direct format call');
+      expect(result.html).toContain('html-output');
+    });
+  });
+
+  // -------------------------------------------------------------------------
+  // UC198: Enum with array-typed method parameters
+  // -------------------------------------------------------------------------
+  describe('UC198: Enum array param', () => {
+    it('renders ListStyle bullet list', async () => {
+      const result = await executor.execute({
+        type: 'enumMethod',
+        file: example('ListStyle.php'),
+        class: 'App\\Components\\ListStyle',
+        callable: 'renderList',
+        args: { _case: 'disc', items: ['Alpha', 'Beta', 'Gamma'], title: 'Letters' },
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('Alpha');
+      expect(result.html).toContain('Beta');
+      expect(result.html).toContain('Letters');
+      expect(result.html).toContain('list-style: disc');
+    });
+
+    it('renders ListStyle numbered list', async () => {
+      const result = await executor.execute({
+        type: 'enumMethod',
+        file: example('ListStyle.php'),
+        class: 'App\\Components\\ListStyle',
+        callable: 'renderList',
+        args: { _case: 'decimal', items: ['Step 1', 'Step 2'], title: 'Steps' },
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('<ol');
+      expect(result.html).toContain('Step 1');
+    });
+
+    it('renders ListStyle preview with all styles', async () => {
+      const result = await executor.execute({
+        type: 'staticMethod',
+        file: example('ListStyle.php'),
+        class: 'App\\Components\\ListStyle',
+        callable: 'preview',
+        args: { items: ['A', 'B', 'C'] },
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('Bullet');
+      expect(result.html).toContain('Number');
+      expect(result.html).toContain('Dash');
+      expect(result.html).toContain('None');
+    });
+  });
+
+  // -------------------------------------------------------------------------
+  // UC199: Abstract class with multiple concrete children
+  // -------------------------------------------------------------------------
+  describe('UC199: Abstract multi child panels', () => {
+    it('renders InfoPanel', async () => {
+      const result = await executor.execute({
+        type: 'classMethod',
+        file: example('PanelVariant.php'),
+        class: 'App\\Components\\InfoPanel',
+        callable: 'render',
+        args: { title: 'Info', content: 'Information message' },
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('panel-info');
+      expect(result.html).toContain('Information message');
+    });
+
+    it('renders WarningPanel with icon', async () => {
+      const result = await executor.execute({
+        type: 'classMethod',
+        file: example('PanelVariant.php'),
+        class: 'App\\Components\\WarningPanel',
+        callable: 'render',
+        args: { title: 'Caution', content: 'Be careful', icon: '!' },
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('panel-warning');
+      expect(result.html).toContain('! Caution');
+    });
+
+    it('renders ErrorPanel with code block', async () => {
+      const result = await executor.execute({
+        type: 'classMethod',
+        file: example('PanelVariant.php'),
+        class: 'App\\Components\\ErrorPanel',
+        callable: 'render',
+        args: { title: 'Error', content: 'Something failed', code: 'ERR_404' },
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('panel-error');
+      expect(result.html).toContain('ERR_404');
+    });
+
+    it('generates multiple exports for all concrete children', () => {
+      const plugin = storybookPhpPlugin();
+      const resolveId = (source: string, importer: string) =>
+        (plugin.resolveId as Function)(source, importer);
+      const load = (id: string) => (plugin.load as Function)(id);
+
+      const id = resolveId('./PanelVariant.php@render', example('PanelVariant.stories.ts'));
+      const code = load(id);
+      expect(code).toContain('export const InfoPanel');
+      expect(code).toContain('export const WarningPanel');
+      expect(code).toContain('export const ErrorPanel');
+      expect(code).not.toContain('export const AbstractPanel');
+    });
+  });
+
+  // -------------------------------------------------------------------------
+  // UC200: Self/static return types (ChainBuilder)
+  // -------------------------------------------------------------------------
+  describe('UC200: Self and static return types', () => {
+    it('renders ChainBuilder', async () => {
+      const result = await executor.execute({
+        type: 'classMethod',
+        file: example('ChainBuilder.php'),
+        class: 'App\\Components\\ChainBuilder',
+        callable: 'render',
+        args: { tag: 'ul', title: 'Items' },
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('<ul');
+      expect(result.html).toContain('Items');
+    });
+
+    it('generates module with constructor args', () => {
+      const plugin = storybookPhpPlugin();
+      const resolveId = (source: string, importer: string) =>
+        (plugin.resolveId as Function)(source, importer);
+      const load = (id: string) => (plugin.load as Function)(id);
+
+      const id = resolveId('./ChainBuilder.php@render', example('ChainBuilder.stories.ts'));
+      const code = load(id);
+      expect(code).toContain("__type: 'classMethod'");
+      expect(code).toContain('tag:');
+      expect(code).toContain('className:');
+      expect(code).toContain('title:');
+    });
+  });
+
+  // -------------------------------------------------------------------------
+  // UC201: Void/never return types
+  // -------------------------------------------------------------------------
+  describe('UC201: Void and never return types', () => {
+    it('renders VoidEchoCard via echo (void return)', async () => {
+      const result = await executor.execute({
+        type: 'classMethod',
+        file: example('VoidEchoCard.php'),
+        class: 'App\\Components\\VoidEchoCard',
+        callable: 'renderEcho',
+        args: { title: 'Echo Card', body: 'From echo', variant: 'primary' },
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('echo-card');
+      expect(result.html).toContain('Echo Card');
+      expect(result.html).toContain('From echo');
+    });
+
+    it('renders VoidEchoCard via string return', async () => {
+      const result = await executor.execute({
+        type: 'classMethod',
+        file: example('VoidEchoCard.php'),
+        class: 'App\\Components\\VoidEchoCard',
+        callable: 'render',
+        args: { title: 'Return Card', body: 'From return', variant: 'success' },
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('echo-card');
+      expect(result.html).toContain('Return Card');
+    });
+
+    it('VoidEchoCard fail method (never) returns error', async () => {
+      const result = await executor.execute({
+        type: 'classMethod',
+        file: example('VoidEchoCard.php'),
+        class: 'App\\Components\\VoidEchoCard',
+        callable: 'fail',
+        args: { title: 'Broken' },
+      });
+      expect(result.error).toBeTruthy();
+      expect(result.error).toContain('fatal error');
+    });
+  });
+
+  // -------------------------------------------------------------------------
+  // UC202: Standalone function with intersection type
+  // -------------------------------------------------------------------------
+  describe('UC202: Function with intersection type param', () => {
+    it('generates function module for renderIntersectionTag', () => {
+      const plugin = storybookPhpPlugin();
+      const resolveId = (source: string, importer: string) =>
+        (plugin.resolveId as Function)(source, importer);
+      const load = (id: string) => (plugin.load as Function)(id);
+
+      const id = resolveId('./tagIntersection.php@renderIntersectionTag', example('tagIntersection.stories.ts'));
+      const code = load(id);
+      expect(code).toContain("__type: 'function'");
+      expect(code).toContain('export const renderIntersectionTag');
+      expect(code).toContain("type: 'Labeled&Colored'");
+    });
+  });
 });
