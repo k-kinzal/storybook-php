@@ -14214,4 +14214,717 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
       expect(result.html).toContain('#1f2937');
     });
   });
+
+  // -------------------------------------------------------------------------
+  // UC210: Final readonly class (FinalReadonlyPoint)
+  // -------------------------------------------------------------------------
+  describe('UC210: Final readonly class (Point)', () => {
+    it('renders Point with coordinates', async () => {
+      const result = await executor.execute({
+        type: 'classMethod',
+        file: fixture('FinalReadonlyPoint.php'),
+        class: 'App\\Components\\Point',
+        callable: 'render',
+        args: { x: 3.14, y: 2.71, label: 'P1' },
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('3.14');
+      expect(result.html).toContain('2.71');
+      expect(result.html).toContain('P1');
+    });
+
+    it('renders Point without label', async () => {
+      const result = await executor.execute({
+        type: 'classMethod',
+        file: fixture('FinalReadonlyPoint.php'),
+        class: 'App\\Components\\Point',
+        callable: 'render',
+        args: { x: 0, y: 0 },
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('point');
+      expect(result.html).not.toContain('(origin)');
+    });
+
+    it('renders Point::origin static method', async () => {
+      const result = await executor.execute({
+        type: 'staticMethod',
+        file: fixture('FinalReadonlyPoint.php'),
+        class: 'App\\Components\\Point',
+        callable: 'origin',
+        args: {},
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('origin');
+      expect(result.html).toContain('0');
+    });
+
+    it('generates classMethod module for Point@render', () => {
+      const plugin = storybookPhpPlugin();
+      const load = (plugin as any).load as (id: string) => string | null;
+      const code = load(`\0storybook-php:${fixture('FinalReadonlyPoint.php')}?callable=render`);
+      expect(code).toContain('export const Point');
+      expect(code).toContain("__type: 'classMethod'");
+      expect(code).toContain('x:');
+      expect(code).toContain('y:');
+      expect(code).toContain('label:');
+    });
+
+    it('generates staticMethod module for Point@origin', () => {
+      const plugin = storybookPhpPlugin();
+      const load = (plugin as any).load as (id: string) => string | null;
+      const code = load(`\0storybook-php:${fixture('FinalReadonlyPoint.php')}?callable=origin`);
+      expect(code).toContain('export const Point');
+      expect(code).toContain("__type: 'staticMethod'");
+    });
+  });
+
+  // -------------------------------------------------------------------------
+  // UC211: Int-backed enum with category logic (HttpStatusCode)
+  // -------------------------------------------------------------------------
+  describe('UC211: Int-backed enum with category (HttpStatusCode)', () => {
+    it('renders OK badge', async () => {
+      const result = await executor.execute({
+        type: 'enumMethod',
+        file: fixture('HttpStatusCode.php'),
+        class: 'App\\Components\\HttpStatusCode',
+        callable: 'badge',
+        args: { _case: 200 },
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('200');
+      expect(result.html).toContain('OK');
+      expect(result.html).toContain('Success');
+    });
+
+    it('renders NotFound badge', async () => {
+      const result = await executor.execute({
+        type: 'enumMethod',
+        file: fixture('HttpStatusCode.php'),
+        class: 'App\\Components\\HttpStatusCode',
+        callable: 'badge',
+        args: { _case: 404 },
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('404');
+      expect(result.html).toContain('NotFound');
+      expect(result.html).toContain('Client Error');
+    });
+
+    it('renders InternalServerError badge', async () => {
+      const result = await executor.execute({
+        type: 'enumMethod',
+        file: fixture('HttpStatusCode.php'),
+        class: 'App\\Components\\HttpStatusCode',
+        callable: 'badge',
+        args: { _case: 500 },
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('500');
+      expect(result.html).toContain('Server Error');
+    });
+
+    it('renders static table of all codes', async () => {
+      const result = await executor.execute({
+        type: 'staticMethod',
+        file: fixture('HttpStatusCode.php'),
+        class: 'App\\Components\\HttpStatusCode',
+        callable: 'table',
+        args: {},
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('<table>');
+      expect(result.html).toContain('200');
+      expect(result.html).toContain('404');
+      expect(result.html).toContain('500');
+    });
+
+    it('generates enumMethod module for badge', () => {
+      const plugin = storybookPhpPlugin();
+      const load = (plugin as any).load as (id: string) => string | null;
+      const code = load(`\0storybook-php:${fixture('HttpStatusCode.php')}?callable=badge`);
+      expect(code).toContain('export const HttpStatusCode');
+      expect(code).toContain("__type: 'enumMethod'");
+      expect(code).toContain('_case:');
+    });
+
+    it('generates staticMethod module for table', () => {
+      const plugin = storybookPhpPlugin();
+      const load = (plugin as any).load as (id: string) => string | null;
+      const code = load(`\0storybook-php:${fixture('HttpStatusCode.php')}?callable=table`);
+      expect(code).toContain('export const HttpStatusCode');
+      expect(code).toContain("__type: 'staticMethod'");
+    });
+  });
+
+  // -------------------------------------------------------------------------
+  // UC212: Enum implementing multiple interfaces (MenuAction)
+  // -------------------------------------------------------------------------
+  describe('UC212: Enum implementing multiple interfaces (MenuAction)', () => {
+    it('renders Copy menu item', async () => {
+      const result = await executor.execute({
+        type: 'enumMethod',
+        file: fixture('MenuAction.php'),
+        class: 'App\\Components\\MenuAction',
+        callable: 'menuItem',
+        args: { _case: 'copy' },
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('Copy');
+      expect(result.html).toContain('Ctrl+C');
+    });
+
+    it('renders Undo menu item', async () => {
+      const result = await executor.execute({
+        type: 'enumMethod',
+        file: fixture('MenuAction.php'),
+        class: 'App\\Components\\MenuAction',
+        callable: 'menuItem',
+        args: { _case: 'undo' },
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('Undo');
+      expect(result.html).toContain('Ctrl+Z');
+    });
+
+    it('renders palette with all items', async () => {
+      const result = await executor.execute({
+        type: 'staticMethod',
+        file: fixture('MenuAction.php'),
+        class: 'App\\Components\\MenuAction',
+        callable: 'palette',
+        args: {},
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('palette');
+      expect(result.html).toContain('Copy');
+      expect(result.html).toContain('Paste');
+      expect(result.html).toContain('Cut');
+      expect(result.html).toContain('Undo');
+    });
+
+    it('generates enumMethod module for menuItem', () => {
+      const plugin = storybookPhpPlugin();
+      const load = (plugin as any).load as (id: string) => string | null;
+      const code = load(`\0storybook-php:${fixture('MenuAction.php')}?callable=menuItem`);
+      expect(code).toContain('export const MenuAction');
+      expect(code).toContain("__type: 'enumMethod'");
+    });
+  });
+
+  // -------------------------------------------------------------------------
+  // UC213: Class with multiple render methods (UserAvatar)
+  // -------------------------------------------------------------------------
+  describe('UC213: Multiple render methods (UserAvatar)', () => {
+    it('renders circle avatar', async () => {
+      const result = await executor.execute({
+        type: 'classMethod',
+        file: fixture('UserAvatar.php'),
+        class: 'App\\Components\\UserAvatar',
+        callable: 'circle',
+        args: { name: 'Alice', size: 'md' },
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('avatar');
+      expect(result.html).toContain('A');
+    });
+
+    it('renders card avatar', async () => {
+      const result = await executor.execute({
+        type: 'classMethod',
+        file: fixture('UserAvatar.php'),
+        class: 'App\\Components\\UserAvatar',
+        callable: 'card',
+        args: { name: 'Bob', email: 'bob@test.com' },
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('avatar-card');
+      expect(result.html).toContain('Bob');
+    });
+
+    it('renders badge avatar', async () => {
+      const result = await executor.execute({
+        type: 'classMethod',
+        file: fixture('UserAvatar.php'),
+        class: 'App\\Components\\UserAvatar',
+        callable: 'badge',
+        args: { name: 'Charlie' },
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('avatar-badge');
+      expect(result.html).toContain('Charlie');
+    });
+
+    it('generates classMethod module for circle', () => {
+      const plugin = storybookPhpPlugin();
+      const load = (plugin as any).load as (id: string) => string | null;
+      const code = load(`\0storybook-php:${fixture('UserAvatar.php')}?callable=circle`);
+      expect(code).toContain('export const UserAvatar');
+      expect(code).toContain("__type: 'classMethod'");
+      expect(code).toContain('name:');
+    });
+
+    it('generates classMethod module for card', () => {
+      const plugin = storybookPhpPlugin();
+      const load = (plugin as any).load as (id: string) => string | null;
+      const code = load(`\0storybook-php:${fixture('UserAvatar.php')}?callable=card`);
+      expect(code).toContain('export const UserAvatar');
+      expect(code).toContain('__callable: "card"');
+    });
+
+    it('generates classMethod module for badge', () => {
+      const plugin = storybookPhpPlugin();
+      const load = (plugin as any).load as (id: string) => string | null;
+      const code = load(`\0storybook-php:${fixture('UserAvatar.php')}?callable=badge`);
+      expect(code).toContain('export const UserAvatar');
+      expect(code).toContain('__callable: "badge"');
+    });
+  });
+
+  // -------------------------------------------------------------------------
+  // UC214: 3-level deep inheritance (ThreeLevel)
+  // -------------------------------------------------------------------------
+  describe('UC214: 3-level deep inheritance (ThreeLevel)', () => {
+    it('renders InteractiveButton', async () => {
+      const result = await executor.execute({
+        type: 'classMethod',
+        file: fixture('ThreeLevel.php'),
+        class: 'App\\Components\\InteractiveButton',
+        callable: 'render',
+        args: { text: 'Click', color: 'white', size: 'lg' },
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('button');
+      expect(result.html).toContain('Click');
+      expect(result.html).toContain('btn-lg');
+    });
+
+    it('renders InteractiveButton disabled', async () => {
+      const result = await executor.execute({
+        type: 'classMethod',
+        file: fixture('ThreeLevel.php'),
+        class: 'App\\Components\\InteractiveButton',
+        callable: 'render',
+        args: { text: 'Disabled', disabled: true },
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('disabled');
+    });
+
+    it('renders StyledElement (mid-level)', async () => {
+      const result = await executor.execute({
+        type: 'classMethod',
+        file: fixture('ThreeLevel.php'),
+        class: 'App\\Components\\StyledElement',
+        callable: 'render',
+        args: { text: 'Hello', tag: 'span', color: '#ff0000' },
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('<span');
+      expect(result.html).toContain('Hello');
+      expect(result.html).toContain('#ff0000');
+    });
+
+    it('generates module for InteractiveButton with inherited params', () => {
+      const plugin = storybookPhpPlugin();
+      const load = (plugin as any).load as (id: string) => string | null;
+      const code = load(`\0storybook-php:${fixture('ThreeLevel.php')}?callable=render`);
+      expect(code).toContain('export const InteractiveButton');
+      expect(code).toContain('export const StyledElement');
+      expect(code).toContain("__type: 'classMethod'");
+      // InteractiveButton constructor params
+      expect(code).toContain('text:');
+      expect(code).toContain('size:');
+      expect(code).toContain('disabled:');
+    });
+  });
+
+  // -------------------------------------------------------------------------
+  // UC215: DNF type parameter (DnfConfig)
+  // -------------------------------------------------------------------------
+  describe('UC215: DNF type parameter (DnfConfig)', () => {
+    it('renders DnfConfig with string source', async () => {
+      const result = await executor.execute({
+        type: 'classMethod',
+        file: fixture('DnfConfig.php'),
+        class: 'App\\Components\\DnfConfig',
+        callable: 'render',
+        args: { name: 'app.config', source: 'env' },
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('app.config');
+      expect(result.html).toContain('env');
+    });
+
+    it('renders DnfConfig with debug flag', async () => {
+      const result = await executor.execute({
+        type: 'classMethod',
+        file: fixture('DnfConfig.php'),
+        class: 'App\\Components\\DnfConfig',
+        callable: 'render',
+        args: { name: 'dev.config', debug: true },
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('dev.config');
+      expect(result.html).toContain('[DEBUG]');
+    });
+
+    it('generates module with DNF type param', () => {
+      const plugin = storybookPhpPlugin();
+      const load = (plugin as any).load as (id: string) => string | null;
+      const code = load(`\0storybook-php:${fixture('DnfConfig.php')}?callable=render`);
+      expect(code).toContain('export const DnfConfig');
+      expect(code).toContain('name:');
+      expect(code).toContain('source:');
+      expect(code).toContain('debug:');
+    });
+  });
+
+  // -------------------------------------------------------------------------
+  // UC216: Invocable class (RuleEngine)
+  // -------------------------------------------------------------------------
+  describe('UC216: Invocable class (RuleEngine)', () => {
+    it('renders RuleEngine passing rule', async () => {
+      const result = await executor.execute({
+        type: 'classMethod',
+        file: fixture('RuleEngine.php'),
+        class: 'App\\Components\\RuleEngine',
+        callable: '__invoke',
+        args: { name: 'EmailCheck', rule: 'format', value: 'test@example.com', passed: true },
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('EmailCheck');
+      expect(result.html).toContain('format');
+      expect(result.html).toContain('test@example.com');
+    });
+
+    it('renders RuleEngine failing rule', async () => {
+      const result = await executor.execute({
+        type: 'classMethod',
+        file: fixture('RuleEngine.php'),
+        class: 'App\\Components\\RuleEngine',
+        callable: '__invoke',
+        args: { name: 'PasswordCheck', variant: 'danger', rule: 'length', value: 'abc', passed: false },
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('PasswordCheck');
+      expect(result.html).toContain('rule-danger');
+    });
+
+    it('generates classMethod module for __invoke', () => {
+      const plugin = storybookPhpPlugin();
+      const load = (plugin as any).load as (id: string) => string | null;
+      const code = load(`\0storybook-php:${fixture('RuleEngine.php')}?callable=__invoke`);
+      expect(code).toContain('export const RuleEngine');
+      expect(code).toContain("__type: 'classMethod'");
+      expect(code).toContain('__callable: "__invoke"');
+      expect(code).toContain('rule:');
+      expect(code).toContain('value:');
+    });
+  });
+
+  // -------------------------------------------------------------------------
+  // UC217: Generator function (DefinitionList)
+  // -------------------------------------------------------------------------
+  describe('UC217: Generator function (definitionList)', () => {
+    it('renders definition list with items', async () => {
+      const result = await executor.execute({
+        type: 'function',
+        file: fixture('DefinitionList.php'),
+        class: null,
+        callable: 'App\\Components\\definitionList',
+        args: { items: { Name: 'John', Role: 'Admin' } },
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('<dl>');
+      expect(result.html).toContain('Name');
+      expect(result.html).toContain('John');
+      expect(result.html).toContain('Admin');
+    });
+
+    it('renders definition list empty', async () => {
+      const result = await executor.execute({
+        type: 'function',
+        file: fixture('DefinitionList.php'),
+        class: null,
+        callable: 'App\\Components\\definitionList',
+        args: { items: {} },
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('<dl>');
+      expect(result.html).toContain('</dl>');
+    });
+
+    it('generates function module for definitionList', () => {
+      const plugin = storybookPhpPlugin();
+      const load = (plugin as any).load as (id: string) => string | null;
+      const code = load(`\0storybook-php:${fixture('DefinitionList.php')}?callable=definitionList`);
+      expect(code).toContain('export const definitionList');
+      expect(code).toContain("__type: 'function'");
+      expect(code).toContain('items:');
+      expect(code).toContain('variant:');
+    });
+  });
+
+  // -------------------------------------------------------------------------
+  // UC218: No-constructor static-only class (FileSize)
+  // -------------------------------------------------------------------------
+  describe('UC218: No-constructor static class (FileSize)', () => {
+    it('renders FileSize badge for small file', async () => {
+      const result = await executor.execute({
+        type: 'staticMethod',
+        file: fixture('FileSize.php'),
+        class: 'App\\Components\\FileSize',
+        callable: 'badge',
+        args: { bytes: 1024, variant: 'default' },
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('1.0 KB');
+    });
+
+    it('renders FileSize badge for large file', async () => {
+      const result = await executor.execute({
+        type: 'staticMethod',
+        file: fixture('FileSize.php'),
+        class: 'App\\Components\\FileSize',
+        callable: 'badge',
+        args: { bytes: 1073741824 },
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('1.0 GB');
+    });
+
+    it('renders FileSize bar', async () => {
+      const result = await executor.execute({
+        type: 'staticMethod',
+        file: fixture('FileSize.php'),
+        class: 'App\\Components\\FileSize',
+        callable: 'bar',
+        args: { used: 500, total: 1000, label: 'Disk' },
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('Disk');
+      expect(result.html).toContain('50');
+    });
+
+    it('generates staticMethod module for badge', () => {
+      const plugin = storybookPhpPlugin();
+      const load = (plugin as any).load as (id: string) => string | null;
+      const code = load(`\0storybook-php:${fixture('FileSize.php')}?callable=badge`);
+      expect(code).toContain('export const FileSize');
+      expect(code).toContain("__type: 'staticMethod'");
+      expect(code).toContain('bytes:');
+    });
+
+    it('generates staticMethod module for bar', () => {
+      const plugin = storybookPhpPlugin();
+      const load = (plugin as any).load as (id: string) => string | null;
+      const code = load(`\0storybook-php:${fixture('FileSize.php')}?callable=bar`);
+      expect(code).toContain('export const FileSize');
+      expect(code).toContain('__callable: "bar"');
+      expect(code).toContain('used:');
+      expect(code).toContain('total:');
+    });
+  });
+
+  // -------------------------------------------------------------------------
+  // UC219: Multiple classes from one file (Sections)
+  // -------------------------------------------------------------------------
+  describe('UC219: Multiple classes (Sections)', () => {
+    it('renders SectionHeader', async () => {
+      const result = await executor.execute({
+        type: 'classMethod',
+        file: fixture('Sections.php'),
+        class: 'App\\Components\\SectionHeader',
+        callable: 'render',
+        args: { title: 'My Page', level: 'h2' },
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('<h2>');
+      expect(result.html).toContain('My Page');
+    });
+
+    it('renders SectionFooter', async () => {
+      const result = await executor.execute({
+        type: 'classMethod',
+        file: fixture('Sections.php'),
+        class: 'App\\Components\\SectionFooter',
+        callable: 'render',
+        args: { copyright: 'Acme Inc.', year: 2025 },
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('footer');
+      expect(result.html).toContain('2025');
+      expect(result.html).toContain('Acme Inc.');
+    });
+
+    it('generates both exports from one file', () => {
+      const plugin = storybookPhpPlugin();
+      const load = (plugin as any).load as (id: string) => string | null;
+      const code = load(`\0storybook-php:${fixture('Sections.php')}?callable=render`);
+      expect(code).toContain('export const SectionHeader');
+      expect(code).toContain('export const SectionFooter');
+    });
+  });
+
+  // -------------------------------------------------------------------------
+  // UC220: Trait with abstract method + multiple trait users (SocialShare)
+  // -------------------------------------------------------------------------
+  describe('UC220: Multiple trait users (SocialShare)', () => {
+    it('renders Twitter share link', async () => {
+      const result = await executor.execute({
+        type: 'classMethod',
+        file: fixture('SocialShare.php'),
+        class: 'App\\Components\\TwitterShare',
+        callable: 'shareLink',
+        args: { url: 'https://example.com', label: 'Tweet' },
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('share-link');
+      expect(result.html).toContain('https://example.com');
+      expect(result.html).toContain('Tweet');
+    });
+
+    it('renders Facebook share link', async () => {
+      const result = await executor.execute({
+        type: 'classMethod',
+        file: fixture('SocialShare.php'),
+        class: 'App\\Components\\FacebookShare',
+        callable: 'shareLink',
+        args: { url: 'https://example.com/post', label: 'Share' },
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('share-link');
+      expect(result.html).toContain('https://example.com/post');
+    });
+
+    it('generates both class exports from trait method', () => {
+      const plugin = storybookPhpPlugin();
+      const load = (plugin as any).load as (id: string) => string | null;
+      const code = load(`\0storybook-php:${fixture('SocialShare.php')}?callable=shareLink`);
+      expect(code).toContain('export const TwitterShare');
+      expect(code).toContain('export const FacebookShare');
+      expect(code).toContain("__type: 'classMethod'");
+    });
+  });
+
+  // -------------------------------------------------------------------------
+  // UC210-220: Parser metadata for new fixtures
+  // -------------------------------------------------------------------------
+  describe('Parser: UC210-220 fixture metadata', () => {
+    it('parses FinalReadonlyPoint as final readonly class', () => {
+      const meta = parsePhpFile(fixture('FinalReadonlyPoint.php'));
+      const cls = meta.classes.find(c => c.name === 'Point');
+      expect(cls).toBeDefined();
+      expect(cls!.isFinal).toBe(true);
+      expect(cls!.isReadonly).toBe(true);
+      expect(cls!.constructorParams).toHaveLength(3);
+      expect(cls!.constructorParams[0]!.name).toBe('x');
+      expect(cls!.constructorParams[0]!.type).toBe('float');
+      expect(cls!.methods.some(m => m.name === 'render')).toBe(true);
+      expect(cls!.methods.some(m => m.name === 'origin' && m.isStatic)).toBe(true);
+    });
+
+    it('parses HttpStatusCode as int-backed enum', () => {
+      const meta = parsePhpFile(fixture('HttpStatusCode.php'));
+      const cls = meta.classes.find(c => c.name === 'HttpStatusCode');
+      expect(cls).toBeDefined();
+      expect(cls!.isEnum).toBe(true);
+      expect((cls as any).enumBackingType).toBe('int');
+      expect((cls as any).enumCases).toContain('OK');
+      expect((cls as any).enumCases).toContain('NotFound');
+      expect((cls as any).enumCases).toContain('InternalServerError');
+      expect(cls!.methods.some(m => m.name === 'badge')).toBe(true);
+      expect(cls!.methods.some(m => m.name === 'table' && m.isStatic)).toBe(true);
+    });
+
+    it('parses MenuAction as enum with multiple interfaces', () => {
+      const meta = parsePhpFile(fixture('MenuAction.php'));
+      const cls = meta.classes.find(c => c.name === 'MenuAction');
+      expect(cls).toBeDefined();
+      expect(cls!.isEnum).toBe(true);
+      expect(cls!.implements).toContain('Displayable');
+      expect(cls!.implements).toContain('Accessible');
+      expect(cls!.methods.some(m => m.name === 'menuItem')).toBe(true);
+      expect(cls!.methods.some(m => m.name === 'palette' && m.isStatic)).toBe(true);
+    });
+
+    it('parses UserAvatar with multiple methods', () => {
+      const meta = parsePhpFile(fixture('UserAvatar.php'));
+      const cls = meta.classes.find(c => c.name === 'UserAvatar');
+      expect(cls).toBeDefined();
+      expect(cls!.constructorParams).toHaveLength(3);
+      expect(cls!.methods.some(m => m.name === 'circle')).toBe(true);
+      expect(cls!.methods.some(m => m.name === 'card')).toBe(true);
+      expect(cls!.methods.some(m => m.name === 'badge')).toBe(true);
+    });
+
+    it('parses ThreeLevel with abstract + concrete classes', () => {
+      const meta = parsePhpFile(fixture('ThreeLevel.php'));
+      const base = meta.classes.find(c => c.name === 'BaseElement');
+      expect(base).toBeDefined();
+      expect(base!.isAbstract).toBe(true);
+
+      const styled = meta.classes.find(c => c.name === 'StyledElement');
+      expect(styled).toBeDefined();
+      expect(styled!.extends).toBe('BaseElement');
+
+      const btn = meta.classes.find(c => c.name === 'InteractiveButton');
+      expect(btn).toBeDefined();
+      expect(btn!.extends).toBe('StyledElement');
+      expect(btn!.constructorParams.some(p => p.name === 'disabled')).toBe(true);
+    });
+
+    it('parses DnfConfig with DNF type parameter', () => {
+      const meta = parsePhpFile(fixture('DnfConfig.php'));
+      const cls = meta.classes.find(c => c.name === 'DnfConfig');
+      expect(cls).toBeDefined();
+      const source = cls!.constructorParams.find(p => p.name === 'source');
+      expect(source).toBeDefined();
+      expect(source!.type).toContain('|');
+    });
+
+    it('parses RuleEngine with __invoke method', () => {
+      const meta = parsePhpFile(fixture('RuleEngine.php'));
+      const cls = meta.classes.find(c => c.name === 'RuleEngine');
+      expect(cls).toBeDefined();
+      expect(cls!.methods.some(m => m.name === '__invoke')).toBe(true);
+      const invoke = cls!.methods.find(m => m.name === '__invoke');
+      expect(invoke!.params).toHaveLength(3);
+    });
+
+    it('parses DefinitionList as standalone generator function', () => {
+      const meta = parsePhpFile(fixture('DefinitionList.php'));
+      expect(meta.functions).toHaveLength(1);
+      expect(meta.functions[0]!.name).toBe('definitionList');
+      expect(meta.functions[0]!.params).toHaveLength(2);
+    });
+
+    it('parses FileSize with two static methods', () => {
+      const meta = parsePhpFile(fixture('FileSize.php'));
+      const cls = meta.classes.find(c => c.name === 'FileSize');
+      expect(cls).toBeDefined();
+      expect(cls!.constructorParams).toHaveLength(0);
+      expect(cls!.methods.some(m => m.name === 'badge' && m.isStatic)).toBe(true);
+      expect(cls!.methods.some(m => m.name === 'bar' && m.isStatic)).toBe(true);
+    });
+
+    it('parses Sections with two independent classes', () => {
+      const meta = parsePhpFile(fixture('Sections.php'));
+      expect(meta.classes.some(c => c.name === 'SectionHeader')).toBe(true);
+      expect(meta.classes.some(c => c.name === 'SectionFooter')).toBe(true);
+    });
+
+    it('parses SocialShare with traits and classes', () => {
+      const meta = parsePhpFile(fixture('SocialShare.php'));
+      const twitter = meta.classes.find(c => c.name === 'TwitterShare');
+      expect(twitter).toBeDefined();
+      expect(twitter!.traits).toContain('HasShareLink');
+      expect(twitter!.traits).toContain('HasSocialIcon');
+
+      const facebook = meta.classes.find(c => c.name === 'FacebookShare');
+      expect(facebook).toBeDefined();
+      expect(facebook!.traits).toContain('HasShareLink');
+    });
+  });
 });
