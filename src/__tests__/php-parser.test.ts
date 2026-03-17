@@ -1388,4 +1388,130 @@ class Tooltip {
       expect(image.params).toHaveLength(3);
     });
   });
+
+  // -----------------------------------------------------------------------
+  // ReadonlyClass
+  // -----------------------------------------------------------------------
+  describe('ReadonlyClass', () => {
+    it('parses readonly class with public promoted params', () => {
+      const meta = parsePhpSource(fixture('ReadonlyClass.php'), 'ReadonlyClass.php');
+
+      expect(meta.namespace).toBe('App\\Components');
+      expect(meta.classes).toHaveLength(1);
+
+      const cls = meta.classes[0]!;
+      expect(cls.name).toBe('Settings');
+      expect(cls.isReadonly).toBe(true);
+      expect(cls.isAbstract).toBe(false);
+      expect(cls.isFinal).toBe(false);
+
+      expect(cls.constructorParams).toHaveLength(3);
+
+      const theme = cls.constructorParams[0]!;
+      expect(theme.name).toBe('theme');
+      expect(theme.type).toBe('string');
+      expect(theme.isPromoted).toBe(true);
+      expect(theme.visibility).toBe('public');
+      expect(theme.required).toBe(false);
+
+      const fontSize = cls.constructorParams[1]!;
+      expect(fontSize.name).toBe('fontSize');
+      expect(fontSize.type).toBe('int');
+
+      const animations = cls.constructorParams[2]!;
+      expect(animations.name).toBe('animations');
+      expect(animations.type).toBe('bool');
+
+      expect(cls.methods).toHaveLength(1);
+      expect(cls.methods[0]!.name).toBe('render');
+    });
+  });
+
+  // -----------------------------------------------------------------------
+  // DefaultNewExpression
+  // -----------------------------------------------------------------------
+  describe('DefaultNewExpression', () => {
+    it('parses classes with new expression as default value', () => {
+      const meta = parsePhpSource(fixture('DefaultNewExpression.php'), 'DefaultNewExpression.php');
+
+      expect(meta.classes).toHaveLength(2);
+
+      const options = meta.classes[0]!;
+      expect(options.name).toBe('Options');
+
+      const widget = meta.classes[1]!;
+      expect(widget.name).toBe('Widget');
+      expect(widget.constructorParams).toHaveLength(3);
+
+      const title = widget.constructorParams[0]!;
+      expect(title.name).toBe('title');
+      expect(title.required).toBe(true);
+
+      const optionsParam = widget.constructorParams[1]!;
+      expect(optionsParam.name).toBe('options');
+      expect(optionsParam.type).toBe('Options');
+      expect(optionsParam.required).toBe(false);
+      expect(optionsParam.default).toBe('new Options()');
+
+      const subtitle = widget.constructorParams[2]!;
+      expect(subtitle.name).toBe('subtitle');
+      expect(subtitle.nullable).toBe(true);
+      expect(subtitle.required).toBe(false);
+    });
+  });
+
+  // -----------------------------------------------------------------------
+  // EnumWithInterface
+  // -----------------------------------------------------------------------
+  describe('EnumWithInterface', () => {
+    it('parses enum implementing interface', () => {
+      const meta = parsePhpSource(fixture('EnumWithInterface.php'), 'EnumWithInterface.php');
+
+      // Interface + Enum
+      expect(meta.classes).toHaveLength(2);
+
+      const iface = meta.classes[0]!;
+      expect(iface.name).toBe('Renderable');
+
+      const level = meta.classes[1]!;
+      expect(level.name).toBe('Level');
+      expect(level.isEnum).toBe(true);
+      expect(level.enumBackingType).toBe('string');
+      expect(level.enumCases).toEqual(['Low', 'Medium', 'High']);
+      expect(level.implements).toContain('Renderable');
+      expect(level.methods).toHaveLength(1);
+      expect(level.methods[0]!.name).toBe('render');
+    });
+  });
+
+  // -----------------------------------------------------------------------
+  // FinalReadonlyClass
+  // -----------------------------------------------------------------------
+  describe('FinalReadonlyClass', () => {
+    it('parses final readonly class with static method', () => {
+      const meta = parsePhpSource(fixture('FinalReadonlyClass.php'), 'FinalReadonlyClass.php');
+
+      expect(meta.classes).toHaveLength(1);
+
+      const cls = meta.classes[0]!;
+      expect(cls.name).toBe('Coordinate');
+      expect(cls.isFinal).toBe(true);
+      expect(cls.isReadonly).toBe(true);
+      expect(cls.isAbstract).toBe(false);
+
+      expect(cls.constructorParams).toHaveLength(2);
+      expect(cls.constructorParams[0]!.name).toBe('latitude');
+      expect(cls.constructorParams[0]!.type).toBe('float');
+      expect(cls.constructorParams[1]!.name).toBe('longitude');
+      expect(cls.constructorParams[1]!.type).toBe('float');
+
+      expect(cls.methods).toHaveLength(2);
+      const render = cls.methods.find(m => m.name === 'render')!;
+      expect(render.isStatic).toBe(false);
+
+      const origin = cls.methods.find(m => m.name === 'origin')!;
+      expect(origin.isStatic).toBe(true);
+      expect(origin.params).toHaveLength(0);
+    });
+  });
 });

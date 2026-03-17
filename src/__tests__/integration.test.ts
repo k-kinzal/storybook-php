@@ -4213,5 +4213,410 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
       expect(code).toContain('alt:');
       expect(code).toContain('width:');
     });
+
+    // --- New examples ---
+
+    it('UC66: Anchor@render generates classMethod with nullable param', () => {
+      const id = resolveId('./Anchor.php@render', example('Anchor.php'));
+      const code = load(id);
+      expect(code).toContain("__type: 'classMethod'");
+      expect(code).toContain('text:');
+      expect(code).toContain('href:');
+      expect(code).toContain('target:');
+      expect(code).toContain('underline:');
+    });
+
+    it('UC67: Money@render generates classMethod for final readonly class', () => {
+      const id = resolveId('./Money.php@render', example('Money.php'));
+      const code = load(id);
+      expect(code).toContain("__type: 'classMethod'");
+      expect(code).toContain('amount:');
+      expect(code).toContain('currency:');
+    });
+
+    it('UC67: Money@fromCents generates staticMethod', () => {
+      const id = resolveId('./Money.php@fromCents', example('Money.php'));
+      const code = load(id);
+      expect(code).toContain("__type: 'staticMethod'");
+      expect(code).toContain('cents:');
+      expect(code).toContain('currency:');
+    });
+
+    it('UC67: Money@fromDollars generates staticMethod', () => {
+      const id = resolveId('./Money.php@fromDollars', example('Money.php'));
+      const code = load(id);
+      expect(code).toContain("__type: 'staticMethod'");
+      expect(code).toContain('dollars:');
+      expect(code).toContain('currency:');
+    });
+
+    it('UC68: Severity@label generates enumMethod for interface-implementing enum', () => {
+      const id = resolveId('./Severity.php@label', example('Severity.php'));
+      const code = load(id);
+      expect(code).toContain("__type: 'enumMethod'");
+      expect(code).toContain('_case:');
+    });
+
+    it('UC68: Severity@banner generates enumMethod with message param', () => {
+      const id = resolveId('./Severity.php@banner', example('Severity.php'));
+      const code = load(id);
+      expect(code).toContain("__type: 'enumMethod'");
+      expect(code).toContain('_case:');
+      expect(code).toContain('message:');
+    });
+
+    it('UC69: Toggle@render generates classMethod', () => {
+      const id = resolveId('./Toggle.php@render', example('Toggle.php'));
+      const code = load(id);
+      expect(code).toContain("__type: 'classMethod'");
+      expect(code).toContain('label:');
+      expect(code).toContain('checked:');
+      expect(code).toContain('disabled:');
+      expect(code).toContain('size:');
+    });
+  });
+
+  // -------------------------------------------------------------------------
+  // UC66: Nullable param component (Anchor)
+  // -------------------------------------------------------------------------
+  describe('UC66: Nullable param component', () => {
+    it('renders Anchor with all args', async () => {
+      const result = await executor.execute({
+        type: 'classMethod',
+        file: example('Anchor.php'),
+        class: 'App\\Components\\Anchor',
+        callable: 'render',
+        args: { text: 'Click here', href: 'https://example.com', target: '_blank', underline: false },
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('Click here');
+      expect(result.html).toContain('https://example.com');
+      expect(result.html).toContain('target="_blank"');
+      expect(result.html).toContain('text-decoration: none');
+    });
+
+    it('renders Anchor with null href', async () => {
+      const result = await executor.execute({
+        type: 'classMethod',
+        file: example('Anchor.php'),
+        class: 'App\\Components\\Anchor',
+        callable: 'render',
+        args: { text: 'Placeholder' },
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('href="#"');
+      expect(result.html).toContain('Placeholder');
+    });
+  });
+
+  // -------------------------------------------------------------------------
+  // UC67: Final readonly class with static factories (Money)
+  // -------------------------------------------------------------------------
+  describe('UC67: Final readonly class + static factory', () => {
+    it('renders Money via render()', async () => {
+      const result = await executor.execute({
+        type: 'classMethod',
+        file: example('Money.php'),
+        class: 'App\\Components\\Money',
+        callable: 'render',
+        args: { amount: 1999, currency: 'USD' },
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('$19.99');
+      expect(result.html).toContain('money');
+    });
+
+    it('renders Money::fromCents', async () => {
+      const result = await executor.execute({
+        type: 'staticMethod',
+        file: example('Money.php'),
+        class: 'App\\Components\\Money',
+        callable: 'fromCents',
+        args: { cents: 4999 },
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('$49.99');
+      expect(result.html).toContain('money-cents');
+    });
+
+    it('renders Money::fromDollars with EUR', async () => {
+      const result = await executor.execute({
+        type: 'staticMethod',
+        file: example('Money.php'),
+        class: 'App\\Components\\Money',
+        callable: 'fromDollars',
+        args: { dollars: 19.99, currency: 'EUR' },
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('19.99');
+      expect(result.html).toContain('money-dollars');
+    });
+  });
+
+  // -------------------------------------------------------------------------
+  // UC68: Enum implementing interface (Severity)
+  // -------------------------------------------------------------------------
+  describe('UC68: Enum implementing interface', () => {
+    it('renders Severity::label for info', async () => {
+      const result = await executor.execute({
+        type: 'enumMethod',
+        file: example('Severity.php'),
+        class: 'App\\Components\\Severity',
+        callable: 'label',
+        args: { _case: 'info' },
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('severity-info');
+      expect(result.html).toContain('Info');
+      expect(result.html).toContain('#3b82f6');
+    });
+
+    it('renders Severity::label for critical', async () => {
+      const result = await executor.execute({
+        type: 'enumMethod',
+        file: example('Severity.php'),
+        class: 'App\\Components\\Severity',
+        callable: 'label',
+        args: { _case: 'critical' },
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('severity-critical');
+      expect(result.html).toContain('Critical');
+    });
+
+    it('renders Severity::banner with message', async () => {
+      const result = await executor.execute({
+        type: 'enumMethod',
+        file: example('Severity.php'),
+        class: 'App\\Components\\Severity',
+        callable: 'banner',
+        args: { _case: 'warning', message: 'Check your settings' },
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('banner-warning');
+      expect(result.html).toContain('Warning');
+      expect(result.html).toContain('Check your settings');
+    });
+  });
+
+  // -------------------------------------------------------------------------
+  // UC69: Bool-heavy component (Toggle)
+  // -------------------------------------------------------------------------
+  describe('UC69: Bool-heavy component', () => {
+    it('renders Toggle unchecked', async () => {
+      const result = await executor.execute({
+        type: 'classMethod',
+        file: example('Toggle.php'),
+        class: 'App\\Components\\Toggle',
+        callable: 'render',
+        args: { label: 'Enable' },
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('Enable');
+      expect(result.html).toContain('toggle');
+    });
+
+    it('renders Toggle checked and disabled', async () => {
+      const result = await executor.execute({
+        type: 'classMethod',
+        file: example('Toggle.php'),
+        class: 'App\\Components\\Toggle',
+        callable: 'render',
+        args: { label: 'Locked', checked: true, disabled: true },
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('Locked');
+      expect(result.html).toContain('checked');
+      expect(result.html).toContain('disabled');
+      expect(result.html).toContain('not-allowed');
+    });
+
+    it('renders Toggle with size', async () => {
+      const result = await executor.execute({
+        type: 'classMethod',
+        file: example('Toggle.php'),
+        class: 'App\\Components\\Toggle',
+        callable: 'render',
+        args: { label: 'Small toggle', size: 'small' },
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('toggle-small');
+    });
+  });
+
+  // -------------------------------------------------------------------------
+  // UC70: Login template
+  // -------------------------------------------------------------------------
+  describe('UC70: Login template', () => {
+    it('renders login form with defaults', async () => {
+      const result = await executor.execute({
+        type: 'template',
+        file: example('templates/login.php'),
+        class: null,
+        callable: null,
+        args: { title: 'Sign In' },
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('Sign In');
+      expect(result.html).toContain('login-form');
+      expect(result.html).toContain('Remember me');
+      expect(result.html).toContain('Forgot password?');
+    });
+
+    it('renders login with error message', async () => {
+      const result = await executor.execute({
+        type: 'template',
+        file: example('templates/login.php'),
+        class: null,
+        callable: null,
+        args: { title: 'Sign In', error: 'Invalid credentials' },
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('login-error');
+      expect(result.html).toContain('Invalid credentials');
+    });
+
+    it('renders minimal login without remember/forgot', async () => {
+      const result = await executor.execute({
+        type: 'template',
+        file: example('templates/login.php'),
+        class: null,
+        callable: null,
+        args: { title: 'Login', showRemember: false, showForgot: false, buttonText: 'Log In' },
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('Log In');
+      expect(result.html).not.toContain('Remember me');
+      expect(result.html).not.toContain('Forgot password?');
+    });
+  });
+
+  // -------------------------------------------------------------------------
+  // UC71: Error page template
+  // -------------------------------------------------------------------------
+  describe('UC71: Error page template', () => {
+    it('renders 404 error page', async () => {
+      const result = await executor.execute({
+        type: 'template',
+        file: example('templates/error.php'),
+        class: null,
+        callable: null,
+        args: { code: 404 },
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('404');
+      expect(result.html).toContain('Not Found');
+      expect(result.html).toContain('error-page');
+      expect(result.html).toContain('Go Home');
+    });
+
+    it('renders 500 error page', async () => {
+      const result = await executor.execute({
+        type: 'template',
+        file: example('templates/error.php'),
+        class: null,
+        callable: null,
+        args: { code: 500 },
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('500');
+      expect(result.html).toContain('Internal Server Error');
+    });
+
+    it('renders error page with custom message', async () => {
+      const result = await executor.execute({
+        type: 'template',
+        file: example('templates/error.php'),
+        class: null,
+        callable: null,
+        args: { code: 404, message: 'Article not found' },
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('Article not found');
+    });
+
+    it('renders error page without home link', async () => {
+      const result = await executor.execute({
+        type: 'template',
+        file: example('templates/error.php'),
+        class: null,
+        callable: null,
+        args: { code: 503, showHome: false },
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('Service Unavailable');
+      expect(result.html).not.toContain('Go Home');
+    });
+  });
+
+  // -------------------------------------------------------------------------
+  // Parser: new fixtures
+  // -------------------------------------------------------------------------
+  describe('Parser: new fixture metadata', () => {
+    it('parses ReadonlyClass fixture', () => {
+      const meta = parsePhpFile(fixture('ReadonlyClass.php'));
+      const cls = meta.classes[0]!;
+      expect(cls.name).toBe('Settings');
+      expect(cls.isReadonly).toBe(true);
+      expect(cls.constructorParams).toHaveLength(3);
+    });
+
+    it('parses DefaultNewExpression fixture', () => {
+      const meta = parsePhpFile(fixture('DefaultNewExpression.php'));
+      expect(meta.classes).toHaveLength(2);
+      const widget = meta.classes[1]!;
+      expect(widget.name).toBe('Widget');
+      const optionsParam = widget.constructorParams.find(p => p.name === 'options')!;
+      expect(optionsParam.type).toBe('Options');
+      expect(optionsParam.required).toBe(false);
+    });
+
+    it('parses EnumWithInterface fixture', () => {
+      const meta = parsePhpFile(fixture('EnumWithInterface.php'));
+      const level = meta.classes.find(c => c.name === 'Level')!;
+      expect(level.isEnum).toBe(true);
+      expect(level.implements).toContain('Renderable');
+      expect(level.enumCases).toEqual(['Low', 'Medium', 'High']);
+    });
+
+    it('parses FinalReadonlyClass fixture', () => {
+      const meta = parsePhpFile(fixture('FinalReadonlyClass.php'));
+      const cls = meta.classes[0]!;
+      expect(cls.name).toBe('Coordinate');
+      expect(cls.isFinal).toBe(true);
+      expect(cls.isReadonly).toBe(true);
+      expect(cls.methods).toHaveLength(2);
+    });
+
+    it('parses Anchor with nullable param', () => {
+      const meta = parsePhpFile(example('Anchor.php'));
+      const cls = meta.classes[0]!;
+      expect(cls.name).toBe('Anchor');
+      const hrefParam = cls.constructorParams.find(p => p.name === 'href')!;
+      expect(hrefParam.nullable).toBe(true);
+      expect(hrefParam.required).toBe(false);
+    });
+
+    it('parses Money as final readonly class', () => {
+      const meta = parsePhpFile(example('Money.php'));
+      const cls = meta.classes[0]!;
+      expect(cls.name).toBe('Money');
+      expect(cls.isFinal).toBe(true);
+      expect(cls.isReadonly).toBe(true);
+      const staticMethods = cls.methods.filter(m => m.isStatic);
+      expect(staticMethods).toHaveLength(2);
+      expect(staticMethods.map(m => m.name).sort()).toEqual(['fromCents', 'fromDollars']);
+    });
+
+    it('parses Severity enum implementing Labelable interface', () => {
+      const meta = parsePhpFile(example('Severity.php'));
+      const iface = meta.classes.find(c => c.name === 'Labelable')!;
+      expect(iface).toBeDefined();
+      const severity = meta.classes.find(c => c.name === 'Severity')!;
+      expect(severity.isEnum).toBe(true);
+      expect(severity.implements).toContain('Labelable');
+      expect(severity.enumCases).toEqual(['Info', 'Warning', 'Error', 'Critical']);
+      expect(severity.methods).toHaveLength(2);
+    });
   });
 });
