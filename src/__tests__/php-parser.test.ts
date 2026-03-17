@@ -1832,4 +1832,124 @@ class Tooltip {
       expect(wrapper.methods[0]!.name).toBe('render');
     });
   });
+
+  // -----------------------------------------------------------------------
+  // EnumWithTrait: traits on enums
+  // -----------------------------------------------------------------------
+  describe('EnumWithTrait', () => {
+    it('extracts trait usage from enums (not just classes)', () => {
+      const meta = parsePhpSource(fixture('EnumWithTrait.php'), 'EnumWithTrait.php');
+
+      // Traits should be parsed as class-like
+      const hasBadge = meta.classes.find(c => c.name === 'HasBadge');
+      expect(hasBadge).toBeDefined();
+      expect(hasBadge!.methods).toHaveLength(1);
+
+      const hasIcon = meta.classes.find(c => c.name === 'HasIcon');
+      expect(hasIcon).toBeDefined();
+      expect(hasIcon!.methods).toHaveLength(1);
+
+      // Priority enum uses HasBadge
+      const priority = meta.classes.find(c => c.name === 'Priority');
+      expect(priority).toBeDefined();
+      expect(priority!.isEnum).toBe(true);
+      expect(priority!.traits).toContain('HasBadge');
+      expect(priority!.traits).not.toContain('HasIcon');
+      expect(priority!.enumCases).toEqual(['Low', 'Medium', 'High', 'Critical']);
+
+      // Severity enum uses both HasBadge and HasIcon
+      const severity = meta.classes.find(c => c.name === 'Severity');
+      expect(severity).toBeDefined();
+      expect(severity!.isEnum).toBe(true);
+      expect(severity!.traits).toContain('HasBadge');
+      expect(severity!.traits).toContain('HasIcon');
+      expect(severity!.enumCases).toEqual(['Info', 'Warning', 'Error']);
+    });
+  });
+
+  // -----------------------------------------------------------------------
+  // PromotedReadonlyUnion: readonly + union type + promoted
+  // -----------------------------------------------------------------------
+  describe('PromotedReadonlyUnion', () => {
+    it('parses readonly promoted parameters with union types', () => {
+      const meta = parsePhpSource(fixture('PromotedReadonlyUnion.php'), 'PromotedReadonlyUnion.php');
+      const cls = meta.classes[0]!;
+      expect(cls.name).toBe('PromotedReadonlyUnion');
+      expect(cls.constructorParams).toHaveLength(3);
+
+      const id = cls.constructorParams[0]!;
+      expect(id.name).toBe('id');
+      expect(id.type).toBe('string|int');
+      expect(id.isPromoted).toBe(true);
+      expect(id.visibility).toBe('public');
+      expect(id.required).toBe(true);
+
+      const label = cls.constructorParams[1]!;
+      expect(label.name).toBe('label');
+      expect(label.type).toBe('string');
+      expect(label.isPromoted).toBe(true);
+
+      const amount = cls.constructorParams[2]!;
+      expect(amount.name).toBe('amount');
+      expect(amount.type).toBe('int|float');
+      expect(amount.isPromoted).toBe(true);
+      expect(amount.visibility).toBe('private');
+      expect(amount.required).toBe(false);
+      expect(amount.default).toBe('0');
+    });
+  });
+
+  // -----------------------------------------------------------------------
+  // FunctionUnionReturn: union return types on functions
+  // -----------------------------------------------------------------------
+  describe('FunctionUnionReturn', () => {
+    it('parses functions with union return types', () => {
+      const meta = parsePhpSource(fixture('FunctionUnionReturn.php'), 'FunctionUnionReturn.php');
+      expect(meta.functions).toHaveLength(2);
+
+      const formatValue = meta.functions.find(f => f.name === 'formatValue')!;
+      expect(formatValue.returnType).toBe('string|int');
+      expect(formatValue.params).toHaveLength(2);
+      expect(formatValue.params[0]!.name).toBe('value');
+      expect(formatValue.params[1]!.name).toBe('format');
+      expect(formatValue.params[1]!.default).toBeDefined();
+
+      const renderStatus = meta.functions.find(f => f.name === 'renderStatus')!;
+      expect(renderStatus.returnType).toBe('string|bool');
+      expect(renderStatus.params).toHaveLength(2);
+      expect(renderStatus.params[0]!.name).toBe('status');
+      expect(renderStatus.params[1]!.name).toBe('asHtml');
+    });
+  });
+
+  // -----------------------------------------------------------------------
+  // MethodConstantDefault: self:: defaults in method params
+  // -----------------------------------------------------------------------
+  describe('MethodConstantDefault', () => {
+    it('parses method parameters with self:: constant defaults', () => {
+      const meta = parsePhpSource(fixture('MethodConstantDefault.php'), 'MethodConstantDefault.php');
+      const cls = meta.classes[0]!;
+      expect(cls.name).toBe('MethodConstantDefault');
+
+      // Constructor should have content param
+      expect(cls.constructorParams).toHaveLength(1);
+      expect(cls.constructorParams[0]!.name).toBe('content');
+
+      // Render method should have 2 params with constant defaults
+      const render = cls.methods.find(m => m.name === 'render')!;
+      expect(render.params).toHaveLength(2);
+
+      const format = render.params[0]!;
+      expect(format.name).toBe('format');
+      expect(format.type).toBe('string');
+      expect(format.default).toBe('self::FORMAT_HTML');
+      expect(format.required).toBe(false);
+
+      const maxLen = render.params[1]!;
+      expect(maxLen.name).toBe('maxLength');
+      expect(maxLen.type).toBe('int');
+      expect(maxLen.default).toBe('self::MAX_LENGTH');
+      expect(maxLen.required).toBe(false);
+    });
+  });
 });

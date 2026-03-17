@@ -492,4 +492,105 @@ describe('Vite Plugin', () => {
       expect(typeof mockUse.mock.calls[0][0]).toBe('function');
     });
   });
+
+  // -----------------------------------------------------------------------
+  // Enum with trait (UC147)
+  // -----------------------------------------------------------------------
+  describe('enum with trait', () => {
+    it('resolves trait method on enum via findEnumMethod', () => {
+      const plugin = storybookPhpPlugin();
+      const load = getLoad(plugin);
+
+      const filePath = resolve(FIXTURES, 'EnumWithTrait.php');
+      const code = load(`${VIRTUAL_PREFIX}${filePath}?callable=badge`);
+
+      expect(code).toBeTruthy();
+      expect(code).toContain("__type: 'enumMethod'");
+      // Both Priority and Severity use HasBadge
+      expect(code).toContain('export const Priority');
+      expect(code).toContain('export const Severity');
+      expect(code).toContain('_case:');
+      expect(code).toContain('size:');
+    });
+
+    it('resolves icon method only on Severity (not Priority)', () => {
+      const plugin = storybookPhpPlugin();
+      const load = getLoad(plugin);
+
+      const filePath = resolve(FIXTURES, 'EnumWithTrait.php');
+      const code = load(`${VIRTUAL_PREFIX}${filePath}?callable=icon`);
+
+      expect(code).toBeTruthy();
+      expect(code).toContain('export const Severity');
+      expect(code).not.toContain('export const Priority');
+    });
+  });
+
+  // -----------------------------------------------------------------------
+  // Promoted readonly union (UC148)
+  // -----------------------------------------------------------------------
+  describe('promoted readonly union', () => {
+    it('generates classMethod for PromotedReadonlyUnion@render', () => {
+      const plugin = storybookPhpPlugin();
+      const load = getLoad(plugin);
+
+      const filePath = resolve(FIXTURES, 'PromotedReadonlyUnion.php');
+      const code = load(`${VIRTUAL_PREFIX}${filePath}?callable=render`);
+
+      expect(code).toBeTruthy();
+      expect(code).toContain("__type: 'classMethod'");
+      expect(code).toContain('export const PromotedReadonlyUnion');
+      expect(code).toContain('id:');
+      expect(code).toContain('label:');
+      expect(code).toContain('amount:');
+    });
+  });
+
+  // -----------------------------------------------------------------------
+  // Function with union return type (UC150)
+  // -----------------------------------------------------------------------
+  describe('function union return', () => {
+    it('generates function module for formatValue', () => {
+      const plugin = storybookPhpPlugin();
+      const load = getLoad(plugin);
+
+      const filePath = resolve(FIXTURES, 'FunctionUnionReturn.php');
+      const code = load(`${VIRTUAL_PREFIX}${filePath}?callable=formatValue`);
+
+      expect(code).toBeTruthy();
+      expect(code).toContain("__type: 'function'");
+      expect(code).toContain('export const formatValue');
+    });
+
+    it('generates function module for renderStatus', () => {
+      const plugin = storybookPhpPlugin();
+      const load = getLoad(plugin);
+
+      const filePath = resolve(FIXTURES, 'FunctionUnionReturn.php');
+      const code = load(`${VIRTUAL_PREFIX}${filePath}?callable=renderStatus`);
+
+      expect(code).toBeTruthy();
+      expect(code).toContain("__type: 'function'");
+      expect(code).toContain('export const renderStatus');
+    });
+  });
+
+  // -----------------------------------------------------------------------
+  // Method constant defaults (UC149)
+  // -----------------------------------------------------------------------
+  describe('method constant defaults', () => {
+    it('generates classMethod with constant defaults in method args', () => {
+      const plugin = storybookPhpPlugin();
+      const load = getLoad(plugin);
+
+      const filePath = resolve(FIXTURES, 'MethodConstantDefault.php');
+      const code = load(`${VIRTUAL_PREFIX}${filePath}?callable=render`);
+
+      expect(code).toBeTruthy();
+      expect(code).toContain("__type: 'classMethod'");
+      expect(code).toContain('format:');
+      expect(code).toContain('maxLength:');
+      expect(code).toContain('content:');
+    });
+  });
 });

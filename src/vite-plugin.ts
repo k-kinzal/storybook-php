@@ -211,10 +211,33 @@ export function storybookPhpPlugin(options: FrameworkOptions = {}): Plugin {
       // Collect ALL matching exports (multiple classes may have the same method)
       const modules: string[] = [];
 
+      // Helper: find a method on an enum, checking traits if needed
+      const findEnumMethod = (
+        cls: PhpClassMeta,
+        methodName: string,
+      ): PhpMethodMeta | null => {
+        const method = cls.methods.find((m) => m.name === methodName);
+        if (method) return method;
+
+        // Traverse traits used by this enum (within the same file)
+        if (cls.traits && cls.traits.length > 0) {
+          for (const traitName of cls.traits) {
+            const trait = meta.classes.find(
+              (c) => c.name === traitName || c.fqn === traitName,
+            );
+            if (trait) {
+              const traitMethod = trait.methods.find((m) => m.name === methodName);
+              if (traitMethod) return traitMethod;
+            }
+          }
+        }
+        return null;
+      };
+
       // Search classes/enums for the callable
       for (const cls of meta.classes) {
         if (cls.isEnum) {
-          const method = cls.methods.find((m) => m.name === callableName);
+          const method = findEnumMethod(cls, callableName);
           if (method) {
             if (method.isStatic) {
               modules.push(generateStaticMethodModule(filePath!, cls, method, callableName));

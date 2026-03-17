@@ -9441,4 +9441,584 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
       expect(showcase.isStatic).toBe(true);
     });
   });
+
+  // -------------------------------------------------------------------------
+  // UC147: Enum with trait
+  // -------------------------------------------------------------------------
+  describe('UC147: Enum with trait', () => {
+    it('renders TaskPriority badge via trait method', async () => {
+      const result = await executor.execute({
+        type: 'enumMethod',
+        file: example('EnumWithTrait.php'),
+        class: 'App\\Components\\TaskPriority',
+        callable: 'badge',
+        args: { _case: 'high', size: 'md' },
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('enum-badge');
+      expect(result.html).toContain('High');
+    });
+
+    it('renders TaskPriority with small size', async () => {
+      const result = await executor.execute({
+        type: 'enumMethod',
+        file: example('EnumWithTrait.php'),
+        class: 'App\\Components\\TaskPriority',
+        callable: 'badge',
+        args: { _case: 'low', size: 'sm' },
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('Low');
+      expect(result.html).toContain('4px 6px');
+    });
+
+    it('renders TaskPriority critical with default size', async () => {
+      const result = await executor.execute({
+        type: 'enumMethod',
+        file: example('EnumWithTrait.php'),
+        class: 'App\\Components\\TaskPriority',
+        callable: 'badge',
+        args: { _case: 'critical' },
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('Critical');
+      expect(result.html).toContain('#991b1b');
+    });
+
+    it('parses EnumWithTrait with trait usage on enum', () => {
+      const meta = parsePhpFile(fixture('EnumWithTrait.php'));
+
+      // Should have traits
+      const hasBadge = meta.classes.find(c => c.name === 'HasBadge');
+      expect(hasBadge).toBeDefined();
+      expect(hasBadge!.methods).toHaveLength(1);
+      expect(hasBadge!.methods[0]!.name).toBe('badge');
+
+      // Priority enum should have trait listed
+      const priority = meta.classes.find(c => c.name === 'Priority');
+      expect(priority).toBeDefined();
+      expect(priority!.isEnum).toBe(true);
+      expect(priority!.traits).toContain('HasBadge');
+      expect(priority!.enumCases).toEqual(['Low', 'Medium', 'High', 'Critical']);
+
+      // Severity enum should have two traits
+      const severity = meta.classes.find(c => c.name === 'Severity');
+      expect(severity).toBeDefined();
+      expect(severity!.isEnum).toBe(true);
+      expect(severity!.traits).toContain('HasBadge');
+      expect(severity!.traits).toContain('HasIcon');
+    });
+
+    it('generates enumMethod module for trait method on enum', () => {
+      const plugin = storybookPhpPlugin();
+      const resolveId = (plugin as any).resolveId.bind(plugin);
+      const load = (plugin as any).load.bind(plugin);
+
+      const id = resolveId(fixture('EnumWithTrait.php') + '@badge');
+      const code = load(id);
+      expect(code).toBeTruthy();
+      // Both Priority and Severity have badge via trait
+      expect(code).toContain("__type: 'enumMethod'");
+      expect(code).toContain('export const Priority');
+      expect(code).toContain('export const Severity');
+      expect(code).toContain('__callable: "badge"');
+    });
+
+    it('generates enumMethod module for icon (only on Severity)', () => {
+      const plugin = storybookPhpPlugin();
+      const resolveId = (plugin as any).resolveId.bind(plugin);
+      const load = (plugin as any).load.bind(plugin);
+
+      const id = resolveId(fixture('EnumWithTrait.php') + '@icon');
+      const code = load(id);
+      expect(code).toBeTruthy();
+      expect(code).toContain("__type: 'enumMethod'");
+      expect(code).toContain('export const Severity');
+      // Priority doesn't use HasIcon
+      expect(code).not.toContain('export const Priority');
+    });
+  });
+
+  // -------------------------------------------------------------------------
+  // UC148: Promoted readonly union type parameters
+  // -------------------------------------------------------------------------
+  describe('UC148: Promoted readonly union types', () => {
+    it('renders PromotedReadonlyUnion with string id', async () => {
+      const result = await executor.execute({
+        type: 'classMethod',
+        file: example('PromotedReadonlyUnion.php'),
+        class: 'App\\Components\\PromotedReadonlyUnion',
+        callable: 'render',
+        args: { id: 'SKU-001', label: 'Widget', amount: 29.99 },
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('SKU-001');
+      expect(result.html).toContain('Widget');
+      expect(result.html).toContain('29.99');
+    });
+
+    it('renders PromotedReadonlyUnion with int id', async () => {
+      const result = await executor.execute({
+        type: 'classMethod',
+        file: example('PromotedReadonlyUnion.php'),
+        class: 'App\\Components\\PromotedReadonlyUnion',
+        callable: 'render',
+        args: { id: 42, label: 'Gadget', amount: 199 },
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('42');
+      expect(result.html).toContain('Gadget');
+    });
+
+    it('renders PromotedReadonlyUnion with default amount', async () => {
+      const result = await executor.execute({
+        type: 'classMethod',
+        file: example('PromotedReadonlyUnion.php'),
+        class: 'App\\Components\\PromotedReadonlyUnion',
+        callable: 'render',
+        args: { id: 'FREE', label: 'Sample' },
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('FREE');
+      expect(result.html).toContain('Sample');
+    });
+
+    it('parses PromotedReadonlyUnion fixture', () => {
+      const meta = parsePhpFile(fixture('PromotedReadonlyUnion.php'));
+      const cls = meta.classes[0]!;
+      expect(cls.name).toBe('PromotedReadonlyUnion');
+      expect(cls.constructorParams).toHaveLength(3);
+
+      const idParam = cls.constructorParams[0]!;
+      expect(idParam.name).toBe('id');
+      expect(idParam.type).toBe('string|int');
+      expect(idParam.isPromoted).toBe(true);
+      expect(idParam.visibility).toBe('public');
+
+      const amountParam = cls.constructorParams[2]!;
+      expect(amountParam.name).toBe('amount');
+      expect(amountParam.type).toBe('int|float');
+      expect(amountParam.isPromoted).toBe(true);
+      expect(amountParam.visibility).toBe('private');
+      expect(amountParam.default).toBe('0');
+    });
+
+    it('generates classMethod module for PromotedReadonlyUnion', () => {
+      const plugin = storybookPhpPlugin();
+      const resolveId = (plugin as any).resolveId.bind(plugin);
+      const load = (plugin as any).load.bind(plugin);
+      const id = resolveId(fixture('PromotedReadonlyUnion.php') + '@render');
+      const code = load(id);
+      expect(code).toBeTruthy();
+      expect(code).toContain("__type: 'classMethod'");
+      expect(code).toContain('export const PromotedReadonlyUnion');
+      expect(code).toContain('id:');
+      expect(code).toContain('label:');
+      expect(code).toContain('amount:');
+    });
+  });
+
+  // -------------------------------------------------------------------------
+  // UC149: Method parameters with class constant defaults
+  // -------------------------------------------------------------------------
+  describe('UC149: Method constant defaults', () => {
+    it('renders MethodConstantDefault with HTML format', async () => {
+      const result = await executor.execute({
+        type: 'classMethod',
+        file: example('MethodConstantDefault.php'),
+        class: 'App\\Components\\MethodConstantDefault',
+        callable: 'render',
+        args: { content: 'Hello world', title: 'Test' },
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('mcd');
+      expect(result.html).toContain('Test');
+      expect(result.html).toContain('Hello world');
+    });
+
+    it('renders MethodConstantDefault with text format', async () => {
+      const result = await executor.execute({
+        type: 'classMethod',
+        file: example('MethodConstantDefault.php'),
+        class: 'App\\Components\\MethodConstantDefault',
+        callable: 'render',
+        args: { content: '<b>Bold</b> text', title: 'Plain', format: 'text' },
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).not.toContain('<b>');
+      expect(result.html).toContain('Plain');
+    });
+
+    it('renders MethodConstantDefault with truncation', async () => {
+      const result = await executor.execute({
+        type: 'classMethod',
+        file: example('MethodConstantDefault.php'),
+        class: 'App\\Components\\MethodConstantDefault',
+        callable: 'render',
+        args: { content: 'A very long text that should be truncated', title: 'Long', maxLength: 10 },
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('...');
+    });
+
+    it('parses MethodConstantDefault fixture', () => {
+      const meta = parsePhpFile(fixture('MethodConstantDefault.php'));
+      const cls = meta.classes[0]!;
+      expect(cls.name).toBe('MethodConstantDefault');
+
+      const render = cls.methods.find(m => m.name === 'render')!;
+      expect(render).toBeDefined();
+      expect(render.params).toHaveLength(2);
+
+      const formatParam = render.params[0]!;
+      expect(formatParam.name).toBe('format');
+      expect(formatParam.type).toBe('string');
+      expect(formatParam.default).toBe("self::FORMAT_HTML");
+      expect(formatParam.required).toBe(false);
+
+      const maxLenParam = render.params[1]!;
+      expect(maxLenParam.name).toBe('maxLength');
+      expect(maxLenParam.type).toBe('int');
+      expect(maxLenParam.default).toBe("self::MAX_LENGTH");
+    });
+
+    it('generates classMethod module for MethodConstantDefault', () => {
+      const plugin = storybookPhpPlugin();
+      const resolveId = (plugin as any).resolveId.bind(plugin);
+      const load = (plugin as any).load.bind(plugin);
+      const id = resolveId(fixture('MethodConstantDefault.php') + '@render');
+      const code = load(id);
+      expect(code).toBeTruthy();
+      expect(code).toContain("__type: 'classMethod'");
+      expect(code).toContain('format:');
+      expect(code).toContain('maxLength:');
+      expect(code).toContain('content:');
+    });
+  });
+
+  // -------------------------------------------------------------------------
+  // UC150: Functions with union return types
+  // -------------------------------------------------------------------------
+  describe('UC150: Function union return types', () => {
+    it('renders formatValue as text', async () => {
+      const result = await executor.execute({
+        type: 'function',
+        file: example('FunctionUnionReturn.php'),
+        class: null,
+        callable: 'App\\Helpers\\formatValue',
+        args: { value: 'Hello' },
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('Hello');
+      expect(result.html).toContain('formatted-value');
+    });
+
+    it('renders formatValue as number (scalar return)', async () => {
+      const result = await executor.execute({
+        type: 'function',
+        file: example('FunctionUnionReturn.php'),
+        class: null,
+        callable: 'App\\Helpers\\formatValue',
+        args: { value: '42', format: 'number' },
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toBe('42');
+    });
+
+    it('renders renderStatus with icon', async () => {
+      const result = await executor.execute({
+        type: 'function',
+        file: example('FunctionUnionReturn.php'),
+        class: null,
+        callable: 'App\\Helpers\\renderStatus',
+        args: { status: 'active' },
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('status-indicator');
+      expect(result.html).toContain('active');
+    });
+
+    it('parses FunctionUnionReturn fixture', () => {
+      const meta = parsePhpFile(fixture('FunctionUnionReturn.php'));
+      expect(meta.functions).toHaveLength(2);
+
+      const formatValue = meta.functions.find(f => f.name === 'formatValue')!;
+      expect(formatValue).toBeDefined();
+      expect(formatValue.returnType).toBe('string|int');
+      expect(formatValue.params).toHaveLength(2);
+
+      const renderStatus = meta.functions.find(f => f.name === 'renderStatus')!;
+      expect(renderStatus).toBeDefined();
+      expect(renderStatus.returnType).toBe('string|bool');
+      expect(renderStatus.params).toHaveLength(2);
+    });
+
+    it('generates function module for formatValue', () => {
+      const plugin = storybookPhpPlugin();
+      const resolveId = (plugin as any).resolveId.bind(plugin);
+      const load = (plugin as any).load.bind(plugin);
+      const id = resolveId(fixture('FunctionUnionReturn.php') + '@formatValue');
+      const code = load(id);
+      expect(code).toBeTruthy();
+      expect(code).toContain("__type: 'function'");
+      expect(code).toContain('export const formatValue');
+      expect(code).toContain('value:');
+      expect(code).toContain('format:');
+    });
+  });
+
+  // -------------------------------------------------------------------------
+  // UC151: Template stories (dashboard, error, form, login, pricing)
+  // -------------------------------------------------------------------------
+  describe('UC151: Dashboard template', () => {
+    it('renders dashboard with stats', async () => {
+      const result = await executor.execute({
+        type: 'template',
+        file: example('templates/dashboard.php'),
+        class: null,
+        callable: null,
+        args: {
+          title: 'My Dashboard',
+          stats: [
+            { label: 'Users', value: '100', change: 12 },
+            { label: 'Revenue', value: '$50K', change: -5 },
+          ],
+          showChart: false,
+        },
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('My Dashboard');
+      expect(result.html).toContain('Users');
+      expect(result.html).toContain('100');
+      expect(result.html).toContain('+12%');
+      expect(result.html).toContain('negative');
+    });
+
+    it('renders empty dashboard', async () => {
+      const result = await executor.execute({
+        type: 'template',
+        file: example('templates/dashboard.php'),
+        class: null,
+        callable: null,
+        args: { title: 'Empty', stats: [] },
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('dashboard-empty');
+    });
+
+    it('renders dashboard with chart placeholder', async () => {
+      const result = await executor.execute({
+        type: 'template',
+        file: example('templates/dashboard.php'),
+        class: null,
+        callable: null,
+        args: { title: 'Analytics', stats: [], showChart: true },
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('dashboard-chart');
+      expect(result.html).toContain('Chart placeholder');
+    });
+  });
+
+  describe('UC151: Error template', () => {
+    it('renders 404 error page', async () => {
+      const result = await executor.execute({
+        type: 'template',
+        file: example('templates/error.php'),
+        class: null,
+        callable: null,
+        args: { code: 404, showHome: true },
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('404');
+      expect(result.html).toContain('Not Found');
+      expect(result.html).toContain('error-home');
+    });
+
+    it('renders 500 error page without home link', async () => {
+      const result = await executor.execute({
+        type: 'template',
+        file: example('templates/error.php'),
+        class: null,
+        callable: null,
+        args: { code: 500, showHome: false },
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('500');
+      expect(result.html).toContain('Internal Server Error');
+      expect(result.html).not.toContain('error-home');
+    });
+
+    it('renders error with custom message', async () => {
+      const result = await executor.execute({
+        type: 'template',
+        file: example('templates/error.php'),
+        class: null,
+        callable: null,
+        args: { code: 403, message: 'Access denied to this resource.', showHome: true },
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('Access denied to this resource.');
+    });
+  });
+
+  describe('UC151: Form template', () => {
+    it('renders form with fields', async () => {
+      const result = await executor.execute({
+        type: 'template',
+        file: example('templates/form.php'),
+        class: null,
+        callable: null,
+        args: {
+          action: '/submit',
+          method: 'POST',
+          submitLabel: 'Send',
+          fields: [
+            { label: 'Name', name: 'name', type: 'text', placeholder: 'Your name' },
+            { label: 'Message', name: 'msg', type: 'textarea', placeholder: 'Write here' },
+          ],
+        },
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('/submit');
+      expect(result.html).toContain('POST');
+      expect(result.html).toContain('Name');
+      expect(result.html).toContain('textarea');
+      expect(result.html).toContain('Send');
+    });
+  });
+
+  describe('UC151: Login template', () => {
+    it('renders login form with error', async () => {
+      const result = await executor.execute({
+        type: 'template',
+        file: example('templates/login.php'),
+        class: null,
+        callable: null,
+        args: {
+          title: 'Sign In',
+          error: 'Invalid credentials.',
+          showRemember: true,
+          showForgot: true,
+          buttonText: 'Sign In',
+        },
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('Sign In');
+      expect(result.html).toContain('login-error');
+      expect(result.html).toContain('Invalid credentials.');
+      expect(result.html).toContain('Remember me');
+      expect(result.html).toContain('Forgot password?');
+    });
+
+    it('renders minimal login form', async () => {
+      const result = await executor.execute({
+        type: 'template',
+        file: example('templates/login.php'),
+        class: null,
+        callable: null,
+        args: {
+          title: 'Welcome',
+          showRemember: false,
+          showForgot: false,
+          buttonText: 'Log In',
+        },
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('Welcome');
+      expect(result.html).toContain('Log In');
+      expect(result.html).not.toContain('Remember me');
+    });
+  });
+
+  describe('UC151: Pricing template', () => {
+    it('renders pricing plans', async () => {
+      const result = await executor.execute({
+        type: 'template',
+        file: example('templates/pricing.php'),
+        class: null,
+        callable: null,
+        args: {
+          plans: [
+            { name: 'Free', price: 0, features: ['Basic'] },
+            { name: 'Pro', price: 29, features: ['Advanced', 'Support'] },
+          ],
+          currency: 'USD',
+          period: 'month',
+          highlighted: 'Pro',
+        },
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('Free');
+      expect(result.html).toContain('Pro');
+      expect(result.html).toContain('$29.00');
+      expect(result.html).toContain('pricing-highlighted');
+      expect(result.html).toContain('Popular');
+    });
+
+    it('renders empty pricing', async () => {
+      const result = await executor.execute({
+        type: 'template',
+        file: example('templates/pricing.php'),
+        class: null,
+        callable: null,
+        args: { plans: [], currency: 'USD' },
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('pricing-empty');
+    });
+  });
+
+  // -------------------------------------------------------------------------
+  // Vite plugin + Parser: UC147-UC150 metadata
+  // -------------------------------------------------------------------------
+  describe('Parser: UC147-UC150 fixture metadata', () => {
+    it('parses EnumWithTrait fixture: traits on enums', () => {
+      const meta = parsePhpFile(fixture('EnumWithTrait.php'));
+
+      const priority = meta.classes.find(c => c.name === 'Priority')!;
+      expect(priority.isEnum).toBe(true);
+      expect(priority.traits).toContain('HasBadge');
+      expect(priority.enumCases).toEqual(['Low', 'Medium', 'High', 'Critical']);
+
+      const severity = meta.classes.find(c => c.name === 'Severity')!;
+      expect(severity.isEnum).toBe(true);
+      expect(severity.traits).toContain('HasBadge');
+      expect(severity.traits).toContain('HasIcon');
+      expect(severity.enumCases).toEqual(['Info', 'Warning', 'Error']);
+    });
+
+    it('parses PromotedReadonlyUnion fixture: readonly + union + promoted', () => {
+      const meta = parsePhpFile(fixture('PromotedReadonlyUnion.php'));
+      const cls = meta.classes[0]!;
+      expect(cls.constructorParams).toHaveLength(3);
+
+      const id = cls.constructorParams[0]!;
+      expect(id.type).toBe('string|int');
+      expect(id.isPromoted).toBe(true);
+
+      const amount = cls.constructorParams[2]!;
+      expect(amount.type).toBe('int|float');
+      expect(amount.required).toBe(false);
+    });
+
+    it('parses FunctionUnionReturn fixture: union return types', () => {
+      const meta = parsePhpFile(fixture('FunctionUnionReturn.php'));
+      expect(meta.functions).toHaveLength(2);
+
+      const fv = meta.functions.find(f => f.name === 'formatValue')!;
+      expect(fv.returnType).toBe('string|int');
+
+      const rs = meta.functions.find(f => f.name === 'renderStatus')!;
+      expect(rs.returnType).toBe('string|bool');
+    });
+
+    it('parses MethodConstantDefault fixture: self:: defaults in method', () => {
+      const meta = parsePhpFile(fixture('MethodConstantDefault.php'));
+      const cls = meta.classes[0]!;
+      const render = cls.methods.find(m => m.name === 'render')!;
+      expect(render.params[0]!.default).toBe('self::FORMAT_HTML');
+      expect(render.params[1]!.default).toBe('self::MAX_LENGTH');
+    });
+  });
 });

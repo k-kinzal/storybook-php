@@ -308,8 +308,9 @@ function extractClasses(source: string, ns: string | null): PhpClassMeta[] {
     }
 
     // Extract trait usage: use TraitName; or use TraitA, TraitB;
+    // Both classes and enums can use traits in PHP 8.1+
     const traits: string[] = [];
-    if (keyword === 'class') {
+    if (keyword === 'class' || keyword === 'enum') {
       const traitRe = /\buse\s+([\w\\]+(?:\s*,\s*[\w\\]+)*)\s*[;{]/g;
       let traitMatch: RegExpExecArray | null;
       while ((traitMatch = traitRe.exec(body)) !== null) {
