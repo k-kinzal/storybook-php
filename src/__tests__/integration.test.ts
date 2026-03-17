@@ -603,6 +603,208 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
   });
 
   // -------------------------------------------------------------------------
+  // UC19: Variadic parameters
+  // -------------------------------------------------------------------------
+  describe('UC19: Variadic parameters', () => {
+    it('renders Breadcrumb with variadic segments', async () => {
+      const result = await executor.execute({
+        type: 'classMethod',
+        file: example('Breadcrumb.php'),
+        class: 'App\\Components\\Breadcrumb',
+        callable: 'render',
+        args: { separator: ' / ', segments: ['Home', 'Products', 'Widget'] },
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('Home');
+      expect(result.html).toContain('Products');
+      expect(result.html).toContain('Widget');
+      expect(result.html).toContain('breadcrumb');
+    });
+
+    it('renders Breadcrumb with empty segments', async () => {
+      const result = await executor.execute({
+        type: 'classMethod',
+        file: example('Breadcrumb.php'),
+        class: 'App\\Components\\Breadcrumb',
+        callable: 'render',
+        args: { segments: [] },
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('breadcrumb-empty');
+    });
+
+    it('renders Breadcrumb with single segment', async () => {
+      const result = await executor.execute({
+        type: 'classMethod',
+        file: example('Breadcrumb.php'),
+        class: 'App\\Components\\Breadcrumb',
+        callable: 'render',
+        args: { segments: ['Home'] },
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('breadcrumb-current');
+      expect(result.html).toContain('Home');
+    });
+  });
+
+  // -------------------------------------------------------------------------
+  // UC20: Union type parameters
+  // -------------------------------------------------------------------------
+  describe('UC20: Union type parameters', () => {
+    it('renders Progress with int value', async () => {
+      const result = await executor.execute({
+        type: 'classMethod',
+        file: example('Progress.php'),
+        class: 'App\\Components\\Progress',
+        callable: 'render',
+        args: { value: 75 },
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('75%');
+      expect(result.html).toContain('progress-bar');
+    });
+
+    it('renders Progress with string value', async () => {
+      const result = await executor.execute({
+        type: 'classMethod',
+        file: example('Progress.php'),
+        class: 'App\\Components\\Progress',
+        callable: 'render',
+        args: { value: '42', max: 100 },
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('42%');
+    });
+
+    it('renders Progress with custom label', async () => {
+      const result = await executor.execute({
+        type: 'classMethod',
+        file: example('Progress.php'),
+        class: 'App\\Components\\Progress',
+        callable: 'render',
+        args: { value: 3, max: 10, label: '3 of 10' },
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('3 of 10');
+    });
+  });
+
+  // -------------------------------------------------------------------------
+  // UC21: Generator return
+  // -------------------------------------------------------------------------
+  describe('UC21: Generator return', () => {
+    it('renders HtmlList from generator yield', async () => {
+      const result = await executor.execute({
+        type: 'classMethod',
+        file: example('HtmlList.php'),
+        class: 'App\\Components\\HtmlList',
+        callable: 'render',
+        args: { items: ['Apples', 'Bananas', 'Cherries'] },
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('<ul');
+      expect(result.html).toContain('Apples');
+      expect(result.html).toContain('Bananas');
+      expect(result.html).toContain('Cherries');
+      expect(result.html).toContain('</ul>');
+    });
+
+    it('renders ordered HtmlList from generator', async () => {
+      const result = await executor.execute({
+        type: 'classMethod',
+        file: example('HtmlList.php'),
+        class: 'App\\Components\\HtmlList',
+        callable: 'render',
+        args: { items: ['First', 'Second'], ordered: true },
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('<ol');
+      expect(result.html).toContain('First');
+      expect(result.html).toContain('Second');
+      expect(result.html).toContain('</ol>');
+    });
+  });
+
+  // -------------------------------------------------------------------------
+  // UC22: Template with loops and conditionals
+  // -------------------------------------------------------------------------
+  describe('UC22: Template with loops', () => {
+    it('renders list template with items', async () => {
+      const result = await executor.execute({
+        type: 'template',
+        file: example('templates/list.php'),
+        class: null,
+        callable: null,
+        args: { title: 'Shopping', items: ['Milk', 'Eggs'] },
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('Shopping');
+      expect(result.html).toContain('Milk');
+      expect(result.html).toContain('Eggs');
+      expect(result.html).toContain('<ul');
+    });
+
+    it('renders numbered list template', async () => {
+      const result = await executor.execute({
+        type: 'template',
+        file: example('templates/list.php'),
+        class: null,
+        callable: null,
+        args: { title: 'Steps', items: ['Install', 'Configure'], numbered: true },
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('<ol');
+      expect(result.html).toContain('Install');
+    });
+
+    it('renders empty list template', async () => {
+      const result = await executor.execute({
+        type: 'template',
+        file: example('templates/list.php'),
+        class: null,
+        callable: null,
+        args: { title: 'Empty' },
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('No items to display');
+    });
+  });
+
+  // -------------------------------------------------------------------------
+  // UC23: Unit enum (non-backed)
+  // -------------------------------------------------------------------------
+  describe('UC23: Unit enum', () => {
+    it('renders Size::button for Small', async () => {
+      const result = await executor.execute({
+        type: 'enumMethod',
+        file: example('Size.php'),
+        class: 'App\\Components\\Size',
+        callable: 'button',
+        args: { _case: 'Small', text: 'Click me' },
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('btn-Small');
+      expect(result.html).toContain('Click me');
+      expect(result.html).toContain('font-size: 12px');
+    });
+
+    it('renders Size::button for ExtraLarge with custom color', async () => {
+      const result = await executor.execute({
+        type: 'enumMethod',
+        file: example('Size.php'),
+        class: 'App\\Components\\Size',
+        callable: 'button',
+        args: { _case: 'ExtraLarge', text: 'Big Button', color: '#ef4444' },
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('btn-ExtraLarge');
+      expect(result.html).toContain('Big Button');
+      expect(result.html).toContain('#ef4444');
+      expect(result.html).toContain('font-size: 18px');
+    });
+  });
+
+  // -------------------------------------------------------------------------
   // Vite plugin: verify virtual modules generate correctly for all patterns
   // -------------------------------------------------------------------------
   describe('Vite plugin: virtual module generation', () => {
@@ -705,6 +907,40 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
       expect(code).toContain("__type: 'function'");
       expect(code).toContain('App\\\\Helpers\\\\tag');
       expect(code).toContain('label:');
+      expect(code).toContain('color:');
+    });
+
+    it('UC19: Breadcrumb@render generates classMethod with variadic param', () => {
+      const id = resolveId('./Breadcrumb.php@render', example('Breadcrumb.php'));
+      const code = load(id);
+      expect(code).toContain("__type: 'classMethod'");
+      expect(code).toContain('separator:');
+      expect(code).toContain('segments:');
+    });
+
+    it('UC20: Progress@render generates classMethod with union type param', () => {
+      const id = resolveId('./Progress.php@render', example('Progress.php'));
+      const code = load(id);
+      expect(code).toContain("__type: 'classMethod'");
+      expect(code).toContain('value:');
+      expect(code).toContain('max:');
+      expect(code).toContain('label:');
+    });
+
+    it('UC21: HtmlList@render generates classMethod', () => {
+      const id = resolveId('./HtmlList.php@render', example('HtmlList.php'));
+      const code = load(id);
+      expect(code).toContain("__type: 'classMethod'");
+      expect(code).toContain('items:');
+      expect(code).toContain('ordered:');
+    });
+
+    it('UC23: Size@button generates enumMethod for unit enum', () => {
+      const id = resolveId('./Size.php@button', example('Size.php'));
+      const code = load(id);
+      expect(code).toContain("__type: 'enumMethod'");
+      expect(code).toContain('_case:');
+      expect(code).toContain('text:');
       expect(code).toContain('color:');
     });
   });
@@ -816,6 +1052,51 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
       expect(tag!.params).toHaveLength(2);
       expect(tag!.params[0]!.name).toBe('label');
       expect(tag!.params[1]!.name).toBe('color');
+    });
+
+    it('parses Breadcrumb with variadic method param', () => {
+      const meta = parsePhpFile(example('Breadcrumb.php'));
+      const cls = meta.classes.find(c => c.name === 'Breadcrumb');
+      expect(cls).toBeDefined();
+      const render = cls!.methods.find(m => m.name === 'render');
+      expect(render).toBeDefined();
+      const segments = render!.params.find(p => p.name === 'segments');
+      expect(segments).toBeDefined();
+      expect(segments!.isVariadic).toBe(true);
+      expect(segments!.type).toBe('string');
+    });
+
+    it('parses Progress with union type constructor param', () => {
+      const meta = parsePhpFile(example('Progress.php'));
+      const cls = meta.classes.find(c => c.name === 'Progress');
+      expect(cls).toBeDefined();
+      const value = cls!.constructorParams.find(p => p.name === 'value');
+      expect(value).toBeDefined();
+      expect(value!.type).toBe('int|string');
+    });
+
+    it('parses HtmlList with Generator return type', () => {
+      const meta = parsePhpFile(example('HtmlList.php'));
+      const cls = meta.classes.find(c => c.name === 'HtmlList');
+      expect(cls).toBeDefined();
+      const render = cls!.methods.find(m => m.name === 'render');
+      expect(render).toBeDefined();
+      expect(render!.returnType).toContain('Generator');
+    });
+
+    it('parses Size as unit enum without backing type', () => {
+      const meta = parsePhpFile(example('Size.php'));
+      const size = meta.classes.find(c => c.name === 'Size');
+      expect(size).toBeDefined();
+      expect(size!.isEnum).toBe(true);
+      expect(size!.enumBackingType).toBeNull();
+      expect(size!.enumCases).toContain('Small');
+      expect(size!.enumCases).toContain('Medium');
+      expect(size!.enumCases).toContain('Large');
+      expect(size!.enumCases).toContain('ExtraLarge');
+      const button = size!.methods.find(m => m.name === 'button');
+      expect(button).toBeDefined();
+      expect(button!.params).toHaveLength(2);
     });
   });
 });
