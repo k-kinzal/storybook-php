@@ -6092,4 +6092,293 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
       expect(warningBox.implements).toContain('RenderableInterface');
     });
   });
+
+  // -------------------------------------------------------------------------
+  // UC102: No-constructor class with instance methods (Snippet)
+  // -------------------------------------------------------------------------
+  describe('UC102: No-constructor class with instance methods', () => {
+    it('renders Snippet.render with all args going to method', async () => {
+      const result = await executor.execute({
+        type: 'classMethod',
+        file: example('Snippet.php'),
+        class: 'App\\Components\\Snippet',
+        callable: 'render',
+        args: { code: 'echo "hi";', language: 'php' },
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('echo');
+      expect(result.html).toContain('snippet');
+      expect(result.html).toContain('php');
+    });
+
+    it('renders Snippet.render with line numbers', async () => {
+      const result = await executor.execute({
+        type: 'classMethod',
+        file: example('Snippet.php'),
+        class: 'App\\Components\\Snippet',
+        callable: 'render',
+        args: { code: 'line1\nline2', language: 'javascript', lineNumbers: true },
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('1');
+      expect(result.html).toContain('2');
+    });
+
+    it('renders Snippet.inline', async () => {
+      const result = await executor.execute({
+        type: 'classMethod',
+        file: example('Snippet.php'),
+        class: 'App\\Components\\Snippet',
+        callable: 'inline',
+        args: { code: '$var' },
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('$var');
+      expect(result.html).toContain('<code');
+    });
+
+    it('parses Snippet.php with no constructor', () => {
+      const meta = parsePhpFile(example('Snippet.php'));
+      const cls = meta.classes.find(c => c.name === 'Snippet')!;
+      expect(cls.constructorParams).toHaveLength(0);
+      expect(cls.methods.length).toBeGreaterThanOrEqual(2);
+      const render = cls.methods.find(m => m.name === 'render')!;
+      expect(render.params).toHaveLength(3);
+      const inline = cls.methods.find(m => m.name === 'inline')!;
+      expect(inline.params).toHaveLength(1);
+    });
+  });
+
+  // -------------------------------------------------------------------------
+  // UC103: Callout with boolean flags
+  // -------------------------------------------------------------------------
+  describe('UC103: Callout with boolean flags', () => {
+    it('renders default callout', async () => {
+      const result = await executor.execute({
+        type: 'classMethod',
+        file: example('Callout.php'),
+        class: 'App\\Components\\Callout',
+        callable: 'render',
+        args: { title: 'Test', message: 'Hello' },
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('Test');
+      expect(result.html).toContain('Hello');
+      expect(result.html).toContain('callout-info');
+    });
+
+    it('renders compact error callout with all flags', async () => {
+      const result = await executor.execute({
+        type: 'classMethod',
+        file: example('Callout.php'),
+        class: 'App\\Components\\Callout',
+        callable: 'render',
+        args: {
+          title: 'Error',
+          message: 'Something went wrong',
+          type: 'error',
+          showIcon: false,
+          bordered: false,
+          rounded: false,
+          shadow: true,
+          closable: true,
+          compact: true,
+        },
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('callout-error');
+      expect(result.html).toContain('&times;');
+      expect(result.html).toContain('box-shadow');
+    });
+
+    it('parses Callout.php constructor with many boolean params', () => {
+      const meta = parsePhpFile(example('Callout.php'));
+      const cls = meta.classes.find(c => c.name === 'Callout')!;
+      const boolParams = cls.constructorParams.filter(p => p.type === 'bool');
+      expect(boolParams.length).toBeGreaterThanOrEqual(5);
+    });
+  });
+
+  // -------------------------------------------------------------------------
+  // UC104: DateFormatter with multiple instance methods
+  // -------------------------------------------------------------------------
+  describe('UC104: DateFormatter with multiple instance methods', () => {
+    it('renders format method with style', async () => {
+      const result = await executor.execute({
+        type: 'classMethod',
+        file: example('DateFormatter.php'),
+        class: 'App\\Components\\DateFormatter',
+        callable: 'format',
+        args: { date: '2025-03-15', style: 'long' },
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('15');
+      expect(result.html).toContain('2025');
+      expect(result.html).toContain('<time');
+    });
+
+    it('renders format method with Japanese locale', async () => {
+      const result = await executor.execute({
+        type: 'classMethod',
+        file: example('DateFormatter.php'),
+        class: 'App\\Components\\DateFormatter',
+        callable: 'format',
+        args: { date: '2025-07-20', style: 'medium', locale: 'ja' },
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('20');
+    });
+
+    it('renders relative method', async () => {
+      const result = await executor.execute({
+        type: 'classMethod',
+        file: example('DateFormatter.php'),
+        class: 'App\\Components\\DateFormatter',
+        callable: 'relative',
+        args: { date: '2020-01-01' },
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('day');
+      expect(result.html).toContain('ago');
+    });
+
+    it('renders calendar method', async () => {
+      const result = await executor.execute({
+        type: 'classMethod',
+        file: example('DateFormatter.php'),
+        class: 'App\\Components\\DateFormatter',
+        callable: 'calendar',
+        args: { date: '2025-03-15' },
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('March 2025');
+      expect(result.html).toContain('15');
+      expect(result.html).toContain('Su');
+    });
+
+    it('parses DateFormatter.php with constructor + 3 methods', () => {
+      const meta = parsePhpFile(example('DateFormatter.php'));
+      const cls = meta.classes.find(c => c.name === 'DateFormatter')!;
+      expect(cls.constructorParams).toHaveLength(1);
+      expect(cls.constructorParams[0]!.name).toBe('locale');
+      const methodNames = cls.methods.map(m => m.name);
+      expect(methodNames).toContain('format');
+      expect(methodNames).toContain('relative');
+      expect(methodNames).toContain('calendar');
+    });
+  });
+
+  // -------------------------------------------------------------------------
+  // UC105: EnumTransition with multiple enum-typed params
+  // -------------------------------------------------------------------------
+  describe('UC105: EnumTransition with multiple enum-typed params', () => {
+    it('renders forward transition', async () => {
+      const result = await executor.execute({
+        type: 'classMethod',
+        file: example('EnumTransition.php'),
+        class: 'App\\Components\\EnumTransition',
+        callable: 'render',
+        args: { from: 'draft', to: 'review', label: 'Submit' },
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('Draft');
+      expect(result.html).toContain('Review');
+      expect(result.html).toContain('Submit');
+      expect(result.html).toContain('&#8594;');
+    });
+
+    it('renders backward transition', async () => {
+      const result = await executor.execute({
+        type: 'classMethod',
+        file: example('EnumTransition.php'),
+        class: 'App\\Components\\EnumTransition',
+        callable: 'render',
+        args: { from: 'published', to: 'draft' },
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('Published');
+      expect(result.html).toContain('Draft');
+      expect(result.html).toContain('&#8592;');
+    });
+
+    it('renders same-state transition', async () => {
+      const result = await executor.execute({
+        type: 'classMethod',
+        file: example('EnumTransition.php'),
+        class: 'App\\Components\\EnumTransition',
+        callable: 'render',
+        args: { from: 'review', to: 'review' },
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('&#8596;');
+    });
+
+    it('parses EnumTransition.php with enum and class', () => {
+      const meta = parsePhpFile(example('EnumTransition.php'));
+      const enumCls = meta.classes.find(c => c.name === 'Phase')!;
+      expect(enumCls.isEnum).toBe(true);
+      expect(enumCls.enumBackingType).toBe('string');
+      expect(enumCls.enumCases).toEqual(['Draft', 'Review', 'Approved', 'Published', 'Archived']);
+
+      const cls = meta.classes.find(c => c.name === 'EnumTransition')!;
+      expect(cls.constructorParams).toHaveLength(3);
+      expect(cls.constructorParams[0]!.type).toBe('Phase');
+      expect(cls.constructorParams[1]!.type).toBe('Phase');
+    });
+  });
+
+  // -------------------------------------------------------------------------
+  // UC106: Recipe template with arrays and conditionals
+  // -------------------------------------------------------------------------
+  describe('UC106: Recipe template', () => {
+    it('renders full recipe', async () => {
+      const result = await executor.execute({
+        type: 'template',
+        file: example('templates/recipe.php'),
+        class: null,
+        callable: null,
+        args: {
+          title: 'Pancakes',
+          servings: 4,
+          ingredients: ['Flour', 'Eggs', 'Milk'],
+          steps: ['Mix dry ingredients.', 'Add wet ingredients.', 'Cook.'],
+          notes: 'Let batter rest.',
+        },
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('Pancakes');
+      expect(result.html).toContain('Serves 4');
+      expect(result.html).toContain('Flour');
+      expect(result.html).toContain('Eggs');
+      expect(result.html).toContain('Mix dry ingredients.');
+      expect(result.html).toContain('Let batter rest.');
+    });
+
+    it('renders recipe without optional fields', async () => {
+      const result = await executor.execute({
+        type: 'template',
+        file: example('templates/recipe.php'),
+        class: null,
+        callable: null,
+        args: { title: 'Toast', servings: 1 },
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('Toast');
+      expect(result.html).toContain('Serves 1');
+      expect(result.html).not.toContain('Ingredients');
+      expect(result.html).not.toContain('Note:');
+    });
+
+    it('renders with empty args using defaults', async () => {
+      const result = await executor.execute({
+        type: 'template',
+        file: example('templates/recipe.php'),
+        class: null,
+        callable: null,
+        args: {},
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('Untitled Recipe');
+    });
+  });
 });

@@ -1608,4 +1608,73 @@ class Tooltip {
       expect(required.visibility).toBe('private');
     });
   });
+
+  // -----------------------------------------------------------------------
+  // NoConstructorMethods
+  // -----------------------------------------------------------------------
+  describe('NoConstructorMethods', () => {
+    it('parses class with no constructor and multiple instance methods', () => {
+      const meta = parsePhpSource(fixture('NoConstructorMethods.php'), 'NoConstructorMethods.php');
+
+      expect(meta.namespace).toBe('App\\Components');
+      expect(meta.classes).toHaveLength(1);
+
+      const cls = meta.classes[0]!;
+      expect(cls.name).toBe('Snippet');
+      expect(cls.constructorParams).toHaveLength(0);
+      expect(cls.methods).toHaveLength(2);
+
+      const render = cls.methods.find(m => m.name === 'render')!;
+      expect(render.isStatic).toBe(false);
+      expect(render.params).toHaveLength(3);
+      expect(render.params[0]!.name).toBe('code');
+      expect(render.params[0]!.type).toBe('string');
+      expect(render.params[0]!.required).toBe(true);
+      expect(render.params[1]!.name).toBe('language');
+      expect(render.params[1]!.default).toBe("'__PLACEHOLDER__'");
+      expect(render.params[2]!.name).toBe('lineNumbers');
+      expect(render.params[2]!.type).toBe('bool');
+
+      const inline = cls.methods.find(m => m.name === 'inline')!;
+      expect(inline.isStatic).toBe(false);
+      expect(inline.params).toHaveLength(1);
+      expect(inline.params[0]!.name).toBe('code');
+    });
+  });
+
+  // -----------------------------------------------------------------------
+  // EnumTypedParams
+  // -----------------------------------------------------------------------
+  describe('EnumTypedParams', () => {
+    it('parses enum and class with enum-typed constructor params', () => {
+      const meta = parsePhpSource(fixture('EnumTypedParams.php'), 'EnumTypedParams.php');
+
+      expect(meta.namespace).toBe('App\\Components');
+      expect(meta.classes).toHaveLength(2);
+
+      const enumCls = meta.classes.find(c => c.name === 'Phase')!;
+      expect(enumCls.isEnum).toBe(true);
+      expect(enumCls.enumBackingType).toBe('string');
+      expect(enumCls.enumCases).toEqual(['Draft', 'Review', 'Published']);
+
+      const cls = meta.classes.find(c => c.name === 'EnumTransition')!;
+      expect(cls.isEnum).toBe(false);
+      expect(cls.constructorParams).toHaveLength(3);
+
+      const from = cls.constructorParams[0]!;
+      expect(from.name).toBe('from');
+      expect(from.type).toBe('Phase');
+      expect(from.required).toBe(true);
+
+      const to = cls.constructorParams[1]!;
+      expect(to.name).toBe('to');
+      expect(to.type).toBe('Phase');
+      expect(to.required).toBe(true);
+
+      const label = cls.constructorParams[2]!;
+      expect(label.name).toBe('label');
+      expect(label.type).toBe('string');
+      expect(label.required).toBe(false);
+    });
+  });
 });
