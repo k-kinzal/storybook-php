@@ -45,8 +45,9 @@ function generateClassMethodModule(
   cls: PhpClassMeta,
   method: PhpMethodMeta,
   callableName: string,
+  ctorParams?: PhpParamMeta[],
 ): string {
-  const ctorArgs = paramsToArgMap(cls.constructorParams);
+  const ctorArgs = paramsToArgMap(ctorParams ?? cls.constructorParams);
   const callableArgs = paramsToArgMap(method.params);
 
   return `export const ${cls.name} = {
@@ -234,6 +235,18 @@ export function storybookPhpPlugin(options: FrameworkOptions = {}): Plugin {
         return null;
       };
 
+      // Helper: resolve constructor params, traversing parents if the class has none
+      const resolveConstructorParams = (cls: PhpClassMeta): PhpParamMeta[] => {
+        if (cls.constructorParams.length > 0) return cls.constructorParams;
+        if (cls.extends) {
+          const parent = meta.classes.find(
+            (c) => c.name === cls.extends || c.fqn === cls.extends,
+          );
+          if (parent) return resolveConstructorParams(parent);
+        }
+        return [];
+      };
+
       // Collect ALL matching exports (multiple classes may have the same method)
       const modules: string[] = [];
 
@@ -301,7 +314,8 @@ export function storybookPhpPlugin(options: FrameworkOptions = {}): Plugin {
               modules.push(generateStaticMethodModule(filePath!, found.cls, found.method, callableName));
             }
           } else {
-            modules.push(generateClassMethodModule(filePath!, found.cls, found.method, callableName));
+            const ctorParams = resolveConstructorParams(found.cls);
+            modules.push(generateClassMethodModule(filePath!, found.cls, found.method, callableName, ctorParams));
           }
         }
       }

@@ -926,4 +926,170 @@ describe('Vite Plugin', () => {
       expect(code).toContain('__callable: "fail"');
     });
   });
+
+  // -----------------------------------------------------------------------
+  // ReadonlyClassDto: PHP 8.2 readonly class
+  // -----------------------------------------------------------------------
+  describe('readonly class', () => {
+    it('generates classMethod for ReadonlyClassDto@render', () => {
+      const plugin = storybookPhpPlugin();
+      const load = getLoad(plugin);
+
+      const filePath = resolve(FIXTURES, 'ReadonlyClassDto.php');
+      const code = load(`${VIRTUAL_PREFIX}${filePath}?callable=render`);
+
+      expect(code).toBeTruthy();
+      expect(code).toContain("__type: 'classMethod'");
+      expect(code).toContain('export const ReadonlyClassDto');
+      expect(code).toContain('name:');
+      expect(code).toContain('email:');
+      expect(code).toContain('age:');
+      expect(code).toContain('role:');
+    });
+  });
+
+  // -----------------------------------------------------------------------
+  // IntEnumCalc: int-backed enum with methods
+  // -----------------------------------------------------------------------
+  describe('int-backed enum', () => {
+    it('generates enumMethod for HttpPort@render', () => {
+      const plugin = storybookPhpPlugin();
+      const load = getLoad(plugin);
+
+      const filePath = resolve(FIXTURES, 'IntEnumCalc.php');
+      const code = load(`${VIRTUAL_PREFIX}${filePath}?callable=render`);
+
+      expect(code).toBeTruthy();
+      expect(code).toContain("__type: 'enumMethod'");
+      expect(code).toContain('export const HttpPort');
+      expect(code).toContain('_case:');
+    });
+
+    it('generates staticMethod for HttpPort@table', () => {
+      const plugin = storybookPhpPlugin();
+      const load = getLoad(plugin);
+
+      const filePath = resolve(FIXTURES, 'IntEnumCalc.php');
+      const code = load(`${VIRTUAL_PREFIX}${filePath}?callable=table`);
+
+      expect(code).toBeTruthy();
+      expect(code).toContain("__type: 'staticMethod'");
+      expect(code).toContain('export const HttpPort');
+    });
+  });
+
+  // -----------------------------------------------------------------------
+  // IterableParam: iterable type hint
+  // -----------------------------------------------------------------------
+  describe('iterable type param', () => {
+    it('generates classMethod for IterableParam@render with iterable param', () => {
+      const plugin = storybookPhpPlugin();
+      const load = getLoad(plugin);
+
+      const filePath = resolve(FIXTURES, 'IterableParam.php');
+      const code = load(`${VIRTUAL_PREFIX}${filePath}?callable=render`);
+
+      expect(code).toBeTruthy();
+      expect(code).toContain("__type: 'classMethod'");
+      expect(code).toContain('export const IterableParam');
+      expect(code).toContain('items:');
+      expect(code).toContain("type: 'iterable'");
+      expect(code).toContain('style:');
+    });
+  });
+
+  // -----------------------------------------------------------------------
+  // StringableEnum: enum with Stringable + custom interface
+  // -----------------------------------------------------------------------
+  describe('stringable enum', () => {
+    it('generates enumMethod for Planet@render', () => {
+      const plugin = storybookPhpPlugin();
+      const load = getLoad(plugin);
+
+      const filePath = resolve(FIXTURES, 'StringableEnum.php');
+      const code = load(`${VIRTUAL_PREFIX}${filePath}?callable=render`);
+
+      expect(code).toBeTruthy();
+      expect(code).toContain("__type: 'enumMethod'");
+      expect(code).toContain('export const Planet');
+      expect(code).toContain('_case:');
+      expect(code).toContain('showDescription:');
+    });
+  });
+
+  // -----------------------------------------------------------------------
+  // AbstractTemplateMethod: abstract + concrete subclasses
+  // -----------------------------------------------------------------------
+  describe('abstract template method', () => {
+    it('generates exports for all 3 concrete children but not abstract', () => {
+      const plugin = storybookPhpPlugin();
+      const load = getLoad(plugin);
+
+      const filePath = resolve(FIXTURES, 'AbstractTemplateMethod.php');
+      const code = load(`${VIRTUAL_PREFIX}${filePath}?callable=render`);
+
+      expect(code).toBeTruthy();
+      expect(code).toContain('export const EmailNotification');
+      expect(code).toContain('export const SmsNotification');
+      expect(code).toContain('export const PushNotification');
+      expect(code).not.toContain('export const AbstractNotification');
+      expect(code).toContain('message:');
+      expect(code).toContain('recipient:');
+    });
+  });
+
+  // -----------------------------------------------------------------------
+  // VariadicFunc: standalone function with variadic params
+  // -----------------------------------------------------------------------
+  describe('variadic function', () => {
+    it('generates function module for breadcrumbTrail', () => {
+      const plugin = storybookPhpPlugin();
+      const load = getLoad(plugin);
+
+      const filePath = resolve(FIXTURES, 'VariadicFunc.php');
+      const code = load(`${VIRTUAL_PREFIX}${filePath}?callable=breadcrumbTrail`);
+
+      expect(code).toBeTruthy();
+      expect(code).toContain("__type: 'function'");
+      expect(code).toContain('export const breadcrumbTrail');
+      expect(code).toContain('separator:');
+      expect(code).toContain('segments:');
+    });
+
+    it('generates function module for joinParagraphs', () => {
+      const plugin = storybookPhpPlugin();
+      const load = getLoad(plugin);
+
+      const filePath = resolve(FIXTURES, 'VariadicFunc.php');
+      const code = load(`${VIRTUAL_PREFIX}${filePath}?callable=joinParagraphs`);
+
+      expect(code).toBeTruthy();
+      expect(code).toContain("__type: 'function'");
+      expect(code).toContain('export const joinParagraphs');
+    });
+  });
+
+  // -----------------------------------------------------------------------
+  // MixedDefaultsShowcase: diverse default value types
+  // -----------------------------------------------------------------------
+  describe('mixed defaults showcase', () => {
+    it('generates classMethod for MixedDefaultsShowcase@render', () => {
+      const plugin = storybookPhpPlugin();
+      const load = getLoad(plugin);
+
+      const filePath = resolve(FIXTURES, 'MixedDefaultsShowcase.php');
+      const code = load(`${VIRTUAL_PREFIX}${filePath}?callable=render`);
+
+      expect(code).toBeTruthy();
+      expect(code).toContain("__type: 'classMethod'");
+      expect(code).toContain('export const MixedDefaultsShowcase');
+      expect(code).toContain('title:');
+      expect(code).toContain('maxItems:');
+      expect(code).toContain('opacity:');
+      expect(code).toContain('visible:');
+      expect(code).toContain('subtitle:');
+      expect(code).toContain('tags:');
+      expect(code).toContain('theme:');
+    });
+  });
 });

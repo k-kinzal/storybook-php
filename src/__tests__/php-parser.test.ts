@@ -2566,4 +2566,235 @@ class Tooltip {
       expect(fail.params).toHaveLength(0);
     });
   });
+
+  // -----------------------------------------------------------------------
+  // ReadonlyClassDto: PHP 8.2 readonly class
+  // -----------------------------------------------------------------------
+  describe('ReadonlyClassDto', () => {
+    it('parses readonly class with promoted properties', () => {
+      const meta = parsePhpSource(fixture('ReadonlyClassDto.php'), 'ReadonlyClassDto.php');
+      expect(meta.namespace).toBe('App\\Components');
+      expect(meta.classes).toHaveLength(1);
+
+      const cls = meta.classes[0]!;
+      expect(cls.name).toBe('ReadonlyClassDto');
+      expect(cls.isReadonly).toBe(true);
+      expect(cls.isAbstract).toBe(false);
+      expect(cls.isFinal).toBe(false);
+
+      expect(cls.constructorParams).toHaveLength(4);
+      expect(cls.constructorParams[0]!.name).toBe('name');
+      expect(cls.constructorParams[0]!.type).toBe('string');
+      expect(cls.constructorParams[0]!.required).toBe(true);
+      expect(cls.constructorParams[0]!.visibility).toBe('public');
+
+      expect(cls.constructorParams[1]!.name).toBe('email');
+      expect(cls.constructorParams[1]!.type).toBe('string');
+      expect(cls.constructorParams[1]!.required).toBe(true);
+
+      expect(cls.constructorParams[2]!.name).toBe('age');
+      expect(cls.constructorParams[2]!.type).toBe('int');
+      expect(cls.constructorParams[2]!.required).toBe(false);
+      expect(cls.constructorParams[2]!.default).toBe('30');
+
+      expect(cls.constructorParams[3]!.name).toBe('role');
+      expect(cls.constructorParams[3]!.default).toBe("'__PLACEHOLDER__'");
+
+      expect(cls.methods).toHaveLength(1);
+      expect(cls.methods[0]!.name).toBe('render');
+      expect(cls.methods[0]!.returnType).toBe('string');
+    });
+  });
+
+  // -----------------------------------------------------------------------
+  // IntEnumCalc: int-backed enum with methods
+  // -----------------------------------------------------------------------
+  describe('IntEnumCalc', () => {
+    it('parses int-backed enum with instance and static methods', () => {
+      const meta = parsePhpSource(fixture('IntEnumCalc.php'), 'IntEnumCalc.php');
+      expect(meta.namespace).toBe('App\\Components');
+      expect(meta.classes).toHaveLength(1);
+
+      const cls = meta.classes[0]!;
+      expect(cls.name).toBe('HttpPort');
+      expect(cls.isEnum).toBe(true);
+      expect(cls.enumBackingType).toBe('int');
+      expect(cls.enumCases).toEqual(['Http', 'Https', 'Dev', 'Alt', 'Proxy']);
+
+      expect(cls.methods).toHaveLength(2);
+      const render = cls.methods.find(m => m.name === 'render')!;
+      expect(render.isStatic).toBe(false);
+      expect(render.returnType).toBe('string');
+
+      const table = cls.methods.find(m => m.name === 'table')!;
+      expect(table.isStatic).toBe(true);
+      expect(table.returnType).toBe('string');
+    });
+  });
+
+  // -----------------------------------------------------------------------
+  // IterableParam: iterable type hint
+  // -----------------------------------------------------------------------
+  describe('IterableParam', () => {
+    it('parses class with iterable parameter type', () => {
+      const meta = parsePhpSource(fixture('IterableParam.php'), 'IterableParam.php');
+      expect(meta.classes).toHaveLength(1);
+
+      const cls = meta.classes[0]!;
+      expect(cls.name).toBe('IterableParam');
+
+      expect(cls.constructorParams).toHaveLength(2);
+      expect(cls.constructorParams[0]!.name).toBe('title');
+      expect(cls.constructorParams[1]!.name).toBe('emptyMessage');
+
+      expect(cls.methods).toHaveLength(1);
+      const render = cls.methods[0]!;
+      expect(render.name).toBe('render');
+      expect(render.params).toHaveLength(2);
+      expect(render.params[0]!.name).toBe('items');
+      expect(render.params[0]!.type).toBe('iterable');
+      expect(render.params[0]!.required).toBe(true);
+      expect(render.params[1]!.name).toBe('style');
+      expect(render.params[1]!.type).toBe('string');
+    });
+  });
+
+  // -----------------------------------------------------------------------
+  // StringableEnum: enum implementing Stringable + custom interface
+  // -----------------------------------------------------------------------
+  describe('StringableEnum', () => {
+    it('parses enum with Stringable and custom interface', () => {
+      const meta = parsePhpSource(fixture('StringableEnum.php'), 'StringableEnum.php');
+      expect(meta.namespace).toBe('App\\Components');
+
+      // Interface + Enum
+      expect(meta.classes).toHaveLength(2);
+
+      const iface = meta.classes.find(c => c.name === 'HasDescription')!;
+      expect(iface.isInterface).toBe(true);
+
+      const enumCls = meta.classes.find(c => c.name === 'Planet')!;
+      expect(enumCls.isEnum).toBe(true);
+      expect(enumCls.enumBackingType).toBe('string');
+      expect(enumCls.enumCases).toEqual(['Mercury', 'Venus', 'Earth', 'Mars']);
+      expect(enumCls.implements).toContain('HasDescription');
+
+      const render = enumCls.methods.find(m => m.name === 'render')!;
+      expect(render.params).toHaveLength(1);
+      expect(render.params[0]!.name).toBe('showDescription');
+      expect(render.params[0]!.type).toBe('bool');
+      expect(render.params[0]!.default).toBe('true');
+
+      const description = enumCls.methods.find(m => m.name === 'description')!;
+      expect(description.returnType).toBe('string');
+    });
+  });
+
+  // -----------------------------------------------------------------------
+  // AbstractTemplateMethod: abstract + 3 concrete classes
+  // -----------------------------------------------------------------------
+  describe('AbstractTemplateMethod', () => {
+    it('parses abstract class with template method + concrete subclasses', () => {
+      const meta = parsePhpSource(fixture('AbstractTemplateMethod.php'), 'AbstractTemplateMethod.php');
+      expect(meta.namespace).toBe('App\\Components');
+      expect(meta.classes).toHaveLength(4);
+
+      const abstract = meta.classes.find(c => c.name === 'AbstractNotification')!;
+      expect(abstract.isAbstract).toBe(true);
+      expect(abstract.constructorParams).toHaveLength(2);
+      expect(abstract.constructorParams[0]!.name).toBe('message');
+      expect(abstract.constructorParams[0]!.type).toBe('string');
+      expect(abstract.constructorParams[1]!.name).toBe('recipient');
+      expect(abstract.constructorParams[1]!.default).toBe("'__PLACEHOLDER__'");
+
+      const render = abstract.methods.find(m => m.name === 'render')!;
+      expect(render.returnType).toBe('string');
+      expect(render.isStatic).toBe(false);
+
+      const email = meta.classes.find(c => c.name === 'EmailNotification')!;
+      expect(email.isAbstract).toBe(false);
+      expect(email.extends).toBe('AbstractNotification');
+
+      const sms = meta.classes.find(c => c.name === 'SmsNotification')!;
+      expect(sms.extends).toBe('AbstractNotification');
+
+      const push = meta.classes.find(c => c.name === 'PushNotification')!;
+      expect(push.extends).toBe('AbstractNotification');
+    });
+  });
+
+  // -----------------------------------------------------------------------
+  // VariadicFunc: standalone functions with variadic params
+  // -----------------------------------------------------------------------
+  describe('VariadicFunc', () => {
+    it('parses standalone functions with variadic parameters', () => {
+      const meta = parsePhpSource(fixture('VariadicFunc.php'), 'VariadicFunc.php');
+      expect(meta.namespace).toBe('App\\Helpers');
+      expect(meta.functions).toHaveLength(2);
+
+      const breadcrumb = meta.functions.find(f => f.name === 'breadcrumbTrail')!;
+      expect(breadcrumb.fqn).toBe('App\\Helpers\\breadcrumbTrail');
+      expect(breadcrumb.params).toHaveLength(2);
+      expect(breadcrumb.params[0]!.name).toBe('separator');
+      expect(breadcrumb.params[0]!.type).toBe('string');
+      expect(breadcrumb.params[0]!.isVariadic).toBe(false);
+      expect(breadcrumb.params[1]!.name).toBe('segments');
+      expect(breadcrumb.params[1]!.type).toBe('string');
+      expect(breadcrumb.params[1]!.isVariadic).toBe(true);
+      expect(breadcrumb.returnType).toBe('string');
+
+      const join = meta.functions.find(f => f.name === 'joinParagraphs')!;
+      expect(join.fqn).toBe('App\\Helpers\\joinParagraphs');
+      expect(join.params).toHaveLength(2);
+      expect(join.params[0]!.name).toBe('class');
+      expect(join.params[0]!.isVariadic).toBe(false);
+      expect(join.params[1]!.name).toBe('texts');
+      expect(join.params[1]!.isVariadic).toBe(true);
+    });
+  });
+
+  // -----------------------------------------------------------------------
+  // MixedDefaultsShowcase: diverse default value types
+  // -----------------------------------------------------------------------
+  describe('MixedDefaultsShowcase', () => {
+    it('parses class with class constant, enum, array, nullable, and scalar defaults', () => {
+      const meta = parsePhpSource(fixture('MixedDefaultsShowcase.php'), 'MixedDefaultsShowcase.php');
+      expect(meta.namespace).toBe('App\\Components');
+
+      // Theme enum + MixedDefaultsShowcase class
+      const cls = meta.classes.find(c => c.name === 'MixedDefaultsShowcase')!;
+      expect(cls).toBeTruthy();
+
+      expect(cls.constructorParams).toHaveLength(7);
+
+      const title = cls.constructorParams.find(p => p.name === 'title')!;
+      expect(title.type).toBe('string');
+      expect(title.default).toBe('self::DEFAULT_TITLE');
+
+      const maxItems = cls.constructorParams.find(p => p.name === 'maxItems')!;
+      expect(maxItems.type).toBe('int');
+      expect(maxItems.default).toBe('self::MAX_ITEMS');
+
+      const opacity = cls.constructorParams.find(p => p.name === 'opacity')!;
+      expect(opacity.type).toBe('float');
+      expect(opacity.default).toBe('1.0');
+
+      const visible = cls.constructorParams.find(p => p.name === 'visible')!;
+      expect(visible.type).toBe('bool');
+      expect(visible.default).toBe('true');
+
+      const subtitle = cls.constructorParams.find(p => p.name === 'subtitle')!;
+      expect(subtitle.type).toBe('string');
+      expect(subtitle.nullable).toBe(true);
+      expect(subtitle.default).toBe('null');
+
+      const tags = cls.constructorParams.find(p => p.name === 'tags')!;
+      expect(tags.type).toBe('array');
+      expect(tags.default).toBe("['__PLACEHOLDER__']");
+
+      const theme = cls.constructorParams.find(p => p.name === 'theme')!;
+      expect(theme.type).toBe('Theme');
+      expect(theme.default).toBe('Theme::Light');
+    });
+  });
 });
