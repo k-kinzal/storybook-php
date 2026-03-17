@@ -108,6 +108,12 @@ function castWithNamedType(ReflectionNamedType $type, mixed $value, ReflectionPa
             return (bool) $value;
         case 'array':
             return is_array($value) ? $value : (array) $value;
+        case 'object':
+            return is_object($value) ? $value : (object) $value;
+        case 'iterable':
+            return is_array($value) ? $value : (array) $value;
+        case 'callable':
+            return $value;
         case 'mixed':
             return $value;
         // PHP 8.2 standalone types
