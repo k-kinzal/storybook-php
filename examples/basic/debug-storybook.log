@@ -1,0 +1,14 @@
+[00:04:01.749] [INFO] storybook v10.2.19
+[00:04:02.148] [DEBUG] Getting package.json info for /Users/ab/Projects/storybook-php/examples/basic/package.json...
+[00:04:02.158] [ERROR] Error [ERR_MODULE_NOT_FOUND]: Cannot find package '@storybook/builder-vite' imported from /Users/ab/Projects/storybook-php/node_modules/storybook/dist/_node-chunks/chunk-JGHDDUW7.js
+    at Object.getPackageJSONURL (node:internal/modules/package_json_reader:267:9)
+    at packageResolve (node:internal/modules/esm/resolve:768:81)
+    at moduleResolve (node:internal/modules/esm/resolve:854:18)
+    at defaultResolve (node:internal/modules/esm/resolve:984:11)
+    at nextResolve (node:internal/modules/esm/hooks:748:28)
+    at Hooks.resolve (node:internal/modules/esm/hooks:240:30)
+    at MessagePort.handleMessage (node:internal/modules/esm/worker:199:24)
+    at [nodejs.internal.kHybridDispatch] (node:internal/event_target:827:20)
+    at MessagePort.<anonymous> (node:internal/per_context/messageport:23:28)
+[00:04:02.159] [WARN] Broken build, fix the error above.
+You may need to refresh the browser.

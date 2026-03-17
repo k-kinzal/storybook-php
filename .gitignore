@@ -1,0 +1,11 @@
+node_modules/
+dist/
+*.tsbuildinfo
+.DS_Store
+*.php.d.ts
+.storybook-out/
+storybook-static/
+coverage/
+.claude/
+.idea/
+*.log

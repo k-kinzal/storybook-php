@@ -1,0 +1,10 @@
+src/
+tsconfig.json
+tsup.config.ts
+vitest.config.ts
+eslint.config.js
+.gitignore
+examples/
+src/__tests__/
+coverage/
+.DS_Store
