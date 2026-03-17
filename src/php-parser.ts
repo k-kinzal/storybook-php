@@ -48,6 +48,31 @@ function replaceStrings(source: string): string {
   while (i < len) {
     const ch = source[i]!;
 
+    // Skip multi-line comments (/* ... */) so that quotes inside comments
+    // are not mistaken for string delimiters (e.g. "don't" in a doc block).
+    if (ch === '/' && source[i + 1] === '*') {
+      const end = source.indexOf('*/', i + 2);
+      if (end !== -1) {
+        result += source.slice(i, end + 2);
+        i = end + 2;
+        continue;
+      }
+    }
+
+    // Skip single-line comments (// and # but not #[)
+    if ((ch === '/' && source[i + 1] === '/') ||
+        (ch === '#' && source[i + 1] !== '[')) {
+      const end = source.indexOf('\n', i);
+      if (end !== -1) {
+        result += source.slice(i, end);
+        i = end; // keep the newline for next iteration
+      } else {
+        result += source.slice(i);
+        i = len;
+      }
+      continue;
+    }
+
     // Check for heredoc / nowdoc: <<<LABEL or <<<'LABEL'
     if (ch === '<' && source[i + 1] === '<' && source[i + 2] === '<') {
       const afterArrows = i + 3;

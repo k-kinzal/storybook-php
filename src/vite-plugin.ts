@@ -225,10 +225,25 @@ export function storybookPhpPlugin(options: FrameworkOptions = {}): Plugin {
           continue;
         }
 
+        // For abstract classes, only allow static methods (they can't be instantiated).
+        // Instance methods are still resolved through concrete subclasses via findMethodInHierarchy.
+        if (cls.isAbstract) {
+          const method = cls.methods.find((m) => m.name === callableName && m.isStatic);
+          if (method) {
+            modules.push(generateStaticMethodModule(filePath!, cls, method, callableName));
+          }
+          continue;
+        }
+
         const found = findMethodInHierarchy(cls, callableName);
         if (found) {
           if (found.method.isStatic) {
-            modules.push(generateStaticMethodModule(filePath!, found.cls, found.method, callableName));
+            // Only export a static method from the class that defines it directly.
+            // Inherited static methods are already handled by the defining class's iteration.
+            const definedDirectly = cls.methods.some((m) => m.name === callableName);
+            if (definedDirectly) {
+              modules.push(generateStaticMethodModule(filePath!, found.cls, found.method, callableName));
+            }
           } else {
             modules.push(generateClassMethodModule(filePath!, found.cls, found.method, callableName));
           }

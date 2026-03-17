@@ -7440,4 +7440,1123 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
       expect(badgeParam.required).toBe(false);
     });
   });
+
+  // -------------------------------------------------------------------------
+  // UC121: Enum with constants
+  // -------------------------------------------------------------------------
+  describe('UC121: Enum with constants', () => {
+    it('renders EnumConstant badge via enum instance method', async () => {
+      const result = await executor.execute({
+        type: 'enumMethod',
+        file: example('EnumConstant.php'),
+        class: 'App\\Components\\EnumConstant',
+        callable: 'badge',
+        args: { _case: 'success' },
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('Success');
+      expect(result.html).toContain('#22c55e');
+    });
+
+    it('renders EnumConstant warning badge', async () => {
+      const result = await executor.execute({
+        type: 'enumMethod',
+        file: example('EnumConstant.php'),
+        class: 'App\\Components\\EnumConstant',
+        callable: 'badge',
+        args: { _case: 'warning' },
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('Warning');
+      expect(result.html).toContain('#f59e0b');
+    });
+
+    it('renders EnumConstant danger badge', async () => {
+      const result = await executor.execute({
+        type: 'enumMethod',
+        file: example('EnumConstant.php'),
+        class: 'App\\Components\\EnumConstant',
+        callable: 'badge',
+        args: { _case: 'danger' },
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('Danger');
+      expect(result.html).toContain('#ef4444');
+    });
+
+    it('renders EnumConstant::all static method', async () => {
+      const result = await executor.execute({
+        type: 'staticMethod',
+        file: example('EnumConstant.php'),
+        class: 'App\\Components\\EnumConstant',
+        callable: 'all',
+        args: { separator: ' ' },
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('Success');
+      expect(result.html).toContain('Warning');
+      expect(result.html).toContain('Danger');
+    });
+
+    it('parses EnumConstant metadata', () => {
+      const meta = parsePhpFile(example('EnumConstant.php'));
+      const cls = meta.classes.find(c => c.name === 'EnumConstant')!;
+      expect(cls).toBeDefined();
+      expect(cls.isEnum).toBe(true);
+      expect(cls.enumBackingType).toBe('string');
+      expect(cls.enumCases).toEqual(['Success', 'Warning', 'Danger']);
+      expect(cls.methods).toHaveLength(2);
+      const badge = cls.methods.find(m => m.name === 'badge')!;
+      expect(badge.isStatic).toBe(false);
+      const all = cls.methods.find(m => m.name === 'all')!;
+      expect(all.isStatic).toBe(true);
+      expect(all.params).toHaveLength(1);
+    });
+
+    it('generates virtual module for enum instance method', () => {
+      const plugin = storybookPhpPlugin({});
+      const resolveId = (plugin as any).resolveId.bind(plugin);
+      const load = (plugin as any).load.bind(plugin);
+      const id = resolveId('./EnumConstant.php@badge', example('EnumConstant.stories.ts'));
+      const code = load(id);
+      expect(code).toContain("__type: 'enumMethod'");
+      expect(code).toContain('EnumConstant');
+      expect(code).toContain('_case');
+    });
+
+    it('generates virtual module for enum static method', () => {
+      const plugin = storybookPhpPlugin({});
+      const resolveId = (plugin as any).resolveId.bind(plugin);
+      const load = (plugin as any).load.bind(plugin);
+      const id = resolveId('./EnumConstant.php@all', example('EnumConstantAll.stories.ts'));
+      const code = load(id);
+      expect(code).toContain("__type: 'staticMethod'");
+      expect(code).toContain('EnumConstant');
+    });
+  });
+
+  // -------------------------------------------------------------------------
+  // UC122: Deep inheritance (3 levels)
+  // -------------------------------------------------------------------------
+  describe('UC122: Deep inheritance (3 levels)', () => {
+    it('renders DetailWidget (deepest child)', async () => {
+      const result = await executor.execute({
+        type: 'classMethod',
+        file: example('DeepInheritance.php'),
+        class: 'App\\Components\\DetailWidget',
+        callable: 'render',
+        args: { title: 'Deep', message: 'Three levels', footer: 'Footer text' },
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('Deep');
+      expect(result.html).toContain('Three levels');
+      expect(result.html).toContain('Footer text');
+    });
+
+    it('renders DetailWidget with dark theme', async () => {
+      const result = await executor.execute({
+        type: 'classMethod',
+        file: example('DeepInheritance.php'),
+        class: 'App\\Components\\DetailWidget',
+        callable: 'render',
+        args: { title: 'Dark', theme: 'dark', message: 'Themed' },
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('Dark');
+      expect(result.html).toContain('#1f2937');
+    });
+
+    it('renders InfoWidget (middle child)', async () => {
+      const result = await executor.execute({
+        type: 'classMethod',
+        file: example('DeepInheritance.php'),
+        class: 'App\\Components\\InfoWidget',
+        callable: 'render',
+        args: { title: 'Info', message: 'Mid-level' },
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('Info');
+      expect(result.html).toContain('Mid-level');
+    });
+
+    it('parses deep inheritance hierarchy', () => {
+      const meta = parsePhpFile(example('DeepInheritance.php'));
+      expect(meta.classes).toHaveLength(3);
+
+      const base = meta.classes.find(c => c.name === 'BaseWidget')!;
+      expect(base.isAbstract).toBe(true);
+      expect(base.constructorParams).toHaveLength(2);
+
+      const info = meta.classes.find(c => c.name === 'InfoWidget')!;
+      expect(info.extends).toBe('BaseWidget');
+      expect(info.constructorParams).toHaveLength(3);
+
+      const detail = meta.classes.find(c => c.name === 'DetailWidget')!;
+      expect(detail.extends).toBe('InfoWidget');
+      expect(detail.constructorParams).toHaveLength(4);
+    });
+
+    it('generates virtual modules for both concrete classes', () => {
+      const plugin = storybookPhpPlugin({});
+      const resolveId = (plugin as any).resolveId.bind(plugin);
+      const load = (plugin as any).load.bind(plugin);
+      const id = resolveId('./DeepInheritance.php@render', example('DeepInheritance.stories.ts'));
+      const code = load(id);
+      expect(code).toContain('InfoWidget');
+      expect(code).toContain('DetailWidget');
+      // Should NOT contain BaseWidget (abstract)
+      expect(code).not.toContain("export const BaseWidget");
+    });
+  });
+
+  // -------------------------------------------------------------------------
+  // UC123: Generator standalone functions
+  // -------------------------------------------------------------------------
+  describe('UC123: Generator standalone functions', () => {
+    it('renders generateList function', async () => {
+      const result = await executor.execute({
+        type: 'function',
+        file: example('generatorFunc.php'),
+        class: null,
+        callable: 'App\\Helpers\\generateList',
+        args: { title: 'Shopping', count: 3, marker: 'disc' },
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('Shopping');
+      expect(result.html).toContain('Item 1');
+      expect(result.html).toContain('Item 2');
+      expect(result.html).toContain('Item 3');
+    });
+
+    it('renders generateTable function', async () => {
+      const result = await executor.execute({
+        type: 'function',
+        file: example('generatorFunc.php'),
+        class: null,
+        callable: 'App\\Helpers\\generateTable',
+        args: { rows: 2, cols: 2 },
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('R1C1');
+      expect(result.html).toContain('R2C2');
+    });
+
+    it('parses generator functions', () => {
+      const meta = parsePhpFile(example('generatorFunc.php'));
+      expect(meta.namespace).toBe('App\\Helpers');
+      expect(meta.functions).toHaveLength(2);
+
+      const genList = meta.functions.find(f => f.name === 'generateList')!;
+      expect(genList).toBeDefined();
+      expect(genList.params).toHaveLength(3);
+      expect(genList.returnType).toBe('\\Generator');
+
+      const genTable = meta.functions.find(f => f.name === 'generateTable')!;
+      expect(genTable).toBeDefined();
+      expect(genTable.params).toHaveLength(2);
+      expect(genTable.returnType).toBe('\\Generator');
+    });
+
+    it('generates virtual modules for generator functions', () => {
+      const plugin = storybookPhpPlugin({});
+      const resolveId = (plugin as any).resolveId.bind(plugin);
+      const load = (plugin as any).load.bind(plugin);
+
+      const listId = resolveId('./generatorFunc.php@generateList', example('generatorFunc.stories.ts'));
+      const listCode = load(listId);
+      expect(listCode).toContain("__type: 'function'");
+      expect(listCode).toContain('generateList');
+
+      const tableId = resolveId('./generatorFunc.php@generateTable', example('generatorTable.stories.ts'));
+      const tableCode = load(tableId);
+      expect(tableCode).toContain("__type: 'function'");
+      expect(tableCode).toContain('generateTable');
+    });
+  });
+
+  // -------------------------------------------------------------------------
+  // UC124: Nowdoc syntax
+  // -------------------------------------------------------------------------
+  describe('UC124: Nowdoc syntax', () => {
+    it('renders NowdocCard with defaults', async () => {
+      const result = await executor.execute({
+        type: 'classMethod',
+        file: example('NowdocCard.php'),
+        class: 'App\\Components\\NowdocCard',
+        callable: 'render',
+        args: {},
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('Card');
+      expect(result.html).toContain('Content goes here.');
+    });
+
+    it('renders NowdocCard with custom values', async () => {
+      const result = await executor.execute({
+        type: 'classMethod',
+        file: example('NowdocCard.php'),
+        class: 'App\\Components\\NowdocCard',
+        callable: 'render',
+        args: { title: 'Nowdoc', body: 'Uses nowdoc syntax.', variant: 'primary' },
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('Nowdoc');
+      expect(result.html).toContain('Uses nowdoc syntax.');
+      expect(result.html).toContain('#3b82f6');
+    });
+
+    it('parses NowdocCard correctly despite nowdoc syntax', () => {
+      const meta = parsePhpFile(example('NowdocCard.php'));
+      const cls = meta.classes.find(c => c.name === 'NowdocCard')!;
+      expect(cls).toBeDefined();
+      expect(cls.constructorParams).toHaveLength(3);
+      expect(cls.methods).toHaveLength(1);
+      expect(cls.methods[0]!.name).toBe('render');
+    });
+  });
+
+  // -------------------------------------------------------------------------
+  // UC125: Private constructor with static factories
+  // -------------------------------------------------------------------------
+  describe('UC125: Private constructor with static factories', () => {
+    it('renders PrivateConstruct::success', async () => {
+      const result = await executor.execute({
+        type: 'staticMethod',
+        file: example('PrivateConstruct.php'),
+        class: 'App\\Components\\PrivateConstruct',
+        callable: 'success',
+        args: { message: 'File saved.' },
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('File saved.');
+      expect(result.html).toContain('notice-success');
+    });
+
+    it('renders PrivateConstruct::error', async () => {
+      const result = await executor.execute({
+        type: 'staticMethod',
+        file: example('PrivateConstruct.php'),
+        class: 'App\\Components\\PrivateConstruct',
+        callable: 'error',
+        args: { message: 'Connection lost.' },
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('Connection lost.');
+      expect(result.html).toContain('notice-error');
+    });
+
+    it('renders PrivateConstruct::info with default', async () => {
+      const result = await executor.execute({
+        type: 'staticMethod',
+        file: example('PrivateConstruct.php'),
+        class: 'App\\Components\\PrivateConstruct',
+        callable: 'info',
+        args: {},
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('notice-info');
+    });
+
+    it('parses PrivateConstruct with private constructor', () => {
+      const meta = parsePhpFile(example('PrivateConstruct.php'));
+      const cls = meta.classes.find(c => c.name === 'PrivateConstruct')!;
+      expect(cls).toBeDefined();
+      expect(cls.constructorParams).toHaveLength(3);
+      // Static methods
+      const staticMethods = cls.methods.filter(m => m.isStatic);
+      expect(staticMethods).toHaveLength(3);
+      expect(staticMethods.map(m => m.name).sort()).toEqual(['error', 'info', 'success']);
+    });
+
+    it('generates virtual modules for static factories', () => {
+      const plugin = storybookPhpPlugin({});
+      const resolveId = (plugin as any).resolveId.bind(plugin);
+      const load = (plugin as any).load.bind(plugin);
+
+      const successId = resolveId('./PrivateConstruct.php@success', example('PrivateConstruct.stories.ts'));
+      const successCode = load(successId);
+      expect(successCode).toContain("__type: 'staticMethod'");
+
+      const errorId = resolveId('./PrivateConstruct.php@error', example('PrivateConstructError.stories.ts'));
+      const errorCode = load(errorId);
+      expect(errorCode).toContain("__type: 'staticMethod'");
+
+      const infoId = resolveId('./PrivateConstruct.php@info', example('PrivateConstructInfo.stories.ts'));
+      const infoCode = load(infoId);
+      expect(infoCode).toContain("__type: 'staticMethod'");
+    });
+  });
+
+  // -------------------------------------------------------------------------
+  // UC126: Multiple enums in one file
+  // -------------------------------------------------------------------------
+  describe('UC126: Multiple enums in one file', () => {
+    it('renders TextAlign preview', async () => {
+      const result = await executor.execute({
+        type: 'enumMethod',
+        file: example('MultiEnum.php'),
+        class: 'App\\Components\\TextAlign',
+        callable: 'preview',
+        args: { _case: 'center', text: 'Centered text' },
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('text-align: center');
+      expect(result.html).toContain('Centered text');
+    });
+
+    it('renders FontWeight preview', async () => {
+      const result = await executor.execute({
+        type: 'enumMethod',
+        file: example('MultiEnum.php'),
+        class: 'App\\Components\\FontWeight',
+        callable: 'preview',
+        args: { _case: '700', text: 'Bold text' },
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('font-weight: 700');
+      expect(result.html).toContain('Bold text');
+    });
+
+    it('parses multiple enums from one file', () => {
+      const meta = parsePhpFile(example('MultiEnum.php'));
+      expect(meta.classes).toHaveLength(2);
+
+      const textAlign = meta.classes.find(c => c.name === 'TextAlign')!;
+      expect(textAlign.isEnum).toBe(true);
+      expect(textAlign.enumBackingType).toBe('string');
+      expect(textAlign.enumCases).toEqual(['Left', 'Center', 'Right']);
+
+      const fontWeight = meta.classes.find(c => c.name === 'FontWeight')!;
+      expect(fontWeight.isEnum).toBe(true);
+      expect(fontWeight.enumBackingType).toBe('string');
+      expect(fontWeight.enumCases).toEqual(['Light', 'Normal', 'Bold', 'Black']);
+    });
+
+    it('generates virtual module with both enums for shared method name', () => {
+      const plugin = storybookPhpPlugin({});
+      const resolveId = (plugin as any).resolveId.bind(plugin);
+      const load = (plugin as any).load.bind(plugin);
+      const id = resolveId('./MultiEnum.php@preview', example('MultiEnum.stories.ts'));
+      const code = load(id);
+      expect(code).toContain('TextAlign');
+      expect(code).toContain('FontWeight');
+      expect(code).toContain("__type: 'enumMethod'");
+    });
+  });
+
+  // -------------------------------------------------------------------------
+  // UC127: Breadcrumb template (nested arrays)
+  // -------------------------------------------------------------------------
+  describe('UC127: Breadcrumb template', () => {
+    it('renders breadcrumb with array items', async () => {
+      const result = await executor.execute({
+        type: 'template',
+        file: resolve(examplesDir, 'templates/breadcrumb.php'),
+        class: null,
+        callable: null,
+        args: {
+          items: [
+            { label: 'Home', url: '/' },
+            { label: 'Products', url: '/products' },
+            { label: 'Widget' },
+          ],
+          separator: '/',
+        },
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('Home');
+      expect(result.html).toContain('Products');
+      expect(result.html).toContain('Widget');
+      expect(result.html).toContain('/');
+    });
+
+    it('renders breadcrumb with arrow separator', async () => {
+      const result = await executor.execute({
+        type: 'template',
+        file: resolve(examplesDir, 'templates/breadcrumb.php'),
+        class: null,
+        callable: null,
+        args: {
+          items: [
+            { label: 'Dashboard', url: '/dash' },
+            { label: 'Profile' },
+          ],
+          separator: '>',
+        },
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('Dashboard');
+      expect(result.html).toContain('Profile');
+      expect(result.html).toContain('&gt;');
+    });
+  });
+
+  // -------------------------------------------------------------------------
+  // UC128: Modal template (boolean flags, match expression)
+  // -------------------------------------------------------------------------
+  describe('UC128: Modal template', () => {
+    it('renders modal with all options', async () => {
+      const result = await executor.execute({
+        type: 'template',
+        file: resolve(examplesDir, 'templates/modal.php'),
+        class: null,
+        callable: null,
+        args: {
+          title: 'Confirm',
+          body: 'Are you sure?',
+          size: 'medium',
+          showClose: true,
+          showFooter: true,
+          confirmLabel: 'Yes',
+          cancelLabel: 'No',
+        },
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('Confirm');
+      expect(result.html).toContain('Are you sure?');
+      expect(result.html).toContain('Yes');
+      expect(result.html).toContain('No');
+      expect(result.html).toContain('480px');
+    });
+
+    it('renders small modal without footer', async () => {
+      const result = await executor.execute({
+        type: 'template',
+        file: resolve(examplesDir, 'templates/modal.php'),
+        class: null,
+        callable: null,
+        args: {
+          title: 'Note',
+          body: 'Small dialog.',
+          size: 'small',
+          showClose: true,
+          showFooter: false,
+        },
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('Note');
+      expect(result.html).toContain('320px');
+      // Footer should not be present
+      expect(result.html).not.toContain('modal-footer');
+    });
+
+    it('renders large modal without close button', async () => {
+      const result = await executor.execute({
+        type: 'template',
+        file: resolve(examplesDir, 'templates/modal.php'),
+        class: null,
+        callable: null,
+        args: {
+          title: 'Delete',
+          body: 'This is permanent.',
+          size: 'large',
+          showClose: false,
+          showFooter: true,
+          confirmLabel: 'Delete',
+        },
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('640px');
+      expect(result.html).toContain('Delete');
+    });
+  });
+
+  // -------------------------------------------------------------------------
+  // UC121-128: Vite plugin virtual module generation
+  // -------------------------------------------------------------------------
+  describe('Vite plugin: UC121-UC128 virtual modules', () => {
+    const plugin = storybookPhpPlugin({});
+    const resolveId = (plugin as any).resolveId.bind(plugin);
+    const load = (plugin as any).load.bind(plugin);
+
+    it('generates template module for breadcrumb template', () => {
+      const id = resolveId('../templates/breadcrumb.php', resolve(examplesDir, 'templates/breadcrumb.stories.ts'));
+      const code = load(id);
+      expect(code).toContain("__type: 'template'");
+    });
+
+    it('generates template module for modal template', () => {
+      const id = resolveId('../templates/modal.php', resolve(examplesDir, 'templates/modal.stories.ts'));
+      const code = load(id);
+      expect(code).toContain("__type: 'template'");
+    });
+  });
+
+  // -------------------------------------------------------------------------
+  // Parser: new fixture metadata
+  // -------------------------------------------------------------------------
+  describe('Parser: UC121-UC128 fixture metadata', () => {
+    it('parses EnumConstant fixture', () => {
+      const meta = parsePhpFile(fixture('EnumConstant.php'));
+      const cls = meta.classes.find(c => c.name === 'EnumConstant')!;
+      expect(cls.isEnum).toBe(true);
+      expect(cls.enumCases).toEqual(['Success', 'Warning', 'Danger']);
+      const badge = cls.methods.find(m => m.name === 'badge')!;
+      expect(badge.isStatic).toBe(false);
+      const all = cls.methods.find(m => m.name === 'all')!;
+      expect(all.isStatic).toBe(true);
+    });
+
+    it('parses DeepInheritance fixture', () => {
+      const meta = parsePhpFile(fixture('DeepInheritance.php'));
+      expect(meta.classes).toHaveLength(3);
+      const base = meta.classes.find(c => c.name === 'BaseWidget')!;
+      expect(base.isAbstract).toBe(true);
+      const detail = meta.classes.find(c => c.name === 'DetailWidget')!;
+      expect(detail.extends).toBe('InfoWidget');
+      expect(detail.constructorParams).toHaveLength(4);
+    });
+
+    it('parses GeneratorFunc fixture', () => {
+      const meta = parsePhpFile(fixture('GeneratorFunc.php'));
+      expect(meta.functions).toHaveLength(2);
+      expect(meta.functions[0]!.name).toBe('generateList');
+      expect(meta.functions[0]!.returnType).toBe('\\Generator');
+      expect(meta.functions[1]!.name).toBe('generateTable');
+      expect(meta.functions[1]!.returnType).toBe('\\Generator');
+    });
+
+    it('parses NowdocCard fixture', () => {
+      const meta = parsePhpFile(fixture('NowdocCard.php'));
+      const cls = meta.classes.find(c => c.name === 'NowdocCard')!;
+      expect(cls).toBeDefined();
+      expect(cls.constructorParams).toHaveLength(3);
+      expect(cls.methods[0]!.name).toBe('render');
+    });
+
+    it('parses PrivateConstruct fixture', () => {
+      const meta = parsePhpFile(fixture('PrivateConstruct.php'));
+      const cls = meta.classes.find(c => c.name === 'PrivateConstruct')!;
+      expect(cls.constructorParams).toHaveLength(3);
+      // private constructor params
+      const typeParam = cls.constructorParams.find(p => p.name === 'type')!;
+      expect(typeParam.visibility).toBe('private');
+      // Static methods only (private html() excluded since it's private but still extracted)
+      const publicStatic = cls.methods.filter(m => m.isStatic && m.visibility === 'public');
+      expect(publicStatic).toHaveLength(3);
+    });
+
+    it('parses MultiEnum fixture with two enums', () => {
+      const meta = parsePhpFile(fixture('MultiEnum.php'));
+      expect(meta.classes).toHaveLength(2);
+
+      const textAlign = meta.classes.find(c => c.name === 'TextAlign')!;
+      expect(textAlign.isEnum).toBe(true);
+      expect(textAlign.enumCases).toEqual(['Left', 'Center', 'Right']);
+
+      const fontWeight = meta.classes.find(c => c.name === 'FontWeight')!;
+      expect(fontWeight.isEnum).toBe(true);
+      expect(fontWeight.enumCases).toEqual(['Light', 'Normal', 'Bold', 'Black']);
+    });
+
+    it('parses AbstractFactory fixture', () => {
+      const meta = parsePhpFile(fixture('AbstractFactory.php'));
+      expect(meta.classes).toHaveLength(2);
+
+      const abstract = meta.classes.find(c => c.name === 'AbstractFactory')!;
+      expect(abstract.isAbstract).toBe(true);
+      expect(abstract.constructorParams).toHaveLength(2);
+      const staticMethods = abstract.methods.filter(m => m.isStatic);
+      expect(staticMethods).toHaveLength(2);
+      expect(staticMethods.map(m => m.name).sort()).toEqual(['outline', 'pill']);
+
+      const concrete = meta.classes.find(c => c.name === 'ConcreteBadge')!;
+      expect(concrete.isAbstract).toBe(false);
+      expect(concrete.extends).toBe('AbstractFactory');
+    });
+  });
+
+  // -------------------------------------------------------------------------
+  // UC129: Abstract class with static factory methods
+  // -------------------------------------------------------------------------
+  describe('UC129: Abstract class with static factory methods', () => {
+    it('renders AbstractFactory::pill (static on abstract class)', async () => {
+      const result = await executor.execute({
+        type: 'staticMethod',
+        file: example('AbstractFactory.php'),
+        class: 'App\\Components\\AbstractFactory',
+        callable: 'pill',
+        args: { label: 'Active', color: '#22c55e' },
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('Active');
+      expect(result.html).toContain('pill');
+    });
+
+    it('renders AbstractFactory::outline (static on abstract class)', async () => {
+      const result = await executor.execute({
+        type: 'staticMethod',
+        file: example('AbstractFactory.php'),
+        class: 'App\\Components\\AbstractFactory',
+        callable: 'outline',
+        args: { label: 'Draft' },
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('Draft');
+      expect(result.html).toContain('outline');
+    });
+
+    it('renders ConcreteBadge (subclass instance method)', async () => {
+      const result = await executor.execute({
+        type: 'classMethod',
+        file: example('AbstractFactory.php'),
+        class: 'App\\Components\\ConcreteBadge',
+        callable: 'render',
+        args: { label: 'Online', color: '#22c55e' },
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('Online');
+      expect(result.html).toContain('concrete-badge');
+    });
+
+    it('generates virtual module for abstract static method (pill)', () => {
+      const plugin = storybookPhpPlugin({});
+      const resolveId = (plugin as any).resolveId.bind(plugin);
+      const load = (plugin as any).load.bind(plugin);
+      const id = resolveId('./AbstractFactory.php@pill', example('AbstractFactory.stories.ts'));
+      const code = load(id);
+      // Should contain AbstractFactory for the static method
+      expect(code).toContain('AbstractFactory');
+      expect(code).toContain("__type: 'staticMethod'");
+      // Should NOT contain ConcreteBadge (pill is not on ConcreteBadge)
+      expect(code).not.toContain('ConcreteBadge');
+    });
+
+    it('generates virtual module for render (only concrete subclass)', () => {
+      const plugin = storybookPhpPlugin({});
+      const resolveId = (plugin as any).resolveId.bind(plugin);
+      const load = (plugin as any).load.bind(plugin);
+      const id = resolveId('./AbstractFactory.php@render', example('AbstractFactoryBadge.stories.ts'));
+      const code = load(id);
+      // Should contain ConcreteBadge for the instance method
+      expect(code).toContain('ConcreteBadge');
+      expect(code).toContain("__type: 'classMethod'");
+      // Should NOT export AbstractFactory as classMethod (it's abstract)
+      expect(code).not.toContain("export const AbstractFactory");
+    });
+  });
+
+  // -------------------------------------------------------------------------
+  // UC130: Mixed visibility constructor (public + private + protected promoted)
+  // -------------------------------------------------------------------------
+  describe('UC130: Mixed visibility constructor', () => {
+    it('renders MixedVisibility with defaults', async () => {
+      const result = await executor.execute({
+        type: 'classMethod',
+        file: example('MixedVisibility.php'),
+        class: 'App\\Components\\MixedVisibility',
+        callable: 'render',
+        args: { label: 'Hello' },
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('mixed-vis');
+      expect(result.html).toContain('Hello');
+    });
+
+    it('renders MixedVisibility with truncation', async () => {
+      const result = await executor.execute({
+        type: 'classMethod',
+        file: example('MixedVisibility.php'),
+        class: 'App\\Components\\MixedVisibility',
+        callable: 'render',
+        args: { label: 'This is a very long label that exceeds the max length', truncate: true, maxLength: 20 },
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('...');
+    });
+
+    it('renders MixedVisibility with private variant', async () => {
+      const result = await executor.execute({
+        type: 'classMethod',
+        file: example('MixedVisibility.php'),
+        class: 'App\\Components\\MixedVisibility',
+        callable: 'render',
+        args: { label: 'Test', variant: 'primary' },
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('mixed-vis-primary');
+    });
+
+    it('parses MixedVisibility with mixed visibility params', () => {
+      const meta = parsePhpFile(example('MixedVisibility.php'));
+      const cls = meta.classes.find(c => c.name === 'MixedVisibility')!;
+      expect(cls).toBeDefined();
+      expect(cls.constructorParams).toHaveLength(4);
+
+      const label = cls.constructorParams.find(p => p.name === 'label')!;
+      expect(label.visibility).toBe('public');
+      expect(label.isPromoted).toBe(true);
+
+      const variant = cls.constructorParams.find(p => p.name === 'variant')!;
+      expect(variant.visibility).toBe('private');
+      expect(variant.isPromoted).toBe(true);
+
+      const maxLength = cls.constructorParams.find(p => p.name === 'maxLength')!;
+      expect(maxLength.visibility).toBe('protected');
+      expect(maxLength.isPromoted).toBe(true);
+
+      const truncate = cls.constructorParams.find(p => p.name === 'truncate')!;
+      expect(truncate.visibility).toBe('public');
+    });
+
+    it('generates virtual module for MixedVisibility', () => {
+      const plugin = storybookPhpPlugin({});
+      const resolveId = (plugin as any).resolveId.bind(plugin);
+      const load = (plugin as any).load.bind(plugin);
+      const id = resolveId('./MixedVisibility.php@render', example('MixedVisibility.stories.ts'));
+      const code = load(id);
+      expect(code).toContain("__type: 'classMethod'");
+      expect(code).toContain('label:');
+      expect(code).toContain('variant:');
+      expect(code).toContain('maxLength:');
+      expect(code).toContain('truncate:');
+    });
+  });
+
+  // -------------------------------------------------------------------------
+  // UC131: No-parameter render method (constructor-only args)
+  // -------------------------------------------------------------------------
+  describe('UC131: No-parameter render method', () => {
+    it('renders NoParamClock with default timezone', async () => {
+      const result = await executor.execute({
+        type: 'classMethod',
+        file: example('NoParamClock.php'),
+        class: 'App\\Components\\NoParamClock',
+        callable: 'render',
+        args: { timezone: 'UTC' },
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('clock');
+      expect(result.html).toContain('UTC');
+    });
+
+    it('renders NoParamClock with custom timezone', async () => {
+      const result = await executor.execute({
+        type: 'classMethod',
+        file: example('NoParamClock.php'),
+        class: 'App\\Components\\NoParamClock',
+        callable: 'render',
+        args: { timezone: 'Asia/Tokyo', format: 'Y-m-d H:i' },
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('clock');
+      expect(result.html).toContain('Asia/Tokyo');
+    });
+
+    it('parses NoParamClock render method with no params', () => {
+      const meta = parsePhpFile(example('NoParamClock.php'));
+      const cls = meta.classes.find(c => c.name === 'NoParamClock')!;
+      expect(cls).toBeDefined();
+      expect(cls.constructorParams).toHaveLength(2);
+      const render = cls.methods.find(m => m.name === 'render')!;
+      expect(render).toBeDefined();
+      expect(render.params).toHaveLength(0);
+    });
+
+    it('generates virtual module with empty callableArgs', () => {
+      const plugin = storybookPhpPlugin({});
+      const resolveId = (plugin as any).resolveId.bind(plugin);
+      const load = (plugin as any).load.bind(plugin);
+      const id = resolveId('./NoParamClock.php@render', example('NoParamClock.stories.ts'));
+      const code = load(id);
+      expect(code).toContain("__type: 'classMethod'");
+      expect(code).toContain('timezone:');   // ctor arg
+      expect(code).toContain('format:');     // ctor arg
+      expect(code).toContain('__callableArgs: {}'); // no method args
+    });
+  });
+
+  // -------------------------------------------------------------------------
+  // UC132: Complex array default values in standalone function
+  // -------------------------------------------------------------------------
+  describe('UC132: Complex array defaults in function', () => {
+    it('renders complexList with default items', async () => {
+      const result = await executor.execute({
+        type: 'function',
+        file: example('complexList.php'),
+        class: null,
+        callable: 'App\\Helpers\\complexList',
+        args: {},
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('complex-list');
+      expect(result.html).toContain('Item 1');
+      expect(result.html).toContain('Item 2');
+      expect(result.html).toContain('Item 3');
+    });
+
+    it('renders complexList with custom items', async () => {
+      const result = await executor.execute({
+        type: 'function',
+        file: example('complexList.php'),
+        class: null,
+        callable: 'App\\Helpers\\complexList',
+        args: { items: ['Alpha', 'Beta'], style: 'decimal' },
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('Alpha');
+      expect(result.html).toContain('Beta');
+      expect(result.html).toContain('decimal');
+    });
+
+    it('parses complexList function with array default', () => {
+      const meta = parsePhpFile(example('complexList.php'));
+      expect(meta.functions).toHaveLength(1);
+      const fn = meta.functions[0]!;
+      expect(fn.name).toBe('complexList');
+      expect(fn.fqn).toBe('App\\Helpers\\complexList');
+      expect(fn.params).toHaveLength(3);
+
+      const items = fn.params.find(p => p.name === 'items')!;
+      expect(items.type).toBe('array');
+      expect(items.required).toBe(false);
+      expect(items.default).toBeDefined();
+    });
+
+    it('generates virtual module for complexList', () => {
+      const plugin = storybookPhpPlugin({});
+      const resolveId = (plugin as any).resolveId.bind(plugin);
+      const load = (plugin as any).load.bind(plugin);
+      const id = resolveId('./complexList.php@complexList', example('complexList.stories.ts'));
+      const code = load(id);
+      expect(code).toContain("__type: 'function'");
+      expect(code).toContain('App\\\\Helpers\\\\complexList');
+      expect(code).toContain('items:');
+      expect(code).toContain('style:');
+      expect(code).toContain('compact:');
+    });
+  });
+
+  // -------------------------------------------------------------------------
+  // UC133: Enum implementing multiple interfaces
+  // -------------------------------------------------------------------------
+  describe('UC133: Enum implementing multiple interfaces', () => {
+    it('renders EnumMultiInterface::menuItem for Home', async () => {
+      const result = await executor.execute({
+        type: 'enumMethod',
+        file: example('EnumMultiInterface.php'),
+        class: 'App\\Components\\EnumMultiInterface',
+        callable: 'menuItem',
+        args: { _case: 'home' },
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('menu-item-home');
+      expect(result.html).toContain('Home');
+    });
+
+    it('renders EnumMultiInterface::menuItem for Logout', async () => {
+      const result = await executor.execute({
+        type: 'enumMethod',
+        file: example('EnumMultiInterface.php'),
+        class: 'App\\Components\\EnumMultiInterface',
+        callable: 'menuItem',
+        args: { _case: 'logout' },
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('menu-item-logout');
+      expect(result.html).toContain('Log Out');
+    });
+
+    it('renders EnumMultiInterface::icon for Settings', async () => {
+      const result = await executor.execute({
+        type: 'enumMethod',
+        file: example('EnumMultiInterface.php'),
+        class: 'App\\Components\\EnumMultiInterface',
+        callable: 'icon',
+        args: { _case: 'settings' },
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('enum-icon-settings');
+    });
+
+    it('parses EnumMultiInterface with multiple implements', () => {
+      const meta = parsePhpFile(example('EnumMultiInterface.php'));
+      const cls = meta.classes.find(c => c.name === 'EnumMultiInterface')!;
+      expect(cls).toBeDefined();
+      expect(cls.isEnum).toBe(true);
+      expect(cls.enumBackingType).toBe('string');
+      expect(cls.implements).toContain('HasLabel');
+      expect(cls.implements).toContain('HasIcon');
+      expect(cls.enumCases).toEqual(['Home', 'Settings', 'Profile', 'Logout']);
+      expect(cls.methods).toHaveLength(3);
+    });
+
+    it('generates virtual module for enum instance method', () => {
+      const plugin = storybookPhpPlugin({});
+      const resolveId = (plugin as any).resolveId.bind(plugin);
+      const load = (plugin as any).load.bind(plugin);
+      const id = resolveId('./EnumMultiInterface.php@menuItem', example('EnumMultiInterface.stories.ts'));
+      const code = load(id);
+      expect(code).toContain("__type: 'enumMethod'");
+      expect(code).toContain('_case:');
+    });
+  });
+
+  // -------------------------------------------------------------------------
+  // UC134: Nested template (template including sub-template)
+  // -------------------------------------------------------------------------
+  describe('UC134: Nested template with include', () => {
+    it('renders nested template with badge partial', async () => {
+      const result = await executor.execute({
+        type: 'template',
+        file: example('templates/nested.php'),
+        class: null,
+        callable: null,
+        args: { heading: 'Features', badgeText: 'New', badgeColor: '#22c55e', content: 'Nested content here' },
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('nested-template');
+      expect(result.html).toContain('Features');
+      expect(result.html).toContain('partial-badge');
+      expect(result.html).toContain('New');
+      expect(result.html).toContain('Nested content here');
+    });
+
+    it('renders nested template without badge', async () => {
+      const result = await executor.execute({
+        type: 'template',
+        file: example('templates/nested.php'),
+        class: null,
+        callable: null,
+        args: { heading: 'Simple', content: 'No badge' },
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('nested-template');
+      expect(result.html).toContain('Simple');
+      expect(result.html).not.toContain('partial-badge');
+    });
+  });
+
+  // -------------------------------------------------------------------------
+  // UC135: Class with both static factory AND instance methods
+  // -------------------------------------------------------------------------
+  describe('UC135: Static factory + instance method on same class', () => {
+    it('renders StaticInstance via instance render()', async () => {
+      const result = await executor.execute({
+        type: 'classMethod',
+        file: example('StaticInstance.php'),
+        class: 'App\\Components\\StaticInstance',
+        callable: 'render',
+        args: { content: 'Instance card', type: 'success' },
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('si-card-success');
+      expect(result.html).toContain('Instance card');
+    });
+
+    it('renders StaticInstance via static fromMarkdown()', async () => {
+      const result = await executor.execute({
+        type: 'staticMethod',
+        file: example('StaticInstance.php'),
+        class: 'App\\Components\\StaticInstance',
+        callable: 'fromMarkdown',
+        args: { text: 'Static content' },
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('si-markdown');
+      expect(result.html).toContain('Static content');
+    });
+
+    it('renders StaticInstance via static fromMarkdown() with bold', async () => {
+      const result = await executor.execute({
+        type: 'staticMethod',
+        file: example('StaticInstance.php'),
+        class: 'App\\Components\\StaticInstance',
+        callable: 'fromMarkdown',
+        args: { text: 'Bold text', bold: true },
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('<strong>Bold text</strong>');
+    });
+
+    it('generates classMethod module for render()', () => {
+      const plugin = storybookPhpPlugin({});
+      const resolveId = (plugin as any).resolveId.bind(plugin);
+      const load = (plugin as any).load.bind(plugin);
+      const id = resolveId('./StaticInstance.php@render', example('StaticInstance.stories.ts'));
+      const code = load(id);
+      expect(code).toContain("__type: 'classMethod'");
+      expect(code).toContain('content:');
+      expect(code).toContain('type:');
+    });
+
+    it('generates staticMethod module for fromMarkdown()', () => {
+      const plugin = storybookPhpPlugin({});
+      const resolveId = (plugin as any).resolveId.bind(plugin);
+      const load = (plugin as any).load.bind(plugin);
+      const id = resolveId('./StaticInstance.php@fromMarkdown', example('StaticInstanceMarkdown.stories.ts'));
+      const code = load(id);
+      expect(code).toContain("__type: 'staticMethod'");
+      expect(code).toContain('text:');
+      expect(code).toContain('bold:');
+    });
+
+    it('parses StaticInstance with both method types', () => {
+      const meta = parsePhpFile(example('StaticInstance.php'));
+      const cls = meta.classes.find(c => c.name === 'StaticInstance')!;
+      expect(cls).toBeDefined();
+      expect(cls.constructorParams).toHaveLength(2);
+      expect(cls.methods).toHaveLength(2);
+
+      const render = cls.methods.find(m => m.name === 'render')!;
+      expect(render.isStatic).toBe(false);
+
+      const fromMarkdown = cls.methods.find(m => m.name === 'fromMarkdown')!;
+      expect(fromMarkdown.isStatic).toBe(true);
+    });
+  });
+
+  // -------------------------------------------------------------------------
+  // Parser: fixture metadata for new patterns
+  // -------------------------------------------------------------------------
+  describe('Parser: UC130-UC135 fixture metadata', () => {
+    it('parses MixedVisibility fixture', () => {
+      const meta = parsePhpFile(fixture('MixedVisibility.php'));
+      const cls = meta.classes[0]!;
+      expect(cls.name).toBe('MixedVisibility');
+      expect(cls.constructorParams).toHaveLength(4);
+      expect(cls.constructorParams[0]!.visibility).toBe('public');
+      expect(cls.constructorParams[1]!.visibility).toBe('private');
+      expect(cls.constructorParams[2]!.visibility).toBe('protected');
+      expect(cls.constructorParams[3]!.visibility).toBe('public');
+    });
+
+    it('parses NoParamClock fixture', () => {
+      const meta = parsePhpFile(fixture('NoParamClock.php'));
+      const cls = meta.classes[0]!;
+      expect(cls.name).toBe('NoParamClock');
+      expect(cls.constructorParams).toHaveLength(2);
+      const render = cls.methods.find(m => m.name === 'render')!;
+      expect(render.params).toHaveLength(0);
+    });
+
+    it('parses ComplexDefaults fixture', () => {
+      const meta = parsePhpFile(fixture('ComplexDefaults.php'));
+      expect(meta.functions).toHaveLength(1);
+      const fn = meta.functions[0]!;
+      expect(fn.name).toBe('complexList');
+      expect(fn.params).toHaveLength(3);
+      expect(fn.params[0]!.type).toBe('array');
+      expect(fn.params[0]!.required).toBe(false);
+    });
+
+    it('parses EnumMultiInterface fixture', () => {
+      const meta = parsePhpFile(fixture('EnumMultiInterface.php'));
+      const cls = meta.classes.find(c => c.name === 'EnumMultiInterface')!;
+      expect(cls.isEnum).toBe(true);
+      expect(cls.implements).toContain('HasLabel');
+      expect(cls.implements).toContain('HasIcon');
+      expect(cls.enumCases).toEqual(['Home', 'Settings', 'Profile', 'Logout']);
+    });
+
+    it('parses StaticInstance fixture', () => {
+      const meta = parsePhpFile(fixture('StaticInstance.php'));
+      const cls = meta.classes[0]!;
+      expect(cls.name).toBe('StaticInstance');
+      const instanceMethods = cls.methods.filter(m => !m.isStatic);
+      const staticMethods = cls.methods.filter(m => m.isStatic);
+      expect(instanceMethods).toHaveLength(1);
+      expect(staticMethods).toHaveLength(1);
+    });
+  });
 });
