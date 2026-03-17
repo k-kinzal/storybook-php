@@ -787,4 +787,141 @@ class Tooltip {
       expect(meta.filePath).toBe('/path/to/file.php');
     });
   });
+
+  // -----------------------------------------------------------------------
+  // Final class
+  // -----------------------------------------------------------------------
+  describe('FinalClass', () => {
+    it('parses final class with isFinal=true', () => {
+      const meta = parsePhpSource(fixture('FinalClass.php'), 'FinalClass.php');
+
+      expect(meta.classes).toHaveLength(1);
+      const cls = meta.classes[0]!;
+      expect(cls.name).toBe('Avatar');
+      expect(cls.isFinal).toBe(true);
+      expect(cls.isAbstract).toBe(false);
+      expect(cls.constructorParams).toHaveLength(3);
+      expect(cls.constructorParams[0]!.name).toBe('name');
+      expect(cls.constructorParams[0]!.type).toBe('string');
+      expect(cls.constructorParams[1]!.name).toBe('size');
+      expect(cls.constructorParams[1]!.type).toBe('int');
+      expect(cls.constructorParams[1]!.default).toBe('48');
+      expect(cls.constructorParams[2]!.name).toBe('imageUrl');
+      expect(cls.constructorParams[2]!.nullable).toBe(true);
+      expect(cls.constructorParams[2]!.default).toBe('null');
+      expect(cls.methods).toHaveLength(1);
+      expect(cls.methods[0]!.name).toBe('render');
+    });
+  });
+
+  // -----------------------------------------------------------------------
+  // Abstract class with concrete subclasses
+  // -----------------------------------------------------------------------
+  describe('AbstractClass', () => {
+    it('parses abstract class and concrete subclasses', () => {
+      const meta = parsePhpSource(fixture('AbstractClass.php'), 'AbstractClass.php');
+
+      expect(meta.classes).toHaveLength(3);
+
+      const base = meta.classes.find((c) => c.name === 'BaseChip')!;
+      expect(base.isAbstract).toBe(true);
+      expect(base.constructorParams).toHaveLength(2);
+      expect(base.constructorParams[0]!.name).toBe('label');
+      expect(base.constructorParams[0]!.visibility).toBe('protected');
+      expect(base.constructorParams[1]!.name).toBe('removable');
+      expect(base.constructorParams[1]!.type).toBe('bool');
+      expect(base.constructorParams[1]!.default).toBe('false');
+      // abstract method + concrete method
+      expect(base.methods).toHaveLength(2);
+      const abstractMethod = base.methods.find((m) => m.name === 'cssClass')!;
+      expect(abstractMethod).toBeDefined();
+      const renderMethod = base.methods.find((m) => m.name === 'render')!;
+      expect(renderMethod).toBeDefined();
+
+      const info = meta.classes.find((c) => c.name === 'InfoChip')!;
+      expect(info.extends).toBe('BaseChip');
+      expect(info.isAbstract).toBe(false);
+
+      const success = meta.classes.find((c) => c.name === 'SuccessChip')!;
+      expect(success.extends).toBe('BaseChip');
+    });
+  });
+
+  // -----------------------------------------------------------------------
+  // Int-backed enum
+  // -----------------------------------------------------------------------
+  describe('IntBackedEnum', () => {
+    it('parses int-backed enum with cases and methods', () => {
+      const meta = parsePhpSource(fixture('IntBackedEnum.php'), 'IntBackedEnum.php');
+
+      expect(meta.classes).toHaveLength(1);
+      const cls = meta.classes[0]!;
+      expect(cls.name).toBe('Priority');
+      expect(cls.isEnum).toBe(true);
+      expect(cls.enumBackingType).toBe('int');
+      expect(cls.enumCases).toEqual(['Low', 'Medium', 'High', 'Critical']);
+      expect(cls.methods).toHaveLength(2);
+      expect(cls.methods[0]!.name).toBe('badge');
+      expect(cls.methods[0]!.returnType).toBe('string');
+      expect(cls.methods[1]!.name).toBe('icon');
+    });
+  });
+
+  // -----------------------------------------------------------------------
+  // Interface with implementing class
+  // -----------------------------------------------------------------------
+  describe('InterfaceImpl', () => {
+    it('parses interface and implementing class', () => {
+      const meta = parsePhpSource(fixture('InterfaceImpl.php'), 'InterfaceImpl.php');
+
+      expect(meta.classes).toHaveLength(2);
+
+      const iface = meta.classes.find((c) => c.name === 'StepRenderer')!;
+      expect(iface).toBeDefined();
+      expect(iface.methods).toHaveLength(1);
+      expect(iface.methods[0]!.name).toBe('renderStep');
+      expect(iface.methods[0]!.params).toHaveLength(3);
+
+      const stepper = meta.classes.find((c) => c.name === 'Stepper')!;
+      expect(stepper.implements).toContain('StepRenderer');
+      expect(stepper.constructorParams).toHaveLength(2);
+      expect(stepper.constructorParams[0]!.name).toBe('current');
+      expect(stepper.constructorParams[0]!.type).toBe('int');
+      expect(stepper.constructorParams[1]!.name).toBe('steps');
+      expect(stepper.constructorParams[1]!.type).toBe('array');
+      expect(stepper.methods).toHaveLength(2);
+    });
+  });
+
+  // -----------------------------------------------------------------------
+  // Static factory methods
+  // -----------------------------------------------------------------------
+  describe('StaticFactory', () => {
+    it('parses class with both static and instance methods', () => {
+      const meta = parsePhpSource(fixture('StaticFactory.php'), 'StaticFactory.php');
+
+      expect(meta.classes).toHaveLength(1);
+      const cls = meta.classes[0]!;
+      expect(cls.name).toBe('Button');
+      expect(cls.constructorParams).toHaveLength(3);
+      expect(cls.constructorParams[0]!.name).toBe('label');
+      expect(cls.constructorParams[1]!.name).toBe('variant');
+      expect(cls.constructorParams[2]!.name).toBe('disabled');
+
+      expect(cls.methods).toHaveLength(3);
+
+      const primary = cls.methods.find((m) => m.name === 'primary')!;
+      expect(primary.isStatic).toBe(true);
+      expect(primary.params).toHaveLength(2);
+      expect(primary.params[0]!.name).toBe('label');
+      expect(primary.params[1]!.name).toBe('disabled');
+      expect(primary.params[1]!.default).toBe('false');
+
+      const secondary = cls.methods.find((m) => m.name === 'secondary')!;
+      expect(secondary.isStatic).toBe(true);
+
+      const render = cls.methods.find((m) => m.name === 'render')!;
+      expect(render.isStatic).toBe(false);
+    });
+  });
 });

@@ -1390,4 +1390,416 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
       expect(code).toContain('_case:');
     });
   });
+
+  // -------------------------------------------------------------------------
+  // UC29: Final class (Avatar)
+  // -------------------------------------------------------------------------
+  describe('UC29: Final class', () => {
+    it('renders Avatar with initials', async () => {
+      const result = await executor.execute({
+        type: 'classMethod',
+        file: example('Avatar.php'),
+        class: 'App\\Components\\Avatar',
+        callable: 'render',
+        args: { name: 'John Doe' },
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('avatar');
+      expect(result.html).toContain('JD');
+    });
+
+    it('renders Avatar with image URL', async () => {
+      const result = await executor.execute({
+        type: 'classMethod',
+        file: example('Avatar.php'),
+        class: 'App\\Components\\Avatar',
+        callable: 'render',
+        args: { name: 'Jane', imageUrl: 'https://example.com/avatar.png', size: 64 },
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('img');
+      expect(result.html).toContain('https://example.com/avatar.png');
+    });
+
+    it('renders Avatar with custom size', async () => {
+      const result = await executor.execute({
+        type: 'classMethod',
+        file: example('Avatar.php'),
+        class: 'App\\Components\\Avatar',
+        callable: 'render',
+        args: { name: 'AB', size: 32 },
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('32px');
+    });
+
+    it('parser detects final class', () => {
+      const meta = parsePhpFile(example('Avatar.php'));
+      expect(meta.classes).toHaveLength(1);
+      expect(meta.classes[0]!.isFinal).toBe(true);
+      expect(meta.classes[0]!.name).toBe('Avatar');
+    });
+  });
+
+  // -------------------------------------------------------------------------
+  // UC30: Abstract class with concrete subclasses (Chip)
+  // -------------------------------------------------------------------------
+  describe('UC30: Abstract class with concrete subclasses', () => {
+    it('renders InfoChip via inherited render()', async () => {
+      const result = await executor.execute({
+        type: 'classMethod',
+        file: example('Chip.php'),
+        class: 'App\\Components\\InfoChip',
+        callable: 'render',
+        args: { label: 'Info Tag' },
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('chip-info');
+      expect(result.html).toContain('Info Tag');
+    });
+
+    it('renders SuccessChip with removable', async () => {
+      const result = await executor.execute({
+        type: 'classMethod',
+        file: example('Chip.php'),
+        class: 'App\\Components\\SuccessChip',
+        callable: 'render',
+        args: { label: 'Approved', removable: true },
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('chip-success');
+      expect(result.html).toContain('Approved');
+      expect(result.html).toContain('&times;');
+    });
+
+    it('renders DangerChip', async () => {
+      const result = await executor.execute({
+        type: 'classMethod',
+        file: example('Chip.php'),
+        class: 'App\\Components\\DangerChip',
+        callable: 'render',
+        args: { label: 'Error' },
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('chip-danger');
+    });
+
+    it('parser detects abstract class and subclasses', () => {
+      const meta = parsePhpFile(example('Chip.php'));
+      const base = meta.classes.find((c) => c.name === 'BaseChip')!;
+      expect(base.isAbstract).toBe(true);
+
+      const info = meta.classes.find((c) => c.name === 'InfoChip')!;
+      expect(info.extends).toBe('BaseChip');
+
+      const danger = meta.classes.find((c) => c.name === 'DangerChip')!;
+      expect(danger.extends).toBe('BaseChip');
+    });
+  });
+
+  // -------------------------------------------------------------------------
+  // UC31: Int-backed enum (Priority)
+  // -------------------------------------------------------------------------
+  describe('UC31: Int-backed enum', () => {
+    it('renders Priority badge with int value', async () => {
+      const result = await executor.execute({
+        type: 'enumMethod',
+        file: example('Priority.php'),
+        class: 'App\\Components\\Priority',
+        callable: 'badge',
+        args: { _case: 3 },
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('priority-High');
+      expect(result.html).toContain('High');
+    });
+
+    it('renders Priority Low', async () => {
+      const result = await executor.execute({
+        type: 'enumMethod',
+        file: example('Priority.php'),
+        class: 'App\\Components\\Priority',
+        callable: 'badge',
+        args: { _case: 1 },
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('priority-Low');
+    });
+
+    it('renders Priority icon method', async () => {
+      const result = await executor.execute({
+        type: 'enumMethod',
+        file: example('Priority.php'),
+        class: 'App\\Components\\Priority',
+        callable: 'icon',
+        args: { _case: 4 },
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('Critical');
+    });
+
+    it('parser detects int-backed enum', () => {
+      const meta = parsePhpFile(example('Priority.php'));
+      const cls = meta.classes[0]!;
+      expect(cls.isEnum).toBe(true);
+      expect(cls.enumBackingType).toBe('int');
+      expect(cls.enumCases).toEqual(['Low', 'Medium', 'High', 'Critical']);
+      expect(cls.methods).toHaveLength(2);
+    });
+  });
+
+  // -------------------------------------------------------------------------
+  // UC32: Static factory methods (Button)
+  // -------------------------------------------------------------------------
+  describe('UC32: Static factory methods', () => {
+    it('renders Button.primary() static factory', async () => {
+      const result = await executor.execute({
+        type: 'staticMethod',
+        file: example('Button.php'),
+        class: 'App\\Components\\Button',
+        callable: 'primary',
+        args: { label: 'Click Me' },
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('btn-primary');
+      expect(result.html).toContain('Click Me');
+    });
+
+    it('renders Button.secondary() static factory', async () => {
+      const result = await executor.execute({
+        type: 'staticMethod',
+        file: example('Button.php'),
+        class: 'App\\Components\\Button',
+        callable: 'secondary',
+        args: { label: 'Cancel' },
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('btn-secondary');
+      expect(result.html).toContain('Cancel');
+    });
+
+    it('renders Button.primary() with disabled', async () => {
+      const result = await executor.execute({
+        type: 'staticMethod',
+        file: example('Button.php'),
+        class: 'App\\Components\\Button',
+        callable: 'primary',
+        args: { label: 'Disabled', disabled: true },
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('disabled');
+    });
+
+    it('renders Button instance render()', async () => {
+      const result = await executor.execute({
+        type: 'classMethod',
+        file: example('Button.php'),
+        class: 'App\\Components\\Button',
+        callable: 'render',
+        args: { label: 'Outline', variant: 'outline' },
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('btn-outline');
+    });
+  });
+
+  // -------------------------------------------------------------------------
+  // UC33: Interface + implementing class (Stepper)
+  // -------------------------------------------------------------------------
+  describe('UC33: Interface implementing class', () => {
+    it('renders Stepper with steps', async () => {
+      const result = await executor.execute({
+        type: 'classMethod',
+        file: example('Stepper.php'),
+        class: 'App\\Components\\Stepper',
+        callable: 'render',
+        args: { current: 2, steps: ['Cart', 'Shipping', 'Payment'] },
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('stepper');
+      expect(result.html).toContain('Cart');
+      expect(result.html).toContain('Shipping');
+      expect(result.html).toContain('Payment');
+      expect(result.html).toContain('step-active');
+      expect(result.html).toContain('step-inactive');
+    });
+
+    it('renders Stepper empty state', async () => {
+      const result = await executor.execute({
+        type: 'classMethod',
+        file: example('Stepper.php'),
+        class: 'App\\Components\\Stepper',
+        callable: 'render',
+        args: { steps: [] },
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('stepper-empty');
+    });
+
+    it('parser detects implements', () => {
+      const meta = parsePhpFile(example('Stepper.php'));
+      const stepper = meta.classes.find((c) => c.name === 'Stepper')!;
+      expect(stepper.implements).toContain('StepRenderer');
+    });
+  });
+
+  // -------------------------------------------------------------------------
+  // UC34: Rating with static + instance methods
+  // -------------------------------------------------------------------------
+  describe('UC34: Rating component', () => {
+    it('renders Rating stars', async () => {
+      const result = await executor.execute({
+        type: 'classMethod',
+        file: example('Rating.php'),
+        class: 'App\\Components\\Rating',
+        callable: 'render',
+        args: { value: 3, max: 5 },
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('rating');
+      expect(result.html).toContain('(3/5)');
+    });
+
+    it('renders Rating::fromPercent()', async () => {
+      const result = await executor.execute({
+        type: 'staticMethod',
+        file: example('Rating.php'),
+        class: 'App\\Components\\Rating',
+        callable: 'fromPercent',
+        args: { percent: 80 },
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('rating');
+      expect(result.html).toContain('(4/5)');
+    });
+  });
+
+  // -------------------------------------------------------------------------
+  // UC35: Table template with complex array data
+  // -------------------------------------------------------------------------
+  describe('UC35: Table template', () => {
+    it('renders table with headers and rows', async () => {
+      const result = await executor.execute({
+        type: 'template',
+        file: example('templates/table.php'),
+        class: null,
+        callable: null,
+        args: {
+          caption: 'Users',
+          headers: ['Name', 'Email'],
+          rows: [['Alice', 'alice@test.com'], ['Bob', 'bob@test.com']],
+          striped: false,
+        },
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('Users');
+      expect(result.html).toContain('Alice');
+      expect(result.html).toContain('bob@test.com');
+      expect(result.html).toContain('<th');
+      expect(result.html).toContain('<td');
+    });
+
+    it('renders striped table', async () => {
+      const result = await executor.execute({
+        type: 'template',
+        file: example('templates/table.php'),
+        class: null,
+        callable: null,
+        args: {
+          caption: 'Items',
+          headers: ['ID', 'Name'],
+          rows: [[1, 'A'], [2, 'B'], [3, 'C']],
+          striped: true,
+        },
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('Items');
+      expect(result.html).toContain('#f9fafb');
+    });
+
+    it('renders empty table', async () => {
+      const result = await executor.execute({
+        type: 'template',
+        file: example('templates/table.php'),
+        class: null,
+        callable: null,
+        args: {
+          headers: ['Col'],
+          rows: [],
+        },
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('<table');
+      expect(result.html).toContain('Col');
+    });
+  });
+
+  // -------------------------------------------------------------------------
+  // Vite plugin: new example virtual modules
+  // -------------------------------------------------------------------------
+  describe('Vite plugin: expanded example virtual modules', () => {
+    const plugin = storybookPhpPlugin();
+    const resolveId = (plugin as any).resolveId.bind(plugin);
+    const load = (plugin as any).load.bind(plugin);
+
+    it('UC29: Avatar@render generates classMethod for final class', () => {
+      const id = resolveId('./Avatar.php@render', example('Avatar.php'));
+      const code = load(id);
+      expect(code).toContain("__type: 'classMethod'");
+      expect(code).toContain('Avatar');
+      expect(code).toContain('name:');
+      expect(code).toContain('size:');
+      expect(code).toContain('imageUrl:');
+    });
+
+    it('UC30: Chip@render generates classMethod for all concrete subclasses', () => {
+      const id = resolveId('./Chip.php@render', example('Chip.php'));
+      const code = load(id);
+      // Should export InfoChip, SuccessChip, DangerChip (all inherit render from BaseChip)
+      expect(code).toContain('InfoChip');
+      expect(code).toContain('SuccessChip');
+      expect(code).toContain('DangerChip');
+      expect(code).toContain("__type: 'classMethod'");
+    });
+
+    it('UC31: Priority@badge generates enumMethod for int-backed enum', () => {
+      const id = resolveId('./Priority.php@badge', example('Priority.php'));
+      const code = load(id);
+      expect(code).toContain("__type: 'enumMethod'");
+      expect(code).toContain('Priority');
+      expect(code).toContain('_case:');
+    });
+
+    it('UC32: Button@primary generates staticMethod', () => {
+      const id = resolveId('./Button.php@primary', example('Button.php'));
+      const code = load(id);
+      expect(code).toContain("__type: 'staticMethod'");
+      expect(code).toContain('label:');
+      expect(code).toContain('disabled:');
+    });
+
+    it('UC32: Button@render generates classMethod', () => {
+      const id = resolveId('./Button.php@render', example('Button.php'));
+      const code = load(id);
+      expect(code).toContain("__type: 'classMethod'");
+      expect(code).toContain('label:');
+      expect(code).toContain('variant:');
+    });
+
+    it('UC33: Stepper@render generates classMethod for interface implementor', () => {
+      const id = resolveId('./Stepper.php@render', example('Stepper.php'));
+      const code = load(id);
+      expect(code).toContain("__type: 'classMethod'");
+      expect(code).toContain('Stepper');
+      expect(code).toContain('current:');
+      expect(code).toContain('steps:');
+    });
+
+    it('UC34: Rating@fromPercent generates staticMethod', () => {
+      const id = resolveId('./Rating.php@fromPercent', example('Rating.php'));
+      const code = load(id);
+      expect(code).toContain("__type: 'staticMethod'");
+      expect(code).toContain('percent:');
+    });
+  });
 });
