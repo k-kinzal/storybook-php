@@ -442,12 +442,24 @@ npm run lint
 npm run typecheck
 ```
 
-### Example Project
+### Example Projects
 
-The `examples/basic/` directory contains a working example. To run it:
+| Directory | Port | Description |
+|-----------|------|-------------|
+| `examples/basic/` | 6006 | Introductory examples — each callable type's simplest form |
+| `examples/advanced/` | 6007 | Advanced OOP, design patterns, templates |
+| `examples/php80/` | 6008 | PHP 8.0: union types, match, Stringable, mixed |
+| `examples/php81/` | 6009 | PHP 8.1: enums, readonly, intersection types |
+| `examples/php82/` | 6010 | PHP 8.2: readonly classes, DNF types |
+| `examples/php83/` | 6011 | PHP 8.3: typed constants, #[Override] |
+| `examples/php84/` | 6012 | PHP 8.4: property hooks, asymmetric visibility |
+| `examples/php85/` | 6013 | PHP 8.5: pipe operator |
+| `examples/laravel/` | 6014 | Laravel Blade components |
+
+To run any example:
 
 ```bash
-cd examples/basic
+cd examples/basic  # or any other directory
 npm install
 npm run storybook
 ```

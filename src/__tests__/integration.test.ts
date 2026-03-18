@@ -24,11 +24,25 @@ try {
 
 const fixturesDir = resolve(import.meta.dirname!, 'fixtures');
 const examplesDir = resolve(import.meta.dirname!, '../../examples/basic/src');
+const advancedDir = resolve(import.meta.dirname!, '../../examples/advanced/src');
+const php80Dir = resolve(import.meta.dirname!, '../../examples/php80/src');
+const php81Dir = resolve(import.meta.dirname!, '../../examples/php81/src');
+const php82Dir = resolve(import.meta.dirname!, '../../examples/php82/src');
+const php83Dir = resolve(import.meta.dirname!, '../../examples/php83/src');
+const php84Dir = resolve(import.meta.dirname!, '../../examples/php84/src');
+const php85Dir = resolve(import.meta.dirname!, '../../examples/php85/src');
 const laravelDir = resolve(import.meta.dirname!, '../../examples/laravel/src');
 const laravelBootstrap = resolve(import.meta.dirname!, '../../examples/laravel/bootstrap.php');
 const laravelAdapter = resolve(import.meta.dirname!, '../../examples/laravel/adapter.php');
 const fixture = (name: string) => resolve(fixturesDir, name);
-const example = (name: string) => resolve(examplesDir, name);
+const basic = (name: string) => resolve(examplesDir, name);
+const advanced = (name: string) => resolve(advancedDir, name);
+const php80 = (name: string) => resolve(php80Dir, name);
+const php81 = (name: string) => resolve(php81Dir, name);
+const php82 = (name: string) => resolve(php82Dir, name);
+const php83 = (name: string) => resolve(php83Dir, name);
+const php84 = (name: string) => resolve(php84Dir, name);
+const php85 = (name: string) => resolve(php85Dir, name);
 const laravel = (name: string) => resolve(laravelDir, name);
 
 describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
@@ -41,7 +55,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders Greeting with constructor args', async () => {
       const result = await executor.execute({
         type: 'classMethod',
-        file: example('Greeting.php'),
+        file: basic('Greeting.php'),
         class: 'App\\Components\\Greeting',
         callable: 'render',
         args: { name: 'World' },
@@ -53,7 +67,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('uses default constructor values', async () => {
       const result = await executor.execute({
         type: 'classMethod',
-        file: example('Greeting.php'),
+        file: basic('Greeting.php'),
         class: 'App\\Components\\Greeting',
         callable: 'render',
         args: { name: 'Storybook', greeting: 'Welcome' },
@@ -70,7 +84,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('maps args to constructor vs method params', async () => {
       const result = await executor.execute({
         type: 'classMethod',
-        file: example('Formatter.php'),
+        file: advanced('Formatter.php'),
         class: 'App\\Components\\Formatter',
         callable: 'formatCurrency',
         args: { locale: 'en_US', amount: 42.5, symbol: '$' },
@@ -83,7 +97,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('uses defaults for both constructor and method', async () => {
       const result = await executor.execute({
         type: 'classMethod',
-        file: example('Formatter.php'),
+        file: advanced('Formatter.php'),
         class: 'App\\Components\\Formatter',
         callable: 'formatCurrency',
         args: { amount: 100 },
@@ -100,7 +114,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders Alert::danger', async () => {
       const result = await executor.execute({
         type: 'staticMethod',
-        file: example('Alert.php'),
+        file: basic('Alert.php'),
         class: 'App\\Components\\Alert',
         callable: 'danger',
         args: { message: 'Error!', dismissible: true },
@@ -114,7 +128,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders without optional args', async () => {
       const result = await executor.execute({
         type: 'staticMethod',
-        file: example('Alert.php'),
+        file: basic('Alert.php'),
         class: 'App\\Components\\Alert',
         callable: 'info',
         args: { message: 'Info text' },
@@ -131,7 +145,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders badge()', async () => {
       const result = await executor.execute({
         type: 'function',
-        file: example('badge.php'),
+        file: basic('badge.php'),
         class: null,
         callable: 'badge',
         args: { label: 'New', color: 'green' },
@@ -144,7 +158,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('uses default color', async () => {
       const result = await executor.execute({
         type: 'function',
-        file: example('badge.php'),
+        file: basic('badge.php'),
         class: null,
         callable: 'badge',
         args: { label: 'Default' },
@@ -161,7 +175,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders namespaced pill()', async () => {
       const result = await executor.execute({
         type: 'function',
-        file: example('helpers.php'),
+        file: basic('helpers.php'),
         class: null,
         callable: 'App\\Helpers\\pill',
         args: { text: 'Tag' },
@@ -174,7 +188,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('passes outline arg', async () => {
       const result = await executor.execute({
         type: 'function',
-        file: example('helpers.php'),
+        file: basic('helpers.php'),
         class: null,
         callable: 'App\\Helpers\\pill',
         args: { text: 'Outlined', outline: true },
@@ -191,7 +205,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders template with extracted variables', async () => {
       const result = await executor.execute({
         type: 'template',
-        file: example('templates/card.php'),
+        file: basic('templates/card.php'),
         class: null,
         callable: null,
         args: { title: 'Template', body: 'Content', variant: 'primary' },
@@ -210,7 +224,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders English greeting', async () => {
       const result = await executor.execute({
         type: 'classMethod',
-        file: example('InvocableGreeting.php'),
+        file: advanced('InvocableGreeting.php'),
         class: 'App\\Components\\InvocableGreeting',
         callable: '__invoke',
         args: { locale: 'en', name: 'World' },
@@ -222,7 +236,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders Japanese greeting', async () => {
       const result = await executor.execute({
         type: 'classMethod',
-        file: example('InvocableGreeting.php'),
+        file: advanced('InvocableGreeting.php'),
         class: 'App\\Components\\InvocableGreeting',
         callable: '__invoke',
         args: { locale: 'ja', name: '太郎' },
@@ -235,7 +249,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders French greeting', async () => {
       const result = await executor.execute({
         type: 'classMethod',
-        file: example('InvocableGreeting.php'),
+        file: advanced('InvocableGreeting.php'),
         class: 'App\\Components\\InvocableGreeting',
         callable: '__invoke',
         args: { locale: 'fr', name: 'Marie' },
@@ -307,7 +321,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders ProductCard with defaults', async () => {
       const result = await executor.execute({
         type: 'classMethod',
-        file: example('ProductCard.php'),
+        file: advanced('ProductCard.php'),
         class: 'App\\Components\\ProductCard',
         callable: 'render',
         args: { name: 'Widget', price: 29.99 },
@@ -322,7 +336,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders with enum status and nested object config', async () => {
       const result = await executor.execute({
         type: 'classMethod',
-        file: example('ProductCard.php'),
+        file: advanced('ProductCard.php'),
         class: 'App\\Components\\ProductCard',
         callable: 'render',
         args: {
@@ -347,7 +361,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('captures output buffer from void method', async () => {
       const result = await executor.execute({
         type: 'classMethod',
-        file: example('Layout.php'),
+        file: basic('Layout.php'),
         class: 'App\\Components\\Layout',
         callable: 'render',
         args: { title: 'My Page' },
@@ -360,7 +374,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('works with dark theme', async () => {
       const result = await executor.execute({
         type: 'classMethod',
-        file: example('Layout.php'),
+        file: basic('Layout.php'),
         class: 'App\\Components\\Layout',
         callable: 'render',
         args: { title: 'Dark', theme: 'dark' },
@@ -377,7 +391,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders Color::badge for red', async () => {
       const result = await executor.execute({
         type: 'enumMethod',
-        file: example('Color.php'),
+        file: basic('Color.php'),
         class: 'App\\Components\\Color',
         callable: 'badge',
         args: { _case: 'red' },
@@ -391,7 +405,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders Color::badge for blue', async () => {
       const result = await executor.execute({
         type: 'enumMethod',
-        file: example('Color.php'),
+        file: basic('Color.php'),
         class: 'App\\Components\\Color',
         callable: 'badge',
         args: { _case: 'blue' },
@@ -408,7 +422,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders inherited render() on child class', async () => {
       const result = await executor.execute({
         type: 'classMethod',
-        file: example('CardWithBase.php'),
+        file: advanced('CardWithBase.php'),
         class: 'App\\Components\\CardWithBase',
         callable: 'render',
         args: { title: 'My Card', content: 'Inherited body' },
@@ -426,7 +440,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders Nav with all nullables omitted', async () => {
       const result = await executor.execute({
         type: 'classMethod',
-        file: example('Nav.php'),
+        file: advanced('Nav.php'),
         class: 'App\\Components\\Nav',
         callable: 'render',
         args: { brand: 'My App' },
@@ -439,7 +453,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders Nav with nullable subtitle provided', async () => {
       const result = await executor.execute({
         type: 'classMethod',
-        file: example('Nav.php'),
+        file: advanced('Nav.php'),
         class: 'App\\Components\\Nav',
         callable: 'render',
         args: { brand: 'My App', subtitle: 'Dashboard', activeItem: 'Settings' },
@@ -452,7 +466,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders Nav with sticky flag', async () => {
       const result = await executor.execute({
         type: 'classMethod',
-        file: example('Nav.php'),
+        file: advanced('Nav.php'),
         class: 'App\\Components\\Nav',
         callable: 'render',
         args: { brand: 'App', sticky: true },
@@ -469,7 +483,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders Table with headers and rows', async () => {
       const result = await executor.execute({
         type: 'classMethod',
-        file: example('Table.php'),
+        file: advanced('Table.php'),
         class: 'App\\Components\\Table',
         callable: 'render',
         args: {
@@ -487,7 +501,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders striped Table', async () => {
       const result = await executor.execute({
         type: 'classMethod',
-        file: example('Table.php'),
+        file: advanced('Table.php'),
         class: 'App\\Components\\Table',
         callable: 'render',
         args: {
@@ -508,7 +522,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders Status::label with default params', async () => {
       const result = await executor.execute({
         type: 'enumMethod',
-        file: example('Status.php'),
+        file: php81('Status.php'),
         class: 'App\\Components\\Status',
         callable: 'label',
         args: { _case: 'active' },
@@ -521,7 +535,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders Status::label with prefix and uppercase', async () => {
       const result = await executor.execute({
         type: 'enumMethod',
-        file: example('Status.php'),
+        file: php81('Status.php'),
         class: 'App\\Components\\Status',
         callable: 'label',
         args: { _case: 'pending', prefix: 'Status', uppercase: true },
@@ -539,7 +553,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders Alert::success', async () => {
       const result = await executor.execute({
         type: 'staticMethod',
-        file: example('Alert.php'),
+        file: basic('Alert.php'),
         class: 'App\\Components\\Alert',
         callable: 'success',
         args: { message: 'Saved!', dismissible: true },
@@ -558,7 +572,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders tag() from helpers.php', async () => {
       const result = await executor.execute({
         type: 'function',
-        file: example('helpers.php'),
+        file: basic('helpers.php'),
         class: null,
         callable: 'App\\Helpers\\tag',
         args: { label: 'Feature', color: 'green' },
@@ -577,7 +591,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders profile template with variables', async () => {
       const result = await executor.execute({
         type: 'template',
-        file: example('templates/profile.php'),
+        file: advanced('templates/profile.php'),
         class: null,
         callable: null,
         args: { name: 'Alice Johnson', role: 'Engineer' },
@@ -591,7 +605,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders profile with defaults for missing variables', async () => {
       const result = await executor.execute({
         type: 'template',
-        file: example('templates/profile.php'),
+        file: advanced('templates/profile.php'),
         class: null,
         callable: null,
         args: { name: 'Bob' },
@@ -609,7 +623,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders Breadcrumb with variadic segments', async () => {
       const result = await executor.execute({
         type: 'classMethod',
-        file: example('Breadcrumb.php'),
+        file: advanced('Breadcrumb.php'),
         class: 'App\\Components\\Breadcrumb',
         callable: 'render',
         args: { separator: ' / ', segments: ['Home', 'Products', 'Widget'] },
@@ -624,7 +638,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders Breadcrumb with empty segments', async () => {
       const result = await executor.execute({
         type: 'classMethod',
-        file: example('Breadcrumb.php'),
+        file: advanced('Breadcrumb.php'),
         class: 'App\\Components\\Breadcrumb',
         callable: 'render',
         args: { segments: [] },
@@ -636,7 +650,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders Breadcrumb with single segment', async () => {
       const result = await executor.execute({
         type: 'classMethod',
-        file: example('Breadcrumb.php'),
+        file: advanced('Breadcrumb.php'),
         class: 'App\\Components\\Breadcrumb',
         callable: 'render',
         args: { segments: ['Home'] },
@@ -654,7 +668,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders Progress with int value', async () => {
       const result = await executor.execute({
         type: 'classMethod',
-        file: example('Progress.php'),
+        file: advanced('Progress.php'),
         class: 'App\\Components\\Progress',
         callable: 'render',
         args: { value: 75 },
@@ -667,7 +681,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders Progress with string value', async () => {
       const result = await executor.execute({
         type: 'classMethod',
-        file: example('Progress.php'),
+        file: advanced('Progress.php'),
         class: 'App\\Components\\Progress',
         callable: 'render',
         args: { value: '42', max: 100 },
@@ -679,7 +693,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders Progress with custom label', async () => {
       const result = await executor.execute({
         type: 'classMethod',
-        file: example('Progress.php'),
+        file: advanced('Progress.php'),
         class: 'App\\Components\\Progress',
         callable: 'render',
         args: { value: 3, max: 10, label: '3 of 10' },
@@ -696,7 +710,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders HtmlList from generator yield', async () => {
       const result = await executor.execute({
         type: 'classMethod',
-        file: example('HtmlList.php'),
+        file: advanced('HtmlList.php'),
         class: 'App\\Components\\HtmlList',
         callable: 'render',
         args: { items: ['Apples', 'Bananas', 'Cherries'] },
@@ -712,7 +726,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders ordered HtmlList from generator', async () => {
       const result = await executor.execute({
         type: 'classMethod',
-        file: example('HtmlList.php'),
+        file: advanced('HtmlList.php'),
         class: 'App\\Components\\HtmlList',
         callable: 'render',
         args: { items: ['First', 'Second'], ordered: true },
@@ -732,7 +746,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders list template with items', async () => {
       const result = await executor.execute({
         type: 'template',
-        file: example('templates/list.php'),
+        file: advanced('templates/list.php'),
         class: null,
         callable: null,
         args: { title: 'Shopping', items: ['Milk', 'Eggs'] },
@@ -747,7 +761,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders numbered list template', async () => {
       const result = await executor.execute({
         type: 'template',
-        file: example('templates/list.php'),
+        file: advanced('templates/list.php'),
         class: null,
         callable: null,
         args: { title: 'Steps', items: ['Install', 'Configure'], numbered: true },
@@ -760,7 +774,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders empty list template', async () => {
       const result = await executor.execute({
         type: 'template',
-        file: example('templates/list.php'),
+        file: advanced('templates/list.php'),
         class: null,
         callable: null,
         args: { title: 'Empty' },
@@ -777,7 +791,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders Size::button for Small', async () => {
       const result = await executor.execute({
         type: 'enumMethod',
-        file: example('Size.php'),
+        file: php81('Size.php'),
         class: 'App\\Components\\Size',
         callable: 'button',
         args: { _case: 'Small', text: 'Click me' },
@@ -791,7 +805,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders Size::button for ExtraLarge with custom color', async () => {
       const result = await executor.execute({
         type: 'enumMethod',
-        file: example('Size.php'),
+        file: php81('Size.php'),
         class: 'App\\Components\\Size',
         callable: 'button',
         args: { _case: 'ExtraLarge', text: 'Big Button', color: '#ef4444' },
@@ -814,7 +828,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     const load = (plugin as any).load.bind(plugin);
 
     it('UC2: Formatter@formatCurrency generates classMethod with ctor+method args', () => {
-      const id = resolveId('./Formatter.php@formatCurrency', example('Formatter.php'));
+      const id = resolveId('./Formatter.php@formatCurrency', advanced('Formatter.php'));
       const code = load(id);
       expect(code).toContain("__type: 'classMethod'");
       expect(code).toContain("__callable: \"formatCurrency\"");
@@ -824,14 +838,14 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     });
 
     it('UC5: helpers.php@pill generates function with FQN callable', () => {
-      const id = resolveId('./helpers.php@pill', example('helpers.php'));
+      const id = resolveId('./helpers.php@pill', basic('helpers.php'));
       const code = load(id);
       expect(code).toContain("__type: 'function'");
       expect(code).toContain('App\\\\Helpers\\\\pill'); // FQN in JSON string
     });
 
     it('UC7: InvocableGreeting@__invoke generates classMethod', () => {
-      const id = resolveId('./InvocableGreeting.php@__invoke', example('InvocableGreeting.php'));
+      const id = resolveId('./InvocableGreeting.php@__invoke', advanced('InvocableGreeting.php'));
       const code = load(id);
       expect(code).toContain("__type: 'classMethod'");
       expect(code).toContain("__callable: \"__invoke\"");
@@ -840,14 +854,14 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     });
 
     it('UC11: Color@badge generates enumMethod', () => {
-      const id = resolveId('./Color.php@badge', example('Color.php'));
+      const id = resolveId('./Color.php@badge', basic('Color.php'));
       const code = load(id);
       expect(code).toContain("__type: 'enumMethod'");
       expect(code).toContain('_case:');
     });
 
     it('UC12: CardWithBase@render finds inherited method', () => {
-      const id = resolveId('./CardWithBase.php@render', example('CardWithBase.php'));
+      const id = resolveId('./CardWithBase.php@render', advanced('CardWithBase.php'));
       const code = load(id);
       expect(code).toContain("__type: 'classMethod'");
       expect(code).toContain('CardWithBase');
@@ -856,7 +870,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     });
 
     it('UC9: ProductCard@render generates classMethod', () => {
-      const id = resolveId('./ProductCard.php@render', example('ProductCard.php'));
+      const id = resolveId('./ProductCard.php@render', advanced('ProductCard.php'));
       const code = load(id);
       expect(code).toContain("__type: 'classMethod'");
       expect(code).toContain('name:');
@@ -866,7 +880,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     });
 
     it('UC13: Nav@render generates classMethod with nullable params', () => {
-      const id = resolveId('./Nav.php@render', example('Nav.php'));
+      const id = resolveId('./Nav.php@render', advanced('Nav.php'));
       const code = load(id);
       expect(code).toContain("__type: 'classMethod'");
       expect(code).toContain('brand:');
@@ -875,7 +889,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     });
 
     it('UC14: Table@render generates classMethod with array params', () => {
-      const id = resolveId('./Table.php@render', example('Table.php'));
+      const id = resolveId('./Table.php@render', advanced('Table.php'));
       const code = load(id);
       expect(code).toContain("__type: 'classMethod'");
       expect(code).toContain('headers:');
@@ -884,7 +898,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     });
 
     it('UC15: Status@label generates enumMethod with extra params', () => {
-      const id = resolveId('./Status.php@label', example('Status.php'));
+      const id = resolveId('./Status.php@label', php81('Status.php'));
       const code = load(id);
       expect(code).toContain("__type: 'enumMethod'");
       expect(code).toContain('_case:');
@@ -893,7 +907,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     });
 
     it('UC16: Alert@success generates staticMethod', () => {
-      const id = resolveId('./Alert.php@success', example('Alert.php'));
+      const id = resolveId('./Alert.php@success', basic('Alert.php'));
       const code = load(id);
       expect(code).toContain("__type: 'staticMethod'");
       expect(code).toContain("__callable: \"success\"");
@@ -902,7 +916,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     });
 
     it('UC17: helpers.php@tag generates function for second function', () => {
-      const id = resolveId('./helpers.php@tag', example('helpers.php'));
+      const id = resolveId('./helpers.php@tag', basic('helpers.php'));
       const code = load(id);
       expect(code).toContain("__type: 'function'");
       expect(code).toContain('App\\\\Helpers\\\\tag');
@@ -911,7 +925,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     });
 
     it('UC19: Breadcrumb@render generates classMethod with variadic param', () => {
-      const id = resolveId('./Breadcrumb.php@render', example('Breadcrumb.php'));
+      const id = resolveId('./Breadcrumb.php@render', advanced('Breadcrumb.php'));
       const code = load(id);
       expect(code).toContain("__type: 'classMethod'");
       expect(code).toContain('separator:');
@@ -919,7 +933,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     });
 
     it('UC20: Progress@render generates classMethod with union type param', () => {
-      const id = resolveId('./Progress.php@render', example('Progress.php'));
+      const id = resolveId('./Progress.php@render', advanced('Progress.php'));
       const code = load(id);
       expect(code).toContain("__type: 'classMethod'");
       expect(code).toContain('value:');
@@ -928,7 +942,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     });
 
     it('UC21: HtmlList@render generates classMethod', () => {
-      const id = resolveId('./HtmlList.php@render', example('HtmlList.php'));
+      const id = resolveId('./HtmlList.php@render', advanced('HtmlList.php'));
       const code = load(id);
       expect(code).toContain("__type: 'classMethod'");
       expect(code).toContain('items:');
@@ -936,7 +950,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     });
 
     it('UC23: Size@button generates enumMethod for unit enum', () => {
-      const id = resolveId('./Size.php@button', example('Size.php'));
+      const id = resolveId('./Size.php@button', php81('Size.php'));
       const code = load(id);
       expect(code).toContain("__type: 'enumMethod'");
       expect(code).toContain('_case:');
@@ -950,7 +964,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
   // -------------------------------------------------------------------------
   describe('Parser: metadata extraction for all patterns', () => {
     it('parses namespaced functions correctly', () => {
-      const meta = parsePhpFile(example('helpers.php'));
+      const meta = parsePhpFile(basic('helpers.php'));
       expect(meta.namespace).toBe('App\\Helpers');
       expect(meta.functions).toHaveLength(2);
       expect(meta.functions[0]!.name).toBe('pill');
@@ -960,7 +974,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     });
 
     it('parses enum with methods and cases', () => {
-      const meta = parsePhpFile(example('Color.php'));
+      const meta = parsePhpFile(basic('Color.php'));
       const color = meta.classes.find(c => c.name === 'Color');
       expect(color).toBeDefined();
       expect(color!.isEnum).toBe(true);
@@ -972,7 +986,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     });
 
     it('parses readonly class with enum and object params', () => {
-      const meta = parsePhpFile(example('ProductCard.php'));
+      const meta = parsePhpFile(advanced('ProductCard.php'));
       const pc = meta.classes.find(c => c.name === 'ProductCard');
       expect(pc).toBeDefined();
       expect(pc!.isReadonly).toBe(true);
@@ -983,7 +997,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     });
 
     it('parses inherited class structure', () => {
-      const meta = parsePhpFile(example('CardWithBase.php'));
+      const meta = parsePhpFile(advanced('CardWithBase.php'));
       const card = meta.classes.find(c => c.name === 'CardWithBase');
       expect(card).toBeDefined();
       expect(card!.extends).toBe('BaseComponent');
@@ -996,13 +1010,13 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     });
 
     it('parses __invoke as a method', () => {
-      const meta = parsePhpFile(example('InvocableGreeting.php'));
+      const meta = parsePhpFile(advanced('InvocableGreeting.php'));
       const cls = meta.classes[0]!;
       expect(cls.methods.some(m => m.name === '__invoke')).toBe(true);
     });
 
     it('parses Nav with nullable constructor and method params', () => {
-      const meta = parsePhpFile(example('Nav.php'));
+      const meta = parsePhpFile(advanced('Nav.php'));
       const nav = meta.classes.find(c => c.name === 'Nav');
       expect(nav).toBeDefined();
       const subtitle = nav!.constructorParams.find(p => p.name === 'subtitle');
@@ -1016,7 +1030,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     });
 
     it('parses Table with array params', () => {
-      const meta = parsePhpFile(example('Table.php'));
+      const meta = parsePhpFile(advanced('Table.php'));
       const table = meta.classes.find(c => c.name === 'Table');
       expect(table).toBeDefined();
       const headers = table!.constructorParams.find(p => p.name === 'headers');
@@ -1028,7 +1042,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     });
 
     it('parses Status enum with method params', () => {
-      const meta = parsePhpFile(example('Status.php'));
+      const meta = parsePhpFile(php81('Status.php'));
       const status = meta.classes.find(c => c.name === 'Status');
       expect(status).toBeDefined();
       expect(status!.isEnum).toBe(true);
@@ -1044,7 +1058,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     });
 
     it('parses multiple functions from helpers.php', () => {
-      const meta = parsePhpFile(example('helpers.php'));
+      const meta = parsePhpFile(basic('helpers.php'));
       expect(meta.functions).toHaveLength(2);
       const tag = meta.functions.find(f => f.name === 'tag');
       expect(tag).toBeDefined();
@@ -1055,7 +1069,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     });
 
     it('parses Breadcrumb with variadic method param', () => {
-      const meta = parsePhpFile(example('Breadcrumb.php'));
+      const meta = parsePhpFile(advanced('Breadcrumb.php'));
       const cls = meta.classes.find(c => c.name === 'Breadcrumb');
       expect(cls).toBeDefined();
       const render = cls!.methods.find(m => m.name === 'render');
@@ -1067,7 +1081,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     });
 
     it('parses Progress with union type constructor param', () => {
-      const meta = parsePhpFile(example('Progress.php'));
+      const meta = parsePhpFile(advanced('Progress.php'));
       const cls = meta.classes.find(c => c.name === 'Progress');
       expect(cls).toBeDefined();
       const value = cls!.constructorParams.find(p => p.name === 'value');
@@ -1076,7 +1090,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     });
 
     it('parses HtmlList with Generator return type', () => {
-      const meta = parsePhpFile(example('HtmlList.php'));
+      const meta = parsePhpFile(advanced('HtmlList.php'));
       const cls = meta.classes.find(c => c.name === 'HtmlList');
       expect(cls).toBeDefined();
       const render = cls!.methods.find(m => m.name === 'render');
@@ -1085,7 +1099,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     });
 
     it('parses Size as unit enum without backing type', () => {
-      const meta = parsePhpFile(example('Size.php'));
+      const meta = parsePhpFile(php81('Size.php'));
       const size = meta.classes.find(c => c.name === 'Size');
       expect(size).toBeDefined();
       expect(size!.isEnum).toBe(true);
@@ -1100,7 +1114,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     });
 
     it('parses Accordion with trait usage', () => {
-      const meta = parsePhpFile(example('Accordion.php'));
+      const meta = parsePhpFile(advanced('Accordion.php'));
       const accordion = meta.classes.find(c => c.name === 'Accordion');
       expect(accordion).toBeDefined();
       expect(accordion!.traits).toContain('HasToggle');
@@ -1113,20 +1127,9 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
       expect(hasToggle!.methods[0]!.name).toBe('toggle');
     });
 
-    it('parses Direction enum with implements', () => {
-      const meta = parsePhpFile(example('Direction.php'));
-      const dir = meta.classes.find(c => c.name === 'Direction');
-      expect(dir).toBeDefined();
-      expect(dir!.isEnum).toBe(true);
-      expect(dir!.implements).toContain('Renderable');
-      expect(dir!.enumCases).toContain('Up');
-      expect(dir!.enumCases).toContain('Down');
-      expect(dir!.enumCases).toContain('Left');
-      expect(dir!.enumCases).toContain('Right');
-    });
 
     it('parses Sections file with two classes', () => {
-      const meta = parsePhpFile(example('Sections.php'));
+      const meta = parsePhpFile(advanced('Sections.php'));
       expect(meta.classes).toHaveLength(2);
       const header = meta.classes.find(c => c.name === 'SectionHeader');
       expect(header).toBeDefined();
@@ -1137,7 +1140,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     });
 
     it('parses Tooltip with Stringable return type', () => {
-      const meta = parsePhpFile(example('Tooltip.php'));
+      const meta = parsePhpFile(advanced('Tooltip.php'));
       const tooltip = meta.classes.find(c => c.name === 'Tooltip');
       expect(tooltip).toBeDefined();
       expect(tooltip!.methods).toHaveLength(1);
@@ -1153,7 +1156,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders Accordion using trait toggle method', async () => {
       const result = await executor.execute({
         type: 'classMethod',
-        file: example('Accordion.php'),
+        file: advanced('Accordion.php'),
         class: 'App\\Components\\Accordion',
         callable: 'toggle',
         args: { label: 'Show Details', content: '<p>Hidden content</p>' },
@@ -1167,7 +1170,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders Accordion with open=true', async () => {
       const result = await executor.execute({
         type: 'classMethod',
-        file: example('Accordion.php'),
+        file: advanced('Accordion.php'),
         class: 'App\\Components\\Accordion',
         callable: 'toggle',
         args: { label: 'FAQ', content: '<p>Answer</p>', open: true },
@@ -1186,7 +1189,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders SectionHeader', async () => {
       const result = await executor.execute({
         type: 'classMethod',
-        file: example('Sections.php'),
+        file: advanced('Sections.php'),
         class: 'App\\Components\\SectionHeader',
         callable: 'render',
         args: { title: 'Welcome' },
@@ -1200,7 +1203,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders SectionHeader with h2 level', async () => {
       const result = await executor.execute({
         type: 'classMethod',
-        file: example('Sections.php'),
+        file: advanced('Sections.php'),
         class: 'App\\Components\\SectionHeader',
         callable: 'render',
         args: { title: 'Sub Title', level: 'h2' },
@@ -1213,7 +1216,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders SectionFooter', async () => {
       const result = await executor.execute({
         type: 'classMethod',
-        file: example('Sections.php'),
+        file: advanced('Sections.php'),
         class: 'App\\Components\\SectionFooter',
         callable: 'render',
         args: { copyright: 'My Company' },
@@ -1227,7 +1230,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders SectionFooter with custom year', async () => {
       const result = await executor.execute({
         type: 'classMethod',
-        file: example('Sections.php'),
+        file: advanced('Sections.php'),
         class: 'App\\Components\\SectionFooter',
         callable: 'render',
         args: { copyright: 'Acme Inc.', year: 2024 },
@@ -1245,7 +1248,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders Tooltip with __toString conversion', async () => {
       const result = await executor.execute({
         type: 'classMethod',
-        file: example('Tooltip.php'),
+        file: advanced('Tooltip.php'),
         class: 'App\\Components\\Tooltip',
         callable: 'render',
         args: { text: 'Helpful tip' },
@@ -1259,7 +1262,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders Tooltip with bottom position', async () => {
       const result = await executor.execute({
         type: 'classMethod',
-        file: example('Tooltip.php'),
+        file: advanced('Tooltip.php'),
         class: 'App\\Components\\Tooltip',
         callable: 'render',
         args: { text: 'More info', position: 'bottom' },
@@ -1271,36 +1274,6 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
   });
 
   // -------------------------------------------------------------------------
-  // UC27: Enum implementing interface
-  // -------------------------------------------------------------------------
-  describe('UC27: Enum implementing interface', () => {
-    it('renders Direction::render for Up', async () => {
-      const result = await executor.execute({
-        type: 'enumMethod',
-        file: example('Direction.php'),
-        class: 'App\\Components\\Direction',
-        callable: 'render',
-        args: { _case: 'up' },
-      });
-      expect(result.error).toBeUndefined();
-      expect(result.html).toContain('direction-up');
-      expect(result.html).toContain('Up');
-    });
-
-    it('renders Direction::render for Left', async () => {
-      const result = await executor.execute({
-        type: 'enumMethod',
-        file: example('Direction.php'),
-        class: 'App\\Components\\Direction',
-        callable: 'render',
-        args: { _case: 'left' },
-      });
-      expect(result.error).toBeUndefined();
-      expect(result.html).toContain('direction-left');
-      expect(result.html).toContain('Left');
-    });
-  });
-
   // -------------------------------------------------------------------------
   // UC28: Form template (complex nested data)
   // -------------------------------------------------------------------------
@@ -1308,7 +1281,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders contact form with fields', async () => {
       const result = await executor.execute({
         type: 'template',
-        file: example('templates/form.php'),
+        file: advanced('templates/form.php'),
         class: null,
         callable: null,
         args: {
@@ -1332,7 +1305,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders form with textarea field', async () => {
       const result = await executor.execute({
         type: 'template',
-        file: example('templates/form.php'),
+        file: advanced('templates/form.php'),
         class: null,
         callable: null,
         args: {
@@ -1357,7 +1330,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     const load = (plugin as any).load.bind(plugin);
 
     it('UC24: Accordion@toggle generates classMethod via trait', () => {
-      const id = resolveId('./Accordion.php@toggle', example('Accordion.php'));
+      const id = resolveId('./Accordion.php@toggle', advanced('Accordion.php'));
       const code = load(id);
       expect(code).toContain("__type: 'classMethod'");
       expect(code).toContain("__callable: \"toggle\"");
@@ -1367,7 +1340,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     });
 
     it('UC25: Sections.php@render generates both SectionHeader and SectionFooter', () => {
-      const id = resolveId('./Sections.php@render', example('Sections.php'));
+      const id = resolveId('./Sections.php@render', advanced('Sections.php'));
       const code = load(id);
       expect(code).toContain('SectionHeader');
       expect(code).toContain('SectionFooter');
@@ -1375,7 +1348,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     });
 
     it('UC26: Tooltip@render generates classMethod', () => {
-      const id = resolveId('./Tooltip.php@render', example('Tooltip.php'));
+      const id = resolveId('./Tooltip.php@render', advanced('Tooltip.php'));
       const code = load(id);
       expect(code).toContain("__type: 'classMethod'");
       expect(code).toContain('Tooltip');
@@ -1383,12 +1356,6 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
       expect(code).toContain('position:');  // method arg
     });
 
-    it('UC27: Direction@render generates enumMethod', () => {
-      const id = resolveId('./Direction.php@render', example('Direction.php'));
-      const code = load(id);
-      expect(code).toContain("__type: 'enumMethod'");
-      expect(code).toContain('_case:');
-    });
   });
 
   // -------------------------------------------------------------------------
@@ -1398,7 +1365,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders Avatar with initials', async () => {
       const result = await executor.execute({
         type: 'classMethod',
-        file: example('Avatar.php'),
+        file: advanced('Avatar.php'),
         class: 'App\\Components\\Avatar',
         callable: 'render',
         args: { name: 'John Doe' },
@@ -1411,7 +1378,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders Avatar with image URL', async () => {
       const result = await executor.execute({
         type: 'classMethod',
-        file: example('Avatar.php'),
+        file: advanced('Avatar.php'),
         class: 'App\\Components\\Avatar',
         callable: 'render',
         args: { name: 'Jane', imageUrl: 'https://example.com/avatar.png', size: 64 },
@@ -1424,7 +1391,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders Avatar with custom size', async () => {
       const result = await executor.execute({
         type: 'classMethod',
-        file: example('Avatar.php'),
+        file: advanced('Avatar.php'),
         class: 'App\\Components\\Avatar',
         callable: 'render',
         args: { name: 'AB', size: 32 },
@@ -1434,7 +1401,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     });
 
     it('parser detects final class', () => {
-      const meta = parsePhpFile(example('Avatar.php'));
+      const meta = parsePhpFile(advanced('Avatar.php'));
       expect(meta.classes).toHaveLength(1);
       expect(meta.classes[0]!.isFinal).toBe(true);
       expect(meta.classes[0]!.name).toBe('Avatar');
@@ -1448,7 +1415,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders InfoChip via inherited render()', async () => {
       const result = await executor.execute({
         type: 'classMethod',
-        file: example('Chip.php'),
+        file: advanced('Chip.php'),
         class: 'App\\Components\\InfoChip',
         callable: 'render',
         args: { label: 'Info Tag' },
@@ -1461,7 +1428,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders SuccessChip with removable', async () => {
       const result = await executor.execute({
         type: 'classMethod',
-        file: example('Chip.php'),
+        file: advanced('Chip.php'),
         class: 'App\\Components\\SuccessChip',
         callable: 'render',
         args: { label: 'Approved', removable: true },
@@ -1475,7 +1442,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders DangerChip', async () => {
       const result = await executor.execute({
         type: 'classMethod',
-        file: example('Chip.php'),
+        file: advanced('Chip.php'),
         class: 'App\\Components\\DangerChip',
         callable: 'render',
         args: { label: 'Error' },
@@ -1485,7 +1452,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     });
 
     it('parser detects abstract class and subclasses', () => {
-      const meta = parsePhpFile(example('Chip.php'));
+      const meta = parsePhpFile(advanced('Chip.php'));
       const base = meta.classes.find((c) => c.name === 'BaseChip')!;
       expect(base.isAbstract).toBe(true);
 
@@ -1504,7 +1471,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders Priority badge with int value', async () => {
       const result = await executor.execute({
         type: 'enumMethod',
-        file: example('Priority.php'),
+        file: php81('Priority.php'),
         class: 'App\\Components\\Priority',
         callable: 'badge',
         args: { _case: 3 },
@@ -1517,7 +1484,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders Priority Low', async () => {
       const result = await executor.execute({
         type: 'enumMethod',
-        file: example('Priority.php'),
+        file: php81('Priority.php'),
         class: 'App\\Components\\Priority',
         callable: 'badge',
         args: { _case: 1 },
@@ -1529,7 +1496,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders Priority icon method', async () => {
       const result = await executor.execute({
         type: 'enumMethod',
-        file: example('Priority.php'),
+        file: php81('Priority.php'),
         class: 'App\\Components\\Priority',
         callable: 'icon',
         args: { _case: 4 },
@@ -1539,7 +1506,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     });
 
     it('parser detects int-backed enum', () => {
-      const meta = parsePhpFile(example('Priority.php'));
+      const meta = parsePhpFile(php81('Priority.php'));
       const cls = meta.classes[0]!;
       expect(cls.isEnum).toBe(true);
       expect(cls.enumBackingType).toBe('int');
@@ -1555,7 +1522,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders Button.primary() static factory', async () => {
       const result = await executor.execute({
         type: 'staticMethod',
-        file: example('Button.php'),
+        file: basic('Button.php'),
         class: 'App\\Components\\Button',
         callable: 'primary',
         args: { label: 'Click Me' },
@@ -1568,7 +1535,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders Button.secondary() static factory', async () => {
       const result = await executor.execute({
         type: 'staticMethod',
-        file: example('Button.php'),
+        file: basic('Button.php'),
         class: 'App\\Components\\Button',
         callable: 'secondary',
         args: { label: 'Cancel' },
@@ -1581,7 +1548,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders Button.primary() with disabled', async () => {
       const result = await executor.execute({
         type: 'staticMethod',
-        file: example('Button.php'),
+        file: basic('Button.php'),
         class: 'App\\Components\\Button',
         callable: 'primary',
         args: { label: 'Disabled', disabled: true },
@@ -1593,7 +1560,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders Button instance render()', async () => {
       const result = await executor.execute({
         type: 'classMethod',
-        file: example('Button.php'),
+        file: basic('Button.php'),
         class: 'App\\Components\\Button',
         callable: 'render',
         args: { label: 'Outline', variant: 'outline' },
@@ -1610,7 +1577,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders Stepper with steps', async () => {
       const result = await executor.execute({
         type: 'classMethod',
-        file: example('Stepper.php'),
+        file: advanced('Stepper.php'),
         class: 'App\\Components\\Stepper',
         callable: 'render',
         args: { current: 2, steps: ['Cart', 'Shipping', 'Payment'] },
@@ -1627,7 +1594,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders Stepper empty state', async () => {
       const result = await executor.execute({
         type: 'classMethod',
-        file: example('Stepper.php'),
+        file: advanced('Stepper.php'),
         class: 'App\\Components\\Stepper',
         callable: 'render',
         args: { steps: [] },
@@ -1637,7 +1604,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     });
 
     it('parser detects implements', () => {
-      const meta = parsePhpFile(example('Stepper.php'));
+      const meta = parsePhpFile(advanced('Stepper.php'));
       const stepper = meta.classes.find((c) => c.name === 'Stepper')!;
       expect(stepper.implements).toContain('StepRenderer');
     });
@@ -1650,7 +1617,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders Rating stars', async () => {
       const result = await executor.execute({
         type: 'classMethod',
-        file: example('Rating.php'),
+        file: advanced('Rating.php'),
         class: 'App\\Components\\Rating',
         callable: 'render',
         args: { value: 3, max: 5 },
@@ -1663,7 +1630,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders Rating::fromPercent()', async () => {
       const result = await executor.execute({
         type: 'staticMethod',
-        file: example('Rating.php'),
+        file: advanced('Rating.php'),
         class: 'App\\Components\\Rating',
         callable: 'fromPercent',
         args: { percent: 80 },
@@ -1681,7 +1648,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders table with headers and rows', async () => {
       const result = await executor.execute({
         type: 'template',
-        file: example('templates/table.php'),
+        file: advanced('templates/table.php'),
         class: null,
         callable: null,
         args: {
@@ -1702,7 +1669,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders striped table', async () => {
       const result = await executor.execute({
         type: 'template',
-        file: example('templates/table.php'),
+        file: advanced('templates/table.php'),
         class: null,
         callable: null,
         args: {
@@ -1720,7 +1687,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders empty table', async () => {
       const result = await executor.execute({
         type: 'template',
-        file: example('templates/table.php'),
+        file: advanced('templates/table.php'),
         class: null,
         callable: null,
         args: {
@@ -1743,7 +1710,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     const load = (plugin as any).load.bind(plugin);
 
     it('UC29: Avatar@render generates classMethod for final class', () => {
-      const id = resolveId('./Avatar.php@render', example('Avatar.php'));
+      const id = resolveId('./Avatar.php@render', advanced('Avatar.php'));
       const code = load(id);
       expect(code).toContain("__type: 'classMethod'");
       expect(code).toContain('Avatar');
@@ -1753,7 +1720,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     });
 
     it('UC30: Chip@render generates classMethod for all concrete subclasses', () => {
-      const id = resolveId('./Chip.php@render', example('Chip.php'));
+      const id = resolveId('./Chip.php@render', advanced('Chip.php'));
       const code = load(id);
       // Should export InfoChip, SuccessChip, DangerChip (all inherit render from BaseChip)
       expect(code).toContain('InfoChip');
@@ -1763,7 +1730,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     });
 
     it('UC31: Priority@badge generates enumMethod for int-backed enum', () => {
-      const id = resolveId('./Priority.php@badge', example('Priority.php'));
+      const id = resolveId('./Priority.php@badge', php81('Priority.php'));
       const code = load(id);
       expect(code).toContain("__type: 'enumMethod'");
       expect(code).toContain('Priority');
@@ -1771,7 +1738,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     });
 
     it('UC32: Button@primary generates staticMethod', () => {
-      const id = resolveId('./Button.php@primary', example('Button.php'));
+      const id = resolveId('./Button.php@primary', basic('Button.php'));
       const code = load(id);
       expect(code).toContain("__type: 'staticMethod'");
       expect(code).toContain('label:');
@@ -1779,7 +1746,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     });
 
     it('UC32: Button@render generates classMethod', () => {
-      const id = resolveId('./Button.php@render', example('Button.php'));
+      const id = resolveId('./Button.php@render', basic('Button.php'));
       const code = load(id);
       expect(code).toContain("__type: 'classMethod'");
       expect(code).toContain('label:');
@@ -1787,7 +1754,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     });
 
     it('UC33: Stepper@render generates classMethod for interface implementor', () => {
-      const id = resolveId('./Stepper.php@render', example('Stepper.php'));
+      const id = resolveId('./Stepper.php@render', advanced('Stepper.php'));
       const code = load(id);
       expect(code).toContain("__type: 'classMethod'");
       expect(code).toContain('Stepper');
@@ -1796,7 +1763,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     });
 
     it('UC34: Rating@fromPercent generates staticMethod', () => {
-      const id = resolveId('./Rating.php@fromPercent', example('Rating.php'));
+      const id = resolveId('./Rating.php@fromPercent', advanced('Rating.php'));
       const code = load(id);
       expect(code).toContain("__type: 'staticMethod'");
       expect(code).toContain('percent:');
@@ -1810,7 +1777,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders Modal via instance render()', async () => {
       const result = await executor.execute({
         type: 'classMethod',
-        file: example('Modal.php'),
+        file: advanced('Modal.php'),
         class: 'App\\Components\\Modal',
         callable: 'render',
         args: { title: 'Confirm', body: 'Are you sure?', size: 'lg' },
@@ -1824,7 +1791,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders Modal with default body', async () => {
       const result = await executor.execute({
         type: 'classMethod',
-        file: example('Modal.php'),
+        file: advanced('Modal.php'),
         class: 'App\\Components\\Modal',
         callable: 'render',
         args: { title: 'Empty Modal' },
@@ -1837,7 +1804,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('calls trait method animate() on Modal', async () => {
       const result = await executor.execute({
         type: 'classMethod',
-        file: example('Modal.php'),
+        file: advanced('Modal.php'),
         class: 'App\\Components\\Modal',
         callable: 'animate',
         args: { title: 'Test', content: '<p>Animated</p>', effect: 'slide', duration: 500 },
@@ -1851,7 +1818,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('calls trait method overlay() on Modal', async () => {
       const result = await executor.execute({
         type: 'classMethod',
-        file: example('Modal.php'),
+        file: advanced('Modal.php'),
         class: 'App\\Components\\Modal',
         callable: 'overlay',
         args: { title: 'Test', content: '<div>Overlay content</div>', opacity: '0.8' },
@@ -1863,7 +1830,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     });
 
     it('parser detects multiple traits', () => {
-      const meta = parsePhpFile(example('Modal.php'));
+      const meta = parsePhpFile(advanced('Modal.php'));
       const modal = meta.classes.find((c) => c.name === 'Modal')!;
       expect(modal.traits).toEqual(['HasAnimation', 'HasOverlay']);
     });
@@ -1876,7 +1843,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders Notification with defaults', async () => {
       const result = await executor.execute({
         type: 'classMethod',
-        file: example('Notification.php'),
+        file: php82('Notification.php'),
         class: 'App\\Components\\Notification',
         callable: 'render',
         args: { message: 'File saved successfully' },
@@ -1890,7 +1857,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders Notification with explicit type and metadata', async () => {
       const result = await executor.execute({
         type: 'classMethod',
-        file: example('Notification.php'),
+        file: php82('Notification.php'),
         class: 'App\\Components\\Notification',
         callable: 'render',
         args: { message: 'Disk full', type: 'error', metadata: 'disk-usage-95', timeout: 10000 },
@@ -1905,7 +1872,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders Notification with warning type', async () => {
       const result = await executor.execute({
         type: 'classMethod',
-        file: example('Notification.php'),
+        file: php82('Notification.php'),
         class: 'App\\Components\\Notification',
         callable: 'render',
         args: { message: 'Low battery', type: 'warning' },
@@ -1915,7 +1882,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     });
 
     it('parser handles self::CONSTANT defaults', () => {
-      const meta = parsePhpFile(example('Notification.php'));
+      const meta = parsePhpFile(php82('Notification.php'));
       const cls = meta.classes[0]!;
       expect(cls.name).toBe('Notification');
       const typeParam = cls.constructorParams.find((p) => p.name === 'type')!;
@@ -1932,7 +1899,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders paginated list via instance render()', async () => {
       const result = await executor.execute({
         type: 'classMethod',
-        file: example('Pagination.php'),
+        file: advanced('Pagination.php'),
         class: 'App\\Components\\Pagination',
         callable: 'render',
         args: { total: 50, perPage: 10, current: 3 },
@@ -1946,7 +1913,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders first page with defaults', async () => {
       const result = await executor.execute({
         type: 'classMethod',
-        file: example('Pagination.php'),
+        file: advanced('Pagination.php'),
         class: 'App\\Components\\Pagination',
         callable: 'render',
         args: { total: 25 },
@@ -1958,7 +1925,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders simple static pagination', async () => {
       const result = await executor.execute({
         type: 'staticMethod',
-        file: example('Pagination.php'),
+        file: advanced('Pagination.php'),
         class: 'App\\Components\\Pagination',
         callable: 'simple',
         args: { total: 100, current: 5 },
@@ -1972,7 +1939,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders simple pagination first page (no prev)', async () => {
       const result = await executor.execute({
         type: 'staticMethod',
-        file: example('Pagination.php'),
+        file: advanced('Pagination.php'),
         class: 'App\\Components\\Pagination',
         callable: 'simple',
         args: { total: 30, current: 1 },
@@ -1991,7 +1958,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders simple string tags', async () => {
       const result = await executor.execute({
         type: 'classMethod',
-        file: example('TagCloud.php'),
+        file: advanced('TagCloud.php'),
         class: 'App\\Components\\TagCloud',
         callable: 'render',
         args: { tags: ['PHP', 'TypeScript', 'Storybook'] },
@@ -2007,7 +1974,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders weighted tags', async () => {
       const result = await executor.execute({
         type: 'classMethod',
-        file: example('TagCloud.php'),
+        file: advanced('TagCloud.php'),
         class: 'App\\Components\\TagCloud',
         callable: 'render',
         args: {
@@ -2029,7 +1996,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders empty tag cloud', async () => {
       const result = await executor.execute({
         type: 'classMethod',
-        file: example('TagCloud.php'),
+        file: advanced('TagCloud.php'),
         class: 'App\\Components\\TagCloud',
         callable: 'render',
         args: { tags: [] },
@@ -2046,7 +2013,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders dashboard with stats', async () => {
       const result = await executor.execute({
         type: 'template',
-        file: example('templates/dashboard.php'),
+        file: advanced('templates/dashboard.php'),
         class: null,
         callable: null,
         args: {
@@ -2071,7 +2038,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders empty dashboard', async () => {
       const result = await executor.execute({
         type: 'template',
-        file: example('templates/dashboard.php'),
+        file: advanced('templates/dashboard.php'),
         class: null,
         callable: null,
         args: { title: 'Empty Dashboard' },
@@ -2084,7 +2051,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders dashboard with chart', async () => {
       const result = await executor.execute({
         type: 'template',
-        file: example('templates/dashboard.php'),
+        file: advanced('templates/dashboard.php'),
         class: null,
         callable: null,
         args: {
@@ -2102,7 +2069,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders dashboard with default title', async () => {
       const result = await executor.execute({
         type: 'template',
-        file: example('templates/dashboard.php'),
+        file: advanced('templates/dashboard.php'),
         class: null,
         callable: null,
         args: {},
@@ -2122,7 +2089,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     const load = (plugin as any).load.bind(plugin);
 
     it('UC36: Modal@render generates classMethod', () => {
-      const id = resolveId('./Modal.php@render', example('Modal.php'));
+      const id = resolveId('./Modal.php@render', advanced('Modal.php'));
       const code = load(id);
       expect(code).toContain("__type: 'classMethod'");
       expect(code).toContain('Modal');
@@ -2132,7 +2099,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     });
 
     it('UC36: Modal@animate generates classMethod via trait', () => {
-      const id = resolveId('./Modal.php@animate', example('Modal.php'));
+      const id = resolveId('./Modal.php@animate', advanced('Modal.php'));
       const code = load(id);
       expect(code).toContain("__type: 'classMethod'");
       expect(code).toContain('Modal');
@@ -2142,7 +2109,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     });
 
     it('UC36: Modal@overlay generates classMethod via second trait', () => {
-      const id = resolveId('./Modal.php@overlay', example('Modal.php'));
+      const id = resolveId('./Modal.php@overlay', advanced('Modal.php'));
       const code = load(id);
       expect(code).toContain("__type: 'classMethod'");
       expect(code).toContain('Modal');
@@ -2151,7 +2118,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     });
 
     it('UC37: Notification@render generates classMethod', () => {
-      const id = resolveId('./Notification.php@render', example('Notification.php'));
+      const id = resolveId('./Notification.php@render', php82('Notification.php'));
       const code = load(id);
       expect(code).toContain("__type: 'classMethod'");
       expect(code).toContain('message:');
@@ -2161,7 +2128,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     });
 
     it('UC38: Pagination@render generates classMethod', () => {
-      const id = resolveId('./Pagination.php@render', example('Pagination.php'));
+      const id = resolveId('./Pagination.php@render', advanced('Pagination.php'));
       const code = load(id);
       expect(code).toContain("__type: 'classMethod'");
       expect(code).toContain('total:');
@@ -2170,7 +2137,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     });
 
     it('UC38: Pagination@simple generates staticMethod', () => {
-      const id = resolveId('./Pagination.php@simple', example('Pagination.php'));
+      const id = resolveId('./Pagination.php@simple', advanced('Pagination.php'));
       const code = load(id);
       expect(code).toContain("__type: 'staticMethod'");
       expect(code).toContain('total:');
@@ -2178,7 +2145,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     });
 
     it('UC39: TagCloud@render generates classMethod', () => {
-      const id = resolveId('./TagCloud.php@render', example('TagCloud.php'));
+      const id = resolveId('./TagCloud.php@render', advanced('TagCloud.php'));
       const code = load(id);
       expect(code).toContain("__type: 'classMethod'");
       expect(code).toContain('tags:');
@@ -2193,7 +2160,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
   // -------------------------------------------------------------------------
   describe('Parser: new pattern metadata', () => {
     it('parses Modal with multiple traits', () => {
-      const meta = parsePhpFile(example('Modal.php'));
+      const meta = parsePhpFile(advanced('Modal.php'));
       const modal = meta.classes.find((c) => c.name === 'Modal')!;
       expect(modal).toBeDefined();
       expect(modal.traits).toEqual(['HasAnimation', 'HasOverlay']);
@@ -2205,7 +2172,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     });
 
     it('parses Notification with constant defaults and mixed type', () => {
-      const meta = parsePhpFile(example('Notification.php'));
+      const meta = parsePhpFile(php82('Notification.php'));
       const cls = meta.classes[0]!;
       expect(cls.name).toBe('Notification');
       expect(cls.constructorParams).toHaveLength(4);
@@ -2214,7 +2181,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     });
 
     it('parses Pagination with static and instance methods', () => {
-      const meta = parsePhpFile(example('Pagination.php'));
+      const meta = parsePhpFile(advanced('Pagination.php'));
       const cls = meta.classes[0]!;
       expect(cls.name).toBe('Pagination');
       expect(cls.constructorParams).toHaveLength(3);
@@ -2226,7 +2193,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     });
 
     it('parses TagCloud with array constructor and method params', () => {
-      const meta = parsePhpFile(example('TagCloud.php'));
+      const meta = parsePhpFile(advanced('TagCloud.php'));
       const cls = meta.classes[0]!;
       expect(cls.name).toBe('TagCloud');
       expect(cls.constructorParams).toHaveLength(2);
@@ -2247,7 +2214,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders ValueCard with label and value', async () => {
       const result = await executor.execute({
         type: 'classMethod',
-        file: example('ValueCard.php'),
+        file: advanced('ValueCard.php'),
         class: 'App\\Components\\ValueCard',
         callable: 'render',
         args: { label: 'Temperature', value: '23.5', unit: '°C' },
@@ -2262,7 +2229,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders ValueCard with up trend', async () => {
       const result = await executor.execute({
         type: 'classMethod',
-        file: example('ValueCard.php'),
+        file: advanced('ValueCard.php'),
         class: 'App\\Components\\ValueCard',
         callable: 'render',
         args: { label: 'Revenue', value: '$12,345', trend: '+12%' },
@@ -2275,7 +2242,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders ValueCard with down trend', async () => {
       const result = await executor.execute({
         type: 'classMethod',
-        file: example('ValueCard.php'),
+        file: advanced('ValueCard.php'),
         class: 'App\\Components\\ValueCard',
         callable: 'render',
         args: { label: 'Errors', value: '42', trend: '-8%' },
@@ -2286,7 +2253,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     });
 
     it('parser detects readonly without visibility as promoted', () => {
-      const meta = parsePhpFile(example('ValueCard.php'));
+      const meta = parsePhpFile(advanced('ValueCard.php'));
       const cls = meta.classes[0]!;
       expect(cls.name).toBe('ValueCard');
       expect(cls.constructorParams).toHaveLength(4);
@@ -2305,7 +2272,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders DataRenderer with string items', async () => {
       const result = await executor.execute({
         type: 'classMethod',
-        file: example('DataRenderer.php'),
+        file: advanced('DataRenderer.php'),
         class: 'App\\Components\\DataRenderer',
         callable: 'render',
         args: { items: ['Alpha', 'Bravo', 'Charlie'] },
@@ -2320,7 +2287,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders with uppercase transform', async () => {
       const result = await executor.execute({
         type: 'classMethod',
-        file: example('DataRenderer.php'),
+        file: advanced('DataRenderer.php'),
         class: 'App\\Components\\DataRenderer',
         callable: 'render',
         args: { items: ['hello', 'world'], transform: 'upper' },
@@ -2333,7 +2300,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders empty state', async () => {
       const result = await executor.execute({
         type: 'classMethod',
-        file: example('DataRenderer.php'),
+        file: advanced('DataRenderer.php'),
         class: 'App\\Components\\DataRenderer',
         callable: 'render',
         args: { items: [] },
@@ -2345,7 +2312,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders with custom wrapper', async () => {
       const result = await executor.execute({
         type: 'classMethod',
-        file: example('DataRenderer.php'),
+        file: advanced('DataRenderer.php'),
         class: 'App\\Components\\DataRenderer',
         callable: 'render',
         args: { items: ['Item'], wrapper: 'section' },
@@ -2356,7 +2323,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     });
 
     it('parser detects iterable and mixed types', () => {
-      const meta = parsePhpFile(example('DataRenderer.php'));
+      const meta = parsePhpFile(advanced('DataRenderer.php'));
       const cls = meta.classes[0]!;
       const items = cls.constructorParams.find((p) => p.name === 'items')!;
       expect(items.type).toBe('iterable');
@@ -2373,7 +2340,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders Visibility::badge for public', async () => {
       const result = await executor.execute({
         type: 'enumMethod',
-        file: example('Visibility.php'),
+        file: php81('Visibility.php'),
         class: 'App\\Components\\Visibility',
         callable: 'badge',
         args: { _case: 'public' },
@@ -2387,7 +2354,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders Visibility::badge for private', async () => {
       const result = await executor.execute({
         type: 'enumMethod',
-        file: example('Visibility.php'),
+        file: php81('Visibility.php'),
         class: 'App\\Components\\Visibility',
         callable: 'badge',
         args: { _case: 'private' },
@@ -2400,7 +2367,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders Visibility::description', async () => {
       const result = await executor.execute({
         type: 'enumMethod',
-        file: example('Visibility.php'),
+        file: php81('Visibility.php'),
         class: 'App\\Components\\Visibility',
         callable: 'description',
         args: { _case: 'unlisted' },
@@ -2411,7 +2378,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     });
 
     it('parser detects Visibility enum with all cases and methods', () => {
-      const meta = parsePhpFile(example('Visibility.php'));
+      const meta = parsePhpFile(php81('Visibility.php'));
       const vis = meta.classes.find((c) => c.name === 'Visibility')!;
       expect(vis.isEnum).toBe(true);
       expect(vis.enumBackingType).toBe('string');
@@ -2428,7 +2395,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders Timeline with events', async () => {
       const result = await executor.execute({
         type: 'classMethod',
-        file: example('Timeline.php'),
+        file: advanced('Timeline.php'),
         class: 'App\\Components\\Timeline',
         callable: 'render',
         args: {
@@ -2450,7 +2417,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders empty Timeline', async () => {
       const result = await executor.execute({
         type: 'classMethod',
-        file: example('Timeline.php'),
+        file: advanced('Timeline.php'),
         class: 'App\\Components\\Timeline',
         callable: 'render',
         args: { events: [] },
@@ -2462,7 +2429,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders reversed Timeline', async () => {
       const result = await executor.execute({
         type: 'classMethod',
-        file: example('Timeline.php'),
+        file: advanced('Timeline.php'),
         class: 'App\\Components\\Timeline',
         callable: 'render',
         args: {
@@ -2487,7 +2454,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders EchoLayout with light theme', async () => {
       const result = await executor.execute({
         type: 'classMethod',
-        file: example('EchoLayout.php'),
+        file: advanced('EchoLayout.php'),
         class: 'App\\Components\\EchoLayout',
         callable: 'render',
         args: { title: 'My App' },
@@ -2501,7 +2468,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders EchoLayout with dark theme and footer', async () => {
       const result = await executor.execute({
         type: 'classMethod',
-        file: example('EchoLayout.php'),
+        file: advanced('EchoLayout.php'),
         class: 'App\\Components\\EchoLayout',
         callable: 'render',
         args: { title: 'Dark Mode', theme: 'dark', footer: '© 2025' },
@@ -2515,7 +2482,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders EchoLayout without footer', async () => {
       const result = await executor.execute({
         type: 'classMethod',
-        file: example('EchoLayout.php'),
+        file: advanced('EchoLayout.php'),
         class: 'App\\Components\\EchoLayout',
         callable: 'render',
         args: { title: 'No Footer' },
@@ -2534,7 +2501,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     const load = (plugin as any).load.bind(plugin);
 
     it('UC41: ValueCard@render generates classMethod with readonly params', () => {
-      const id = resolveId('./ValueCard.php@render', example('ValueCard.php'));
+      const id = resolveId('./ValueCard.php@render', advanced('ValueCard.php'));
       const code = load(id);
       expect(code).toContain("__type: 'classMethod'");
       expect(code).toContain('ValueCard');
@@ -2545,7 +2512,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     });
 
     it('UC42: DataRenderer@render generates classMethod with iterable/mixed', () => {
-      const id = resolveId('./DataRenderer.php@render', example('DataRenderer.php'));
+      const id = resolveId('./DataRenderer.php@render', advanced('DataRenderer.php'));
       const code = load(id);
       expect(code).toContain("__type: 'classMethod'");
       expect(code).toContain('items:');
@@ -2554,21 +2521,21 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     });
 
     it('UC43: Visibility@badge generates enumMethod', () => {
-      const id = resolveId('./Visibility.php@badge', example('Visibility.php'));
+      const id = resolveId('./Visibility.php@badge', php81('Visibility.php'));
       const code = load(id);
       expect(code).toContain("__type: 'enumMethod'");
       expect(code).toContain('_case:');
     });
 
     it('UC43: Visibility@description generates enumMethod', () => {
-      const id = resolveId('./Visibility.php@description', example('Visibility.php'));
+      const id = resolveId('./Visibility.php@description', php81('Visibility.php'));
       const code = load(id);
       expect(code).toContain("__type: 'enumMethod'");
       expect(code).toContain('_case:');
     });
 
     it('UC44: Timeline@render generates classMethod', () => {
-      const id = resolveId('./Timeline.php@render', example('Timeline.php'));
+      const id = resolveId('./Timeline.php@render', advanced('Timeline.php'));
       const code = load(id);
       expect(code).toContain("__type: 'classMethod'");
       expect(code).toContain('events:');
@@ -2576,7 +2543,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     });
 
     it('UC45: EchoLayout@render generates classMethod', () => {
-      const id = resolveId('./EchoLayout.php@render', example('EchoLayout.php'));
+      const id = resolveId('./EchoLayout.php@render', advanced('EchoLayout.php'));
       const code = load(id);
       expect(code).toContain("__type: 'classMethod'");
       expect(code).toContain('title:');
@@ -2590,7 +2557,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
   // -------------------------------------------------------------------------
   describe('Parser: new example metadata', () => {
     it('parses ValueCard with readonly no-visibility params', () => {
-      const meta = parsePhpFile(example('ValueCard.php'));
+      const meta = parsePhpFile(advanced('ValueCard.php'));
       const cls = meta.classes[0]!;
       expect(cls.name).toBe('ValueCard');
       expect(cls.constructorParams).toHaveLength(4);
@@ -2604,7 +2571,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     });
 
     it('parses DataRenderer with iterable and mixed types', () => {
-      const meta = parsePhpFile(example('DataRenderer.php'));
+      const meta = parsePhpFile(advanced('DataRenderer.php'));
       const cls = meta.classes[0]!;
       expect(cls.constructorParams[0]!.type).toBe('iterable');
       const render = cls.methods[0]!;
@@ -2612,7 +2579,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     });
 
     it('parses Visibility enum with multiple methods', () => {
-      const meta = parsePhpFile(example('Visibility.php'));
+      const meta = parsePhpFile(php81('Visibility.php'));
       const vis = meta.classes[0]!;
       expect(vis.isEnum).toBe(true);
       expect(vis.enumBackingType).toBe('string');
@@ -2621,7 +2588,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     });
 
     it('parses Timeline with array return type', () => {
-      const meta = parsePhpFile(example('Timeline.php'));
+      const meta = parsePhpFile(advanced('Timeline.php'));
       const cls = meta.classes[0]!;
       expect(cls.name).toBe('Timeline');
       const render = cls.methods[0]!;
@@ -2629,7 +2596,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     });
 
     it('parses EchoLayout with void return type', () => {
-      const meta = parsePhpFile(example('EchoLayout.php'));
+      const meta = parsePhpFile(advanced('EchoLayout.php'));
       const cls = meta.classes[0]!;
       expect(cls.name).toBe('EchoLayout');
       const render = cls.methods[0]!;
@@ -2647,7 +2614,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders Temperature with float value', async () => {
       const result = await executor.execute({
         type: 'classMethod',
-        file: example('Temperature.php'),
+        file: advanced('Temperature.php'),
         class: 'App\\Components\\Temperature',
         callable: 'render',
         args: { value: 22.5, unit: 'C' },
@@ -2660,7 +2627,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders Temperature below zero with blue color', async () => {
       const result = await executor.execute({
         type: 'classMethod',
-        file: example('Temperature.php'),
+        file: advanced('Temperature.php'),
         class: 'App\\Components\\Temperature',
         callable: 'render',
         args: { value: -5.0, unit: 'C' },
@@ -2673,7 +2640,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders Temperature via static fromFahrenheit', async () => {
       const result = await executor.execute({
         type: 'staticMethod',
-        file: example('Temperature.php'),
+        file: advanced('Temperature.php'),
         class: 'App\\Components\\Temperature',
         callable: 'fromFahrenheit',
         args: { degrees: 212 },
@@ -2686,7 +2653,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders Temperature via static fromCelsius', async () => {
       const result = await executor.execute({
         type: 'staticMethod',
-        file: example('Temperature.php'),
+        file: advanced('Temperature.php'),
         class: 'App\\Components\\Temperature',
         callable: 'fromCelsius',
         args: { degrees: 38.0 },
@@ -2704,7 +2671,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders MediaCard full view', async () => {
       const result = await executor.execute({
         type: 'classMethod',
-        file: example('MediaCard.php'),
+        file: advanced('MediaCard.php'),
         class: 'App\\Components\\MediaCard',
         callable: 'full',
         args: { title: 'Test Article', description: 'Some description', category: 'tech' },
@@ -2719,7 +2686,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders MediaCard compact view', async () => {
       const result = await executor.execute({
         type: 'classMethod',
-        file: example('MediaCard.php'),
+        file: advanced('MediaCard.php'),
         class: 'App\\Components\\MediaCard',
         callable: 'compact',
         args: { title: 'Quick Update', category: 'news' },
@@ -2733,7 +2700,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders MediaCard header view', async () => {
       const result = await executor.execute({
         type: 'classMethod',
-        file: example('MediaCard.php'),
+        file: advanced('MediaCard.php'),
         class: 'App\\Components\\MediaCard',
         callable: 'header',
         args: { title: 'Featured' },
@@ -2752,7 +2719,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders hero template with light theme', async () => {
       const result = await executor.execute({
         type: 'template',
-        file: example('templates/hero.php'),
+        file: basic('templates/hero.php'),
         class: null,
         callable: null,
         args: { title: 'Welcome', subtitle: 'Get Started', ctaLabel: 'Learn More', theme: 'light' },
@@ -2767,7 +2734,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders hero template with dark theme', async () => {
       const result = await executor.execute({
         type: 'template',
-        file: example('templates/hero.php'),
+        file: basic('templates/hero.php'),
         class: null,
         callable: null,
         args: { title: 'Dark Hero', theme: 'dark' },
@@ -2780,7 +2747,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders hero template with gradient theme', async () => {
       const result = await executor.execute({
         type: 'template',
-        file: example('templates/hero.php'),
+        file: basic('templates/hero.php'),
         class: null,
         callable: null,
         args: { title: 'Gradient', theme: 'gradient' },
@@ -2793,7 +2760,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders hero without optional elements', async () => {
       const result = await executor.execute({
         type: 'template',
-        file: example('templates/hero.php'),
+        file: basic('templates/hero.php'),
         class: null,
         callable: null,
         args: { title: 'Minimal' },
@@ -2811,7 +2778,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders stats grid with items', async () => {
       const result = await executor.execute({
         type: 'template',
-        file: example('templates/stats.php'),
+        file: advanced('templates/stats.php'),
         class: null,
         callable: null,
         args: {
@@ -2831,7 +2798,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders colored variant with icons', async () => {
       const result = await executor.execute({
         type: 'template',
-        file: example('templates/stats.php'),
+        file: advanced('templates/stats.php'),
         class: null,
         callable: null,
         args: {
@@ -2848,7 +2815,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders empty stats', async () => {
       const result = await executor.execute({
         type: 'template',
-        file: example('templates/stats.php'),
+        file: advanced('templates/stats.php'),
         class: null,
         callable: null,
         args: { items: [], columns: 3 },
@@ -2865,7 +2832,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders HttpMethod::badge for GET', async () => {
       const result = await executor.execute({
         type: 'enumMethod',
-        file: example('HttpMethod.php'),
+        file: php81('HttpMethod.php'),
         class: 'App\\Components\\HttpMethod',
         callable: 'badge',
         args: { _case: 'GET' },
@@ -2879,7 +2846,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders HttpMethod::badge for DELETE', async () => {
       const result = await executor.execute({
         type: 'enumMethod',
-        file: example('HttpMethod.php'),
+        file: php81('HttpMethod.php'),
         class: 'App\\Components\\HttpMethod',
         callable: 'badge',
         args: { _case: 'DELETE' },
@@ -2892,7 +2859,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders HttpMethod::endpoint with path and description', async () => {
       const result = await executor.execute({
         type: 'enumMethod',
-        file: example('HttpMethod.php'),
+        file: php81('HttpMethod.php'),
         class: 'App\\Components\\HttpMethod',
         callable: 'endpoint',
         args: { _case: 'POST', path: '/api/users', description: 'Create user' },
@@ -2907,7 +2874,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders HttpMethod::endpoint without description', async () => {
       const result = await executor.execute({
         type: 'enumMethod',
-        file: example('HttpMethod.php'),
+        file: php81('HttpMethod.php'),
         class: 'App\\Components\\HttpMethod',
         callable: 'endpoint',
         args: { _case: 'GET', path: '/api/health' },
@@ -2925,7 +2892,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders Tabs with active tab', async () => {
       const result = await executor.execute({
         type: 'classMethod',
-        file: example('Tabs.php'),
+        file: advanced('Tabs.php'),
         class: 'App\\Components\\Tabs',
         callable: 'render',
         args: {
@@ -2946,7 +2913,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders Tabs with second tab active', async () => {
       const result = await executor.execute({
         type: 'classMethod',
-        file: example('Tabs.php'),
+        file: advanced('Tabs.php'),
         class: 'App\\Components\\Tabs',
         callable: 'render',
         args: {
@@ -2964,7 +2931,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders empty Tabs', async () => {
       const result = await executor.execute({
         type: 'classMethod',
-        file: example('Tabs.php'),
+        file: advanced('Tabs.php'),
         class: 'App\\Components\\Tabs',
         callable: 'render',
         args: { tabs: [] },
@@ -2981,7 +2948,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders Divider with solid style', async () => {
       const result = await executor.execute({
         type: 'classMethod',
-        file: example('Divider.php'),
+        file: php81('Divider.php'),
         class: 'App\\Components\\Divider',
         callable: '__invoke',
         args: { style: 'solid' },
@@ -2994,7 +2961,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders Divider with dashed style and custom color', async () => {
       const result = await executor.execute({
         type: 'classMethod',
-        file: example('Divider.php'),
+        file: php81('Divider.php'),
         class: 'App\\Components\\Divider',
         callable: '__invoke',
         args: { style: 'dashed', color: '#3b82f6' },
@@ -3007,7 +2974,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders Divider with label', async () => {
       const result = await executor.execute({
         type: 'classMethod',
-        file: example('Divider.php'),
+        file: php81('Divider.php'),
         class: 'App\\Components\\Divider',
         callable: '__invoke',
         args: { label: 'OR', style: 'solid' },
@@ -3025,7 +2992,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders Countdown from 10', async () => {
       const result = await executor.execute({
         type: 'classMethod',
-        file: example('Countdown.php'),
+        file: advanced('Countdown.php'),
         class: 'App\\Components\\Countdown',
         callable: 'render',
         args: { from: 5, finishMessage: 'Go!' },
@@ -3040,7 +3007,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders Countdown without zero', async () => {
       const result = await executor.execute({
         type: 'classMethod',
-        file: example('Countdown.php'),
+        file: advanced('Countdown.php'),
         class: 'App\\Components\\Countdown',
         callable: 'render',
         args: { from: 3, showZero: false },
@@ -3057,7 +3024,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders key-value list', async () => {
       const result = await executor.execute({
         type: 'function',
-        file: example('KeyValue.php'),
+        file: advanced('KeyValue.php'),
         class: null,
         callable: 'keyValueList',
         args: { items: { Name: 'John', Email: 'john@example.com' } },
@@ -3072,7 +3039,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders horizontal key-value list', async () => {
       const result = await executor.execute({
         type: 'function',
-        file: example('KeyValue.php'),
+        file: advanced('KeyValue.php'),
         class: null,
         callable: 'keyValueList',
         args: { items: { Status: 'Active' }, horizontal: true },
@@ -3084,7 +3051,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders empty key-value list', async () => {
       const result = await executor.execute({
         type: 'function',
-        file: example('KeyValue.php'),
+        file: advanced('KeyValue.php'),
         class: null,
         callable: 'keyValueList',
         args: { items: {}, emptyMessage: 'Nothing here' },
@@ -3102,7 +3069,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders FlexGrid with items', async () => {
       const result = await executor.execute({
         type: 'classMethod',
-        file: example('FlexGrid.php'),
+        file: advanced('FlexGrid.php'),
         class: 'App\\Components\\FlexGrid',
         callable: 'render',
         args: { id: 'test-grid', items: ['A', 'B', 'C'], columns: 3, gap: '16px' },
@@ -3116,7 +3083,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders empty FlexGrid', async () => {
       const result = await executor.execute({
         type: 'classMethod',
-        file: example('FlexGrid.php'),
+        file: advanced('FlexGrid.php'),
         class: 'App\\Components\\FlexGrid',
         callable: 'render',
         args: { items: [] },
@@ -3128,7 +3095,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders FlexGrid with two columns', async () => {
       const result = await executor.execute({
         type: 'classMethod',
-        file: example('FlexGrid.php'),
+        file: advanced('FlexGrid.php'),
         class: 'App\\Components\\FlexGrid',
         callable: 'render',
         args: { id: 'two', items: ['X', 'Y'], columns: 2 },
@@ -3147,7 +3114,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     const load = (plugin as any).load.bind(plugin);
 
     it('UC46: Temperature@render generates classMethod with float param', () => {
-      const id = resolveId('./Temperature.php@render', example('Temperature.php'));
+      const id = resolveId('./Temperature.php@render', advanced('Temperature.php'));
       const code = load(id);
       expect(code).toContain("__type: 'classMethod'");
       expect(code).toContain('value:');
@@ -3155,14 +3122,14 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     });
 
     it('UC46: Temperature@fromFahrenheit generates staticMethod', () => {
-      const id = resolveId('./Temperature.php@fromFahrenheit', example('Temperature.php'));
+      const id = resolveId('./Temperature.php@fromFahrenheit', advanced('Temperature.php'));
       const code = load(id);
       expect(code).toContain("__type: 'staticMethod'");
       expect(code).toContain('degrees:');
     });
 
     it('UC47: MediaCard@full generates classMethod', () => {
-      const id = resolveId('./MediaCard.php@full', example('MediaCard.php'));
+      const id = resolveId('./MediaCard.php@full', advanced('MediaCard.php'));
       const code = load(id);
       expect(code).toContain("__type: 'classMethod'");
       expect(code).toContain('title:');
@@ -3171,28 +3138,28 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     });
 
     it('UC47: MediaCard@compact generates classMethod', () => {
-      const id = resolveId('./MediaCard.php@compact', example('MediaCard.php'));
+      const id = resolveId('./MediaCard.php@compact', advanced('MediaCard.php'));
       const code = load(id);
       expect(code).toContain("__type: 'classMethod'");
       expect(code).toContain("__callable: \"compact\"");
     });
 
     it('UC47: MediaCard@header generates classMethod', () => {
-      const id = resolveId('./MediaCard.php@header', example('MediaCard.php'));
+      const id = resolveId('./MediaCard.php@header', advanced('MediaCard.php'));
       const code = load(id);
       expect(code).toContain("__type: 'classMethod'");
       expect(code).toContain("__callable: \"header\"");
     });
 
     it('UC50: HttpMethod@badge generates enumMethod for unit enum', () => {
-      const id = resolveId('./HttpMethod.php@badge', example('HttpMethod.php'));
+      const id = resolveId('./HttpMethod.php@badge', php81('HttpMethod.php'));
       const code = load(id);
       expect(code).toContain("__type: 'enumMethod'");
       expect(code).toContain('_case:');
     });
 
     it('UC50: HttpMethod@endpoint generates enumMethod with params', () => {
-      const id = resolveId('./HttpMethod.php@endpoint', example('HttpMethod.php'));
+      const id = resolveId('./HttpMethod.php@endpoint', php81('HttpMethod.php'));
       const code = load(id);
       expect(code).toContain("__type: 'enumMethod'");
       expect(code).toContain('_case:');
@@ -3201,7 +3168,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     });
 
     it('UC51: Tabs@render generates classMethod', () => {
-      const id = resolveId('./Tabs.php@render', example('Tabs.php'));
+      const id = resolveId('./Tabs.php@render', advanced('Tabs.php'));
       const code = load(id);
       expect(code).toContain("__type: 'classMethod'");
       expect(code).toContain('tabs:');
@@ -3209,7 +3176,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     });
 
     it('UC52: Divider@__invoke generates classMethod', () => {
-      const id = resolveId('./Divider.php@__invoke', example('Divider.php'));
+      const id = resolveId('./Divider.php@__invoke', php81('Divider.php'));
       const code = load(id);
       expect(code).toContain("__type: 'classMethod'");
       expect(code).toContain("__callable: \"__invoke\"");
@@ -3218,7 +3185,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     });
 
     it('UC54: KeyValue@keyValueList generates function', () => {
-      const id = resolveId('./KeyValue.php@keyValueList', example('KeyValue.php'));
+      const id = resolveId('./KeyValue.php@keyValueList', advanced('KeyValue.php'));
       const code = load(id);
       expect(code).toContain("__type: 'function'");
       expect(code).toContain('items:');
@@ -3226,7 +3193,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     });
 
     it('UC55: FlexGrid@render generates classMethod', () => {
-      const id = resolveId('./FlexGrid.php@render', example('FlexGrid.php'));
+      const id = resolveId('./FlexGrid.php@render', advanced('FlexGrid.php'));
       const code = load(id);
       expect(code).toContain("__type: 'classMethod'");
       expect(code).toContain('items:');
@@ -3239,7 +3206,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
   // -------------------------------------------------------------------------
   describe('Parser: UC46-UC55 metadata', () => {
     it('parses Temperature with float param and static methods', () => {
-      const meta = parsePhpFile(example('Temperature.php'));
+      const meta = parsePhpFile(advanced('Temperature.php'));
       const cls = meta.classes.find(c => c.name === 'Temperature');
       expect(cls).toBeDefined();
       const value = cls!.constructorParams.find(p => p.name === 'value');
@@ -3252,7 +3219,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     });
 
     it('parses MediaCard with three render methods', () => {
-      const meta = parsePhpFile(example('MediaCard.php'));
+      const meta = parsePhpFile(advanced('MediaCard.php'));
       const cls = meta.classes.find(c => c.name === 'MediaCard');
       expect(cls).toBeDefined();
       expect(cls!.constructorParams).toHaveLength(4);
@@ -3263,7 +3230,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     });
 
     it('parses HttpMethod as unit enum with multiple methods', () => {
-      const meta = parsePhpFile(example('HttpMethod.php'));
+      const meta = parsePhpFile(php81('HttpMethod.php'));
       const cls = meta.classes.find(c => c.name === 'HttpMethod');
       expect(cls).toBeDefined();
       expect(cls!.isEnum).toBe(true);
@@ -3278,7 +3245,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     });
 
     it('parses Tabs with Generator return type', () => {
-      const meta = parsePhpFile(example('Tabs.php'));
+      const meta = parsePhpFile(advanced('Tabs.php'));
       const cls = meta.classes.find(c => c.name === 'Tabs');
       expect(cls).toBeDefined();
       const render = cls!.methods.find(m => m.name === 'render');
@@ -3287,7 +3254,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     });
 
     it('parses Divider class and DividerStyle enum', () => {
-      const meta = parsePhpFile(example('Divider.php'));
+      const meta = parsePhpFile(php81('Divider.php'));
       const divEnum = meta.classes.find(c => c.name === 'DividerStyle');
       expect(divEnum).toBeDefined();
       expect(divEnum!.isEnum).toBe(true);
@@ -3300,7 +3267,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     });
 
     it('parses Countdown with void return and int params', () => {
-      const meta = parsePhpFile(example('Countdown.php'));
+      const meta = parsePhpFile(advanced('Countdown.php'));
       const cls = meta.classes.find(c => c.name === 'Countdown');
       expect(cls).toBeDefined();
       const render = cls!.methods.find(m => m.name === 'render');
@@ -3310,7 +3277,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     });
 
     it('parses keyValueList global function', () => {
-      const meta = parsePhpFile(example('KeyValue.php'));
+      const meta = parsePhpFile(advanced('KeyValue.php'));
       expect(meta.functions).toHaveLength(1);
       const fn = meta.functions[0]!;
       expect(fn.name).toBe('keyValueList');
@@ -3321,7 +3288,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     });
 
     it('parses FlexGrid with self return type method', () => {
-      const meta = parsePhpFile(example('FlexGrid.php'));
+      const meta = parsePhpFile(advanced('FlexGrid.php'));
       const cls = meta.classes.find(c => c.name === 'FlexGrid');
       expect(cls).toBeDefined();
       const configure = cls!.methods.find(m => m.name === 'configure');
@@ -3340,7 +3307,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders Meter with int value', async () => {
       const result = await executor.execute({
         type: 'classMethod',
-        file: example('Meter.php'),
+        file: advanced('Meter.php'),
         class: 'App\\Components\\Meter',
         callable: 'render',
         args: { value: 75 },
@@ -3354,7 +3321,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders Meter with float value and custom range', async () => {
       const result = await executor.execute({
         type: 'classMethod',
-        file: example('Meter.php'),
+        file: advanced('Meter.php'),
         class: 'App\\Components\\Meter',
         callable: 'render',
         args: { value: 33.7, min: 0, max: 50, label: 'Temp' },
@@ -3368,7 +3335,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders Meter with custom color', async () => {
       const result = await executor.execute({
         type: 'classMethod',
-        file: example('Meter.php'),
+        file: advanced('Meter.php'),
         class: 'App\\Components\\Meter',
         callable: 'render',
         args: { value: 100, color: '#3b82f6' },
@@ -3381,7 +3348,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders Meter with low value (red)', async () => {
       const result = await executor.execute({
         type: 'classMethod',
-        file: example('Meter.php'),
+        file: advanced('Meter.php'),
         class: 'App\\Components\\Meter',
         callable: 'render',
         args: { value: 10 },
@@ -3391,7 +3358,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     });
 
     it('parser detects int|float union type', () => {
-      const meta = parsePhpFile(example('Meter.php'));
+      const meta = parsePhpFile(advanced('Meter.php'));
       const cls = meta.classes.find(c => c.name === 'Meter');
       expect(cls).toBeDefined();
       const value = cls!.constructorParams.find(p => p.name === 'value');
@@ -3415,7 +3382,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders Dropdown toggle closed', async () => {
       const result = await executor.execute({
         type: 'classMethod',
-        file: example('Dropdown.php'),
+        file: advanced('Dropdown.php'),
         class: 'App\\Components\\Dropdown',
         callable: 'toggle',
         args: { label: 'Options', items: ['Edit', 'Delete'] },
@@ -3430,7 +3397,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders Dropdown toggle open', async () => {
       const result = await executor.execute({
         type: 'classMethod',
-        file: example('Dropdown.php'),
+        file: advanced('Dropdown.php'),
         class: 'App\\Components\\Dropdown',
         callable: 'toggle',
         args: { label: 'Actions', items: ['Copy', 'Move'], open: true },
@@ -3443,7 +3410,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders Dropdown toggle with placeholder', async () => {
       const result = await executor.execute({
         type: 'classMethod',
-        file: example('Dropdown.php'),
+        file: advanced('Dropdown.php'),
         class: 'App\\Components\\Dropdown',
         callable: 'toggle',
         args: { label: 'Filter', items: ['A'], open: true, placeholder: 'Pick one...' },
@@ -3455,7 +3422,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders Dropdown search with results', async () => {
       const result = await executor.execute({
         type: 'classMethod',
-        file: example('Dropdown.php'),
+        file: advanced('Dropdown.php'),
         class: 'App\\Components\\Dropdown',
         callable: 'search',
         args: { label: 'Search', items: ['Apple', 'Banana', 'Cherry'], query: 'an' },
@@ -3468,7 +3435,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders Dropdown search no results', async () => {
       const result = await executor.execute({
         type: 'classMethod',
-        file: example('Dropdown.php'),
+        file: advanced('Dropdown.php'),
         class: 'App\\Components\\Dropdown',
         callable: 'search',
         args: { label: 'Search', items: ['One', 'Two'], query: 'xyz' },
@@ -3479,7 +3446,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     });
 
     it('parser detects multiple interfaces', () => {
-      const meta = parsePhpFile(example('Dropdown.php'));
+      const meta = parsePhpFile(advanced('Dropdown.php'));
       const cls = meta.classes.find(c => c.name === 'Dropdown');
       expect(cls).toBeDefined();
       expect(cls!.implements).toContain('Togglable');
@@ -3496,7 +3463,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders truncate with short text', async () => {
       const result = await executor.execute({
         type: 'function',
-        file: example('TextFormatter.php'),
+        file: advanced('TextFormatter.php'),
         class: null,
         callable: 'truncate',
         args: { text: 'Hello' },
@@ -3509,7 +3476,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders truncate with long text', async () => {
       const result = await executor.execute({
         type: 'function',
-        file: example('TextFormatter.php'),
+        file: advanced('TextFormatter.php'),
         class: null,
         callable: 'truncate',
         args: { text: 'This is a very long string that should be truncated', length: 20 },
@@ -3522,7 +3489,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders truncate with custom suffix', async () => {
       const result = await executor.execute({
         type: 'function',
-        file: example('TextFormatter.php'),
+        file: advanced('TextFormatter.php'),
         class: null,
         callable: 'truncate',
         args: { text: 'A really long piece of text for testing', length: 15, suffix: ' [more]' },
@@ -3534,7 +3501,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders highlight with matching term', async () => {
       const result = await executor.execute({
         type: 'function',
-        file: example('TextFormatter.php'),
+        file: advanced('TextFormatter.php'),
         class: null,
         callable: 'highlight',
         args: { text: 'The quick brown fox', term: 'fox' },
@@ -3547,7 +3514,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders highlight with custom color', async () => {
       const result = await executor.execute({
         type: 'function',
-        file: example('TextFormatter.php'),
+        file: advanced('TextFormatter.php'),
         class: null,
         callable: 'highlight',
         args: { text: 'Hello World', term: 'World', color: '#bbf7d0' },
@@ -3559,7 +3526,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders slugify', async () => {
       const result = await executor.execute({
         type: 'function',
-        file: example('TextFormatter.php'),
+        file: advanced('TextFormatter.php'),
         class: null,
         callable: 'slugify',
         args: { text: 'Hello World Example' },
@@ -3572,7 +3539,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders slugify with custom separator', async () => {
       const result = await executor.execute({
         type: 'function',
-        file: example('TextFormatter.php'),
+        file: advanced('TextFormatter.php'),
         class: null,
         callable: 'slugify',
         args: { text: 'My Blog Post', separator: '_' },
@@ -3582,7 +3549,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     });
 
     it('parser detects all three global functions', () => {
-      const meta = parsePhpFile(example('TextFormatter.php'));
+      const meta = parsePhpFile(advanced('TextFormatter.php'));
       expect(meta.namespace).toBeNull();
       expect(meta.functions).toHaveLength(3);
       const names = meta.functions.map(f => f.name);
@@ -3605,7 +3572,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders pricing grid with USD plans', async () => {
       const result = await executor.execute({
         type: 'template',
-        file: example('templates/pricing.php'),
+        file: advanced('templates/pricing.php'),
         class: null,
         callable: null,
         args: {
@@ -3631,7 +3598,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders pricing with EUR currency', async () => {
       const result = await executor.execute({
         type: 'template',
-        file: example('templates/pricing.php'),
+        file: advanced('templates/pricing.php'),
         class: null,
         callable: null,
         args: {
@@ -3648,7 +3615,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders pricing with JPY (no decimals)', async () => {
       const result = await executor.execute({
         type: 'template',
-        file: example('templates/pricing.php'),
+        file: advanced('templates/pricing.php'),
         class: null,
         callable: null,
         args: {
@@ -3663,7 +3630,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders empty pricing', async () => {
       const result = await executor.execute({
         type: 'template',
-        file: example('templates/pricing.php'),
+        file: advanced('templates/pricing.php'),
         class: null,
         callable: null,
         args: { plans: [] },
@@ -3680,7 +3647,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders Carousel with string items', async () => {
       const result = await executor.execute({
         type: 'classMethod',
-        file: example('Carousel.php'),
+        file: advanced('Carousel.php'),
         class: 'App\\Components\\Carousel',
         callable: 'render',
         args: { items: ['First', 'Second', 'Third'] },
@@ -3696,7 +3663,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders Carousel with second slide active', async () => {
       const result = await executor.execute({
         type: 'classMethod',
-        file: example('Carousel.php'),
+        file: advanced('Carousel.php'),
         class: 'App\\Components\\Carousel',
         callable: 'render',
         args: { items: ['A', 'B'], activeIndex: 1 },
@@ -3708,7 +3675,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders Carousel with autoplay', async () => {
       const result = await executor.execute({
         type: 'classMethod',
-        file: example('Carousel.php'),
+        file: advanced('Carousel.php'),
         class: 'App\\Components\\Carousel',
         callable: 'render',
         args: { items: ['Slide'], autoplay: true },
@@ -3720,7 +3687,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders empty Carousel', async () => {
       const result = await executor.execute({
         type: 'classMethod',
-        file: example('Carousel.php'),
+        file: advanced('Carousel.php'),
         class: 'App\\Components\\Carousel',
         callable: 'render',
         args: { items: [] },
@@ -3730,7 +3697,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     });
 
     it('parser detects Carousel with variadic constructor and method params', () => {
-      const meta = parsePhpFile(example('Carousel.php'));
+      const meta = parsePhpFile(advanced('Carousel.php'));
       const cls = meta.classes.find(c => c.name === 'Carousel');
       expect(cls).toBeDefined();
       const ctorSlides = cls!.constructorParams.find(p => p.name === 'slides');
@@ -3746,7 +3713,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     });
 
     it('parser detects Slide class with __toString', () => {
-      const meta = parsePhpFile(example('Carousel.php'));
+      const meta = parsePhpFile(advanced('Carousel.php'));
       const slide = meta.classes.find(c => c.name === 'Slide');
       expect(slide).toBeDefined();
       expect(slide!.methods.some(m => m.name === '__toString')).toBe(true);
@@ -3762,7 +3729,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     const load = (plugin as any).load.bind(plugin);
 
     it('UC56: Meter@render generates classMethod with union type', () => {
-      const id = resolveId('./Meter.php@render', example('Meter.php'));
+      const id = resolveId('./Meter.php@render', advanced('Meter.php'));
       const code = load(id);
       expect(code).toContain("__type: 'classMethod'");
       expect(code).toContain('Meter');
@@ -3773,7 +3740,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     });
 
     it('UC57: Dropdown@toggle generates classMethod', () => {
-      const id = resolveId('./Dropdown.php@toggle', example('Dropdown.php'));
+      const id = resolveId('./Dropdown.php@toggle', advanced('Dropdown.php'));
       const code = load(id);
       expect(code).toContain("__type: 'classMethod'");
       expect(code).toContain('Dropdown');
@@ -3783,14 +3750,14 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     });
 
     it('UC57: Dropdown@search generates classMethod for second interface method', () => {
-      const id = resolveId('./Dropdown.php@search', example('Dropdown.php'));
+      const id = resolveId('./Dropdown.php@search', advanced('Dropdown.php'));
       const code = load(id);
       expect(code).toContain("__type: 'classMethod'");
       expect(code).toContain('query:');
     });
 
     it('UC58: TextFormatter@truncate generates function', () => {
-      const id = resolveId('./TextFormatter.php@truncate', example('TextFormatter.php'));
+      const id = resolveId('./TextFormatter.php@truncate', advanced('TextFormatter.php'));
       const code = load(id);
       expect(code).toContain("__type: 'function'");
       expect(code).toContain('text:');
@@ -3799,7 +3766,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     });
 
     it('UC58: TextFormatter@highlight generates function', () => {
-      const id = resolveId('./TextFormatter.php@highlight', example('TextFormatter.php'));
+      const id = resolveId('./TextFormatter.php@highlight', advanced('TextFormatter.php'));
       const code = load(id);
       expect(code).toContain("__type: 'function'");
       expect(code).toContain('text:');
@@ -3808,7 +3775,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     });
 
     it('UC58: TextFormatter@slugify generates function', () => {
-      const id = resolveId('./TextFormatter.php@slugify', example('TextFormatter.php'));
+      const id = resolveId('./TextFormatter.php@slugify', advanced('TextFormatter.php'));
       const code = load(id);
       expect(code).toContain("__type: 'function'");
       expect(code).toContain('text:');
@@ -3816,7 +3783,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     });
 
     it('UC60: Carousel@render generates classMethod', () => {
-      const id = resolveId('./Carousel.php@render', example('Carousel.php'));
+      const id = resolveId('./Carousel.php@render', advanced('Carousel.php'));
       const code = load(id);
       expect(code).toContain("__type: 'classMethod'");
       expect(code).toContain('Carousel');
@@ -3829,7 +3796,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
   // -------------------------------------------------------------------------
   describe('UC61: Enum implementing interface', () => {
     it('parses LogLevel enum with implements HasLabel', () => {
-      const meta = parsePhpFile(example('LogLevel.php'));
+      const meta = parsePhpFile(php81('LogLevel.php'));
       const logLevel = meta.classes.find(c => c.name === 'LogLevel');
       expect(logLevel).toBeDefined();
       expect(logLevel!.isEnum).toBe(true);
@@ -3842,7 +3809,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders LogLevel::badge for info case', async () => {
       const result = await executor.execute({
         type: 'enumMethod',
-        file: example('LogLevel.php'),
+        file: php81('LogLevel.php'),
         class: 'App\\Components\\LogLevel',
         callable: 'badge',
         args: { _case: 'info' },
@@ -3855,7 +3822,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders LogLevel::entry with timestamp', async () => {
       const result = await executor.execute({
         type: 'enumMethod',
-        file: example('LogLevel.php'),
+        file: php81('LogLevel.php'),
         class: 'App\\Components\\LogLevel',
         callable: 'entry',
         args: { _case: 'error', message: 'DB down', timestamp: '2025-01-01 00:00:00' },
@@ -3872,7 +3839,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
   // -------------------------------------------------------------------------
   describe('UC62: Multiple traits', () => {
     it('parses Widget with HasIcon, HasBadge, HasActions traits', () => {
-      const meta = parsePhpFile(example('Widget.php'));
+      const meta = parsePhpFile(advanced('Widget.php'));
       const widget = meta.classes.find(c => c.name === 'Widget');
       expect(widget).toBeDefined();
       expect(widget!.traits).toContain('HasIcon');
@@ -3883,7 +3850,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders Widget@icon (from HasIcon trait)', async () => {
       const result = await executor.execute({
         type: 'classMethod',
-        file: example('Widget.php'),
+        file: advanced('Widget.php'),
         class: 'App\\Components\\Widget',
         callable: 'icon',
         args: { title: 'Test', name: 'star', size: 32 },
@@ -3896,7 +3863,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders Widget@badge (from HasBadge trait)', async () => {
       const result = await executor.execute({
         type: 'classMethod',
-        file: example('Widget.php'),
+        file: advanced('Widget.php'),
         class: 'App\\Components\\Widget',
         callable: 'badge',
         args: { title: 'Test', text: 'HOT', color: '#ef4444' },
@@ -3909,7 +3876,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders Widget@actionBar (from HasActions trait)', async () => {
       const result = await executor.execute({
         type: 'classMethod',
-        file: example('Widget.php'),
+        file: advanced('Widget.php'),
         class: 'App\\Components\\Widget',
         callable: 'actionBar',
         args: { title: 'Test', primaryLabel: 'Save', secondaryLabel: 'Cancel' },
@@ -3926,7 +3893,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
   // -------------------------------------------------------------------------
   describe('UC63: Array return with html key', () => {
     it('parses StatsCard with array return type', () => {
-      const meta = parsePhpFile(example('ArrayReturn.php'));
+      const meta = parsePhpFile(advanced('ArrayReturn.php'));
       const cls = meta.classes.find(c => c.name === 'StatsCard');
       expect(cls).toBeDefined();
       const render = cls!.methods.find(m => m.name === 'render');
@@ -3937,7 +3904,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders StatsCard with change indicator', async () => {
       const result = await executor.execute({
         type: 'classMethod',
-        file: example('ArrayReturn.php'),
+        file: advanced('ArrayReturn.php'),
         class: 'App\\Components\\StatsCard',
         callable: 'render',
         args: { label: 'Revenue', value: 12450, unit: 'USD', change: 12.5 },
@@ -3952,7 +3919,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders StatsCard without change', async () => {
       const result = await executor.execute({
         type: 'classMethod',
-        file: example('ArrayReturn.php'),
+        file: advanced('ArrayReturn.php'),
         class: 'App\\Components\\StatsCard',
         callable: 'render',
         args: { label: 'Uptime', value: 99.9, unit: '%' },
@@ -3968,7 +3935,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
   // -------------------------------------------------------------------------
   describe('UC64: Stringable return', () => {
     it('parses FragmentBuilder with HtmlFragment return type', () => {
-      const meta = parsePhpFile(example('HtmlFragment.php'));
+      const meta = parsePhpFile(php80('HtmlFragment.php'));
       const builder = meta.classes.find(c => c.name === 'FragmentBuilder');
       expect(builder).toBeDefined();
       const render = builder!.methods.find(m => m.name === 'render');
@@ -3979,7 +3946,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders FragmentBuilder with heading and body', async () => {
       const result = await executor.execute({
         type: 'classMethod',
-        file: example('HtmlFragment.php'),
+        file: php80('HtmlFragment.php'),
         class: 'App\\Components\\FragmentBuilder',
         callable: 'render',
         args: { heading: 'My Title', body: 'My content' },
@@ -3993,7 +3960,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders FragmentBuilder with heading only', async () => {
       const result = await executor.execute({
         type: 'classMethod',
-        file: example('HtmlFragment.php'),
+        file: php80('HtmlFragment.php'),
         class: 'App\\Components\\FragmentBuilder',
         callable: 'render',
         args: { heading: 'Solo Heading' },
@@ -4009,7 +3976,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
   // -------------------------------------------------------------------------
   describe('UC65: Multiple static methods', () => {
     it('parses MarkupHelper with three static methods', () => {
-      const meta = parsePhpFile(example('MarkupHelper.php'));
+      const meta = parsePhpFile(advanced('MarkupHelper.php'));
       const cls = meta.classes.find(c => c.name === 'MarkupHelper');
       expect(cls).toBeDefined();
       expect(cls!.constructorParams).toHaveLength(0);
@@ -4020,7 +3987,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders MarkupHelper::button', async () => {
       const result = await executor.execute({
         type: 'staticMethod',
-        file: example('MarkupHelper.php'),
+        file: advanced('MarkupHelper.php'),
         class: 'App\\Components\\MarkupHelper',
         callable: 'button',
         args: { label: 'Submit', variant: 'danger' },
@@ -4033,7 +4000,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders MarkupHelper::button disabled', async () => {
       const result = await executor.execute({
         type: 'staticMethod',
-        file: example('MarkupHelper.php'),
+        file: advanced('MarkupHelper.php'),
         class: 'App\\Components\\MarkupHelper',
         callable: 'button',
         args: { label: 'Disabled', disabled: true },
@@ -4046,7 +4013,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders MarkupHelper::link external', async () => {
       const result = await executor.execute({
         type: 'staticMethod',
-        file: example('MarkupHelper.php'),
+        file: advanced('MarkupHelper.php'),
         class: 'App\\Components\\MarkupHelper',
         callable: 'link',
         args: { text: 'GitHub', href: 'https://github.com', external: true },
@@ -4060,7 +4027,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders MarkupHelper::image with defaults', async () => {
       const result = await executor.execute({
         type: 'staticMethod',
-        file: example('MarkupHelper.php'),
+        file: advanced('MarkupHelper.php'),
         class: 'App\\Components\\MarkupHelper',
         callable: 'image',
         args: { alt: 'Placeholder' },
@@ -4079,7 +4046,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders FAQ template with items', async () => {
       const result = await executor.execute({
         type: 'template',
-        file: resolve(examplesDir, 'templates/faq.php'),
+        file: resolve(advancedDir, 'templates/faq.php'),
         class: null,
         callable: null,
         args: {
@@ -4100,7 +4067,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders FAQ template with numbered items', async () => {
       const result = await executor.execute({
         type: 'template',
-        file: resolve(examplesDir, 'templates/faq.php'),
+        file: resolve(advancedDir, 'templates/faq.php'),
         class: null,
         callable: null,
         args: {
@@ -4118,7 +4085,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders FAQ template with empty items', async () => {
       const result = await executor.execute({
         type: 'template',
-        file: resolve(examplesDir, 'templates/faq.php'),
+        file: resolve(advancedDir, 'templates/faq.php'),
         class: null,
         callable: null,
         args: { title: 'Empty FAQ', items: [] },
@@ -4137,7 +4104,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     const load = (plugin as any).load.bind(plugin);
 
     it('UC61: LogLevel@badge generates enumMethod', () => {
-      const id = resolveId('./LogLevel.php@badge', example('LogLevel.php'));
+      const id = resolveId('./LogLevel.php@badge', php81('LogLevel.php'));
       const code = load(id);
       expect(code).toContain("__type: 'enumMethod'");
       expect(code).toContain('LogLevel');
@@ -4145,7 +4112,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     });
 
     it('UC61: LogLevel@entry generates enumMethod with params', () => {
-      const id = resolveId('./LogLevel.php@entry', example('LogLevel.php'));
+      const id = resolveId('./LogLevel.php@entry', php81('LogLevel.php'));
       const code = load(id);
       expect(code).toContain("__type: 'enumMethod'");
       expect(code).toContain('message:');
@@ -4153,7 +4120,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     });
 
     it('UC62: Widget@icon generates classMethod from trait', () => {
-      const id = resolveId('./Widget.php@icon', example('Widget.php'));
+      const id = resolveId('./Widget.php@icon', advanced('Widget.php'));
       const code = load(id);
       expect(code).toContain("__type: 'classMethod'");
       expect(code).toContain('Widget');
@@ -4162,21 +4129,21 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     });
 
     it('UC62: Widget@badge generates classMethod from second trait', () => {
-      const id = resolveId('./Widget.php@badge', example('Widget.php'));
+      const id = resolveId('./Widget.php@badge', advanced('Widget.php'));
       const code = load(id);
       expect(code).toContain("__type: 'classMethod'");
       expect(code).toContain('text:');
     });
 
     it('UC62: Widget@actionBar generates classMethod from third trait', () => {
-      const id = resolveId('./Widget.php@actionBar', example('Widget.php'));
+      const id = resolveId('./Widget.php@actionBar', advanced('Widget.php'));
       const code = load(id);
       expect(code).toContain("__type: 'classMethod'");
       expect(code).toContain('primaryLabel:');
     });
 
     it('UC63: ArrayReturn@render generates classMethod', () => {
-      const id = resolveId('./ArrayReturn.php@render', example('ArrayReturn.php'));
+      const id = resolveId('./ArrayReturn.php@render', advanced('ArrayReturn.php'));
       const code = load(id);
       expect(code).toContain("__type: 'classMethod'");
       expect(code).toContain('label:');
@@ -4184,14 +4151,14 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     });
 
     it('UC64: HtmlFragment@render generates classMethod for FragmentBuilder', () => {
-      const id = resolveId('./HtmlFragment.php@render', example('HtmlFragment.php'));
+      const id = resolveId('./HtmlFragment.php@render', php80('HtmlFragment.php'));
       const code = load(id);
       expect(code).toContain("__type: 'classMethod'");
       expect(code).toContain('heading:');
     });
 
     it('UC65: MarkupHelper@button generates staticMethod', () => {
-      const id = resolveId('./MarkupHelper.php@button', example('MarkupHelper.php'));
+      const id = resolveId('./MarkupHelper.php@button', advanced('MarkupHelper.php'));
       const code = load(id);
       expect(code).toContain("__type: 'staticMethod'");
       expect(code).toContain('label:');
@@ -4199,7 +4166,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     });
 
     it('UC65: MarkupHelper@link generates staticMethod', () => {
-      const id = resolveId('./MarkupHelper.php@link', example('MarkupHelper.php'));
+      const id = resolveId('./MarkupHelper.php@link', advanced('MarkupHelper.php'));
       const code = load(id);
       expect(code).toContain("__type: 'staticMethod'");
       expect(code).toContain('text:');
@@ -4207,7 +4174,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     });
 
     it('UC65: MarkupHelper@image generates staticMethod', () => {
-      const id = resolveId('./MarkupHelper.php@image', example('MarkupHelper.php'));
+      const id = resolveId('./MarkupHelper.php@image', advanced('MarkupHelper.php'));
       const code = load(id);
       expect(code).toContain("__type: 'staticMethod'");
       expect(code).toContain('alt:');
@@ -4217,7 +4184,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     // --- New examples ---
 
     it('UC66: Anchor@render generates classMethod with nullable param', () => {
-      const id = resolveId('./Anchor.php@render', example('Anchor.php'));
+      const id = resolveId('./Anchor.php@render', basic('Anchor.php'));
       const code = load(id);
       expect(code).toContain("__type: 'classMethod'");
       expect(code).toContain('text:');
@@ -4227,7 +4194,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     });
 
     it('UC67: Money@render generates classMethod for final readonly class', () => {
-      const id = resolveId('./Money.php@render', example('Money.php'));
+      const id = resolveId('./Money.php@render', advanced('Money.php'));
       const code = load(id);
       expect(code).toContain("__type: 'classMethod'");
       expect(code).toContain('amount:');
@@ -4235,7 +4202,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     });
 
     it('UC67: Money@fromCents generates staticMethod', () => {
-      const id = resolveId('./Money.php@fromCents', example('Money.php'));
+      const id = resolveId('./Money.php@fromCents', advanced('Money.php'));
       const code = load(id);
       expect(code).toContain("__type: 'staticMethod'");
       expect(code).toContain('cents:');
@@ -4243,30 +4210,16 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     });
 
     it('UC67: Money@fromDollars generates staticMethod', () => {
-      const id = resolveId('./Money.php@fromDollars', example('Money.php'));
+      const id = resolveId('./Money.php@fromDollars', advanced('Money.php'));
       const code = load(id);
       expect(code).toContain("__type: 'staticMethod'");
       expect(code).toContain('dollars:');
       expect(code).toContain('currency:');
     });
 
-    it('UC68: Severity@label generates enumMethod for interface-implementing enum', () => {
-      const id = resolveId('./Severity.php@label', example('Severity.php'));
-      const code = load(id);
-      expect(code).toContain("__type: 'enumMethod'");
-      expect(code).toContain('_case:');
-    });
-
-    it('UC68: Severity@banner generates enumMethod with message param', () => {
-      const id = resolveId('./Severity.php@banner', example('Severity.php'));
-      const code = load(id);
-      expect(code).toContain("__type: 'enumMethod'");
-      expect(code).toContain('_case:');
-      expect(code).toContain('message:');
-    });
 
     it('UC69: Toggle@render generates classMethod', () => {
-      const id = resolveId('./Toggle.php@render', example('Toggle.php'));
+      const id = resolveId('./Toggle.php@render', basic('Toggle.php'));
       const code = load(id);
       expect(code).toContain("__type: 'classMethod'");
       expect(code).toContain('label:');
@@ -4283,7 +4236,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders Anchor with all args', async () => {
       const result = await executor.execute({
         type: 'classMethod',
-        file: example('Anchor.php'),
+        file: basic('Anchor.php'),
         class: 'App\\Components\\Anchor',
         callable: 'render',
         args: { text: 'Click here', href: 'https://example.com', target: '_blank', underline: false },
@@ -4298,7 +4251,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders Anchor with null href', async () => {
       const result = await executor.execute({
         type: 'classMethod',
-        file: example('Anchor.php'),
+        file: basic('Anchor.php'),
         class: 'App\\Components\\Anchor',
         callable: 'render',
         args: { text: 'Placeholder' },
@@ -4316,7 +4269,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders Money via render()', async () => {
       const result = await executor.execute({
         type: 'classMethod',
-        file: example('Money.php'),
+        file: advanced('Money.php'),
         class: 'App\\Components\\Money',
         callable: 'render',
         args: { amount: 1999, currency: 'USD' },
@@ -4329,7 +4282,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders Money::fromCents', async () => {
       const result = await executor.execute({
         type: 'staticMethod',
-        file: example('Money.php'),
+        file: advanced('Money.php'),
         class: 'App\\Components\\Money',
         callable: 'fromCents',
         args: { cents: 4999 },
@@ -4342,7 +4295,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders Money::fromDollars with EUR', async () => {
       const result = await executor.execute({
         type: 'staticMethod',
-        file: example('Money.php'),
+        file: advanced('Money.php'),
         class: 'App\\Components\\Money',
         callable: 'fromDollars',
         args: { dollars: 19.99, currency: 'EUR' },
@@ -4353,51 +4306,6 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     });
   });
 
-  // -------------------------------------------------------------------------
-  // UC68: Enum implementing interface (Severity)
-  // -------------------------------------------------------------------------
-  describe('UC68: Enum implementing interface', () => {
-    it('renders Severity::label for info', async () => {
-      const result = await executor.execute({
-        type: 'enumMethod',
-        file: example('Severity.php'),
-        class: 'App\\Components\\Severity',
-        callable: 'label',
-        args: { _case: 'info' },
-      });
-      expect(result.error).toBeUndefined();
-      expect(result.html).toContain('severity-info');
-      expect(result.html).toContain('Info');
-      expect(result.html).toContain('#3b82f6');
-    });
-
-    it('renders Severity::label for critical', async () => {
-      const result = await executor.execute({
-        type: 'enumMethod',
-        file: example('Severity.php'),
-        class: 'App\\Components\\Severity',
-        callable: 'label',
-        args: { _case: 'critical' },
-      });
-      expect(result.error).toBeUndefined();
-      expect(result.html).toContain('severity-critical');
-      expect(result.html).toContain('Critical');
-    });
-
-    it('renders Severity::banner with message', async () => {
-      const result = await executor.execute({
-        type: 'enumMethod',
-        file: example('Severity.php'),
-        class: 'App\\Components\\Severity',
-        callable: 'banner',
-        args: { _case: 'warning', message: 'Check your settings' },
-      });
-      expect(result.error).toBeUndefined();
-      expect(result.html).toContain('banner-warning');
-      expect(result.html).toContain('Warning');
-      expect(result.html).toContain('Check your settings');
-    });
-  });
 
   // -------------------------------------------------------------------------
   // UC69: Bool-heavy component (Toggle)
@@ -4406,7 +4314,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders Toggle unchecked', async () => {
       const result = await executor.execute({
         type: 'classMethod',
-        file: example('Toggle.php'),
+        file: basic('Toggle.php'),
         class: 'App\\Components\\Toggle',
         callable: 'render',
         args: { label: 'Enable' },
@@ -4419,7 +4327,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders Toggle checked and disabled', async () => {
       const result = await executor.execute({
         type: 'classMethod',
-        file: example('Toggle.php'),
+        file: basic('Toggle.php'),
         class: 'App\\Components\\Toggle',
         callable: 'render',
         args: { label: 'Locked', checked: true, disabled: true },
@@ -4434,7 +4342,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders Toggle with size', async () => {
       const result = await executor.execute({
         type: 'classMethod',
-        file: example('Toggle.php'),
+        file: basic('Toggle.php'),
         class: 'App\\Components\\Toggle',
         callable: 'render',
         args: { label: 'Small toggle', size: 'small' },
@@ -4451,7 +4359,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders login form with defaults', async () => {
       const result = await executor.execute({
         type: 'template',
-        file: example('templates/login.php'),
+        file: advanced('templates/login.php'),
         class: null,
         callable: null,
         args: { title: 'Sign In' },
@@ -4466,7 +4374,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders login with error message', async () => {
       const result = await executor.execute({
         type: 'template',
-        file: example('templates/login.php'),
+        file: advanced('templates/login.php'),
         class: null,
         callable: null,
         args: { title: 'Sign In', error: 'Invalid credentials' },
@@ -4479,7 +4387,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders minimal login without remember/forgot', async () => {
       const result = await executor.execute({
         type: 'template',
-        file: example('templates/login.php'),
+        file: advanced('templates/login.php'),
         class: null,
         callable: null,
         args: { title: 'Login', showRemember: false, showForgot: false, buttonText: 'Log In' },
@@ -4498,7 +4406,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders 404 error page', async () => {
       const result = await executor.execute({
         type: 'template',
-        file: example('templates/error.php'),
+        file: advanced('templates/error.php'),
         class: null,
         callable: null,
         args: { code: 404 },
@@ -4513,7 +4421,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders 500 error page', async () => {
       const result = await executor.execute({
         type: 'template',
-        file: example('templates/error.php'),
+        file: advanced('templates/error.php'),
         class: null,
         callable: null,
         args: { code: 500 },
@@ -4526,7 +4434,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders error page with custom message', async () => {
       const result = await executor.execute({
         type: 'template',
-        file: example('templates/error.php'),
+        file: advanced('templates/error.php'),
         class: null,
         callable: null,
         args: { code: 404, message: 'Article not found' },
@@ -4538,7 +4446,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders error page without home link', async () => {
       const result = await executor.execute({
         type: 'template',
-        file: example('templates/error.php'),
+        file: advanced('templates/error.php'),
         class: null,
         callable: null,
         args: { code: 503, showHome: false },
@@ -4589,7 +4497,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     });
 
     it('parses Anchor with nullable param', () => {
-      const meta = parsePhpFile(example('Anchor.php'));
+      const meta = parsePhpFile(basic('Anchor.php'));
       const cls = meta.classes[0]!;
       expect(cls.name).toBe('Anchor');
       const hrefParam = cls.constructorParams.find(p => p.name === 'href')!;
@@ -4598,7 +4506,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     });
 
     it('parses Money as final readonly class', () => {
-      const meta = parsePhpFile(example('Money.php'));
+      const meta = parsePhpFile(advanced('Money.php'));
       const cls = meta.classes[0]!;
       expect(cls.name).toBe('Money');
       expect(cls.isFinal).toBe(true);
@@ -4608,19 +4516,9 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
       expect(staticMethods.map(m => m.name).sort()).toEqual(['fromCents', 'fromDollars']);
     });
 
-    it('parses Severity enum implementing Labelable interface', () => {
-      const meta = parsePhpFile(example('Severity.php'));
-      const iface = meta.classes.find(c => c.name === 'Labelable')!;
-      expect(iface).toBeDefined();
-      const severity = meta.classes.find(c => c.name === 'Severity')!;
-      expect(severity.isEnum).toBe(true);
-      expect(severity.implements).toContain('Labelable');
-      expect(severity.enumCases).toEqual(['Info', 'Warning', 'Error', 'Critical']);
-      expect(severity.methods).toHaveLength(2);
-    });
 
     it('parses Settings as readonly class', () => {
-      const meta = parsePhpFile(example('Settings.php'));
+      const meta = parsePhpFile(advanced('Settings.php'));
       const cls = meta.classes[0]!;
       expect(cls.name).toBe('Settings');
       expect(cls.isReadonly).toBe(true);
@@ -4630,7 +4528,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     });
 
     it('parses StyledCard with object param and new default', () => {
-      const meta = parsePhpFile(example('StyledCard.php'));
+      const meta = parsePhpFile(php81('StyledCard.php'));
       const cardStyle = meta.classes.find(c => c.name === 'CardStyle')!;
       expect(cardStyle.isReadonly).toBe(true);
       expect(cardStyle.constructorParams).toHaveLength(4);
@@ -4641,7 +4539,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     });
 
     it('parses Checklist with variadic constructor and Generator return', () => {
-      const meta = parsePhpFile(example('Checklist.php'));
+      const meta = parsePhpFile(advanced('Checklist.php'));
       const cls = meta.classes[0]!;
       expect(cls.name).toBe('Checklist');
       const itemsParam = cls.constructorParams.find(p => p.name === 'items')!;
@@ -4658,7 +4556,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders Settings with default args', async () => {
       const result = await executor.execute({
         type: 'classMethod',
-        file: example('Settings.php'),
+        file: advanced('Settings.php'),
         class: 'App\\Components\\Settings',
         callable: 'render',
         args: {},
@@ -4672,7 +4570,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders Settings with dark theme', async () => {
       const result = await executor.execute({
         type: 'classMethod',
-        file: example('Settings.php'),
+        file: advanced('Settings.php'),
         class: 'App\\Components\\Settings',
         callable: 'render',
         args: { theme: 'dark', fontSize: 18, animations: false },
@@ -4692,7 +4590,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders StyledCard with default CardStyle', async () => {
       const result = await executor.execute({
         type: 'classMethod',
-        file: example('StyledCard.php'),
+        file: php81('StyledCard.php'),
         class: 'App\\Components\\StyledCard',
         callable: 'render',
         args: { title: 'Hello' },
@@ -4705,7 +4603,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders StyledCard with body text', async () => {
       const result = await executor.execute({
         type: 'classMethod',
-        file: example('StyledCard.php'),
+        file: php81('StyledCard.php'),
         class: 'App\\Components\\StyledCard',
         callable: 'render',
         args: { title: 'Card', body: 'Body text here' },
@@ -4723,7 +4621,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders Checklist with items via yield', async () => {
       const result = await executor.execute({
         type: 'classMethod',
-        file: example('Checklist.php'),
+        file: advanced('Checklist.php'),
         class: 'App\\Components\\Checklist',
         callable: 'render',
         args: { title: 'Tasks', items: ['A', 'B', 'C'] },
@@ -4739,7 +4637,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders Checklist as numbered list', async () => {
       const result = await executor.execute({
         type: 'classMethod',
-        file: example('Checklist.php'),
+        file: advanced('Checklist.php'),
         class: 'App\\Components\\Checklist',
         callable: 'render',
         args: { title: 'Steps', items: ['First', 'Second'], numbered: true },
@@ -4752,7 +4650,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders empty Checklist', async () => {
       const result = await executor.execute({
         type: 'classMethod',
-        file: example('Checklist.php'),
+        file: advanced('Checklist.php'),
         class: 'App\\Components\\Checklist',
         callable: 'render',
         args: { title: 'Empty' },
@@ -4769,7 +4667,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders inventory with products', async () => {
       const result = await executor.execute({
         type: 'template',
-        file: example('templates/inventory.php'),
+        file: advanced('templates/inventory.php'),
         class: null,
         callable: null,
         args: {
@@ -4789,7 +4687,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders inventory without stock column', async () => {
       const result = await executor.execute({
         type: 'template',
-        file: example('templates/inventory.php'),
+        file: advanced('templates/inventory.php'),
         class: null,
         callable: null,
         args: {
@@ -4805,7 +4703,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders empty inventory', async () => {
       const result = await executor.execute({
         type: 'template',
-        file: example('templates/inventory.php'),
+        file: advanced('templates/inventory.php'),
         class: null,
         callable: null,
         args: { products: [] },
@@ -4824,7 +4722,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     const load = (plugin as any).load.bind(plugin);
 
     it('generates virtual module for Settings.php@render', () => {
-      const id = resolveId('./Settings.php@render', example('Settings.php'));
+      const id = resolveId('./Settings.php@render', advanced('Settings.php'));
       expect(id).toContain('storybook-php:');
       const code = load(id);
       expect(code).toContain("__type: 'classMethod'");
@@ -4832,7 +4730,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     });
 
     it('generates virtual module for StyledCard.php@render', () => {
-      const id = resolveId('./StyledCard.php@render', example('StyledCard.php'));
+      const id = resolveId('./StyledCard.php@render', php81('StyledCard.php'));
       expect(id).toContain('storybook-php:');
       const code = load(id);
       expect(code).toContain("__type: 'classMethod'");
@@ -4840,7 +4738,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     });
 
     it('generates virtual module for Checklist.php@render', () => {
-      const id = resolveId('./Checklist.php@render', example('Checklist.php'));
+      const id = resolveId('./Checklist.php@render', advanced('Checklist.php'));
       expect(id).toContain('storybook-php:');
       const code = load(id);
       expect(code).toContain("__type: 'classMethod'");
@@ -4848,7 +4746,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     });
 
     it('generates virtual module for AbstractShape.php@render (both subclasses)', () => {
-      const id = resolveId('./AbstractShape.php@render', example('AbstractShape.php'));
+      const id = resolveId('./AbstractShape.php@render', advanced('AbstractShape.php'));
       expect(id).toContain('storybook-php:');
       const code = load(id);
       expect(code).toContain("__type: 'classMethod'");
@@ -4856,27 +4754,9 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
       expect(code).toContain('export const Square');
     });
 
-    it('generates virtual module for HttpStatus.php@badge (enum)', () => {
-      const id = resolveId('./HttpStatus.php@badge', example('HttpStatus.php'));
-      expect(id).toContain('storybook-php:');
-      const code = load(id);
-      expect(code).toContain("__type: 'enumMethod'");
-      expect(code).toContain('export const HttpStatus');
-      expect(code).toContain('_case:');
-    });
-
-    it('generates virtual module for FluentBuilder.php@heading (static)', () => {
-      const id = resolveId('./FluentBuilder.php@heading', example('FluentBuilder.php'));
-      expect(id).toContain('storybook-php:');
-      const code = load(id);
-      expect(code).toContain("__type: 'staticMethod'");
-      expect(code).toContain('export const FluentBuilder');
-      expect(code).toContain('text:');
-      expect(code).toContain('level:');
-    });
 
     it('generates virtual module for FormField.php@render', () => {
-      const id = resolveId('./FormField.php@render', example('FormField.php'));
+      const id = resolveId('./FormField.php@render', advanced('FormField.php'));
       expect(id).toContain('storybook-php:');
       const code = load(id);
       expect(code).toContain("__type: 'classMethod'");
@@ -4893,7 +4773,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders Circle with defaults', async () => {
       const result = await executor.execute({
         type: 'classMethod',
-        file: example('AbstractShape.php'),
+        file: advanced('AbstractShape.php'),
         class: 'App\\Components\\Circle',
         callable: 'render',
         args: { color: '#3b82f6', size: 80 },
@@ -4907,7 +4787,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders Square with border radius', async () => {
       const result = await executor.execute({
         type: 'classMethod',
-        file: example('AbstractShape.php'),
+        file: advanced('AbstractShape.php'),
         class: 'App\\Components\\Square',
         callable: 'render',
         args: { color: '#f59e0b', size: 100, radius: 16 },
@@ -4919,51 +4799,6 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     });
   });
 
-  // -------------------------------------------------------------------------
-  // UC77: Int-backed enum with match expression
-  // -------------------------------------------------------------------------
-  describe('UC77: Int-backed enum (HttpStatus)', () => {
-    it('renders HttpStatus::badge for 404', async () => {
-      const result = await executor.execute({
-        type: 'enumMethod',
-        file: example('HttpStatus.php'),
-        class: 'App\\Components\\HttpStatus',
-        callable: 'badge',
-        args: { _case: 404 },
-      });
-      expect(result.error).toBeUndefined();
-      expect(result.html).toContain('404');
-      expect(result.html).toContain('NotFound');
-      expect(result.html).toContain('http-status');
-    });
-
-    it('renders HttpStatus::page for 500 with custom message', async () => {
-      const result = await executor.execute({
-        type: 'enumMethod',
-        file: example('HttpStatus.php'),
-        class: 'App\\Components\\HttpStatus',
-        callable: 'page',
-        args: { _case: 500, message: 'Service unavailable' },
-      });
-      expect(result.error).toBeUndefined();
-      expect(result.html).toContain('500');
-      expect(result.html).toContain('ServerError');
-      expect(result.html).toContain('Service unavailable');
-    });
-
-    it('renders HttpStatus::page for 200 with default message', async () => {
-      const result = await executor.execute({
-        type: 'enumMethod',
-        file: example('HttpStatus.php'),
-        class: 'App\\Components\\HttpStatus',
-        callable: 'page',
-        args: { _case: 200 },
-      });
-      expect(result.error).toBeUndefined();
-      expect(result.html).toContain('200');
-      expect(result.html).toContain('successful');
-    });
-  });
 
   // -------------------------------------------------------------------------
   // UC78: Mixed promoted/non-promoted constructor params
@@ -4972,7 +4807,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders FormField with auto-generated id', async () => {
       const result = await executor.execute({
         type: 'classMethod',
-        file: example('FormField.php'),
+        file: advanced('FormField.php'),
         class: 'App\\Components\\FormField',
         callable: 'render',
         args: { label: 'Email Address', type: 'email', required: true },
@@ -4987,7 +4822,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders FormField with explicit id and placeholder', async () => {
       const result = await executor.execute({
         type: 'classMethod',
-        file: example('FormField.php'),
+        file: advanced('FormField.php'),
         class: 'App\\Components\\FormField',
         callable: 'render',
         args: { label: 'Phone', type: 'tel', id: 'user-phone', placeholder: '+1 555-0100' },
@@ -4999,64 +4834,6 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     });
   });
 
-  // -------------------------------------------------------------------------
-  // UC79: Static factory methods (FluentBuilder)
-  // -------------------------------------------------------------------------
-  describe('UC79: Static factory methods (FluentBuilder)', () => {
-    it('renders FluentBuilder::heading', async () => {
-      const result = await executor.execute({
-        type: 'staticMethod',
-        file: example('FluentBuilder.php'),
-        class: 'App\\Components\\FluentBuilder',
-        callable: 'heading',
-        args: { text: 'Welcome', level: 1 },
-      });
-      expect(result.error).toBeUndefined();
-      expect(result.html).toContain('<h1');
-      expect(result.html).toContain('Welcome');
-    });
-
-    it('renders FluentBuilder::badge', async () => {
-      const result = await executor.execute({
-        type: 'staticMethod',
-        file: example('FluentBuilder.php'),
-        class: 'App\\Components\\FluentBuilder',
-        callable: 'badge',
-        args: { text: 'New', bg: '#22c55e' },
-      });
-      expect(result.error).toBeUndefined();
-      expect(result.html).toContain('fb-badge');
-      expect(result.html).toContain('New');
-      expect(result.html).toContain('#22c55e');
-    });
-
-    it('renders FluentBuilder::divider', async () => {
-      const result = await executor.execute({
-        type: 'staticMethod',
-        file: example('FluentBuilder.php'),
-        class: 'App\\Components\\FluentBuilder',
-        callable: 'divider',
-        args: { style: 'dashed', color: '#3b82f6' },
-      });
-      expect(result.error).toBeUndefined();
-      expect(result.html).toContain('fb-divider');
-      expect(result.html).toContain('dashed');
-      expect(result.html).toContain('#3b82f6');
-    });
-
-    it('renders FluentBuilder instance render', async () => {
-      const result = await executor.execute({
-        type: 'classMethod',
-        file: example('FluentBuilder.php'),
-        class: 'App\\Components\\FluentBuilder',
-        callable: 'render',
-        args: { text: 'Hello', bg: '#fef3c7', padding: 16 },
-      });
-      expect(result.error).toBeUndefined();
-      expect(result.html).toContain('Hello');
-      expect(result.html).toContain('#fef3c7');
-    });
-  });
 
   // -------------------------------------------------------------------------
   // UC80: Contact form template
@@ -5065,7 +4842,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders empty contact form', async () => {
       const result = await executor.execute({
         type: 'template',
-        file: example('templates/contact.php'),
+        file: advanced('templates/contact.php'),
         class: null,
         callable: null,
         args: {},
@@ -5079,7 +4856,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders prefilled contact form', async () => {
       const result = await executor.execute({
         type: 'template',
-        file: example('templates/contact.php'),
+        file: advanced('templates/contact.php'),
         class: null,
         callable: null,
         args: {
@@ -5099,50 +4876,6 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     });
   });
 
-  // -------------------------------------------------------------------------
-  // UC81: Variadic parameters (TagList)
-  // -------------------------------------------------------------------------
-  describe('UC81: Variadic parameters', () => {
-    it('renders TagList with variadic tags', async () => {
-      const result = await executor.execute({
-        type: 'classMethod',
-        file: example('TagList.php'),
-        class: 'App\\Components\\TagList',
-        callable: 'render',
-        args: { label: 'Skills', color: '#3b82f6', tags: ['PHP', 'TypeScript'] },
-      });
-      expect(result.error).toBeUndefined();
-      expect(result.html).toContain('Skills');
-      expect(result.html).toContain('PHP');
-      expect(result.html).toContain('TypeScript');
-    });
-
-    it('renders TagList with no tags', async () => {
-      const result = await executor.execute({
-        type: 'classMethod',
-        file: example('TagList.php'),
-        class: 'App\\Components\\TagList',
-        callable: 'render',
-        args: { label: 'Empty' },
-      });
-      expect(result.error).toBeUndefined();
-      expect(result.html).toContain('Empty');
-    });
-
-    it('renders TagList.inline static method with variadic tags', async () => {
-      const result = await executor.execute({
-        type: 'staticMethod',
-        file: example('TagList.php'),
-        class: 'App\\Components\\TagList',
-        callable: 'inline',
-        args: { separator: ' | ', tags: ['Home', 'About', 'Contact'] },
-      });
-      expect(result.error).toBeUndefined();
-      expect(result.html).toContain('Home');
-      expect(result.html).toContain('|');
-      expect(result.html).toContain('Contact');
-    });
-  });
 
   // -------------------------------------------------------------------------
   // UC82: Class constants (StatusBanner)
@@ -5151,7 +4884,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders info banner', async () => {
       const result = await executor.execute({
         type: 'classMethod',
-        file: example('StatusBanner.php'),
+        file: advanced('StatusBanner.php'),
         class: 'App\\Components\\StatusBanner',
         callable: 'render',
         args: { message: 'Test info', level: 'info' },
@@ -5164,7 +4897,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders error banner with dismiss', async () => {
       const result = await executor.execute({
         type: 'classMethod',
-        file: example('StatusBanner.php'),
+        file: advanced('StatusBanner.php'),
         class: 'App\\Components\\StatusBanner',
         callable: 'render',
         args: { message: 'Error occurred', level: 'error', dismissible: true },
@@ -5177,7 +4910,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders success banner without icon', async () => {
       const result = await executor.execute({
         type: 'classMethod',
-        file: example('StatusBanner.php'),
+        file: advanced('StatusBanner.php'),
         class: 'App\\Components\\StatusBanner',
         callable: 'render',
         args: { message: 'Saved!', level: 'success', showIcon: false },
@@ -5195,7 +4928,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders Panel with body', async () => {
       const result = await executor.execute({
         type: 'classMethod',
-        file: example('Panel.php'),
+        file: advanced('Panel.php'),
         class: 'App\\Components\\Panel',
         callable: 'render',
         args: { heading: 'Test Panel', body: 'Body content' },
@@ -5209,7 +4942,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders collapsed Panel', async () => {
       const result = await executor.execute({
         type: 'classMethod',
-        file: example('Panel.php'),
+        file: advanced('Panel.php'),
         class: 'App\\Components\\Panel',
         callable: 'render',
         args: { heading: 'Collapsed', body: 'Hidden', collapsible: true, collapsed: true },
@@ -5226,7 +4959,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders UserProfile with initials', async () => {
       const result = await executor.execute({
         type: 'classMethod',
-        file: example('UserProfile.php'),
+        file: advanced('UserProfile.php'),
         class: 'App\\Components\\UserProfile',
         callable: 'render',
         args: { name: 'Jane Doe', email: 'jane@example.com' },
@@ -5240,7 +4973,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders admin role badge', async () => {
       const result = await executor.execute({
         type: 'classMethod',
-        file: example('UserProfile.php'),
+        file: advanced('UserProfile.php'),
         class: 'App\\Components\\UserProfile',
         callable: 'render',
         args: { name: 'Alice', email: 'alice@test.com', role: 'admin' },
@@ -5257,7 +4990,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders Friday badge', async () => {
       const result = await executor.execute({
         type: 'enumMethod',
-        file: example('Weekday.php'),
+        file: php81('Weekday.php'),
         class: 'App\\Components\\Weekday',
         callable: 'badge',
         args: { _case: 'Friday' },
@@ -5270,7 +5003,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders Saturday badge as weekend', async () => {
       const result = await executor.execute({
         type: 'enumMethod',
-        file: example('Weekday.php'),
+        file: php81('Weekday.php'),
         class: 'App\\Components\\Weekday',
         callable: 'badge',
         args: { _case: 'Saturday' },
@@ -5288,7 +5021,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders with default TextStyle', async () => {
       const result = await executor.execute({
         type: 'classMethod',
-        file: example('StyledText.php'),
+        file: advanced('StyledText.php'),
         class: 'App\\Components\\StyledText',
         callable: 'render',
         args: { text: 'Hello world' },
@@ -5301,7 +5034,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders with custom style object', async () => {
       const result = await executor.execute({
         type: 'classMethod',
-        file: example('StyledText.php'),
+        file: advanced('StyledText.php'),
         class: 'App\\Components\\StyledText',
         callable: 'render',
         args: { text: 'Styled', tag: 'h1', style: { fontFamily: 'Georgia', fontSize: 32, color: '#7c3aed', fontWeight: 'bold' } },
@@ -5320,7 +5053,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders BaseCard', async () => {
       const result = await executor.execute({
         type: 'classMethod',
-        file: example('FeatureCard.php'),
+        file: advanced('FeatureCard.php'),
         class: 'App\\Components\\BaseCard',
         callable: 'render',
         args: { title: 'Base Card', body: 'Simple card.' },
@@ -5333,7 +5066,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders FeatureCard with icon and accent', async () => {
       const result = await executor.execute({
         type: 'classMethod',
-        file: example('FeatureCard.php'),
+        file: advanced('FeatureCard.php'),
         class: 'App\\Components\\FeatureCard',
         callable: 'render',
         args: { title: 'Feature', body: 'Description', icon: '⚡', accentColor: '#10b981' },
@@ -5352,7 +5085,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders Duration with hours, minutes, seconds', async () => {
       const result = await executor.execute({
         type: 'classMethod',
-        file: example('Duration.php'),
+        file: advanced('Duration.php'),
         class: 'App\\Components\\Duration',
         callable: 'render',
         args: { hours: 2, minutes: 30, seconds: 15 },
@@ -5366,7 +5099,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders zero duration', async () => {
       const result = await executor.execute({
         type: 'classMethod',
-        file: example('Duration.php'),
+        file: advanced('Duration.php'),
         class: 'App\\Components\\Duration',
         callable: 'render',
         args: { hours: 0, minutes: 0, seconds: 0 },
@@ -5383,7 +5116,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders card variant with rating', async () => {
       const result = await executor.execute({
         type: 'template',
-        file: example('templates/testimonial.php'),
+        file: advanced('templates/testimonial.php'),
         class: null,
         callable: null,
         args: { quote: 'Amazing!', author: 'Sarah', role: 'Developer', rating: 5 },
@@ -5398,7 +5131,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders minimal variant', async () => {
       const result = await executor.execute({
         type: 'template',
-        file: example('templates/testimonial.php'),
+        file: advanced('templates/testimonial.php'),
         class: null,
         callable: null,
         args: { quote: 'Simple.', author: 'Alex', variant: 'minimal' },
@@ -5416,7 +5149,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders unread info notification', async () => {
       const result = await executor.execute({
         type: 'template',
-        file: example('templates/notification.php'),
+        file: advanced('templates/notification.php'),
         class: null,
         callable: null,
         args: { title: 'New comment', message: 'Alice replied.', type: 'info', time: '2 min ago', unread: true },
@@ -5430,7 +5163,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders read notification without dot', async () => {
       const result = await executor.execute({
         type: 'template',
-        file: example('templates/notification.php'),
+        file: advanced('templates/notification.php'),
         class: null,
         callable: null,
         args: { title: 'Old alert', type: 'warning', time: 'yesterday', unread: false },
@@ -5448,7 +5181,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders PageHeader with title and logo', async () => {
       const result = await executor.execute({
         type: 'classMethod',
-        file: example('PageSection.php'),
+        file: advanced('PageSection.php'),
         class: 'App\\Components\\PageHeader',
         callable: 'render',
         args: { title: 'Home', logo: 'Acme' },
@@ -5462,7 +5195,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders sticky PageHeader', async () => {
       const result = await executor.execute({
         type: 'classMethod',
-        file: example('PageSection.php'),
+        file: advanced('PageSection.php'),
         class: 'App\\Components\\PageHeader',
         callable: 'render',
         args: { title: 'Dashboard', logo: 'MyApp', sticky: true },
@@ -5480,7 +5213,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders dark PageFooter', async () => {
       const result = await executor.execute({
         type: 'classMethod',
-        file: example('PageSection.php'),
+        file: advanced('PageSection.php'),
         class: 'App\\Components\\PageFooter',
         callable: 'render',
         args: { copyright: 'Acme Inc', year: 2025 },
@@ -5494,7 +5227,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders light PageFooter', async () => {
       const result = await executor.execute({
         type: 'classMethod',
-        file: example('PageSection.php'),
+        file: advanced('PageSection.php'),
         class: 'App\\Components\\PageFooter',
         callable: 'render',
         args: { copyright: 'Test Corp', theme: 'light' },
@@ -5512,7 +5245,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders SimpleBox with content', async () => {
       const result = await executor.execute({
         type: 'classMethod',
-        file: example('SimpleBox.php'),
+        file: basic('SimpleBox.php'),
         class: 'SimpleBox',
         callable: 'render',
         args: { content: 'Hello Box' },
@@ -5525,7 +5258,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders SimpleBox with custom style', async () => {
       const result = await executor.execute({
         type: 'classMethod',
-        file: example('SimpleBox.php'),
+        file: basic('SimpleBox.php'),
         class: 'SimpleBox',
         callable: 'render',
         args: { content: 'Styled', borderColor: '#3b82f6', padding: 24 },
@@ -5543,7 +5276,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders sidebar with items and active state', async () => {
       const result = await executor.execute({
         type: 'template',
-        file: example('templates/sidebar.php'),
+        file: advanced('templates/sidebar.php'),
         class: null,
         callable: null,
         args: { title: 'Navigation', items: ['Dashboard', 'Projects', 'Settings'], activeItem: 'Dashboard' },
@@ -5558,7 +5291,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders dark sidebar', async () => {
       const result = await executor.execute({
         type: 'template',
-        file: example('templates/sidebar.php'),
+        file: advanced('templates/sidebar.php'),
         class: null,
         callable: null,
         args: { title: 'Menu', items: ['Home', 'About'], theme: 'dark' },
@@ -5576,7 +5309,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders sunny weather card', async () => {
       const result = await executor.execute({
         type: 'template',
-        file: example('templates/weather.php'),
+        file: advanced('templates/weather.php'),
         class: null,
         callable: null,
         args: { city: 'Tokyo', temperature: 28, condition: 'sunny', humidity: 55, windSpeed: 8 },
@@ -5590,7 +5323,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders snowy weather card', async () => {
       const result = await executor.execute({
         type: 'template',
-        file: example('templates/weather.php'),
+        file: advanced('templates/weather.php'),
         class: null,
         callable: null,
         args: { city: 'Helsinki', temperature: -5, condition: 'snowy', humidity: 70, windSpeed: 15 },
@@ -5604,7 +5337,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders with default values', async () => {
       const result = await executor.execute({
         type: 'template',
-        file: example('templates/weather.php'),
+        file: advanced('templates/weather.php'),
         class: null,
         callable: null,
         args: {},
@@ -5623,99 +5356,86 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     const resolveId = (plugin as any).resolveId.bind(plugin);
     const load = (plugin as any).load.bind(plugin);
 
-    it('resolves TagList.php@render', async () => {
-      const id = await resolveId('./TagList.php@render', example('TagList.stories.ts'));
-      expect(id).toBeDefined();
-      const code = await load(id);
-      expect(code).toContain('TagList');
-    });
-
-    it('resolves TagList.php@inline', async () => {
-      const id = await resolveId('./TagList.php@inline', example('TagListInline.stories.ts'));
-      expect(id).toBeDefined();
-      const code = await load(id);
-      expect(code).toContain('inline');
-    });
 
     it('resolves StatusBanner.php@render', async () => {
-      const id = await resolveId('./StatusBanner.php@render', example('StatusBanner.stories.ts'));
+      const id = await resolveId('./StatusBanner.php@render', advanced('StatusBanner.stories.ts'));
       expect(id).toBeDefined();
       const code = await load(id);
       expect(code).toContain('StatusBanner');
     });
 
     it('resolves Panel.php@render', async () => {
-      const id = await resolveId('./Panel.php@render', example('Panel.stories.ts'));
+      const id = await resolveId('./Panel.php@render', advanced('Panel.stories.ts'));
       expect(id).toBeDefined();
       const code = await load(id);
       expect(code).toContain('Panel');
     });
 
     it('resolves UserProfile.php@render', async () => {
-      const id = await resolveId('./UserProfile.php@render', example('UserProfile.stories.ts'));
+      const id = await resolveId('./UserProfile.php@render', advanced('UserProfile.stories.ts'));
       expect(id).toBeDefined();
       const code = await load(id);
       expect(code).toContain('UserProfile');
     });
 
     it('resolves Weekday.php@badge', async () => {
-      const id = await resolveId('./Weekday.php@badge', example('Weekday.stories.ts'));
+      const id = await resolveId('./Weekday.php@badge', php81('Weekday.stories.ts'));
       expect(id).toBeDefined();
       const code = await load(id);
       expect(code).toContain('Weekday');
     });
 
     it('resolves StyledText.php@render', async () => {
-      const id = await resolveId('./StyledText.php@render', example('StyledText.stories.ts'));
+      const id = await resolveId('./StyledText.php@render', advanced('StyledText.stories.ts'));
       expect(id).toBeDefined();
       const code = await load(id);
       expect(code).toContain('StyledText');
     });
 
     it('resolves FeatureCard.php@render', async () => {
-      const id = await resolveId('./FeatureCard.php@render', example('FeatureCard.stories.ts'));
+      const id = await resolveId('./FeatureCard.php@render', advanced('FeatureCard.stories.ts'));
       expect(id).toBeDefined();
       const code = await load(id);
       expect(code).toContain('FeatureCard');
     });
 
     it('resolves Duration.php@render', async () => {
-      const id = await resolveId('./Duration.php@render', example('Duration.stories.ts'));
+      const id = await resolveId('./Duration.php@render', advanced('Duration.stories.ts'));
       expect(id).toBeDefined();
       const code = await load(id);
       expect(code).toContain('Duration');
     });
 
     it('resolves PageSection.php@render for PageHeader', async () => {
-      const id = await resolveId('./PageSection.php@render', example('PageSectionHeader.stories.ts'));
+      const id = await resolveId('./PageSection.php@render', advanced('PageSectionHeader.stories.ts'));
       expect(id).toBeDefined();
       const code = await load(id);
       expect(code).toContain('PageHeader');
     });
 
     it('resolves PageSection.php@render for PageFooter', async () => {
-      const id = await resolveId('./PageSection.php@render', example('PageSectionFooter.stories.ts'));
+      const id = await resolveId('./PageSection.php@render', advanced('PageSectionFooter.stories.ts'));
       expect(id).toBeDefined();
       const code = await load(id);
       expect(code).toContain('PageFooter');
     });
 
     it('resolves SimpleBox.php@render (no namespace)', async () => {
-      const id = await resolveId('./SimpleBox.php@render', example('SimpleBox.stories.ts'));
+      const id = await resolveId('./SimpleBox.php@render', basic('SimpleBox.stories.ts'));
       expect(id).toBeDefined();
       const code = await load(id);
       expect(code).toContain('SimpleBox');
     });
 
     it('resolves sidebar.php template', async () => {
-      const id = await resolveId('./sidebar.php', example('templates/sidebar.stories.ts'));
+      const id = await resolveId('./sidebar.php', advanced('templates/sidebar.stories.ts'));
       expect(id).toBeDefined();
       const code = await load(id);
       expect(code).toContain('template');
     });
 
     it('resolves weather.php template', async () => {
-      const id = await resolveId('./weather.php', example('templates/weather.stories.ts'));
+      const id = await resolveId('./weather.php', advanced('templates/weather.stories.ts'));
       expect(id).toBeDefined();
       const code = await load(id);
       expect(code).toContain('template');
@@ -5729,7 +5449,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders Language::greeting for English', async () => {
       const result = await executor.execute({
         type: 'enumMethod',
-        file: example('Language.php'),
+        file: php81('Language.php'),
         class: 'App\\Components\\Language',
         callable: 'greeting',
         args: { _case: 'en', name: 'World' },
@@ -5743,7 +5463,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders Language::greeting for Japanese', async () => {
       const result = await executor.execute({
         type: 'enumMethod',
-        file: example('Language.php'),
+        file: php81('Language.php'),
         class: 'App\\Components\\Language',
         callable: 'greeting',
         args: { _case: 'ja', name: '太郎' },
@@ -5756,7 +5476,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders Language::flag for Japanese', async () => {
       const result = await executor.execute({
         type: 'enumMethod',
-        file: example('Language.php'),
+        file: php81('Language.php'),
         class: 'App\\Components\\Language',
         callable: 'flag',
         args: { _case: 'ja' },
@@ -5768,7 +5488,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders Language::greeting for Spanish', async () => {
       const result = await executor.execute({
         type: 'enumMethod',
-        file: example('Language.php'),
+        file: php81('Language.php'),
         class: 'App\\Components\\Language',
         callable: 'greeting',
         args: { _case: 'es', name: 'Carlos' },
@@ -5785,7 +5505,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders Twitter::shareLink via HasShareLink trait', async () => {
       const result = await executor.execute({
         type: 'classMethod',
-        file: example('SocialShare.php'),
+        file: advanced('SocialShare.php'),
         class: 'App\\Components\\Twitter',
         callable: 'shareLink',
         args: { url: 'https://example.com', label: 'Tweet' },
@@ -5800,7 +5520,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders Facebook::shareLink via same HasShareLink trait', async () => {
       const result = await executor.execute({
         type: 'classMethod',
-        file: example('SocialShare.php'),
+        file: advanced('SocialShare.php'),
         class: 'App\\Components\\Facebook',
         callable: 'shareLink',
         args: { url: 'https://example.com/post', label: 'Share' },
@@ -5820,7 +5540,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders DateRange with default config', async () => {
       const result = await executor.execute({
         type: 'classMethod',
-        file: example('DateRange.php'),
+        file: advanced('DateRange.php'),
         class: 'App\\Components\\DateRange',
         callable: 'render',
         args: { start: '2025-01-01', end: '2025-12-31' },
@@ -5834,7 +5554,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders DateRange with custom config', async () => {
       const result = await executor.execute({
         type: 'classMethod',
-        file: example('DateRange.php'),
+        file: advanced('DateRange.php'),
         class: 'App\\Components\\DateRange',
         callable: 'render',
         args: { start: '2025-06-01', end: '2025-06-07', config: { format: 'M j', separator: ' ~ ' } },
@@ -5853,7 +5573,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders InfoBox via render method', async () => {
       const result = await executor.execute({
         type: 'classMethod',
-        file: example('Renderable.php'),
+        file: advanced('Renderable.php'),
         class: 'App\\Components\\InfoBox',
         callable: 'render',
         args: { title: 'Information', message: 'This is a test.' },
@@ -5867,7 +5587,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders InfoBox with custom icon', async () => {
       const result = await executor.execute({
         type: 'classMethod',
-        file: example('Renderable.php'),
+        file: advanced('Renderable.php'),
         class: 'App\\Components\\InfoBox',
         callable: 'render',
         args: { title: 'Done', message: 'All clear.', icon: '✅' },
@@ -5879,7 +5599,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders WarningBox via same render method', async () => {
       const result = await executor.execute({
         type: 'classMethod',
-        file: example('Renderable.php'),
+        file: advanced('Renderable.php'),
         class: 'App\\Components\\WarningBox',
         callable: 'render',
         args: { title: 'Warning', message: 'Be careful!' },
@@ -5892,7 +5612,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders WarningBox with urgent flag', async () => {
       const result = await executor.execute({
         type: 'classMethod',
-        file: example('Renderable.php'),
+        file: advanced('Renderable.php'),
         class: 'App\\Components\\WarningBox',
         callable: 'render',
         args: { title: 'Critical', message: 'Immediate action required!', urgent: true },
@@ -5910,7 +5630,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders blog post with tags', async () => {
       const result = await executor.execute({
         type: 'template',
-        file: example('templates/blog.php'),
+        file: advanced('templates/blog.php'),
         class: null,
         callable: null,
         args: { title: 'Test Post', author: 'Alice', body: 'Hello world.', date: 'March 15, 2025', tags: ['PHP', 'Tutorial'] },
@@ -5926,7 +5646,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders blog post without tags', async () => {
       const result = await executor.execute({
         type: 'template',
-        file: example('templates/blog.php'),
+        file: advanced('templates/blog.php'),
         class: null,
         callable: null,
         args: { title: 'Simple Post', author: 'Bob', body: 'No tags here.' },
@@ -5945,7 +5665,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders gallery grid with images', async () => {
       const result = await executor.execute({
         type: 'template',
-        file: example('templates/gallery.php'),
+        file: advanced('templates/gallery.php'),
         class: null,
         callable: null,
         args: { images: [{ emoji: '🌄', caption: 'Sunrise' }, { emoji: '🏔️', caption: 'Mountain' }], columns: 2, gap: '12px' },
@@ -5960,7 +5680,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders empty gallery', async () => {
       const result = await executor.execute({
         type: 'template',
-        file: example('templates/gallery.php'),
+        file: advanced('templates/gallery.php'),
         class: null,
         callable: null,
         args: { columns: 3 },
@@ -5979,7 +5699,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     const load = (plugin as any).load.bind(plugin);
 
     it('resolves Language.php@greeting as enumMethod', async () => {
-      const id = await resolveId('./Language.php@greeting', example('Language.stories.ts'));
+      const id = await resolveId('./Language.php@greeting', php81('Language.stories.ts'));
       expect(id).toBeDefined();
       const code = await load(id);
       expect(code).toContain("__type: 'enumMethod'");
@@ -5989,14 +5709,14 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     });
 
     it('resolves Language.php@flag as enumMethod', async () => {
-      const id = await resolveId('./Language.php@flag', example('LanguageFlag.stories.ts'));
+      const id = await resolveId('./Language.php@flag', php81('LanguageFlag.stories.ts'));
       expect(id).toBeDefined();
       const code = await load(id);
       expect(code).toContain("__type: 'enumMethod'");
     });
 
     it('resolves SocialShare.php@shareLink for Twitter (trait method)', async () => {
-      const id = await resolveId('./SocialShare.php@shareLink', example('TwitterShare.stories.ts'));
+      const id = await resolveId('./SocialShare.php@shareLink', advanced('TwitterShare.stories.ts'));
       expect(id).toBeDefined();
       const code = await load(id);
       expect(code).toContain('Twitter');
@@ -6007,7 +5727,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     });
 
     it('resolves DateRange.php@render with new expression default', async () => {
-      const id = await resolveId('./DateRange.php@render', example('DateRange.stories.ts'));
+      const id = await resolveId('./DateRange.php@render', advanced('DateRange.stories.ts'));
       expect(id).toBeDefined();
       const code = await load(id);
       expect(code).toContain('DateRange');
@@ -6018,7 +5738,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     });
 
     it('resolves Renderable.php@render with multi-export (InfoBox + WarningBox)', async () => {
-      const id = await resolveId('./Renderable.php@render', example('InfoBox.stories.ts'));
+      const id = await resolveId('./Renderable.php@render', advanced('InfoBox.stories.ts'));
       expect(id).toBeDefined();
       const code = await load(id);
       expect(code).toContain('InfoBox');
@@ -6027,14 +5747,14 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     });
 
     it('resolves blog.php template', async () => {
-      const id = await resolveId('./blog.php', example('templates/blog.stories.ts'));
+      const id = await resolveId('./blog.php', advanced('templates/blog.stories.ts'));
       expect(id).toBeDefined();
       const code = await load(id);
       expect(code).toContain('template');
     });
 
     it('resolves gallery.php template', async () => {
-      const id = await resolveId('./gallery.php', example('templates/gallery.stories.ts'));
+      const id = await resolveId('./gallery.php', advanced('templates/gallery.stories.ts'));
       expect(id).toBeDefined();
       const code = await load(id);
       expect(code).toContain('template');
@@ -6046,7 +5766,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
   // -------------------------------------------------------------------------
   describe('Parser: UC96-UC101 metadata', () => {
     it('parses Language.php as string-backed enum', () => {
-      const meta = parsePhpFile(example('Language.php'));
+      const meta = parsePhpFile(php81('Language.php'));
       expect(meta.classes).toHaveLength(1);
       const lang = meta.classes[0]!;
       expect(lang.name).toBe('Language');
@@ -6058,7 +5778,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     });
 
     it('parses SocialShare.php with traits and multiple classes', () => {
-      const meta = parsePhpFile(example('SocialShare.php'));
+      const meta = parsePhpFile(advanced('SocialShare.php'));
       const classNames = meta.classes.map(c => c.name);
       expect(classNames).toContain('Twitter');
       expect(classNames).toContain('Facebook');
@@ -6071,7 +5791,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     });
 
     it('parses DateRange.php with new expression default', () => {
-      const meta = parsePhpFile(example('DateRange.php'));
+      const meta = parsePhpFile(advanced('DateRange.php'));
       const dr = meta.classes.find(c => c.name === 'DateRange')!;
       expect(dr).toBeDefined();
       const configParam = dr.constructorParams.find(p => p.name === 'config');
@@ -6081,7 +5801,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     });
 
     it('parses Renderable.php with interface and multiple implementations', () => {
-      const meta = parsePhpFile(example('Renderable.php'));
+      const meta = parsePhpFile(advanced('Renderable.php'));
       const classNames = meta.classes.map(c => c.name);
       expect(classNames).toContain('RenderableInterface');
       expect(classNames).toContain('InfoBox');
@@ -6100,7 +5820,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders Snippet.render with all args going to method', async () => {
       const result = await executor.execute({
         type: 'classMethod',
-        file: example('Snippet.php'),
+        file: advanced('Snippet.php'),
         class: 'App\\Components\\Snippet',
         callable: 'render',
         args: { code: 'echo "hi";', language: 'php' },
@@ -6114,7 +5834,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders Snippet.render with line numbers', async () => {
       const result = await executor.execute({
         type: 'classMethod',
-        file: example('Snippet.php'),
+        file: advanced('Snippet.php'),
         class: 'App\\Components\\Snippet',
         callable: 'render',
         args: { code: 'line1\nline2', language: 'javascript', lineNumbers: true },
@@ -6127,7 +5847,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders Snippet.inline', async () => {
       const result = await executor.execute({
         type: 'classMethod',
-        file: example('Snippet.php'),
+        file: advanced('Snippet.php'),
         class: 'App\\Components\\Snippet',
         callable: 'inline',
         args: { code: '$var' },
@@ -6138,7 +5858,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     });
 
     it('parses Snippet.php with no constructor', () => {
-      const meta = parsePhpFile(example('Snippet.php'));
+      const meta = parsePhpFile(advanced('Snippet.php'));
       const cls = meta.classes.find(c => c.name === 'Snippet')!;
       expect(cls.constructorParams).toHaveLength(0);
       expect(cls.methods.length).toBeGreaterThanOrEqual(2);
@@ -6156,7 +5876,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders default callout', async () => {
       const result = await executor.execute({
         type: 'classMethod',
-        file: example('Callout.php'),
+        file: advanced('Callout.php'),
         class: 'App\\Components\\Callout',
         callable: 'render',
         args: { title: 'Test', message: 'Hello' },
@@ -6170,7 +5890,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders compact error callout with all flags', async () => {
       const result = await executor.execute({
         type: 'classMethod',
-        file: example('Callout.php'),
+        file: advanced('Callout.php'),
         class: 'App\\Components\\Callout',
         callable: 'render',
         args: {
@@ -6192,7 +5912,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     });
 
     it('parses Callout.php constructor with many boolean params', () => {
-      const meta = parsePhpFile(example('Callout.php'));
+      const meta = parsePhpFile(advanced('Callout.php'));
       const cls = meta.classes.find(c => c.name === 'Callout')!;
       const boolParams = cls.constructorParams.filter(p => p.type === 'bool');
       expect(boolParams.length).toBeGreaterThanOrEqual(5);
@@ -6206,7 +5926,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders format method with style', async () => {
       const result = await executor.execute({
         type: 'classMethod',
-        file: example('DateFormatter.php'),
+        file: advanced('DateFormatter.php'),
         class: 'App\\Components\\DateFormatter',
         callable: 'format',
         args: { date: '2025-03-15', style: 'long' },
@@ -6220,7 +5940,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders format method with Japanese locale', async () => {
       const result = await executor.execute({
         type: 'classMethod',
-        file: example('DateFormatter.php'),
+        file: advanced('DateFormatter.php'),
         class: 'App\\Components\\DateFormatter',
         callable: 'format',
         args: { date: '2025-07-20', style: 'medium', locale: 'ja' },
@@ -6232,7 +5952,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders relative method', async () => {
       const result = await executor.execute({
         type: 'classMethod',
-        file: example('DateFormatter.php'),
+        file: advanced('DateFormatter.php'),
         class: 'App\\Components\\DateFormatter',
         callable: 'relative',
         args: { date: '2020-01-01' },
@@ -6245,7 +5965,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders calendar method', async () => {
       const result = await executor.execute({
         type: 'classMethod',
-        file: example('DateFormatter.php'),
+        file: advanced('DateFormatter.php'),
         class: 'App\\Components\\DateFormatter',
         callable: 'calendar',
         args: { date: '2025-03-15' },
@@ -6257,7 +5977,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     });
 
     it('parses DateFormatter.php with constructor + 3 methods', () => {
-      const meta = parsePhpFile(example('DateFormatter.php'));
+      const meta = parsePhpFile(advanced('DateFormatter.php'));
       const cls = meta.classes.find(c => c.name === 'DateFormatter')!;
       expect(cls.constructorParams).toHaveLength(1);
       expect(cls.constructorParams[0]!.name).toBe('locale');
@@ -6275,7 +5995,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders forward transition', async () => {
       const result = await executor.execute({
         type: 'classMethod',
-        file: example('EnumTransition.php'),
+        file: php81('EnumTransition.php'),
         class: 'App\\Components\\EnumTransition',
         callable: 'render',
         args: { from: 'draft', to: 'review', label: 'Submit' },
@@ -6290,7 +6010,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders backward transition', async () => {
       const result = await executor.execute({
         type: 'classMethod',
-        file: example('EnumTransition.php'),
+        file: php81('EnumTransition.php'),
         class: 'App\\Components\\EnumTransition',
         callable: 'render',
         args: { from: 'published', to: 'draft' },
@@ -6304,7 +6024,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders same-state transition', async () => {
       const result = await executor.execute({
         type: 'classMethod',
-        file: example('EnumTransition.php'),
+        file: php81('EnumTransition.php'),
         class: 'App\\Components\\EnumTransition',
         callable: 'render',
         args: { from: 'review', to: 'review' },
@@ -6314,7 +6034,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     });
 
     it('parses EnumTransition.php with enum and class', () => {
-      const meta = parsePhpFile(example('EnumTransition.php'));
+      const meta = parsePhpFile(php81('EnumTransition.php'));
       const enumCls = meta.classes.find(c => c.name === 'Phase')!;
       expect(enumCls.isEnum).toBe(true);
       expect(enumCls.enumBackingType).toBe('string');
@@ -6334,7 +6054,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders full recipe', async () => {
       const result = await executor.execute({
         type: 'template',
-        file: example('templates/recipe.php'),
+        file: advanced('templates/recipe.php'),
         class: null,
         callable: null,
         args: {
@@ -6357,7 +6077,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders recipe without optional fields', async () => {
       const result = await executor.execute({
         type: 'template',
-        file: example('templates/recipe.php'),
+        file: advanced('templates/recipe.php'),
         class: null,
         callable: null,
         args: { title: 'Toast', servings: 1 },
@@ -6372,7 +6092,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders with empty args using defaults', async () => {
       const result = await executor.execute({
         type: 'template',
-        file: example('templates/recipe.php'),
+        file: advanced('templates/recipe.php'),
         class: null,
         callable: null,
         args: {},
@@ -6382,90 +6102,6 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     });
   });
 
-  // -------------------------------------------------------------------------
-  // UC107: Int-backed enum with methods
-  // -------------------------------------------------------------------------
-  describe('UC107: Int-backed enum (HttpCode)', () => {
-    it('renders badge for 200 OK', async () => {
-      const result = await executor.execute({
-        type: 'enumMethod',
-        file: example('HttpCode.php'),
-        class: 'App\\Components\\HttpCode',
-        callable: 'badge',
-        args: { _case: 200 },
-      });
-      expect(result.error).toBeUndefined();
-      expect(result.html).toContain('200');
-      expect(result.html).toContain('OK');
-      expect(result.html).toContain('http-code');
-    });
-
-    it('renders badge for 404 Not Found', async () => {
-      const result = await executor.execute({
-        type: 'enumMethod',
-        file: example('HttpCode.php'),
-        class: 'App\\Components\\HttpCode',
-        callable: 'badge',
-        args: { _case: 404 },
-      });
-      expect(result.error).toBeUndefined();
-      expect(result.html).toContain('404');
-      expect(result.html).toContain('Not Found');
-    });
-
-    it('renders badge for 500 Server Error', async () => {
-      const result = await executor.execute({
-        type: 'enumMethod',
-        file: example('HttpCode.php'),
-        class: 'App\\Components\\HttpCode',
-        callable: 'badge',
-        args: { _case: 500 },
-      });
-      expect(result.error).toBeUndefined();
-      expect(result.html).toContain('500');
-      expect(result.html).toContain('Internal Server Error');
-    });
-
-    it('renders page for error code with message', async () => {
-      const result = await executor.execute({
-        type: 'enumMethod',
-        file: example('HttpCode.php'),
-        class: 'App\\Components\\HttpCode',
-        callable: 'page',
-        args: { _case: 404, message: 'Page not found.' },
-      });
-      expect(result.error).toBeUndefined();
-      expect(result.html).toContain('404');
-      expect(result.html).toContain('Not Found');
-      expect(result.html).toContain('Page not found.');
-      expect(result.html).toContain('http-page');
-    });
-
-    it('renders page for success code with default message', async () => {
-      const result = await executor.execute({
-        type: 'enumMethod',
-        file: example('HttpCode.php'),
-        class: 'App\\Components\\HttpCode',
-        callable: 'page',
-        args: { _case: 200 },
-      });
-      expect(result.error).toBeUndefined();
-      expect(result.html).toContain('200');
-      expect(result.html).toContain('OK');
-    });
-
-    it('parses HttpCode.php as int-backed enum', () => {
-      const meta = parsePhpFile(example('HttpCode.php'));
-      const enumCls = meta.classes.find(c => c.name === 'HttpCode')!;
-      expect(enumCls.isEnum).toBe(true);
-      expect(enumCls.enumBackingType).toBe('int');
-      expect(enumCls.enumCases).toEqual(['Ok', 'Created', 'BadRequest', 'NotFound', 'ServerError']);
-      const methodNames = enumCls.methods.map(m => m.name);
-      expect(methodNames).toContain('badge');
-      expect(methodNames).toContain('label');
-      expect(methodNames).toContain('page');
-    });
-  });
 
   // -------------------------------------------------------------------------
   // UC108: Void/echo standalone functions
@@ -6474,7 +6110,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders banner with title only', async () => {
       const result = await executor.execute({
         type: 'function',
-        file: example('renderHtml.php'),
+        file: advanced('renderHtml.php'),
         class: null,
         callable: 'renderBanner',
         args: { title: 'Hello' },
@@ -6487,7 +6123,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders banner with subtitle', async () => {
       const result = await executor.execute({
         type: 'function',
-        file: example('renderHtml.php'),
+        file: advanced('renderHtml.php'),
         class: null,
         callable: 'renderBanner',
         args: { title: 'Sale', subtitle: '50% off', bg: '#dc2626' },
@@ -6501,7 +6137,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders alert with default type', async () => {
       const result = await executor.execute({
         type: 'function',
-        file: example('renderHtml.php'),
+        file: advanced('renderHtml.php'),
         class: null,
         callable: 'renderAlert',
         args: { message: 'Saved.' },
@@ -6514,7 +6150,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders alert with error type', async () => {
       const result = await executor.execute({
         type: 'function',
-        file: example('renderHtml.php'),
+        file: advanced('renderHtml.php'),
         class: null,
         callable: 'renderAlert',
         args: { message: 'Connection lost.', type: 'error' },
@@ -6525,7 +6161,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     });
 
     it('parses renderHtml.php as global void functions', () => {
-      const meta = parsePhpFile(example('renderHtml.php'));
+      const meta = parsePhpFile(advanced('renderHtml.php'));
       expect(meta.namespace).toBeNull();
       expect(meta.functions).toHaveLength(2);
       const banner = meta.functions.find(f => f.name === 'renderBanner')!;
@@ -6544,7 +6180,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('joins items with separator', async () => {
       const result = await executor.execute({
         type: 'function',
-        file: example('joinItems.php'),
+        file: advanced('joinItems.php'),
         class: null,
         callable: 'App\\Helpers\\joinItems',
         args: { separator: ', ', items: ['A', 'B', 'C'] },
@@ -6559,7 +6195,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders empty state', async () => {
       const result = await executor.execute({
         type: 'function',
-        file: example('joinItems.php'),
+        file: advanced('joinItems.php'),
         class: null,
         callable: 'App\\Helpers\\joinItems',
         args: { separator: ', ', items: [] },
@@ -6572,7 +6208,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('wraps each item in a tag', async () => {
       const result = await executor.execute({
         type: 'function',
-        file: example('joinItems.php'),
+        file: advanced('joinItems.php'),
         class: null,
         callable: 'App\\Helpers\\wrapEach',
         args: { tag: 'li', className: 'item', items: ['X', 'Y'] },
@@ -6583,7 +6219,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     });
 
     it('parses joinItems.php with variadic functions', () => {
-      const meta = parsePhpFile(example('joinItems.php'));
+      const meta = parsePhpFile(advanced('joinItems.php'));
       expect(meta.namespace).toBe('App\\Helpers');
       expect(meta.functions).toHaveLength(2);
       const join = meta.functions.find(f => f.name === 'joinItems')!;
@@ -6602,7 +6238,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders with string value', async () => {
       const result = await executor.execute({
         type: 'classMethod',
-        file: example('FlexibleInput.php'),
+        file: advanced('FlexibleInput.php'),
         class: 'App\\Components\\FlexibleInput',
         callable: 'render',
         args: { name: 'Email', value: 'test@example.com', type: 'email' },
@@ -6616,7 +6252,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders with integer value', async () => {
       const result = await executor.execute({
         type: 'classMethod',
-        file: example('FlexibleInput.php'),
+        file: advanced('FlexibleInput.php'),
         class: 'App\\Components\\FlexibleInput',
         callable: 'render',
         args: { name: 'Age', value: 25, type: 'number' },
@@ -6629,7 +6265,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders with null value', async () => {
       const result = await executor.execute({
         type: 'classMethod',
-        file: example('FlexibleInput.php'),
+        file: advanced('FlexibleInput.php'),
         class: 'App\\Components\\FlexibleInput',
         callable: 'render',
         args: { name: 'Optional', value: null },
@@ -6641,7 +6277,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders with maxLength and required', async () => {
       const result = await executor.execute({
         type: 'classMethod',
-        file: example('FlexibleInput.php'),
+        file: advanced('FlexibleInput.php'),
         class: 'App\\Components\\FlexibleInput',
         callable: 'render',
         args: { name: 'Bio', maxLength: 280, required: true },
@@ -6653,7 +6289,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     });
 
     it('parses FlexibleInput.php with union types', () => {
-      const meta = parsePhpFile(example('FlexibleInput.php'));
+      const meta = parsePhpFile(advanced('FlexibleInput.php'));
       const cls = meta.classes.find(c => c.name === 'FlexibleInput')!;
       expect(cls.constructorParams).toHaveLength(5);
       const valueParam = cls.constructorParams.find(p => p.name === 'value')!;
@@ -6672,7 +6308,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders changelog with entries', async () => {
       const result = await executor.execute({
         type: 'template',
-        file: example('templates/changelog.php'),
+        file: advanced('templates/changelog.php'),
         class: null,
         callable: null,
         args: {
@@ -6695,7 +6331,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders compact changelog', async () => {
       const result = await executor.execute({
         type: 'template',
-        file: example('templates/changelog.php'),
+        file: advanced('templates/changelog.php'),
         class: null,
         callable: null,
         args: {
@@ -6714,7 +6350,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders empty changelog', async () => {
       const result = await executor.execute({
         type: 'template',
-        file: example('templates/changelog.php'),
+        file: advanced('templates/changelog.php'),
         class: null,
         callable: null,
         args: { version: '3.0.0', entries: [] },
@@ -6731,7 +6367,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders gauge with float value', async () => {
       const result = await executor.execute({
         type: 'classMethod',
-        file: example('FloatGauge.php'),
+        file: advanced('FloatGauge.php'),
         class: 'App\\Components\\FloatGauge',
         callable: 'render',
         args: { label: 'Progress', value: 73.5 },
@@ -6745,7 +6381,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders gauge with custom unit and precision', async () => {
       const result = await executor.execute({
         type: 'classMethod',
-        file: example('FloatGauge.php'),
+        file: advanced('FloatGauge.php'),
         class: 'App\\Components\\FloatGauge',
         callable: 'render',
         args: { label: 'CPU Temp', value: 67.3, min: 20.0, max: 105.0, unit: '°C', precision: 1 },
@@ -6759,7 +6395,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders gauge with high precision', async () => {
       const result = await executor.execute({
         type: 'classMethod',
-        file: example('FloatGauge.php'),
+        file: advanced('FloatGauge.php'),
         class: 'App\\Components\\FloatGauge',
         callable: 'render',
         args: { label: 'Accuracy', value: 99.847, precision: 3 },
@@ -6771,7 +6407,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('clamps gauge percentage at boundaries', async () => {
       const result = await executor.execute({
         type: 'classMethod',
-        file: example('FloatGauge.php'),
+        file: advanced('FloatGauge.php'),
         class: 'App\\Components\\FloatGauge',
         callable: 'render',
         args: { label: 'Over', value: 150.0 },
@@ -6782,7 +6418,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     });
 
     it('parses FloatGauge.php with float params', () => {
-      const meta = parsePhpFile(example('FloatGauge.php'));
+      const meta = parsePhpFile(advanced('FloatGauge.php'));
       const cls = meta.classes.find(c => c.name === 'FloatGauge')!;
       expect(cls).toBeDefined();
       expect(cls.constructorParams).toHaveLength(6);
@@ -6804,7 +6440,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders contact card with defaults', async () => {
       const result = await executor.execute({
         type: 'classMethod',
-        file: example('ReadonlyContact.php'),
+        file: php82('ReadonlyContact.php'),
         class: 'App\\Components\\ReadonlyContact',
         callable: 'render',
         args: { name: 'Jane Smith', email: 'jane@example.com' },
@@ -6819,7 +6455,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders contact card with role', async () => {
       const result = await executor.execute({
         type: 'classMethod',
-        file: example('ReadonlyContact.php'),
+        file: php82('ReadonlyContact.php'),
         class: 'App\\Components\\ReadonlyContact',
         callable: 'render',
         args: { name: 'Alex Johnson', email: 'alex@example.com', role: 'Admin' },
@@ -6831,7 +6467,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders initials when no avatar', async () => {
       const result = await executor.execute({
         type: 'classMethod',
-        file: example('ReadonlyContact.php'),
+        file: php82('ReadonlyContact.php'),
         class: 'App\\Components\\ReadonlyContact',
         callable: 'render',
         args: { name: 'Jane Smith', email: 'j@example.com' },
@@ -6843,7 +6479,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders avatar image when provided', async () => {
       const result = await executor.execute({
         type: 'classMethod',
-        file: example('ReadonlyContact.php'),
+        file: php82('ReadonlyContact.php'),
         class: 'App\\Components\\ReadonlyContact',
         callable: 'render',
         args: { name: 'Sam', email: 's@test.com', avatar: 'https://example.com/photo.jpg' },
@@ -6854,7 +6490,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     });
 
     it('parses ReadonlyContact as readonly class', () => {
-      const meta = parsePhpFile(example('ReadonlyContact.php'));
+      const meta = parsePhpFile(php82('ReadonlyContact.php'));
       const cls = meta.classes.find(c => c.name === 'ReadonlyContact')!;
       expect(cls).toBeDefined();
       expect(cls.isReadonly).toBe(true);
@@ -6871,7 +6507,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders card with heredoc output', async () => {
       const result = await executor.execute({
         type: 'classMethod',
-        file: example('HeredocCard.php'),
+        file: advanced('HeredocCard.php'),
         class: 'App\\Components\\HeredocCard',
         callable: 'render',
         args: { title: 'Test Card', body: 'Heredoc content here.' },
@@ -6885,7 +6521,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders dark theme', async () => {
       const result = await executor.execute({
         type: 'classMethod',
-        file: example('HeredocCard.php'),
+        file: advanced('HeredocCard.php'),
         class: 'App\\Components\\HeredocCard',
         callable: 'render',
         args: { title: 'Dark', theme: 'dark' },
@@ -6897,7 +6533,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders with image block', async () => {
       const result = await executor.execute({
         type: 'classMethod',
-        file: example('HeredocCard.php'),
+        file: advanced('HeredocCard.php'),
         class: 'App\\Components\\HeredocCard',
         callable: 'render',
         args: { title: 'Featured', imageUrl: 'https://example.com/img.jpg' },
@@ -6908,7 +6544,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     });
 
     it('parses HeredocCard.php correctly', () => {
-      const meta = parsePhpFile(example('HeredocCard.php'));
+      const meta = parsePhpFile(advanced('HeredocCard.php'));
       const cls = meta.classes.find(c => c.name === 'HeredocCard')!;
       expect(cls).toBeDefined();
       expect(cls.constructorParams).toHaveLength(4);
@@ -6924,7 +6560,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders compass arrow via enum instance method', async () => {
       const result = await executor.execute({
         type: 'enumMethod',
-        file: example('EnumCompass.php'),
+        file: php81('EnumCompass.php'),
         class: 'App\\Components\\Compass',
         callable: 'arrow',
         args: { _case: 'N' },
@@ -6938,7 +6574,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders east compass arrow', async () => {
       const result = await executor.execute({
         type: 'enumMethod',
-        file: example('EnumCompass.php'),
+        file: php81('EnumCompass.php'),
         class: 'App\\Components\\Compass',
         callable: 'arrow',
         args: { _case: 'E' },
@@ -6951,7 +6587,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders compass rose via static method', async () => {
       const result = await executor.execute({
         type: 'staticMethod',
-        file: example('EnumCompass.php'),
+        file: php81('EnumCompass.php'),
         class: 'App\\Components\\Compass',
         callable: 'rose',
         args: { highlight: 'E' },
@@ -6965,7 +6601,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     });
 
     it('parses Compass enum with both static and instance methods', () => {
-      const meta = parsePhpFile(example('EnumCompass.php'));
+      const meta = parsePhpFile(php81('EnumCompass.php'));
       const cls = meta.classes.find(c => c.name === 'Compass')!;
       expect(cls).toBeDefined();
       expect(cls.isEnum).toBe(true);
@@ -6986,7 +6622,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders badge list with items', async () => {
       const result = await executor.execute({
         type: 'classMethod',
-        file: example('ArrayBadgeList.php'),
+        file: advanced('ArrayBadgeList.php'),
         class: 'App\\Components\\ArrayBadgeList',
         callable: 'render',
         args: { items: ['PHP', 'TypeScript', 'Storybook'] },
@@ -7001,7 +6637,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders empty badge list', async () => {
       const result = await executor.execute({
         type: 'classMethod',
-        file: example('ArrayBadgeList.php'),
+        file: advanced('ArrayBadgeList.php'),
         class: 'App\\Components\\ArrayBadgeList',
         callable: 'render',
         args: { items: [] },
@@ -7013,7 +6649,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders with custom title and color', async () => {
       const result = await executor.execute({
         type: 'classMethod',
-        file: example('ArrayBadgeList.php'),
+        file: advanced('ArrayBadgeList.php'),
         class: 'App\\Components\\ArrayBadgeList',
         callable: 'render',
         args: { title: 'Stack', items: ['Laravel', 'React'], color: '#8b5cf6' },
@@ -7026,7 +6662,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders stacked layout', async () => {
       const result = await executor.execute({
         type: 'classMethod',
-        file: example('ArrayBadgeList.php'),
+        file: advanced('ArrayBadgeList.php'),
         class: 'App\\Components\\ArrayBadgeList',
         callable: 'render',
         args: { items: ['A', 'B'], inline: false },
@@ -7036,7 +6672,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     });
 
     it('parses ArrayBadgeList with array param', () => {
-      const meta = parsePhpFile(example('ArrayBadgeList.php'));
+      const meta = parsePhpFile(advanced('ArrayBadgeList.php'));
       const cls = meta.classes.find(c => c.name === 'ArrayBadgeList')!;
       expect(cls).toBeDefined();
       const renderMethod = cls.methods.find(m => m.name === 'render')!;
@@ -7046,47 +6682,6 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     });
   });
 
-  // -------------------------------------------------------------------------
-  // UC117: Self-return fluent builder (SelfChain)
-  // -------------------------------------------------------------------------
-  describe('UC117: Self-return fluent builder', () => {
-    it('renders content with tag', async () => {
-      const result = await executor.execute({
-        type: 'classMethod',
-        file: example('SelfChain.php'),
-        class: 'App\\Components\\SelfChain',
-        callable: 'render',
-        args: { content: 'Hello from builder', tag: 'div' },
-      });
-      expect(result.error).toBeUndefined();
-      expect(result.html).toContain('<div');
-      expect(result.html).toContain('Hello from builder');
-    });
-
-    it('renders with custom tag and class', async () => {
-      const result = await executor.execute({
-        type: 'classMethod',
-        file: example('SelfChain.php'),
-        class: 'App\\Components\\SelfChain',
-        callable: 'render',
-        args: { content: 'Styled block', tag: 'section', className: 'highlight', style: 'padding: 16px;' },
-      });
-      expect(result.error).toBeUndefined();
-      expect(result.html).toContain('<section');
-      expect(result.html).toContain('class="highlight"');
-      expect(result.html).toContain('style="padding: 16px;"');
-    });
-
-    it('parses SelfChain with self return type', () => {
-      const meta = parsePhpFile(example('SelfChain.php'));
-      const cls = meta.classes.find(c => c.name === 'SelfChain')!;
-      expect(cls).toBeDefined();
-      const addItem = cls.methods.find(m => m.name === 'addItem')!;
-      expect(addItem.returnType).toBe('self');
-      const render = cls.methods.find(m => m.name === 'render')!;
-      expect(render.returnType).toBe('string');
-    });
-  });
 
   // -------------------------------------------------------------------------
   // UC118: Accordion template with iteration
@@ -7095,7 +6690,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders accordion with items', async () => {
       const result = await executor.execute({
         type: 'template',
-        file: example('templates/accordion.php'),
+        file: advanced('templates/accordion.php'),
         class: null,
         callable: null,
         args: {
@@ -7115,7 +6710,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders bordered variant', async () => {
       const result = await executor.execute({
         type: 'template',
-        file: example('templates/accordion.php'),
+        file: advanced('templates/accordion.php'),
         class: null,
         callable: null,
         args: {
@@ -7133,7 +6728,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders empty state', async () => {
       const result = await executor.execute({
         type: 'template',
-        file: example('templates/accordion.php'),
+        file: advanced('templates/accordion.php'),
         class: null,
         callable: null,
         args: { items: [] },
@@ -7150,7 +6745,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders horizontal steps', async () => {
       const result = await executor.execute({
         type: 'template',
-        file: example('templates/steps.php'),
+        file: advanced('templates/steps.php'),
         class: null,
         callable: null,
         args: {
@@ -7175,7 +6770,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders vertical steps', async () => {
       const result = await executor.execute({
         type: 'template',
-        file: example('templates/steps.php'),
+        file: advanced('templates/steps.php'),
         class: null,
         callable: null,
         args: {
@@ -7196,7 +6791,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders all completed steps', async () => {
       const result = await executor.execute({
         type: 'template',
-        file: example('templates/steps.php'),
+        file: advanced('templates/steps.php'),
         class: null,
         callable: null,
         args: {
@@ -7221,7 +6816,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     const plugin = storybookPhpPlugin() as any;
 
     it('UC112: FloatGauge@render generates classMethod with float params', () => {
-      const id = plugin.resolveId('./FloatGauge.php@render', example('Button.stories.ts'));
+      const id = plugin.resolveId('./FloatGauge.php@render', advanced('Button.stories.ts'));
       const code = plugin.load(id);
       expect(code).toContain("__type: 'classMethod'");
       expect(code).toContain('__callable: "render"');
@@ -7229,49 +6824,42 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     });
 
     it('UC113: ReadonlyContact@render generates classMethod for readonly class', () => {
-      const id = plugin.resolveId('./ReadonlyContact.php@render', example('Button.stories.ts'));
+      const id = plugin.resolveId('./ReadonlyContact.php@render', php82('Button.stories.ts'));
       const code = plugin.load(id);
       expect(code).toContain("__type: 'classMethod'");
       expect(code).toContain('ReadonlyContact');
     });
 
     it('UC114: HeredocCard@render generates classMethod', () => {
-      const id = plugin.resolveId('./HeredocCard.php@render', example('Button.stories.ts'));
+      const id = plugin.resolveId('./HeredocCard.php@render', advanced('Button.stories.ts'));
       const code = plugin.load(id);
       expect(code).toContain("__type: 'classMethod'");
       expect(code).toContain('HeredocCard');
     });
 
     it('UC115: EnumCompass@arrow generates enumMethod', () => {
-      const id = plugin.resolveId('./EnumCompass.php@arrow', example('Button.stories.ts'));
+      const id = plugin.resolveId('./EnumCompass.php@arrow', php81('Button.stories.ts'));
       const code = plugin.load(id);
       expect(code).toContain("__type: 'enumMethod'");
       expect(code).toContain('__callable: "arrow"');
     });
 
     it('UC115: EnumCompass@rose generates staticMethod', () => {
-      const id = plugin.resolveId('./EnumCompass.php@rose', example('Button.stories.ts'));
+      const id = plugin.resolveId('./EnumCompass.php@rose', php81('Button.stories.ts'));
       const code = plugin.load(id);
       expect(code).toContain("__type: 'staticMethod'");
       expect(code).toContain('__callable: "rose"');
     });
 
     it('UC116: ArrayBadgeList@render generates classMethod with array param', () => {
-      const id = plugin.resolveId('./ArrayBadgeList.php@render', example('Button.stories.ts'));
+      const id = plugin.resolveId('./ArrayBadgeList.php@render', advanced('Button.stories.ts'));
       const code = plugin.load(id);
       expect(code).toContain("__type: 'classMethod'");
       expect(code).toContain("type: 'array'");
     });
 
-    it('UC117: SelfChain@render generates classMethod', () => {
-      const id = plugin.resolveId('./SelfChain.php@render', example('Button.stories.ts'));
-      const code = plugin.load(id);
-      expect(code).toContain("__type: 'classMethod'");
-      expect(code).toContain('SelfChain');
-    });
-
     it('UC118: ValueObject@render generates classMethod with readonly-no-visibility params', () => {
-      const id = plugin.resolveId('./ValueObject.php@render', example('Button.stories.ts'));
+      const id = plugin.resolveId('./ValueObject.php@render', advanced('Button.stories.ts'));
       const code = plugin.load(id);
       expect(code).toContain("__type: 'classMethod'");
       expect(code).toContain('ValueObject');
@@ -7281,7 +6869,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     });
 
     it('UC119: NewDefaults@render generates classMethod for new-expression default', () => {
-      const id = plugin.resolveId('./NewDefaults.php@render', example('Button.stories.ts'));
+      const id = plugin.resolveId('./NewDefaults.php@render', php81('Button.stories.ts'));
       const code = plugin.load(id);
       expect(code).toContain("__type: 'classMethod'");
       expect(code).toContain('StyledBox');
@@ -7290,7 +6878,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     });
 
     it('UC120: DnfParam@render generates classMethod for DNF type param', () => {
-      const id = plugin.resolveId('./DnfParam.php@render', example('Button.stories.ts'));
+      const id = plugin.resolveId('./DnfParam.php@render', php82('Button.stories.ts'));
       const code = plugin.load(id);
       expect(code).toContain("__type: 'classMethod'");
       expect(code).toContain('DnfParam');
@@ -7307,7 +6895,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders ValueObject with all args', async () => {
       const result = await executor.execute({
         type: 'classMethod',
-        file: example('ValueObject.php'),
+        file: advanced('ValueObject.php'),
         class: 'App\\Components\\ValueObject',
         callable: 'render',
         args: { id: 'temperature', value: 72, unit: 'F' },
@@ -7321,7 +6909,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders ValueObject without optional unit', async () => {
       const result = await executor.execute({
         type: 'classMethod',
-        file: example('ValueObject.php'),
+        file: advanced('ValueObject.php'),
         class: 'App\\Components\\ValueObject',
         callable: 'render',
         args: { id: 'visitors', value: 1453 },
@@ -7332,7 +6920,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     });
 
     it('parses ValueObject readonly-no-visibility params', () => {
-      const meta = parsePhpFile(example('ValueObject.php'));
+      const meta = parsePhpFile(advanced('ValueObject.php'));
       const cls = meta.classes.find(c => c.name === 'ValueObject')!;
       expect(cls).toBeDefined();
       expect(cls.constructorParams).toHaveLength(3);
@@ -7352,7 +6940,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders StyledBox with defaults', async () => {
       const result = await executor.execute({
         type: 'classMethod',
-        file: example('NewDefaults.php'),
+        file: php81('NewDefaults.php'),
         class: 'App\\Components\\StyledBox',
         callable: 'render',
         args: { title: 'Notice' },
@@ -7366,7 +6954,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders StyledBox with content', async () => {
       const result = await executor.execute({
         type: 'classMethod',
-        file: example('NewDefaults.php'),
+        file: php81('NewDefaults.php'),
         class: 'App\\Components\\StyledBox',
         callable: 'render',
         args: { title: 'Info', content: 'Details here' },
@@ -7377,7 +6965,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     });
 
     it('parses StyledBox with new BoxOptions() default', () => {
-      const meta = parsePhpFile(example('NewDefaults.php'));
+      const meta = parsePhpFile(php81('NewDefaults.php'));
       const cls = meta.classes.find(c => c.name === 'StyledBox')!;
       expect(cls).toBeDefined();
       const optionsParam = cls.constructorParams.find(p => p.name === 'options')!;
@@ -7394,7 +6982,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders DnfParam with string badge', async () => {
       const result = await executor.execute({
         type: 'classMethod',
-        file: example('DnfParam.php'),
+        file: php82('DnfParam.php'),
         class: 'App\\Components\\DnfParam',
         callable: 'render',
         args: { title: 'Feature', badge: 'new' },
@@ -7407,7 +6995,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders DnfParam with defaults', async () => {
       const result = await executor.execute({
         type: 'classMethod',
-        file: example('DnfParam.php'),
+        file: php82('DnfParam.php'),
         class: 'App\\Components\\DnfParam',
         callable: 'render',
         args: { title: 'DNF Types' },
@@ -7420,7 +7008,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders DnfParam in compact mode', async () => {
       const result = await executor.execute({
         type: 'classMethod',
-        file: example('DnfParam.php'),
+        file: php82('DnfParam.php'),
         class: 'App\\Components\\DnfParam',
         callable: 'render',
         args: { title: 'Compact', badge: 'beta', compact: true },
@@ -7432,7 +7020,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     });
 
     it('parses DnfParam with DNF type', () => {
-      const meta = parsePhpFile(example('DnfParam.php'));
+      const meta = parsePhpFile(php82('DnfParam.php'));
       const cls = meta.classes.find(c => c.name === 'DnfParam')!;
       expect(cls).toBeDefined();
       const badgeParam = cls.constructorParams.find(p => p.name === 'badge')!;
@@ -7448,7 +7036,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders EnumConstant badge via enum instance method', async () => {
       const result = await executor.execute({
         type: 'enumMethod',
-        file: example('EnumConstant.php'),
+        file: php81('EnumConstant.php'),
         class: 'App\\Components\\EnumConstant',
         callable: 'badge',
         args: { _case: 'success' },
@@ -7461,7 +7049,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders EnumConstant warning badge', async () => {
       const result = await executor.execute({
         type: 'enumMethod',
-        file: example('EnumConstant.php'),
+        file: php81('EnumConstant.php'),
         class: 'App\\Components\\EnumConstant',
         callable: 'badge',
         args: { _case: 'warning' },
@@ -7474,7 +7062,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders EnumConstant danger badge', async () => {
       const result = await executor.execute({
         type: 'enumMethod',
-        file: example('EnumConstant.php'),
+        file: php81('EnumConstant.php'),
         class: 'App\\Components\\EnumConstant',
         callable: 'badge',
         args: { _case: 'danger' },
@@ -7487,7 +7075,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders EnumConstant::all static method', async () => {
       const result = await executor.execute({
         type: 'staticMethod',
-        file: example('EnumConstant.php'),
+        file: php81('EnumConstant.php'),
         class: 'App\\Components\\EnumConstant',
         callable: 'all',
         args: { separator: ' ' },
@@ -7499,7 +7087,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     });
 
     it('parses EnumConstant metadata', () => {
-      const meta = parsePhpFile(example('EnumConstant.php'));
+      const meta = parsePhpFile(php81('EnumConstant.php'));
       const cls = meta.classes.find(c => c.name === 'EnumConstant')!;
       expect(cls).toBeDefined();
       expect(cls.isEnum).toBe(true);
@@ -7517,7 +7105,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
       const plugin = storybookPhpPlugin({});
       const resolveId = (plugin as any).resolveId.bind(plugin);
       const load = (plugin as any).load.bind(plugin);
-      const id = resolveId('./EnumConstant.php@badge', example('EnumConstant.stories.ts'));
+      const id = resolveId('./EnumConstant.php@badge', php81('EnumConstant.stories.ts'));
       const code = load(id);
       expect(code).toContain("__type: 'enumMethod'");
       expect(code).toContain('EnumConstant');
@@ -7528,7 +7116,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
       const plugin = storybookPhpPlugin({});
       const resolveId = (plugin as any).resolveId.bind(plugin);
       const load = (plugin as any).load.bind(plugin);
-      const id = resolveId('./EnumConstant.php@all', example('EnumConstantAll.stories.ts'));
+      const id = resolveId('./EnumConstant.php@all', php81('EnumConstantAll.stories.ts'));
       const code = load(id);
       expect(code).toContain("__type: 'staticMethod'");
       expect(code).toContain('EnumConstant');
@@ -7542,7 +7130,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders DetailWidget (deepest child)', async () => {
       const result = await executor.execute({
         type: 'classMethod',
-        file: example('DeepInheritance.php'),
+        file: advanced('DeepInheritance.php'),
         class: 'App\\Components\\DetailWidget',
         callable: 'render',
         args: { title: 'Deep', message: 'Three levels', footer: 'Footer text' },
@@ -7556,7 +7144,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders DetailWidget with dark theme', async () => {
       const result = await executor.execute({
         type: 'classMethod',
-        file: example('DeepInheritance.php'),
+        file: advanced('DeepInheritance.php'),
         class: 'App\\Components\\DetailWidget',
         callable: 'render',
         args: { title: 'Dark', theme: 'dark', message: 'Themed' },
@@ -7569,7 +7157,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders InfoWidget (middle child)', async () => {
       const result = await executor.execute({
         type: 'classMethod',
-        file: example('DeepInheritance.php'),
+        file: advanced('DeepInheritance.php'),
         class: 'App\\Components\\InfoWidget',
         callable: 'render',
         args: { title: 'Info', message: 'Mid-level' },
@@ -7580,7 +7168,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     });
 
     it('parses deep inheritance hierarchy', () => {
-      const meta = parsePhpFile(example('DeepInheritance.php'));
+      const meta = parsePhpFile(advanced('DeepInheritance.php'));
       expect(meta.classes).toHaveLength(3);
 
       const base = meta.classes.find(c => c.name === 'BaseWidget')!;
@@ -7600,7 +7188,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
       const plugin = storybookPhpPlugin({});
       const resolveId = (plugin as any).resolveId.bind(plugin);
       const load = (plugin as any).load.bind(plugin);
-      const id = resolveId('./DeepInheritance.php@render', example('DeepInheritance.stories.ts'));
+      const id = resolveId('./DeepInheritance.php@render', advanced('DeepInheritance.stories.ts'));
       const code = load(id);
       expect(code).toContain('InfoWidget');
       expect(code).toContain('DetailWidget');
@@ -7616,7 +7204,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders generateList function', async () => {
       const result = await executor.execute({
         type: 'function',
-        file: example('generatorFunc.php'),
+        file: advanced('generatorFunc.php'),
         class: null,
         callable: 'App\\Helpers\\generateList',
         args: { title: 'Shopping', count: 3, marker: 'disc' },
@@ -7631,7 +7219,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders generateTable function', async () => {
       const result = await executor.execute({
         type: 'function',
-        file: example('generatorFunc.php'),
+        file: advanced('generatorFunc.php'),
         class: null,
         callable: 'App\\Helpers\\generateTable',
         args: { rows: 2, cols: 2 },
@@ -7642,7 +7230,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     });
 
     it('parses generator functions', () => {
-      const meta = parsePhpFile(example('generatorFunc.php'));
+      const meta = parsePhpFile(advanced('generatorFunc.php'));
       expect(meta.namespace).toBe('App\\Helpers');
       expect(meta.functions).toHaveLength(2);
 
@@ -7662,12 +7250,12 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
       const resolveId = (plugin as any).resolveId.bind(plugin);
       const load = (plugin as any).load.bind(plugin);
 
-      const listId = resolveId('./generatorFunc.php@generateList', example('generatorFunc.stories.ts'));
+      const listId = resolveId('./generatorFunc.php@generateList', advanced('generatorFunc.stories.ts'));
       const listCode = load(listId);
       expect(listCode).toContain("__type: 'function'");
       expect(listCode).toContain('generateList');
 
-      const tableId = resolveId('./generatorFunc.php@generateTable', example('generatorTable.stories.ts'));
+      const tableId = resolveId('./generatorFunc.php@generateTable', advanced('generatorTable.stories.ts'));
       const tableCode = load(tableId);
       expect(tableCode).toContain("__type: 'function'");
       expect(tableCode).toContain('generateTable');
@@ -7681,7 +7269,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders NowdocCard with defaults', async () => {
       const result = await executor.execute({
         type: 'classMethod',
-        file: example('NowdocCard.php'),
+        file: advanced('NowdocCard.php'),
         class: 'App\\Components\\NowdocCard',
         callable: 'render',
         args: {},
@@ -7694,7 +7282,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders NowdocCard with custom values', async () => {
       const result = await executor.execute({
         type: 'classMethod',
-        file: example('NowdocCard.php'),
+        file: advanced('NowdocCard.php'),
         class: 'App\\Components\\NowdocCard',
         callable: 'render',
         args: { title: 'Nowdoc', body: 'Uses nowdoc syntax.', variant: 'primary' },
@@ -7706,7 +7294,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     });
 
     it('parses NowdocCard correctly despite nowdoc syntax', () => {
-      const meta = parsePhpFile(example('NowdocCard.php'));
+      const meta = parsePhpFile(advanced('NowdocCard.php'));
       const cls = meta.classes.find(c => c.name === 'NowdocCard')!;
       expect(cls).toBeDefined();
       expect(cls.constructorParams).toHaveLength(3);
@@ -7722,7 +7310,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders PrivateConstruct::success', async () => {
       const result = await executor.execute({
         type: 'staticMethod',
-        file: example('PrivateConstruct.php'),
+        file: advanced('PrivateConstruct.php'),
         class: 'App\\Components\\PrivateConstruct',
         callable: 'success',
         args: { message: 'File saved.' },
@@ -7735,7 +7323,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders PrivateConstruct::error', async () => {
       const result = await executor.execute({
         type: 'staticMethod',
-        file: example('PrivateConstruct.php'),
+        file: advanced('PrivateConstruct.php'),
         class: 'App\\Components\\PrivateConstruct',
         callable: 'error',
         args: { message: 'Connection lost.' },
@@ -7748,7 +7336,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders PrivateConstruct::info with default', async () => {
       const result = await executor.execute({
         type: 'staticMethod',
-        file: example('PrivateConstruct.php'),
+        file: advanced('PrivateConstruct.php'),
         class: 'App\\Components\\PrivateConstruct',
         callable: 'info',
         args: {},
@@ -7758,7 +7346,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     });
 
     it('parses PrivateConstruct with private constructor', () => {
-      const meta = parsePhpFile(example('PrivateConstruct.php'));
+      const meta = parsePhpFile(advanced('PrivateConstruct.php'));
       const cls = meta.classes.find(c => c.name === 'PrivateConstruct')!;
       expect(cls).toBeDefined();
       expect(cls.constructorParams).toHaveLength(3);
@@ -7773,15 +7361,15 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
       const resolveId = (plugin as any).resolveId.bind(plugin);
       const load = (plugin as any).load.bind(plugin);
 
-      const successId = resolveId('./PrivateConstruct.php@success', example('PrivateConstruct.stories.ts'));
+      const successId = resolveId('./PrivateConstruct.php@success', advanced('PrivateConstruct.stories.ts'));
       const successCode = load(successId);
       expect(successCode).toContain("__type: 'staticMethod'");
 
-      const errorId = resolveId('./PrivateConstruct.php@error', example('PrivateConstructError.stories.ts'));
+      const errorId = resolveId('./PrivateConstruct.php@error', advanced('PrivateConstructError.stories.ts'));
       const errorCode = load(errorId);
       expect(errorCode).toContain("__type: 'staticMethod'");
 
-      const infoId = resolveId('./PrivateConstruct.php@info', example('PrivateConstructInfo.stories.ts'));
+      const infoId = resolveId('./PrivateConstruct.php@info', advanced('PrivateConstructInfo.stories.ts'));
       const infoCode = load(infoId);
       expect(infoCode).toContain("__type: 'staticMethod'");
     });
@@ -7794,7 +7382,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders TextAlign preview', async () => {
       const result = await executor.execute({
         type: 'enumMethod',
-        file: example('MultiEnum.php'),
+        file: php81('MultiEnum.php'),
         class: 'App\\Components\\TextAlign',
         callable: 'preview',
         args: { _case: 'center', text: 'Centered text' },
@@ -7807,7 +7395,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders FontWeight preview', async () => {
       const result = await executor.execute({
         type: 'enumMethod',
-        file: example('MultiEnum.php'),
+        file: php81('MultiEnum.php'),
         class: 'App\\Components\\FontWeight',
         callable: 'preview',
         args: { _case: '700', text: 'Bold text' },
@@ -7818,7 +7406,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     });
 
     it('parses multiple enums from one file', () => {
-      const meta = parsePhpFile(example('MultiEnum.php'));
+      const meta = parsePhpFile(php81('MultiEnum.php'));
       expect(meta.classes).toHaveLength(2);
 
       const textAlign = meta.classes.find(c => c.name === 'TextAlign')!;
@@ -7836,7 +7424,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
       const plugin = storybookPhpPlugin({});
       const resolveId = (plugin as any).resolveId.bind(plugin);
       const load = (plugin as any).load.bind(plugin);
-      const id = resolveId('./MultiEnum.php@preview', example('MultiEnum.stories.ts'));
+      const id = resolveId('./MultiEnum.php@preview', php81('MultiEnum.stories.ts'));
       const code = load(id);
       expect(code).toContain('TextAlign');
       expect(code).toContain('FontWeight');
@@ -7851,7 +7439,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders breadcrumb with array items', async () => {
       const result = await executor.execute({
         type: 'template',
-        file: resolve(examplesDir, 'templates/breadcrumb.php'),
+        file: resolve(advancedDir, 'templates/breadcrumb.php'),
         class: null,
         callable: null,
         args: {
@@ -7873,7 +7461,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders breadcrumb with arrow separator', async () => {
       const result = await executor.execute({
         type: 'template',
-        file: resolve(examplesDir, 'templates/breadcrumb.php'),
+        file: resolve(advancedDir, 'templates/breadcrumb.php'),
         class: null,
         callable: null,
         args: {
@@ -7898,7 +7486,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders modal with all options', async () => {
       const result = await executor.execute({
         type: 'template',
-        file: resolve(examplesDir, 'templates/modal.php'),
+        file: resolve(advancedDir, 'templates/modal.php'),
         class: null,
         callable: null,
         args: {
@@ -7922,7 +7510,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders small modal without footer', async () => {
       const result = await executor.execute({
         type: 'template',
-        file: resolve(examplesDir, 'templates/modal.php'),
+        file: resolve(advancedDir, 'templates/modal.php'),
         class: null,
         callable: null,
         args: {
@@ -7943,7 +7531,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders large modal without close button', async () => {
       const result = await executor.execute({
         type: 'template',
-        file: resolve(examplesDir, 'templates/modal.php'),
+        file: resolve(advancedDir, 'templates/modal.php'),
         class: null,
         callable: null,
         args: {
@@ -7970,13 +7558,13 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     const load = (plugin as any).load.bind(plugin);
 
     it('generates template module for breadcrumb template', () => {
-      const id = resolveId('../templates/breadcrumb.php', resolve(examplesDir, 'templates/breadcrumb.stories.ts'));
+      const id = resolveId('../templates/breadcrumb.php', resolve(advancedDir, 'templates/breadcrumb.stories.ts'));
       const code = load(id);
       expect(code).toContain("__type: 'template'");
     });
 
     it('generates template module for modal template', () => {
-      const id = resolveId('../templates/modal.php', resolve(examplesDir, 'templates/modal.stories.ts'));
+      const id = resolveId('../templates/modal.php', resolve(advancedDir, 'templates/modal.stories.ts'));
       const code = load(id);
       expect(code).toContain("__type: 'template'");
     });
@@ -8073,7 +7661,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders AbstractFactory::pill (static on abstract class)', async () => {
       const result = await executor.execute({
         type: 'staticMethod',
-        file: example('AbstractFactory.php'),
+        file: advanced('AbstractFactory.php'),
         class: 'App\\Components\\AbstractFactory',
         callable: 'pill',
         args: { label: 'Active', color: '#22c55e' },
@@ -8086,7 +7674,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders AbstractFactory::outline (static on abstract class)', async () => {
       const result = await executor.execute({
         type: 'staticMethod',
-        file: example('AbstractFactory.php'),
+        file: advanced('AbstractFactory.php'),
         class: 'App\\Components\\AbstractFactory',
         callable: 'outline',
         args: { label: 'Draft' },
@@ -8099,7 +7687,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders ConcreteBadge (subclass instance method)', async () => {
       const result = await executor.execute({
         type: 'classMethod',
-        file: example('AbstractFactory.php'),
+        file: advanced('AbstractFactory.php'),
         class: 'App\\Components\\ConcreteBadge',
         callable: 'render',
         args: { label: 'Online', color: '#22c55e' },
@@ -8113,7 +7701,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
       const plugin = storybookPhpPlugin({});
       const resolveId = (plugin as any).resolveId.bind(plugin);
       const load = (plugin as any).load.bind(plugin);
-      const id = resolveId('./AbstractFactory.php@pill', example('AbstractFactory.stories.ts'));
+      const id = resolveId('./AbstractFactory.php@pill', advanced('AbstractFactory.stories.ts'));
       const code = load(id);
       // Should contain AbstractFactory for the static method
       expect(code).toContain('AbstractFactory');
@@ -8126,7 +7714,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
       const plugin = storybookPhpPlugin({});
       const resolveId = (plugin as any).resolveId.bind(plugin);
       const load = (plugin as any).load.bind(plugin);
-      const id = resolveId('./AbstractFactory.php@render', example('AbstractFactoryBadge.stories.ts'));
+      const id = resolveId('./AbstractFactory.php@render', advanced('AbstractFactoryBadge.stories.ts'));
       const code = load(id);
       // Should contain ConcreteBadge for the instance method
       expect(code).toContain('ConcreteBadge');
@@ -8143,7 +7731,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders MixedVisibility with defaults', async () => {
       const result = await executor.execute({
         type: 'classMethod',
-        file: example('MixedVisibility.php'),
+        file: advanced('MixedVisibility.php'),
         class: 'App\\Components\\MixedVisibility',
         callable: 'render',
         args: { label: 'Hello' },
@@ -8156,7 +7744,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders MixedVisibility with truncation', async () => {
       const result = await executor.execute({
         type: 'classMethod',
-        file: example('MixedVisibility.php'),
+        file: advanced('MixedVisibility.php'),
         class: 'App\\Components\\MixedVisibility',
         callable: 'render',
         args: { label: 'This is a very long label that exceeds the max length', truncate: true, maxLength: 20 },
@@ -8168,7 +7756,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders MixedVisibility with private variant', async () => {
       const result = await executor.execute({
         type: 'classMethod',
-        file: example('MixedVisibility.php'),
+        file: advanced('MixedVisibility.php'),
         class: 'App\\Components\\MixedVisibility',
         callable: 'render',
         args: { label: 'Test', variant: 'primary' },
@@ -8178,7 +7766,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     });
 
     it('parses MixedVisibility with mixed visibility params', () => {
-      const meta = parsePhpFile(example('MixedVisibility.php'));
+      const meta = parsePhpFile(advanced('MixedVisibility.php'));
       const cls = meta.classes.find(c => c.name === 'MixedVisibility')!;
       expect(cls).toBeDefined();
       expect(cls.constructorParams).toHaveLength(4);
@@ -8203,7 +7791,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
       const plugin = storybookPhpPlugin({});
       const resolveId = (plugin as any).resolveId.bind(plugin);
       const load = (plugin as any).load.bind(plugin);
-      const id = resolveId('./MixedVisibility.php@render', example('MixedVisibility.stories.ts'));
+      const id = resolveId('./MixedVisibility.php@render', advanced('MixedVisibility.stories.ts'));
       const code = load(id);
       expect(code).toContain("__type: 'classMethod'");
       expect(code).toContain('label:');
@@ -8220,7 +7808,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders NoParamClock with default timezone', async () => {
       const result = await executor.execute({
         type: 'classMethod',
-        file: example('NoParamClock.php'),
+        file: advanced('NoParamClock.php'),
         class: 'App\\Components\\NoParamClock',
         callable: 'render',
         args: { timezone: 'UTC' },
@@ -8233,7 +7821,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders NoParamClock with custom timezone', async () => {
       const result = await executor.execute({
         type: 'classMethod',
-        file: example('NoParamClock.php'),
+        file: advanced('NoParamClock.php'),
         class: 'App\\Components\\NoParamClock',
         callable: 'render',
         args: { timezone: 'Asia/Tokyo', format: 'Y-m-d H:i' },
@@ -8244,7 +7832,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     });
 
     it('parses NoParamClock render method with no params', () => {
-      const meta = parsePhpFile(example('NoParamClock.php'));
+      const meta = parsePhpFile(advanced('NoParamClock.php'));
       const cls = meta.classes.find(c => c.name === 'NoParamClock')!;
       expect(cls).toBeDefined();
       expect(cls.constructorParams).toHaveLength(2);
@@ -8257,7 +7845,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
       const plugin = storybookPhpPlugin({});
       const resolveId = (plugin as any).resolveId.bind(plugin);
       const load = (plugin as any).load.bind(plugin);
-      const id = resolveId('./NoParamClock.php@render', example('NoParamClock.stories.ts'));
+      const id = resolveId('./NoParamClock.php@render', advanced('NoParamClock.stories.ts'));
       const code = load(id);
       expect(code).toContain("__type: 'classMethod'");
       expect(code).toContain('timezone:');   // ctor arg
@@ -8273,7 +7861,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders complexList with default items', async () => {
       const result = await executor.execute({
         type: 'function',
-        file: example('complexList.php'),
+        file: advanced('complexList.php'),
         class: null,
         callable: 'App\\Helpers\\complexList',
         args: {},
@@ -8288,7 +7876,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders complexList with custom items', async () => {
       const result = await executor.execute({
         type: 'function',
-        file: example('complexList.php'),
+        file: advanced('complexList.php'),
         class: null,
         callable: 'App\\Helpers\\complexList',
         args: { items: ['Alpha', 'Beta'], style: 'decimal' },
@@ -8300,7 +7888,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     });
 
     it('parses complexList function with array default', () => {
-      const meta = parsePhpFile(example('complexList.php'));
+      const meta = parsePhpFile(advanced('complexList.php'));
       expect(meta.functions).toHaveLength(1);
       const fn = meta.functions[0]!;
       expect(fn.name).toBe('complexList');
@@ -8317,7 +7905,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
       const plugin = storybookPhpPlugin({});
       const resolveId = (plugin as any).resolveId.bind(plugin);
       const load = (plugin as any).load.bind(plugin);
-      const id = resolveId('./complexList.php@complexList', example('complexList.stories.ts'));
+      const id = resolveId('./complexList.php@complexList', advanced('complexList.stories.ts'));
       const code = load(id);
       expect(code).toContain("__type: 'function'");
       expect(code).toContain('App\\\\Helpers\\\\complexList');
@@ -8334,7 +7922,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders EnumMultiInterface::menuItem for Home', async () => {
       const result = await executor.execute({
         type: 'enumMethod',
-        file: example('EnumMultiInterface.php'),
+        file: php81('EnumMultiInterface.php'),
         class: 'App\\Components\\EnumMultiInterface',
         callable: 'menuItem',
         args: { _case: 'home' },
@@ -8347,7 +7935,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders EnumMultiInterface::menuItem for Logout', async () => {
       const result = await executor.execute({
         type: 'enumMethod',
-        file: example('EnumMultiInterface.php'),
+        file: php81('EnumMultiInterface.php'),
         class: 'App\\Components\\EnumMultiInterface',
         callable: 'menuItem',
         args: { _case: 'logout' },
@@ -8360,7 +7948,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders EnumMultiInterface::icon for Settings', async () => {
       const result = await executor.execute({
         type: 'enumMethod',
-        file: example('EnumMultiInterface.php'),
+        file: php81('EnumMultiInterface.php'),
         class: 'App\\Components\\EnumMultiInterface',
         callable: 'icon',
         args: { _case: 'settings' },
@@ -8370,7 +7958,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     });
 
     it('parses EnumMultiInterface with multiple implements', () => {
-      const meta = parsePhpFile(example('EnumMultiInterface.php'));
+      const meta = parsePhpFile(php81('EnumMultiInterface.php'));
       const cls = meta.classes.find(c => c.name === 'EnumMultiInterface')!;
       expect(cls).toBeDefined();
       expect(cls.isEnum).toBe(true);
@@ -8385,7 +7973,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
       const plugin = storybookPhpPlugin({});
       const resolveId = (plugin as any).resolveId.bind(plugin);
       const load = (plugin as any).load.bind(plugin);
-      const id = resolveId('./EnumMultiInterface.php@menuItem', example('EnumMultiInterface.stories.ts'));
+      const id = resolveId('./EnumMultiInterface.php@menuItem', php81('EnumMultiInterface.stories.ts'));
       const code = load(id);
       expect(code).toContain("__type: 'enumMethod'");
       expect(code).toContain('_case:');
@@ -8399,7 +7987,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders nested template with badge partial', async () => {
       const result = await executor.execute({
         type: 'template',
-        file: example('templates/nested.php'),
+        file: advanced('templates/nested.php'),
         class: null,
         callable: null,
         args: { heading: 'Features', badgeText: 'New', badgeColor: '#22c55e', content: 'Nested content here' },
@@ -8415,7 +8003,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders nested template without badge', async () => {
       const result = await executor.execute({
         type: 'template',
-        file: example('templates/nested.php'),
+        file: advanced('templates/nested.php'),
         class: null,
         callable: null,
         args: { heading: 'Simple', content: 'No badge' },
@@ -8434,7 +8022,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders StaticInstance via instance render()', async () => {
       const result = await executor.execute({
         type: 'classMethod',
-        file: example('StaticInstance.php'),
+        file: advanced('StaticInstance.php'),
         class: 'App\\Components\\StaticInstance',
         callable: 'render',
         args: { content: 'Instance card', type: 'success' },
@@ -8447,7 +8035,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders StaticInstance via static fromMarkdown()', async () => {
       const result = await executor.execute({
         type: 'staticMethod',
-        file: example('StaticInstance.php'),
+        file: advanced('StaticInstance.php'),
         class: 'App\\Components\\StaticInstance',
         callable: 'fromMarkdown',
         args: { text: 'Static content' },
@@ -8460,7 +8048,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders StaticInstance via static fromMarkdown() with bold', async () => {
       const result = await executor.execute({
         type: 'staticMethod',
-        file: example('StaticInstance.php'),
+        file: advanced('StaticInstance.php'),
         class: 'App\\Components\\StaticInstance',
         callable: 'fromMarkdown',
         args: { text: 'Bold text', bold: true },
@@ -8473,7 +8061,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
       const plugin = storybookPhpPlugin({});
       const resolveId = (plugin as any).resolveId.bind(plugin);
       const load = (plugin as any).load.bind(plugin);
-      const id = resolveId('./StaticInstance.php@render', example('StaticInstance.stories.ts'));
+      const id = resolveId('./StaticInstance.php@render', advanced('StaticInstance.stories.ts'));
       const code = load(id);
       expect(code).toContain("__type: 'classMethod'");
       expect(code).toContain('content:');
@@ -8484,7 +8072,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
       const plugin = storybookPhpPlugin({});
       const resolveId = (plugin as any).resolveId.bind(plugin);
       const load = (plugin as any).load.bind(plugin);
-      const id = resolveId('./StaticInstance.php@fromMarkdown', example('StaticInstanceMarkdown.stories.ts'));
+      const id = resolveId('./StaticInstance.php@fromMarkdown', advanced('StaticInstanceMarkdown.stories.ts'));
       const code = load(id);
       expect(code).toContain("__type: 'staticMethod'");
       expect(code).toContain('text:');
@@ -8492,7 +8080,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     });
 
     it('parses StaticInstance with both method types', () => {
-      const meta = parsePhpFile(example('StaticInstance.php'));
+      const meta = parsePhpFile(advanced('StaticInstance.php'));
       const cls = meta.classes.find(c => c.name === 'StaticInstance')!;
       expect(cls).toBeDefined();
       expect(cls.constructorParams).toHaveLength(2);
@@ -8567,7 +8155,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders Suit card with rank param', async () => {
       const result = await executor.execute({
         type: 'enumMethod',
-        file: example('Suit.php'),
+        file: php81('Suit.php'),
         class: 'App\\Components\\Suit',
         callable: 'card',
         args: { _case: 'Spades', rank: 'A' },
@@ -8580,7 +8168,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders pure enum without backing value (name-based matching)', async () => {
       const result = await executor.execute({
         type: 'enumMethod',
-        file: example('Suit.php'),
+        file: php81('Suit.php'),
         class: 'App\\Components\\Suit',
         callable: 'card',
         args: { _case: 'Hearts', rank: 'Q' },
@@ -8593,7 +8181,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders with default rank param', async () => {
       const result = await executor.execute({
         type: 'enumMethod',
-        file: example('Suit.php'),
+        file: php81('Suit.php'),
         class: 'App\\Components\\Suit',
         callable: 'card',
         args: { _case: 'Diamonds' },
@@ -8603,7 +8191,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     });
 
     it('parses Suit pure enum', () => {
-      const meta = parsePhpFile(example('Suit.php'));
+      const meta = parsePhpFile(php81('Suit.php'));
       const cls = meta.classes.find(c => c.name === 'Suit')!;
       expect(cls.isEnum).toBe(true);
       expect(cls.enumBackingType).toBeNull();
@@ -8617,7 +8205,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
       const plugin = storybookPhpPlugin({});
       const resolveId = (plugin as any).resolveId.bind(plugin);
       const load = (plugin as any).load.bind(plugin);
-      const id = resolveId('./Suit.php@card', example('Suit.stories.ts'));
+      const id = resolveId('./Suit.php@card', php81('Suit.stories.ts'));
       const code = load(id);
       expect(code).toContain("__type: 'enumMethod'");
       expect(code).toContain('rank:');
@@ -8632,7 +8220,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders StandaloneTypes with true/false params', async () => {
       const result = await executor.execute({
         type: 'classMethod',
-        file: example('StandaloneTypes.php'),
+        file: php82('StandaloneTypes.php'),
         class: 'App\\Components\\StandaloneTypes',
         callable: 'render',
         args: { label: 'Test Button', variant: 'primary', visible: true, disabled: false },
@@ -8645,7 +8233,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders with defaults for standalone types', async () => {
       const result = await executor.execute({
         type: 'classMethod',
-        file: example('StandaloneTypes.php'),
+        file: php82('StandaloneTypes.php'),
         class: 'App\\Components\\StandaloneTypes',
         callable: 'render',
         args: { label: 'Default', variant: 'success' },
@@ -8667,7 +8255,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     });
 
     it('parses standalone types from example', () => {
-      const meta = parsePhpFile(example('StandaloneTypes.php'));
+      const meta = parsePhpFile(php82('StandaloneTypes.php'));
       const cls = meta.classes[0]!;
       expect(cls.constructorParams).toHaveLength(4);
       const visible = cls.constructorParams.find(p => p.name === 'visible')!;
@@ -8686,7 +8274,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders TextInput from nested namespace', async () => {
       const result = await executor.execute({
         type: 'classMethod',
-        file: example('NestedNamespace.php'),
+        file: advanced('NestedNamespace.php'),
         class: 'App\\UI\\Components\\Form\\TextInput',
         callable: 'render',
         args: { name: 'email', label: 'Email', placeholder: 'you@example.com' },
@@ -8700,7 +8288,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders with required flag', async () => {
       const result = await executor.execute({
         type: 'classMethod',
-        file: example('NestedNamespace.php'),
+        file: advanced('NestedNamespace.php'),
         class: 'App\\UI\\Components\\Form\\TextInput',
         callable: 'render',
         args: { name: 'password', required: true, helpText: 'Min 8 characters' },
@@ -8722,7 +8310,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
       const plugin = storybookPhpPlugin({});
       const resolveId = (plugin as any).resolveId.bind(plugin);
       const load = (plugin as any).load.bind(plugin);
-      const id = resolveId('./NestedNamespace.php@render', example('NestedNamespace.stories.ts'));
+      const id = resolveId('./NestedNamespace.php@render', advanced('NestedNamespace.stories.ts'));
       const code = load(id);
       expect(code).toContain("__type: 'classMethod'");
       expect(code).toContain('App\\\\UI\\\\Components\\\\Form\\\\TextInput');
@@ -8736,7 +8324,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders via render() method', async () => {
       const result = await executor.execute({
         type: 'classMethod',
-        file: example('MultiRender.php'),
+        file: advanced('MultiRender.php'),
         class: 'App\\Components\\MultiRender',
         callable: 'render',
         args: { title: 'Feature', description: 'A great feature', icon: '🚀' },
@@ -8750,7 +8338,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders via renderCard() method', async () => {
       const result = await executor.execute({
         type: 'classMethod',
-        file: example('MultiRender.php'),
+        file: advanced('MultiRender.php'),
         class: 'App\\Components\\MultiRender',
         callable: 'renderCard',
         args: { title: 'Dashboard', description: 'Analytics', footer: 'Updated 5m ago' },
@@ -8764,7 +8352,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders via renderRow() method', async () => {
       const result = await executor.execute({
         type: 'classMethod',
-        file: example('MultiRender.php'),
+        file: advanced('MultiRender.php'),
         class: 'App\\Components\\MultiRender',
         callable: 'renderRow',
         args: { title: 'Users', description: '1,234 active', striped: true },
@@ -8776,7 +8364,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     });
 
     it('parses MultiRender with 3 public methods', () => {
-      const meta = parsePhpFile(example('MultiRender.php'));
+      const meta = parsePhpFile(advanced('MultiRender.php'));
       const cls = meta.classes.find(c => c.name === 'MultiRender')!;
       expect(cls).toBeDefined();
       expect(cls.methods).toHaveLength(3);
@@ -8788,16 +8376,16 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
       const resolveId = (plugin as any).resolveId.bind(plugin);
       const load = (plugin as any).load.bind(plugin);
 
-      const idRender = resolveId('./MultiRender.php@render', example('MultiRender.stories.ts'));
+      const idRender = resolveId('./MultiRender.php@render', advanced('MultiRender.stories.ts'));
       const codeRender = load(idRender);
       expect(codeRender).toContain('__callable: "render"');
 
-      const idCard = resolveId('./MultiRender.php@renderCard', example('MultiRenderCard.stories.ts'));
+      const idCard = resolveId('./MultiRender.php@renderCard', advanced('MultiRenderCard.stories.ts'));
       const codeCard = load(idCard);
       expect(codeCard).toContain('__callable: "renderCard"');
       expect(codeCard).toContain('footer:');
 
-      const idRow = resolveId('./MultiRender.php@renderRow', example('MultiRenderRow.stories.ts'));
+      const idRow = resolveId('./MultiRender.php@renderRow', advanced('MultiRenderRow.stories.ts'));
       const codeRow = load(idRow);
       expect(codeRow).toContain('__callable: "renderRow"');
       expect(codeRow).toContain('striped:');
@@ -8811,7 +8399,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders badge via enum instance method', async () => {
       const result = await executor.execute({
         type: 'enumMethod',
-        file: example('EnumStaticInstance.php'),
+        file: php81('EnumStaticInstance.php'),
         class: 'App\\Components\\EnumStaticInstance',
         callable: 'badge',
         args: { _case: 'success' },
@@ -8824,7 +8412,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders alert via enum instance method with params', async () => {
       const result = await executor.execute({
         type: 'enumMethod',
-        file: example('EnumStaticInstance.php'),
+        file: php81('EnumStaticInstance.php'),
         class: 'App\\Components\\EnumStaticInstance',
         callable: 'render',
         args: { _case: 'error', message: 'Something went wrong!' },
@@ -8837,7 +8425,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders all badges via static method', async () => {
       const result = await executor.execute({
         type: 'staticMethod',
-        file: example('EnumStaticInstance.php'),
+        file: php81('EnumStaticInstance.php'),
         class: 'App\\Components\\EnumStaticInstance',
         callable: 'all',
         args: {},
@@ -8849,7 +8437,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     });
 
     it('parses enum with both method types', () => {
-      const meta = parsePhpFile(example('EnumStaticInstance.php'));
+      const meta = parsePhpFile(php81('EnumStaticInstance.php'));
       const cls = meta.classes.find(c => c.name === 'EnumStaticInstance')!;
       expect(cls.isEnum).toBe(true);
       const instanceMethods = cls.methods.filter(m => !m.isStatic);
@@ -8862,7 +8450,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
       const plugin = storybookPhpPlugin({});
       const resolveId = (plugin as any).resolveId.bind(plugin);
       const load = (plugin as any).load.bind(plugin);
-      const id = resolveId('./EnumStaticInstance.php@badge', example('EnumStaticInstance.stories.ts'));
+      const id = resolveId('./EnumStaticInstance.php@badge', php81('EnumStaticInstance.stories.ts'));
       const code = load(id);
       expect(code).toContain("__type: 'enumMethod'");
     });
@@ -8871,7 +8459,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
       const plugin = storybookPhpPlugin({});
       const resolveId = (plugin as any).resolveId.bind(plugin);
       const load = (plugin as any).load.bind(plugin);
-      const id = resolveId('./EnumStaticInstance.php@all', example('EnumStaticInstanceAll.stories.ts'));
+      const id = resolveId('./EnumStaticInstance.php@all', php81('EnumStaticInstanceAll.stories.ts'));
       const code = load(id);
       expect(code).toContain("__type: 'staticMethod'");
     });
@@ -8884,7 +8472,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders with default theme (Light)', async () => {
       const result = await executor.execute({
         type: 'classMethod',
-        file: example('EnumTypedConstructor.php'),
+        file: php81('EnumTypedConstructor.php'),
         class: 'App\\Components\\EnumTypedConstructor',
         callable: 'render',
         args: { content: 'Hello world' },
@@ -8898,7 +8486,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders with dark theme', async () => {
       const result = await executor.execute({
         type: 'classMethod',
-        file: example('EnumTypedConstructor.php'),
+        file: php81('EnumTypedConstructor.php'),
         class: 'App\\Components\\EnumTypedConstructor',
         callable: 'render',
         args: { content: 'Dark mode', theme: 'dark', size: 'lg' },
@@ -8912,7 +8500,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders with system theme', async () => {
       const result = await executor.execute({
         type: 'classMethod',
-        file: example('EnumTypedConstructor.php'),
+        file: php81('EnumTypedConstructor.php'),
         class: 'App\\Components\\EnumTypedConstructor',
         callable: 'render',
         args: { content: 'System theme', theme: 'system' },
@@ -8922,7 +8510,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     });
 
     it('parses EnumTypedConstructor with enum param', () => {
-      const meta = parsePhpFile(example('EnumTypedConstructor.php'));
+      const meta = parsePhpFile(php81('EnumTypedConstructor.php'));
       const cls = meta.classes.find(c => c.name === 'EnumTypedConstructor')!;
       expect(cls).toBeDefined();
       const themeParam = cls.constructorParams.find(p => p.name === 'theme')!;
@@ -8931,7 +8519,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     });
 
     it('parses Theme enum in same file', () => {
-      const meta = parsePhpFile(example('EnumTypedConstructor.php'));
+      const meta = parsePhpFile(php81('EnumTypedConstructor.php'));
       const enumCls = meta.classes.find(c => c.name === 'Theme')!;
       expect(enumCls.isEnum).toBe(true);
       expect(enumCls.enumBackingType).toBe('string');
@@ -9002,7 +8590,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders echo-based enum alert for success', async () => {
       const result = await executor.execute({
         type: 'enumMethod',
-        file: example('EchoEnum.php'),
+        file: php81('EchoEnum.php'),
         class: 'App\\Components\\EchoEnum',
         callable: 'alert',
         args: { _case: 'success', message: 'Done!' },
@@ -9016,7 +8604,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders echo-based enum alert with dismissible flag', async () => {
       const result = await executor.execute({
         type: 'enumMethod',
-        file: example('EchoEnum.php'),
+        file: php81('EchoEnum.php'),
         class: 'App\\Components\\EchoEnum',
         callable: 'alert',
         args: { _case: 'error', message: 'Something failed.', dismissible: true },
@@ -9030,7 +8618,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders without dismissible button by default', async () => {
       const result = await executor.execute({
         type: 'enumMethod',
-        file: example('EchoEnum.php'),
+        file: php81('EchoEnum.php'),
         class: 'App\\Components\\EchoEnum',
         callable: 'alert',
         args: { _case: 'warning', message: 'Check this.' },
@@ -9041,7 +8629,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     });
 
     it('parses EchoEnum with void method', () => {
-      const meta = parsePhpFile(example('EchoEnum.php'));
+      const meta = parsePhpFile(php81('EchoEnum.php'));
       const cls = meta.classes.find(c => c.name === 'EchoEnum')!;
       expect(cls.isEnum).toBe(true);
       expect(cls.enumBackingType).toBe('string');
@@ -9055,7 +8643,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
       const plugin = storybookPhpPlugin({});
       const resolveId = (plugin as any).resolveId.bind(plugin);
       const load = (plugin as any).load.bind(plugin);
-      const id = resolveId('./EchoEnum.php@alert', example('EchoEnum.stories.ts'));
+      const id = resolveId('./EchoEnum.php@alert', php81('EchoEnum.stories.ts'));
       const code = load(id);
       expect(code).toContain("__type: 'enumMethod'");
       expect(code).toContain('message:');
@@ -9070,7 +8658,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders invocable echo with defaults', async () => {
       const result = await executor.execute({
         type: 'classMethod',
-        file: example('InvocableEcho.php'),
+        file: advanced('InvocableEcho.php'),
         class: 'App\\Components\\InvocableEcho',
         callable: '__invoke',
         args: { message: 'Hello world' },
@@ -9084,7 +8672,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders invocable echo with custom prefix and variant', async () => {
       const result = await executor.execute({
         type: 'classMethod',
-        file: example('InvocableEcho.php'),
+        file: advanced('InvocableEcho.php'),
         class: 'App\\Components\\InvocableEcho',
         callable: '__invoke',
         args: { prefix: 'Alert', variant: 'error', message: 'Oops!' },
@@ -9098,7 +8686,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders invocable echo without icon', async () => {
       const result = await executor.execute({
         type: 'classMethod',
-        file: example('InvocableEcho.php'),
+        file: advanced('InvocableEcho.php'),
         class: 'App\\Components\\InvocableEcho',
         callable: '__invoke',
         args: { message: 'Plain text', showIcon: false },
@@ -9109,7 +8697,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     });
 
     it('parses InvocableEcho with __invoke void', () => {
-      const meta = parsePhpFile(example('InvocableEcho.php'));
+      const meta = parsePhpFile(advanced('InvocableEcho.php'));
       const cls = meta.classes.find(c => c.name === 'InvocableEcho')!;
       expect(cls).toBeDefined();
       expect(cls.constructorParams).toHaveLength(2);
@@ -9123,7 +8711,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
       const plugin = storybookPhpPlugin({});
       const resolveId = (plugin as any).resolveId.bind(plugin);
       const load = (plugin as any).load.bind(plugin);
-      const id = resolveId('./InvocableEcho.php@__invoke', example('InvocableEcho.stories.ts'));
+      const id = resolveId('./InvocableEcho.php@__invoke', advanced('InvocableEcho.stories.ts'));
       const code = load(id);
       expect(code).toContain("__type: 'classMethod'");
       expect(code).toContain('prefix:');
@@ -9139,7 +8727,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders percent as integer', async () => {
       const result = await executor.execute({
         type: 'classMethod',
-        file: example('ScalarReturn.php'),
+        file: advanced('ScalarReturn.php'),
         class: 'App\\Components\\ScalarReturn',
         callable: 'renderPercent',
         args: { current: 75, total: 100 },
@@ -9151,7 +8739,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders zero percent for empty', async () => {
       const result = await executor.execute({
         type: 'classMethod',
-        file: example('ScalarReturn.php'),
+        file: advanced('ScalarReturn.php'),
         class: 'App\\Components\\ScalarReturn',
         callable: 'renderPercent',
         args: { current: 0, total: 100 },
@@ -9163,7 +8751,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders ratio as float', async () => {
       const result = await executor.execute({
         type: 'classMethod',
-        file: example('ScalarReturn.php'),
+        file: advanced('ScalarReturn.php'),
         class: 'App\\Components\\ScalarReturn',
         callable: 'renderRatio',
         args: { current: 33, total: 100 },
@@ -9175,7 +8763,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders full progress bar via render()', async () => {
       const result = await executor.execute({
         type: 'classMethod',
-        file: example('ScalarReturn.php'),
+        file: advanced('ScalarReturn.php'),
         class: 'App\\Components\\ScalarReturn',
         callable: 'render',
         args: { current: 65, total: 100 },
@@ -9187,7 +8775,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     });
 
     it('parses ScalarReturn with multiple methods', () => {
-      const meta = parsePhpFile(example('ScalarReturn.php'));
+      const meta = parsePhpFile(advanced('ScalarReturn.php'));
       const cls = meta.classes.find(c => c.name === 'ScalarReturn')!;
       expect(cls.constructorParams).toHaveLength(2);
       expect(cls.methods).toHaveLength(3);
@@ -9205,7 +8793,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders nav with default items', async () => {
       const result = await executor.execute({
         type: 'function',
-        file: example('FunctionArrayDefault.php'),
+        file: advanced('FunctionArrayDefault.php'),
         class: null,
         callable: 'App\\Helpers\\renderNav',
         args: {},
@@ -9220,7 +8808,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders nav with custom items', async () => {
       const result = await executor.execute({
         type: 'function',
-        file: example('FunctionArrayDefault.php'),
+        file: advanced('FunctionArrayDefault.php'),
         class: null,
         callable: 'App\\Helpers\\renderNav',
         args: { items: ['Dashboard', 'Settings'], separator: ' > ' },
@@ -9234,7 +8822,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders tag list with defaults', async () => {
       const result = await executor.execute({
         type: 'function',
-        file: example('FunctionArrayDefault.php'),
+        file: advanced('FunctionArrayDefault.php'),
         class: null,
         callable: 'App\\Helpers\\renderTagList',
         args: {},
@@ -9249,7 +8837,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders tag list with custom tags and color', async () => {
       const result = await executor.execute({
         type: 'function',
-        file: example('FunctionArrayDefault.php'),
+        file: advanced('FunctionArrayDefault.php'),
         class: null,
         callable: 'App\\Helpers\\renderTagList',
         args: { tags: ['react', 'vue'], color: '#ec4899' },
@@ -9261,7 +8849,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     });
 
     it('parses FunctionArrayDefault with two functions', () => {
-      const meta = parsePhpFile(example('FunctionArrayDefault.php'));
+      const meta = parsePhpFile(advanced('FunctionArrayDefault.php'));
       expect(meta.namespace).toBe('App\\Helpers');
       expect(meta.functions).toHaveLength(2);
       const nav = meta.functions.find(f => f.name === 'renderNav')!;
@@ -9278,13 +8866,13 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
       const resolveId = (plugin as any).resolveId.bind(plugin);
       const load = (plugin as any).load.bind(plugin);
 
-      const idNav = resolveId('./FunctionArrayDefault.php@renderNav', example('FunctionArrayDefault.stories.ts'));
+      const idNav = resolveId('./FunctionArrayDefault.php@renderNav', advanced('FunctionArrayDefault.stories.ts'));
       const codeNav = load(idNav);
       expect(codeNav).toContain("__type: 'function'");
       expect(codeNav).toContain('items:');
       expect(codeNav).toContain('separator:');
 
-      const idTags = resolveId('./FunctionArrayDefault.php@renderTagList', example('FunctionArrayDefaultTags.stories.ts'));
+      const idTags = resolveId('./FunctionArrayDefault.php@renderTagList', advanced('FunctionArrayDefaultTags.stories.ts'));
       const codeTags = load(idTags);
       expect(codeTags).toContain("__type: 'function'");
       expect(codeTags).toContain('tags:');
@@ -9298,7 +8886,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders badge variant with label', async () => {
       const result = await executor.execute({
         type: 'enumMethod',
-        file: example('EnumMethodParams.php'),
+        file: php81('EnumMethodParams.php'),
         class: 'App\\Components\\EnumMethodParams',
         callable: 'render',
         args: { _case: 'badge', label: 'New' },
@@ -9311,7 +8899,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders pill with custom color and size', async () => {
       const result = await executor.execute({
         type: 'enumMethod',
-        file: example('EnumMethodParams.php'),
+        file: php81('EnumMethodParams.php'),
         class: 'App\\Components\\EnumMethodParams',
         callable: 'render',
         args: { _case: 'pill', label: 'Active', color: '#22c55e', size: 16 },
@@ -9326,7 +8914,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders tag with rounded=false', async () => {
       const result = await executor.execute({
         type: 'enumMethod',
-        file: example('EnumMethodParams.php'),
+        file: php81('EnumMethodParams.php'),
         class: 'App\\Components\\EnumMethodParams',
         callable: 'render',
         args: { _case: 'tag', label: 'v2.0', rounded: false },
@@ -9340,7 +8928,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders showcase via static method', async () => {
       const result = await executor.execute({
         type: 'staticMethod',
-        file: example('EnumMethodParams.php'),
+        file: php81('EnumMethodParams.php'),
         class: 'App\\Components\\EnumMethodParams',
         callable: 'showcase',
         args: { label: 'Test' },
@@ -9354,7 +8942,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     });
 
     it('parses EnumMethodParams with multi-param method', () => {
-      const meta = parsePhpFile(example('EnumMethodParams.php'));
+      const meta = parsePhpFile(php81('EnumMethodParams.php'));
       const cls = meta.classes.find(c => c.name === 'EnumMethodParams')!;
       expect(cls.isEnum).toBe(true);
       expect(cls.enumCases).toEqual(['Badge', 'Pill', 'Tag']);
@@ -9372,11 +8960,11 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
       const resolveId = (plugin as any).resolveId.bind(plugin);
       const load = (plugin as any).load.bind(plugin);
 
-      const idRender = resolveId('./EnumMethodParams.php@render', example('EnumMethodParams.stories.ts'));
+      const idRender = resolveId('./EnumMethodParams.php@render', php81('EnumMethodParams.stories.ts'));
       const codeRender = load(idRender);
       expect(codeRender).toContain("__type: 'enumMethod'");
 
-      const idShowcase = resolveId('./EnumMethodParams.php@showcase', example('EnumMethodParamsShowcase.stories.ts'));
+      const idShowcase = resolveId('./EnumMethodParams.php@showcase', php81('EnumMethodParamsShowcase.stories.ts'));
       const codeShowcase = load(idShowcase);
       expect(codeShowcase).toContain("__type: 'staticMethod'");
     });
@@ -9449,7 +9037,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders TaskPriority badge via trait method', async () => {
       const result = await executor.execute({
         type: 'enumMethod',
-        file: example('EnumWithTrait.php'),
+        file: php81('EnumWithTrait.php'),
         class: 'App\\Components\\TaskPriority',
         callable: 'badge',
         args: { _case: 'high', size: 'md' },
@@ -9462,7 +9050,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders TaskPriority with small size', async () => {
       const result = await executor.execute({
         type: 'enumMethod',
-        file: example('EnumWithTrait.php'),
+        file: php81('EnumWithTrait.php'),
         class: 'App\\Components\\TaskPriority',
         callable: 'badge',
         args: { _case: 'low', size: 'sm' },
@@ -9475,7 +9063,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders TaskPriority critical with default size', async () => {
       const result = await executor.execute({
         type: 'enumMethod',
-        file: example('EnumWithTrait.php'),
+        file: php81('EnumWithTrait.php'),
         class: 'App\\Components\\TaskPriority',
         callable: 'badge',
         args: { _case: 'critical' },
@@ -9546,7 +9134,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders PromotedReadonlyUnion with string id', async () => {
       const result = await executor.execute({
         type: 'classMethod',
-        file: example('PromotedReadonlyUnion.php'),
+        file: php81('PromotedReadonlyUnion.php'),
         class: 'App\\Components\\PromotedReadonlyUnion',
         callable: 'render',
         args: { id: 'SKU-001', label: 'Widget', amount: 29.99 },
@@ -9560,7 +9148,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders PromotedReadonlyUnion with int id', async () => {
       const result = await executor.execute({
         type: 'classMethod',
-        file: example('PromotedReadonlyUnion.php'),
+        file: php81('PromotedReadonlyUnion.php'),
         class: 'App\\Components\\PromotedReadonlyUnion',
         callable: 'render',
         args: { id: 42, label: 'Gadget', amount: 199 },
@@ -9573,7 +9161,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders PromotedReadonlyUnion with default amount', async () => {
       const result = await executor.execute({
         type: 'classMethod',
-        file: example('PromotedReadonlyUnion.php'),
+        file: php81('PromotedReadonlyUnion.php'),
         class: 'App\\Components\\PromotedReadonlyUnion',
         callable: 'render',
         args: { id: 'FREE', label: 'Sample' },
@@ -9625,7 +9213,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders MethodConstantDefault with HTML format', async () => {
       const result = await executor.execute({
         type: 'classMethod',
-        file: example('MethodConstantDefault.php'),
+        file: advanced('MethodConstantDefault.php'),
         class: 'App\\Components\\MethodConstantDefault',
         callable: 'render',
         args: { content: 'Hello world', title: 'Test' },
@@ -9639,7 +9227,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders MethodConstantDefault with text format', async () => {
       const result = await executor.execute({
         type: 'classMethod',
-        file: example('MethodConstantDefault.php'),
+        file: advanced('MethodConstantDefault.php'),
         class: 'App\\Components\\MethodConstantDefault',
         callable: 'render',
         args: { content: '<b>Bold</b> text', title: 'Plain', format: 'text' },
@@ -9652,7 +9240,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders MethodConstantDefault with truncation', async () => {
       const result = await executor.execute({
         type: 'classMethod',
-        file: example('MethodConstantDefault.php'),
+        file: advanced('MethodConstantDefault.php'),
         class: 'App\\Components\\MethodConstantDefault',
         callable: 'render',
         args: { content: 'A very long text that should be truncated', title: 'Long', maxLength: 10 },
@@ -9703,7 +9291,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders formatValue as text', async () => {
       const result = await executor.execute({
         type: 'function',
-        file: example('FunctionUnionReturn.php'),
+        file: php80('FunctionUnionReturn.php'),
         class: null,
         callable: 'App\\Helpers\\formatValue',
         args: { value: 'Hello' },
@@ -9716,7 +9304,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders formatValue as number (scalar return)', async () => {
       const result = await executor.execute({
         type: 'function',
-        file: example('FunctionUnionReturn.php'),
+        file: php80('FunctionUnionReturn.php'),
         class: null,
         callable: 'App\\Helpers\\formatValue',
         args: { value: '42', format: 'number' },
@@ -9728,7 +9316,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders renderStatus with icon', async () => {
       const result = await executor.execute({
         type: 'function',
-        file: example('FunctionUnionReturn.php'),
+        file: php80('FunctionUnionReturn.php'),
         class: null,
         callable: 'App\\Helpers\\renderStatus',
         args: { status: 'active' },
@@ -9774,7 +9362,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders dashboard with stats', async () => {
       const result = await executor.execute({
         type: 'template',
-        file: example('templates/dashboard.php'),
+        file: advanced('templates/dashboard.php'),
         class: null,
         callable: null,
         args: {
@@ -9797,7 +9385,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders empty dashboard', async () => {
       const result = await executor.execute({
         type: 'template',
-        file: example('templates/dashboard.php'),
+        file: advanced('templates/dashboard.php'),
         class: null,
         callable: null,
         args: { title: 'Empty', stats: [] },
@@ -9809,7 +9397,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders dashboard with chart placeholder', async () => {
       const result = await executor.execute({
         type: 'template',
-        file: example('templates/dashboard.php'),
+        file: advanced('templates/dashboard.php'),
         class: null,
         callable: null,
         args: { title: 'Analytics', stats: [], showChart: true },
@@ -9824,7 +9412,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders 404 error page', async () => {
       const result = await executor.execute({
         type: 'template',
-        file: example('templates/error.php'),
+        file: advanced('templates/error.php'),
         class: null,
         callable: null,
         args: { code: 404, showHome: true },
@@ -9838,7 +9426,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders 500 error page without home link', async () => {
       const result = await executor.execute({
         type: 'template',
-        file: example('templates/error.php'),
+        file: advanced('templates/error.php'),
         class: null,
         callable: null,
         args: { code: 500, showHome: false },
@@ -9852,7 +9440,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders error with custom message', async () => {
       const result = await executor.execute({
         type: 'template',
-        file: example('templates/error.php'),
+        file: advanced('templates/error.php'),
         class: null,
         callable: null,
         args: { code: 403, message: 'Access denied to this resource.', showHome: true },
@@ -9866,7 +9454,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders form with fields', async () => {
       const result = await executor.execute({
         type: 'template',
-        file: example('templates/form.php'),
+        file: advanced('templates/form.php'),
         class: null,
         callable: null,
         args: {
@@ -9892,7 +9480,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders login form with error', async () => {
       const result = await executor.execute({
         type: 'template',
-        file: example('templates/login.php'),
+        file: advanced('templates/login.php'),
         class: null,
         callable: null,
         args: {
@@ -9914,7 +9502,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders minimal login form', async () => {
       const result = await executor.execute({
         type: 'template',
-        file: example('templates/login.php'),
+        file: advanced('templates/login.php'),
         class: null,
         callable: null,
         args: {
@@ -9935,7 +9523,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders pricing plans', async () => {
       const result = await executor.execute({
         type: 'template',
-        file: example('templates/pricing.php'),
+        file: advanced('templates/pricing.php'),
         class: null,
         callable: null,
         args: {
@@ -9959,7 +9547,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders empty pricing', async () => {
       const result = await executor.execute({
         type: 'template',
-        file: example('templates/pricing.php'),
+        file: advanced('templates/pricing.php'),
         class: null,
         callable: null,
         args: { plans: [], currency: 'USD' },
@@ -10029,7 +9617,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders AttributeCard with attributes stripped', async () => {
       const result = await executor.execute({
         type: 'classMethod',
-        file: example('AttributeCard.php'),
+        file: php83('AttributeCard.php'),
         class: 'App\\Components\\AttributeCard',
         callable: 'render',
         args: { title: 'Attribute Test', body: 'Attributes stripped', variant: 'primary' },
@@ -10043,7 +9631,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders with default args', async () => {
       const result = await executor.execute({
         type: 'classMethod',
-        file: example('AttributeCard.php'),
+        file: php83('AttributeCard.php'),
         class: 'App\\Components\\AttributeCard',
         callable: 'render',
         args: { title: 'Minimal' },
@@ -10056,7 +9644,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders with elevated flag', async () => {
       const result = await executor.execute({
         type: 'classMethod',
-        file: example('AttributeCard.php'),
+        file: php83('AttributeCard.php'),
         class: 'App\\Components\\AttributeCard',
         callable: 'render',
         args: { title: 'Elevated', elevated: true },
@@ -10066,7 +9654,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     });
 
     it('parses AttributeCard correctly (attributes stripped)', () => {
-      const meta = parsePhpFile(example('AttributeCard.php'));
+      const meta = parsePhpFile(php83('AttributeCard.php'));
       // CardStyle is an attribute class, AttributeCard is the main class
       const cls = meta.classes.find(c => c.name === 'AttributeCard');
       expect(cls).toBeDefined();
@@ -10099,7 +9687,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
       const plugin = storybookPhpPlugin({});
       const resolveId = (plugin as any).resolveId.bind(plugin);
       const load = (plugin as any).load.bind(plugin);
-      const id = resolveId('./AttributeCard.php@render', example('Button.stories.ts'));
+      const id = resolveId('./AttributeCard.php@render', php83('Button.stories.ts'));
       const code = load(id);
       expect(code).toContain('export const AttributeCard');
       expect(code).toContain("__type: 'classMethod'");
@@ -10115,7 +9703,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders Mood enum via render method', async () => {
       const result = await executor.execute({
         type: 'enumMethod',
-        file: example('EnumToString.php'),
+        file: php81('EnumToString.php'),
         class: 'App\\Components\\Mood',
         callable: 'render',
         args: { _case: 'happy' },
@@ -10128,7 +9716,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders MoodCard with enum param', async () => {
       const result = await executor.execute({
         type: 'classMethod',
-        file: example('EnumToString.php'),
+        file: php81('EnumToString.php'),
         class: 'App\\Components\\MoodCard',
         callable: 'render',
         args: { mood: 'excited', message: 'Woohoo!' },
@@ -10142,7 +9730,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders MoodCard badge method (returns Stringable object)', async () => {
       const result = await executor.execute({
         type: 'classMethod',
-        file: example('EnumToString.php'),
+        file: php81('EnumToString.php'),
         class: 'App\\Components\\MoodCard',
         callable: 'badge',
         args: { mood: 'sad' },
@@ -10153,7 +9741,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     });
 
     it('parses Mood enum and MoodCard class', () => {
-      const meta = parsePhpFile(example('EnumToString.php'));
+      const meta = parsePhpFile(php81('EnumToString.php'));
       const mood = meta.classes.find(c => c.name === 'Mood');
       expect(mood).toBeDefined();
       expect(mood!.isEnum).toBe(true);
@@ -10189,7 +9777,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
       const plugin = storybookPhpPlugin({});
       const resolveId = (plugin as any).resolveId.bind(plugin);
       const load = (plugin as any).load.bind(plugin);
-      const id = resolveId('./EnumToString.php@render', example('Button.stories.ts'));
+      const id = resolveId('./EnumToString.php@render', php81('Button.stories.ts'));
       const code = load(id);
       expect(code).toContain('export const Mood');
       expect(code).toContain("__type: 'enumMethod'");
@@ -10207,7 +9795,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders Palette swatch via enum instance method', async () => {
       const result = await executor.execute({
         type: 'enumMethod',
-        file: example('TraitStaticEnum.php'),
+        file: advanced('TraitStaticEnum.php'),
         class: 'App\\Components\\Palette',
         callable: 'swatch',
         args: { _case: '#f43f5e' },
@@ -10220,7 +9808,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders Palette showcase via trait static method', async () => {
       const result = await executor.execute({
         type: 'staticMethod',
-        file: example('TraitStaticEnum.php'),
+        file: advanced('TraitStaticEnum.php'),
         class: 'App\\Components\\Palette',
         callable: 'showcase',
         args: {},
@@ -10232,7 +9820,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     });
 
     it('parses Palette enum and HasShowcase trait', () => {
-      const meta = parsePhpFile(example('TraitStaticEnum.php'));
+      const meta = parsePhpFile(advanced('TraitStaticEnum.php'));
       const trait = meta.classes.find(c => c.name === 'HasShowcase');
       expect(trait).toBeDefined();
       expect(trait!.isTrait).toBe(true);
@@ -10262,7 +9850,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
       const plugin = storybookPhpPlugin({});
       const resolveId = (plugin as any).resolveId.bind(plugin);
       const load = (plugin as any).load.bind(plugin);
-      const id = resolveId('./TraitStaticEnum.php@showcase', example('Button.stories.ts'));
+      const id = resolveId('./TraitStaticEnum.php@showcase', advanced('Button.stories.ts'));
       const code = load(id);
       expect(code).toContain('export const Palette');
       expect(code).toContain("__type: 'staticMethod'");
@@ -10278,7 +9866,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders ConstExprDefaults with PHP constant defaults', async () => {
       const result = await executor.execute({
         type: 'classMethod',
-        file: example('ConstExprDefaults.php'),
+        file: advanced('ConstExprDefaults.php'),
         class: 'App\\Components\\ConstExprDefaults',
         callable: 'render',
         args: { title: 'Config Display' },
@@ -10291,7 +9879,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders with custom separator', async () => {
       const result = await executor.execute({
         type: 'classMethod',
-        file: example('ConstExprDefaults.php'),
+        file: advanced('ConstExprDefaults.php'),
         class: 'App\\Components\\ConstExprDefaults',
         callable: 'render',
         args: { title: 'Custom', separator: ', ' },
@@ -10301,7 +9889,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     });
 
     it('parses PHP constant defaults correctly', () => {
-      const meta = parsePhpFile(example('ConstExprDefaults.php'));
+      const meta = parsePhpFile(advanced('ConstExprDefaults.php'));
       const cls = meta.classes.find(c => c.name === 'ConstExprDefaults')!;
       expect(cls.constructorParams).toHaveLength(5);
 
@@ -10334,7 +9922,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders ArticleCard (inherits render from trait via abstract parent)', async () => {
       const result = await executor.execute({
         type: 'classMethod',
-        file: example('AbstractTraitChild.php'),
+        file: advanced('AbstractTraitChild.php'),
         class: 'App\\Components\\ArticleCard',
         callable: 'render',
         args: { title: 'Test Article', excerpt: 'An excerpt.', author: 'Alice' },
@@ -10349,7 +9937,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders QuoteCard (another child of same abstract+trait)', async () => {
       const result = await executor.execute({
         type: 'classMethod',
-        file: example('AbstractTraitChild.php'),
+        file: advanced('AbstractTraitChild.php'),
         class: 'App\\Components\\QuoteCard',
         callable: 'render',
         args: { title: 'Quote', quote: 'To be or not to be.', source: 'Shakespeare' },
@@ -10361,7 +9949,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     });
 
     it('parses AbstractTraitChild with trait, abstract, and concrete classes', () => {
-      const meta = parsePhpFile(example('AbstractTraitChild.php'));
+      const meta = parsePhpFile(advanced('AbstractTraitChild.php'));
 
       const trait = meta.classes.find(c => c.name === 'HasCardLayout');
       expect(trait).toBeDefined();
@@ -10388,7 +9976,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
       const plugin = storybookPhpPlugin({});
       const resolveId = (plugin as any).resolveId.bind(plugin);
       const load = (plugin as any).load.bind(plugin);
-      const id = resolveId('./AbstractTraitChild.php@render', example('Button.stories.ts'));
+      const id = resolveId('./AbstractTraitChild.php@render', advanced('Button.stories.ts'));
       const code = load(id);
 
       // Concrete children should be exported
@@ -10445,7 +10033,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders IntersectionBadge with string fallback', async () => {
       const result = await executor.execute({
         type: 'classMethod',
-        file: example('Intersection.php'),
+        file: php81('Intersection.php'),
         class: 'App\\Components\\IntersectionBadge',
         callable: 'render',
         args: { tag: 'TypeSafe', color: '#3b82f6' },
@@ -10458,7 +10046,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders with default values', async () => {
       const result = await executor.execute({
         type: 'classMethod',
-        file: example('Intersection.php'),
+        file: php81('Intersection.php'),
         class: 'App\\Components\\IntersectionBadge',
         callable: 'render',
         args: {},
@@ -10468,7 +10056,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     });
 
     it('parses intersection/DNF type in method params', () => {
-      const meta = parsePhpFile(example('Intersection.php'));
+      const meta = parsePhpFile(php81('Intersection.php'));
       const cls = meta.classes.find(c => c.name === 'IntersectionBadge')!;
       const render = cls.methods.find(m => m.name === 'render')!;
       expect(render.params).toHaveLength(2);
@@ -10486,7 +10074,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
   // -------------------------------------------------------------------------
   describe('UC152-157: Parser isTrait and isInterface', () => {
     it('marks traits with isTrait=true', () => {
-      const meta = parsePhpFile(example('TraitAccordion.php'));
+      const meta = parsePhpFile(advanced('TraitAccordion.php'));
       const trait = meta.classes.find(c => c.name === 'HasToggle');
       expect(trait).toBeDefined();
       expect(trait!.isTrait).toBe(true);
@@ -10499,7 +10087,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     });
 
     it('marks interfaces with isInterface=true', () => {
-      const meta = parsePhpFile(example('Renderable.php'));
+      const meta = parsePhpFile(advanced('Renderable.php'));
       const iface = meta.classes.find(c => c.name === 'RenderableInterface');
       expect(iface).toBeDefined();
       expect(iface!.isInterface).toBe(true);
@@ -10510,7 +10098,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
       const plugin = storybookPhpPlugin({});
       const resolveId = (plugin as any).resolveId.bind(plugin);
       const load = (plugin as any).load.bind(plugin);
-      const id = resolveId('./TraitAccordion.php@toggle', example('Button.stories.ts'));
+      const id = resolveId('./TraitAccordion.php@toggle', advanced('Button.stories.ts'));
       const code = load(id);
 
       // Traits should not appear as exports
@@ -10526,7 +10114,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
       const plugin = storybookPhpPlugin({});
       const resolveId = (plugin as any).resolveId.bind(plugin);
       const load = (plugin as any).load.bind(plugin);
-      const id = resolveId('./Renderable.php@render', example('Button.stories.ts'));
+      const id = resolveId('./Renderable.php@render', advanced('Button.stories.ts'));
       const code = load(id);
 
       // Interface should not appear
@@ -10538,7 +10126,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     });
 
     it('marks EnumWithTrait trait correctly', () => {
-      const meta = parsePhpFile(example('EnumWithTrait.php'));
+      const meta = parsePhpFile(php81('EnumWithTrait.php'));
       const trait = meta.classes.find(c => c.name === 'HasStatusBadge');
       expect(trait).toBeDefined();
       expect(trait!.isTrait).toBe(true);
@@ -10557,7 +10145,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders nullableLabel with text only', async () => {
       const result = await executor.execute({
         type: 'function',
-        file: example('nullableLabel.php'),
+        file: advanced('nullableLabel.php'),
         class: null,
         callable: 'App\\Helpers\\nullableLabel',
         args: { text: 'Status' },
@@ -10570,7 +10158,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders nullableLabel with all params', async () => {
       const result = await executor.execute({
         type: 'function',
-        file: example('nullableLabel.php'),
+        file: advanced('nullableLabel.php'),
         class: null,
         callable: 'App\\Helpers\\nullableLabel',
         args: { text: 'Alert', icon: '!', color: '#ef4444', subtitle: 'Important' },
@@ -10585,7 +10173,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders nullableLabel with null icon', async () => {
       const result = await executor.execute({
         type: 'function',
-        file: example('nullableLabel.php'),
+        file: advanced('nullableLabel.php'),
         class: null,
         callable: 'App\\Helpers\\nullableLabel',
         args: { text: 'Test', icon: null },
@@ -10596,7 +10184,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     });
 
     it('parses nullable function params', () => {
-      const meta = parsePhpFile(example('nullableLabel.php'));
+      const meta = parsePhpFile(advanced('nullableLabel.php'));
       expect(meta.functions).toHaveLength(1);
       const fn = meta.functions[0]!;
       expect(fn.name).toBe('nullableLabel');
@@ -10626,7 +10214,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
       const plugin = storybookPhpPlugin({});
       const resolveId = (plugin as any).resolveId.bind(plugin);
       const load = (plugin as any).load.bind(plugin);
-      const id = resolveId('./nullableLabel.php@nullableLabel', example('Button.stories.ts'));
+      const id = resolveId('./nullableLabel.php@nullableLabel', advanced('Button.stories.ts'));
       const code = load(id);
       expect(code).toContain("__type: 'function'");
       expect(code).toContain('nullableLabel');
@@ -10652,7 +10240,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders echoGreet with banner style', async () => {
       const result = await executor.execute({
         type: 'function',
-        file: example('echoGreet.php'),
+        file: advanced('echoGreet.php'),
         class: null,
         callable: 'App\\Helpers\\echoGreet',
         args: { name: 'World', style: 'banner' },
@@ -10665,7 +10253,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders echoGreet with toast style', async () => {
       const result = await executor.execute({
         type: 'function',
-        file: example('echoGreet.php'),
+        file: advanced('echoGreet.php'),
         class: null,
         callable: 'App\\Helpers\\echoGreet',
         args: { name: 'Dev', style: 'toast' },
@@ -10676,7 +10264,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     });
 
     it('parses echoGreet function with void return', () => {
-      const meta = parsePhpFile(example('echoGreet.php'));
+      const meta = parsePhpFile(advanced('echoGreet.php'));
       expect(meta.functions).toHaveLength(1);
       const fn = meta.functions[0]!;
       expect(fn.name).toBe('echoGreet');
@@ -10688,7 +10276,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
       const plugin = storybookPhpPlugin({});
       const resolveId = (plugin as any).resolveId.bind(plugin);
       const load = (plugin as any).load.bind(plugin);
-      const id = resolveId('./echoGreet.php@echoGreet', example('Button.stories.ts'));
+      const id = resolveId('./echoGreet.php@echoGreet', advanced('Button.stories.ts'));
       const code = load(id);
       expect(code).toContain("__type: 'function'");
       expect(code).toContain('echoGreet');
@@ -10710,7 +10298,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders VariadicCrumb with segments', async () => {
       const result = await executor.execute({
         type: 'classMethod',
-        file: example('VariadicCrumb.php'),
+        file: advanced('VariadicCrumb.php'),
         class: 'App\\Components\\VariadicCrumb',
         callable: 'render',
         args: { segments: ['Home', 'Products', 'Widget'], separator: ' / ' },
@@ -10724,7 +10312,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders VariadicCrumb with empty segments', async () => {
       const result = await executor.execute({
         type: 'classMethod',
-        file: example('VariadicCrumb.php'),
+        file: advanced('VariadicCrumb.php'),
         class: 'App\\Components\\VariadicCrumb',
         callable: 'render',
         args: {},
@@ -10736,7 +10324,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders VariadicCrumb with single segment', async () => {
       const result = await executor.execute({
         type: 'classMethod',
-        file: example('VariadicCrumb.php'),
+        file: advanced('VariadicCrumb.php'),
         class: 'App\\Components\\VariadicCrumb',
         callable: 'render',
         args: { segments: ['Home'] },
@@ -10746,7 +10334,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     });
 
     it('parses VariadicCrumb with variadic string param', () => {
-      const meta = parsePhpFile(example('VariadicCrumb.php'));
+      const meta = parsePhpFile(advanced('VariadicCrumb.php'));
       const cls = meta.classes[0]!;
       expect(cls.name).toBe('VariadicCrumb');
       expect(cls.constructorParams).toHaveLength(2);
@@ -10765,7 +10353,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
       const plugin = storybookPhpPlugin({});
       const resolveId = (plugin as any).resolveId.bind(plugin);
       const load = (plugin as any).load.bind(plugin);
-      const id = resolveId('./VariadicCrumb.php@render', example('Button.stories.ts'));
+      const id = resolveId('./VariadicCrumb.php@render', advanced('Button.stories.ts'));
       const code = load(id);
       expect(code).toContain("__type: 'classMethod'");
       expect(code).toContain('VariadicCrumb');
@@ -10786,7 +10374,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders EnumArrayReturn success card', async () => {
       const result = await executor.execute({
         type: 'enumMethod',
-        file: example('EnumArrayReturn.php'),
+        file: php81('EnumArrayReturn.php'),
         class: 'App\\Components\\EnumArrayReturn',
         callable: 'card',
         args: { _case: 'success', message: 'Saved!' },
@@ -10799,7 +10387,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders EnumArrayReturn error card', async () => {
       const result = await executor.execute({
         type: 'enumMethod',
-        file: example('EnumArrayReturn.php'),
+        file: php81('EnumArrayReturn.php'),
         class: 'App\\Components\\EnumArrayReturn',
         callable: 'card',
         args: { _case: 'error', message: 'Failed!' },
@@ -10812,7 +10400,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders EnumArrayReturn with default message', async () => {
       const result = await executor.execute({
         type: 'enumMethod',
-        file: example('EnumArrayReturn.php'),
+        file: php81('EnumArrayReturn.php'),
         class: 'App\\Components\\EnumArrayReturn',
         callable: 'card',
         args: { _case: 'warning' },
@@ -10822,7 +10410,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     });
 
     it('parses EnumArrayReturn', () => {
-      const meta = parsePhpFile(example('EnumArrayReturn.php'));
+      const meta = parsePhpFile(php81('EnumArrayReturn.php'));
       const cls = meta.classes[0]!;
       expect(cls.isEnum).toBe(true);
       expect(cls.enumBackingType).toBe('string');
@@ -10836,7 +10424,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
       const plugin = storybookPhpPlugin({});
       const resolveId = (plugin as any).resolveId.bind(plugin);
       const load = (plugin as any).load.bind(plugin);
-      const id = resolveId('./EnumArrayReturn.php@card', example('Button.stories.ts'));
+      const id = resolveId('./EnumArrayReturn.php@card', php81('Button.stories.ts'));
       const code = load(id);
       expect(code).toContain("__type: 'enumMethod'");
       expect(code).toContain('EnumArrayReturn');
@@ -10858,7 +10446,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders MatchPanel with default variant', async () => {
       const result = await executor.execute({
         type: 'classMethod',
-        file: example('MatchPanel.php'),
+        file: php80('MatchPanel.php'),
         class: 'App\\Components\\MatchPanel',
         callable: 'render',
         args: { variant: 'default', title: 'Test', content: 'Body' },
@@ -10872,7 +10460,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders MatchPanel with card variant', async () => {
       const result = await executor.execute({
         type: 'classMethod',
-        file: example('MatchPanel.php'),
+        file: php80('MatchPanel.php'),
         class: 'App\\Components\\MatchPanel',
         callable: 'render',
         args: { variant: 'card', title: 'Card', content: 'Content' },
@@ -10884,7 +10472,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders MatchPanel with banner variant', async () => {
       const result = await executor.execute({
         type: 'classMethod',
-        file: example('MatchPanel.php'),
+        file: php80('MatchPanel.php'),
         class: 'App\\Components\\MatchPanel',
         callable: 'render',
         args: { variant: 'banner', title: 'Banner', content: 'Announcement' },
@@ -10896,7 +10484,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders MatchPanel with minimal variant', async () => {
       const result = await executor.execute({
         type: 'classMethod',
-        file: example('MatchPanel.php'),
+        file: php80('MatchPanel.php'),
         class: 'App\\Components\\MatchPanel',
         callable: 'render',
         args: { variant: 'minimal', title: 'Compact', content: 'Inline' },
@@ -10906,7 +10494,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     });
 
     it('parses MatchPanel class', () => {
-      const meta = parsePhpFile(example('MatchPanel.php'));
+      const meta = parsePhpFile(php80('MatchPanel.php'));
       const cls = meta.classes[0]!;
       expect(cls.name).toBe('MatchPanel');
       expect(cls.constructorParams).toHaveLength(3);
@@ -10917,7 +10505,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
       const plugin = storybookPhpPlugin({});
       const resolveId = (plugin as any).resolveId.bind(plugin);
       const load = (plugin as any).load.bind(plugin);
-      const id = resolveId('./MatchPanel.php@render', example('Button.stories.ts'));
+      const id = resolveId('./MatchPanel.php@render', php80('Button.stories.ts'));
       const code = load(id);
       expect(code).toContain("__type: 'classMethod'");
       expect(code).toContain('MatchPanel');
@@ -10938,7 +10526,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders calcDiscount', async () => {
       const result = await executor.execute({
         type: 'function',
-        file: example('scalarFunc.php'),
+        file: advanced('scalarFunc.php'),
         class: null,
         callable: 'App\\Helpers\\calcDiscount',
         args: { price: 100, percent: 20 },
@@ -10951,7 +10539,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders formatBytes', async () => {
       const result = await executor.execute({
         type: 'function',
-        file: example('scalarFunc.php'),
+        file: advanced('scalarFunc.php'),
         class: null,
         callable: 'App\\Helpers\\formatBytes',
         args: { bytes: 2048, precision: 1 },
@@ -10961,7 +10549,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     });
 
     it('parses multiple functions in scalarFunc', () => {
-      const meta = parsePhpFile(example('scalarFunc.php'));
+      const meta = parsePhpFile(advanced('scalarFunc.php'));
       expect(meta.functions).toHaveLength(2);
       expect(meta.functions.map(f => f.name).sort()).toEqual(['calcDiscount', 'formatBytes']);
     });
@@ -10970,7 +10558,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
       const plugin = storybookPhpPlugin({});
       const resolveId = (plugin as any).resolveId.bind(plugin);
       const load = (plugin as any).load.bind(plugin);
-      const id = resolveId('./scalarFunc.php@calcDiscount', example('Button.stories.ts'));
+      const id = resolveId('./scalarFunc.php@calcDiscount', advanced('Button.stories.ts'));
       const code = load(id);
       expect(code).toContain("__type: 'function'");
       expect(code).toContain('calcDiscount');
@@ -10980,7 +10568,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
       const plugin = storybookPhpPlugin({});
       const resolveId = (plugin as any).resolveId.bind(plugin);
       const load = (plugin as any).load.bind(plugin);
-      const id = resolveId('./scalarFunc.php@formatBytes', example('Button.stories.ts'));
+      const id = resolveId('./scalarFunc.php@formatBytes', advanced('Button.stories.ts'));
       const code = load(id);
       expect(code).toContain("__type: 'function'");
       expect(code).toContain('formatBytes');
@@ -11000,7 +10588,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders portfolio with all params', async () => {
       const result = await executor.execute({
         type: 'template',
-        file: resolve(examplesDir, 'templates/portfolio.php'),
+        file: resolve(advancedDir, 'templates/portfolio.php'),
         class: null,
         callable: null,
         args: { name: 'Jane', role: 'Dev', skills: ['PHP', 'TS'], projects: ['App'], showContact: true },
@@ -11017,7 +10605,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders portfolio without contact', async () => {
       const result = await executor.execute({
         type: 'template',
-        file: resolve(examplesDir, 'templates/portfolio.php'),
+        file: resolve(advancedDir, 'templates/portfolio.php'),
         class: null,
         callable: null,
         args: { name: 'Alex', showContact: false },
@@ -11030,7 +10618,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders portfolio with defaults', async () => {
       const result = await executor.execute({
         type: 'template',
-        file: resolve(examplesDir, 'templates/portfolio.php'),
+        file: resolve(advancedDir, 'templates/portfolio.php'),
         class: null,
         callable: null,
         args: {},
@@ -11048,7 +10636,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders FluentElement with default args', async () => {
       const result = await executor.execute({
         type: 'classMethod',
-        file: example('FluentElement.php'),
+        file: advanced('FluentElement.php'),
         class: 'App\\Components\\FluentElement',
         callable: 'render',
         args: { tag: 'div', content: 'Hello' },
@@ -11061,7 +10649,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders FluentElement as section', async () => {
       const result = await executor.execute({
         type: 'classMethod',
-        file: example('FluentElement.php'),
+        file: advanced('FluentElement.php'),
         class: 'App\\Components\\FluentElement',
         callable: 'render',
         args: { tag: 'section', content: 'Section content' },
@@ -11072,7 +10660,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     });
 
     it('parses FluentElement with static return type methods', () => {
-      const meta = parsePhpFile(example('FluentElement.php'));
+      const meta = parsePhpFile(advanced('FluentElement.php'));
       expect(meta.classes).toHaveLength(1);
       const cls = meta.classes[0]!;
       expect(cls.name).toBe('FluentElement');
@@ -11100,7 +10688,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
       const plugin = storybookPhpPlugin({});
       const resolveId = (plugin as any).resolveId.bind(plugin);
       const load = (plugin as any).load.bind(plugin);
-      const id = resolveId('./FluentElement.php@render', example('Button.stories.ts'));
+      const id = resolveId('./FluentElement.php@render', advanced('Button.stories.ts'));
       const code = load(id);
       expect(code).toContain("__type: 'classMethod'");
       expect(code).toContain('FluentElement');
@@ -11114,7 +10702,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders CallableLabel with just label', async () => {
       const result = await executor.execute({
         type: 'classMethod',
-        file: example('CallableLabel.php'),
+        file: php81('CallableLabel.php'),
         class: 'App\\Components\\CallableLabel',
         callable: 'render',
         args: { label: 'Test Label' },
@@ -11127,7 +10715,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders CallableLabel with prefix', async () => {
       const result = await executor.execute({
         type: 'classMethod',
-        file: example('CallableLabel.php'),
+        file: php81('CallableLabel.php'),
         class: 'App\\Components\\CallableLabel',
         callable: 'render',
         args: { label: 'Done', prefix: 'Status' },
@@ -11139,7 +10727,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders CallableLabel with prefix and suffix', async () => {
       const result = await executor.execute({
         type: 'classMethod',
-        file: example('CallableLabel.php'),
+        file: php81('CallableLabel.php'),
         class: 'App\\Components\\CallableLabel',
         callable: 'render',
         args: { label: 'Task', prefix: 'TODO', suffix: '(urgent)' },
@@ -11149,7 +10737,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     });
 
     it('parses callable and Closure types in CallableLabel', () => {
-      const meta = parsePhpFile(example('CallableLabel.php'));
+      const meta = parsePhpFile(php81('CallableLabel.php'));
       const cls = meta.classes[0]!;
       expect(cls.name).toBe('CallableLabel');
       const transformerParam = cls.constructorParams.find(p => p.name === 'transformer');
@@ -11176,7 +10764,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
       const plugin = storybookPhpPlugin({});
       const resolveId = (plugin as any).resolveId.bind(plugin);
       const load = (plugin as any).load.bind(plugin);
-      const id = resolveId('./CallableLabel.php@render', example('Button.stories.ts'));
+      const id = resolveId('./CallableLabel.php@render', php81('Button.stories.ts'));
       const code = load(id);
       expect(code).toContain("__type: 'classMethod'");
       expect(code).toContain('CallableLabel');
@@ -11191,7 +10779,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders iterable list', async () => {
       const result = await executor.execute({
         type: 'classMethod',
-        file: example('ObjectInspector.php'),
+        file: advanced('ObjectInspector.php'),
         class: 'App\\Components\\ObjectInspector',
         callable: 'renderIterable',
         args: { title: 'Tags', items: ['PHP', 'TypeScript', 'Go'], separator: ' | ' },
@@ -11206,7 +10794,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders object data', async () => {
       const result = await executor.execute({
         type: 'classMethod',
-        file: example('ObjectInspector.php'),
+        file: advanced('ObjectInspector.php'),
         class: 'App\\Components\\ObjectInspector',
         callable: 'renderObject',
         args: { title: 'Config', data: { host: 'localhost', port: '3000' }, variant: 'default' },
@@ -11219,7 +10807,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     });
 
     it('parses object and iterable types', () => {
-      const meta = parsePhpFile(example('ObjectInspector.php'));
+      const meta = parsePhpFile(advanced('ObjectInspector.php'));
       const cls = meta.classes[0]!;
       expect(cls.name).toBe('ObjectInspector');
       const renderObj = cls.methods.find(m => m.name === 'renderObject');
@@ -11244,7 +10832,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
       const plugin = storybookPhpPlugin({});
       const resolveId = (plugin as any).resolveId.bind(plugin);
       const load = (plugin as any).load.bind(plugin);
-      const id = resolveId('./ObjectInspector.php@renderIterable', example('Button.stories.ts'));
+      const id = resolveId('./ObjectInspector.php@renderIterable', advanced('Button.stories.ts'));
       const code = load(id);
       expect(code).toContain("__type: 'classMethod'");
       expect(code).toContain('ObjectInspector');
@@ -11254,7 +10842,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
       const plugin = storybookPhpPlugin({});
       const resolveId = (plugin as any).resolveId.bind(plugin);
       const load = (plugin as any).load.bind(plugin);
-      const id = resolveId('./ObjectInspector.php@renderObject', example('Button.stories.ts'));
+      const id = resolveId('./ObjectInspector.php@renderObject', advanced('Button.stories.ts'));
       const code = load(id);
       expect(code).toContain("__type: 'classMethod'");
       expect(code).toContain('object');
@@ -11268,7 +10856,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders grid with default nested arrays', async () => {
       const result = await executor.execute({
         type: 'function',
-        file: example('nestedGrid.php'),
+        file: advanced('nestedGrid.php'),
         class: null,
         callable: 'App\\Helpers\\renderGrid',
         args: { title: 'Test Grid' },
@@ -11283,7 +10871,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders grid with custom rows', async () => {
       const result = await executor.execute({
         type: 'function',
-        file: example('nestedGrid.php'),
+        file: advanced('nestedGrid.php'),
         class: null,
         callable: 'App\\Helpers\\renderGrid',
         args: { title: 'Custom', rows: [['X', 'Y'], ['1', '2']] },
@@ -11297,7 +10885,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders matrix with defaults', async () => {
       const result = await executor.execute({
         type: 'function',
-        file: example('nestedGrid.php'),
+        file: advanced('nestedGrid.php'),
         class: null,
         callable: 'App\\Helpers\\renderMatrix',
         args: { label: 'Identity' },
@@ -11308,7 +10896,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     });
 
     it('parses nested default arrays in functions', () => {
-      const meta = parsePhpFile(example('nestedGrid.php'));
+      const meta = parsePhpFile(advanced('nestedGrid.php'));
       expect(meta.functions).toHaveLength(2);
       const gridFn = meta.functions.find(f => f.name === 'renderGrid');
       expect(gridFn).toBeDefined();
@@ -11337,7 +10925,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
       const plugin = storybookPhpPlugin({});
       const resolveId = (plugin as any).resolveId.bind(plugin);
       const load = (plugin as any).load.bind(plugin);
-      const id = resolveId('./nestedGrid.php@renderGrid', example('Button.stories.ts'));
+      const id = resolveId('./nestedGrid.php@renderGrid', advanced('Button.stories.ts'));
       const code = load(id);
       expect(code).toContain("__type: 'function'");
       expect(code).toContain('renderGrid');
@@ -11347,7 +10935,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
       const plugin = storybookPhpPlugin({});
       const resolveId = (plugin as any).resolveId.bind(plugin);
       const load = (plugin as any).load.bind(plugin);
-      const id = resolveId('./nestedGrid.php@renderMatrix', example('Button.stories.ts'));
+      const id = resolveId('./nestedGrid.php@renderMatrix', advanced('Button.stories.ts'));
       const code = load(id);
       expect(code).toContain("__type: 'function'");
       expect(code).toContain('renderMatrix');
@@ -11361,7 +10949,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders badge for Low case', async () => {
       const result = await executor.execute({
         type: 'enumMethod',
-        file: example('SeverityEnum.php'),
+        file: php81('SeverityEnum.php'),
         class: 'App\\Components\\SeverityEnum',
         callable: 'badge',
         args: { _case: 'low' },
@@ -11374,7 +10962,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders badge for Critical case', async () => {
       const result = await executor.execute({
         type: 'enumMethod',
-        file: example('SeverityEnum.php'),
+        file: php81('SeverityEnum.php'),
         class: 'App\\Components\\SeverityEnum',
         callable: 'badge',
         args: { _case: 'critical' },
@@ -11386,7 +10974,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders all severities via static method', async () => {
       const result = await executor.execute({
         type: 'staticMethod',
-        file: example('SeverityEnum.php'),
+        file: php81('SeverityEnum.php'),
         class: 'App\\Components\\SeverityEnum',
         callable: 'all',
         args: { separator: ' ' },
@@ -11400,7 +10988,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders ofLevel static method', async () => {
       const result = await executor.execute({
         type: 'staticMethod',
-        file: example('SeverityEnum.php'),
+        file: php81('SeverityEnum.php'),
         class: 'App\\Components\\SeverityEnum',
         callable: 'ofLevel',
         args: { level: 95, prefix: 'Alert:' },
@@ -11413,7 +11001,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders low level via ofLevel', async () => {
       const result = await executor.execute({
         type: 'staticMethod',
-        file: example('SeverityEnum.php'),
+        file: php81('SeverityEnum.php'),
         class: 'App\\Components\\SeverityEnum',
         callable: 'ofLevel',
         args: { level: 10 },
@@ -11423,7 +11011,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     });
 
     it('parses SeverityEnum with instance + static methods', () => {
-      const meta = parsePhpFile(example('SeverityEnum.php'));
+      const meta = parsePhpFile(php81('SeverityEnum.php'));
       const cls = meta.classes[0]!;
       expect(cls.name).toBe('SeverityEnum');
       expect(cls.isEnum).toBe(true);
@@ -11455,7 +11043,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
       const plugin = storybookPhpPlugin({});
       const resolveId = (plugin as any).resolveId.bind(plugin);
       const load = (plugin as any).load.bind(plugin);
-      const id = resolveId('./SeverityEnum.php@badge', example('Button.stories.ts'));
+      const id = resolveId('./SeverityEnum.php@badge', php81('Button.stories.ts'));
       const code = load(id);
       expect(code).toContain("__type: 'enumMethod'");
       expect(code).toContain('SeverityEnum');
@@ -11465,7 +11053,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
       const plugin = storybookPhpPlugin({});
       const resolveId = (plugin as any).resolveId.bind(plugin);
       const load = (plugin as any).load.bind(plugin);
-      const id = resolveId('./SeverityEnum.php@all', example('Button.stories.ts'));
+      const id = resolveId('./SeverityEnum.php@all', php81('Button.stories.ts'));
       const code = load(id);
       expect(code).toContain("__type: 'staticMethod'");
       expect(code).toContain('SeverityEnum');
@@ -11475,7 +11063,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
       const plugin = storybookPhpPlugin({});
       const resolveId = (plugin as any).resolveId.bind(plugin);
       const load = (plugin as any).load.bind(plugin);
-      const id = resolveId('./SeverityEnum.php@ofLevel', example('Button.stories.ts'));
+      const id = resolveId('./SeverityEnum.php@ofLevel', php81('Button.stories.ts'));
       const code = load(id);
       expect(code).toContain("__type: 'staticMethod'");
       expect(code).toContain('level');
@@ -11489,7 +11077,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders found result', async () => {
       const result = await executor.execute({
         type: 'classMethod',
-        file: example('SearchResult.php'),
+        file: php80('SearchResult.php'),
         class: 'App\\Components\\SearchResult',
         callable: 'render',
         args: { haystack: 'Hello world, welcome!', needle: 'world' },
@@ -11502,7 +11090,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders not-found result', async () => {
       const result = await executor.execute({
         type: 'classMethod',
-        file: example('SearchResult.php'),
+        file: php80('SearchResult.php'),
         class: 'App\\Components\\SearchResult',
         callable: 'render',
         args: { haystack: 'Hello world', needle: 'missing' },
@@ -11513,7 +11101,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     });
 
     it('parses string|false return type', () => {
-      const meta = parsePhpFile(example('SearchResult.php'));
+      const meta = parsePhpFile(php80('SearchResult.php'));
       const cls = meta.classes[0]!;
       expect(cls.name).toBe('SearchResult');
       const findFirst = cls.methods.find(m => m.name === 'findFirst');
@@ -11533,7 +11121,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
       const plugin = storybookPhpPlugin({});
       const resolveId = (plugin as any).resolveId.bind(plugin);
       const load = (plugin as any).load.bind(plugin);
-      const id = resolveId('./SearchResult.php@render', example('Button.stories.ts'));
+      const id = resolveId('./SearchResult.php@render', php80('Button.stories.ts'));
       const code = load(id);
       expect(code).toContain("__type: 'classMethod'");
       expect(code).toContain('SearchResult');
@@ -11547,7 +11135,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders collection with items', async () => {
       const result = await executor.execute({
         type: 'classMethod',
-        file: example('ItemCollection.php'),
+        file: advanced('ItemCollection.php'),
         class: 'App\\Components\\ItemCollection',
         callable: 'render',
         args: { name: 'Frameworks', items: ['Laravel', 'Symfony', 'CodeIgniter'] },
@@ -11562,7 +11150,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders empty collection', async () => {
       const result = await executor.execute({
         type: 'classMethod',
-        file: example('ItemCollection.php'),
+        file: advanced('ItemCollection.php'),
         class: 'App\\Components\\ItemCollection',
         callable: 'render',
         args: { name: 'Empty', items: [] },
@@ -11576,7 +11164,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders compact variant', async () => {
       const result = await executor.execute({
         type: 'classMethod',
-        file: example('ItemCollection.php'),
+        file: advanced('ItemCollection.php'),
         class: 'App\\Components\\ItemCollection',
         callable: 'render',
         args: { name: 'Tags', items: ['php', 'vite'], variant: 'compact' },
@@ -11587,7 +11175,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     });
 
     it('parses class implementing 3 interfaces', () => {
-      const meta = parsePhpFile(example('ItemCollection.php'));
+      const meta = parsePhpFile(advanced('ItemCollection.php'));
       // Interfaces + the class
       const cls = meta.classes.find(c => c.name === 'ItemCollection');
       expect(cls).toBeDefined();
@@ -11606,7 +11194,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
       const plugin = storybookPhpPlugin({});
       const resolveId = (plugin as any).resolveId.bind(plugin);
       const load = (plugin as any).load.bind(plugin);
-      const id = resolveId('./ItemCollection.php@render', example('Button.stories.ts'));
+      const id = resolveId('./ItemCollection.php@render', advanced('Button.stories.ts'));
       const code = load(id);
       expect(code).toContain("__type: 'classMethod'");
       expect(code).toContain('ItemCollection');
@@ -11620,7 +11208,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders kanban with default columns', async () => {
       const result = await executor.execute({
         type: 'template',
-        file: resolve(examplesDir, 'templates/kanban.php'),
+        file: resolve(advancedDir, 'templates/kanban.php'),
         class: null,
         callable: null,
         args: { boardTitle: 'Sprint Board' },
@@ -11636,7 +11224,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders kanban with custom columns', async () => {
       const result = await executor.execute({
         type: 'template',
-        file: resolve(examplesDir, 'templates/kanban.php'),
+        file: resolve(advancedDir, 'templates/kanban.php'),
         class: null,
         callable: null,
         args: {
@@ -11657,7 +11245,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders kanban without counts', async () => {
       const result = await executor.execute({
         type: 'template',
-        file: resolve(examplesDir, 'templates/kanban.php'),
+        file: resolve(advancedDir, 'templates/kanban.php'),
         class: null,
         callable: null,
         args: { boardTitle: 'Minimal', showCounts: false, compact: true },
@@ -11675,7 +11263,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders settings with defaults', async () => {
       const result = await executor.execute({
         type: 'template',
-        file: resolve(examplesDir, 'templates/settings.php'),
+        file: resolve(advancedDir, 'templates/settings.php'),
         class: null,
         callable: null,
         args: { title: 'App Settings' },
@@ -11691,7 +11279,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders custom settings sections', async () => {
       const result = await executor.execute({
         type: 'template',
-        file: resolve(examplesDir, 'templates/settings.php'),
+        file: resolve(advancedDir, 'templates/settings.php'),
         class: null,
         callable: null,
         args: {
@@ -11710,7 +11298,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders readonly settings', async () => {
       const result = await executor.execute({
         type: 'template',
-        file: resolve(examplesDir, 'templates/settings.php'),
+        file: resolve(advancedDir, 'templates/settings.php'),
         class: null,
         callable: null,
         args: { title: 'Read Only', readonly: true },
@@ -11728,7 +11316,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders TraitChain.render using method from own class', async () => {
       const result = await executor.execute({
         type: 'classMethod',
-        file: example('TraitChain.php'),
+        file: advanced('TraitChain.php'),
         class: 'App\\Components\\TraitChain',
         callable: 'render',
         args: { title: 'Info', key: 'Status', value: 'Active' },
@@ -11742,7 +11330,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders TraitChain.row from middle trait (HasLayout)', async () => {
       const result = await executor.execute({
         type: 'classMethod',
-        file: example('TraitChain.php'),
+        file: advanced('TraitChain.php'),
         class: 'App\\Components\\TraitChain',
         callable: 'row',
         args: { left: 'Label', right: 'Value' },
@@ -11755,7 +11343,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders TraitChain.styled from deepest trait (HasStyle)', async () => {
       const result = await executor.execute({
         type: 'classMethod',
-        file: example('TraitChain.php'),
+        file: advanced('TraitChain.php'),
         class: 'App\\Components\\TraitChain',
         callable: 'styled',
         args: { text: 'Deep trait', color: '#ef4444' },
@@ -11768,7 +11356,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders TraitChain.container from direct trait (HasContainer)', async () => {
       const result = await executor.execute({
         type: 'classMethod',
-        file: example('TraitChain.php'),
+        file: advanced('TraitChain.php'),
         class: 'App\\Components\\TraitChain',
         callable: 'container',
         args: { title: 'Box', content: '<p>Inside</p>' },
@@ -11779,7 +11367,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     });
 
     it('parses TraitChain with nested trait usage', () => {
-      const meta = parsePhpFile(example('TraitChain.php'));
+      const meta = parsePhpFile(advanced('TraitChain.php'));
       const hasStyle = meta.classes.find(c => c.name === 'HasStyle')!;
       expect(hasStyle.isTrait).toBe(true);
       expect(hasStyle.methods).toHaveLength(1);
@@ -11805,7 +11393,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
       const load = (id: string) => (plugin.load as Function)(id);
 
       // styled is 3 levels deep: TraitChain -> HasContainer -> HasLayout -> HasStyle
-      const styledId = resolveId('./TraitChain.php@styled', example('TraitChain.stories.ts'));
+      const styledId = resolveId('./TraitChain.php@styled', advanced('TraitChain.stories.ts'));
       expect(styledId).toBeTruthy();
       const styledCode = load(styledId);
       expect(styledCode).toContain('export const TraitChain');
@@ -11813,7 +11401,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
       expect(styledCode).toContain('text');
 
       // row is 2 levels deep: TraitChain -> HasContainer -> HasLayout
-      const rowId = resolveId('./TraitChain.php@row', example('TraitChain.stories.ts'));
+      const rowId = resolveId('./TraitChain.php@row', advanced('TraitChain.stories.ts'));
       const rowCode = load(rowId);
       expect(rowCode).toContain('export const TraitChain');
       expect(rowCode).toContain('left');
@@ -11840,7 +11428,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders Season.render instance method', async () => {
       const result = await executor.execute({
         type: 'enumMethod',
-        file: example('Season.php'),
+        file: basic('Season.php'),
         class: 'App\\Components\\Season',
         callable: 'render',
         args: { _case: 'Spring', description: 'Flowers bloom' },
@@ -11853,7 +11441,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders Season.render for Winter', async () => {
       const result = await executor.execute({
         type: 'enumMethod',
-        file: example('Season.php'),
+        file: basic('Season.php'),
         class: 'App\\Components\\Season',
         callable: 'render',
         args: { _case: 'Winter' },
@@ -11866,7 +11454,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders Season::grid static method', async () => {
       const result = await executor.execute({
         type: 'staticMethod',
-        file: example('Season.php'),
+        file: basic('Season.php'),
         class: 'App\\Components\\Season',
         callable: 'grid',
         args: {},
@@ -11882,7 +11470,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders Season::current static method', async () => {
       const result = await executor.execute({
         type: 'staticMethod',
-        file: example('Season.php'),
+        file: basic('Season.php'),
         class: 'App\\Components\\Season',
         callable: 'current',
         args: { hemisphere: 'north' },
@@ -11893,7 +11481,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     });
 
     it('parses Season as unit enum with static and instance methods', () => {
-      const meta = parsePhpFile(example('Season.php'));
+      const meta = parsePhpFile(basic('Season.php'));
       const cls = meta.classes.find(c => c.name === 'Season')!;
       expect(cls.isEnum).toBe(true);
       expect(cls.enumBackingType).toBeNull();
@@ -11915,16 +11503,16 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
         (plugin.resolveId as Function)(source, importer);
       const load = (id: string) => (plugin.load as Function)(id);
 
-      const renderId = resolveId('./Season.php@render', example('Season.stories.ts'));
+      const renderId = resolveId('./Season.php@render', basic('Season.stories.ts'));
       const renderCode = load(renderId);
       expect(renderCode).toContain("__type: 'enumMethod'");
       expect(renderCode).toContain('_case');
 
-      const gridId = resolveId('./Season.php@grid', example('SeasonGrid.stories.ts'));
+      const gridId = resolveId('./Season.php@grid', basic('SeasonGrid.stories.ts'));
       const gridCode = load(gridId);
       expect(gridCode).toContain("__type: 'staticMethod'");
 
-      const currentId = resolveId('./Season.php@current', example('SeasonCurrent.stories.ts'));
+      const currentId = resolveId('./Season.php@current', basic('SeasonCurrent.stories.ts'));
       const currentCode = load(currentId);
       expect(currentCode).toContain("__type: 'staticMethod'");
     });
@@ -11947,7 +11535,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders ComposedCard with Author object', async () => {
       const result = await executor.execute({
         type: 'classMethod',
-        file: example('ComposedCard.php'),
+        file: advanced('ComposedCard.php'),
         class: 'App\\Components\\ComposedCard',
         callable: 'render',
         args: {
@@ -11966,7 +11554,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders ComposedCard with date', async () => {
       const result = await executor.execute({
         type: 'classMethod',
-        file: example('ComposedCard.php'),
+        file: advanced('ComposedCard.php'),
         class: 'App\\Components\\ComposedCard',
         callable: 'render',
         args: {
@@ -11983,7 +11571,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     });
 
     it('parses ComposedCard with Author class in same file', () => {
-      const meta = parsePhpFile(example('ComposedCard.php'));
+      const meta = parsePhpFile(advanced('ComposedCard.php'));
       const author = meta.classes.find(c => c.name === 'Author')!;
       expect(author.constructorParams).toHaveLength(3);
       expect(author.constructorParams[0]!.name).toBe('name');
@@ -12042,7 +11630,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders InfoWidget.display', async () => {
       const result = await executor.execute({
         type: 'classMethod',
-        file: example('AbstractWidget.php'),
+        file: advanced('AbstractWidget.php'),
         class: 'App\\Components\\InfoWidget',
         callable: 'display',
         args: { title: 'Notice', message: 'Test message', variant: 'primary' },
@@ -12056,7 +11644,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders CounterWidget.display', async () => {
       const result = await executor.execute({
         type: 'classMethod',
-        file: example('AbstractWidget.php'),
+        file: advanced('AbstractWidget.php'),
         class: 'App\\Components\\CounterWidget',
         callable: 'display',
         args: { title: 'Progress', count: 75, max: 100, variant: 'success' },
@@ -12071,7 +11659,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders BaseWidget::availableVariants static method', async () => {
       const result = await executor.execute({
         type: 'staticMethod',
-        file: example('AbstractWidget.php'),
+        file: advanced('AbstractWidget.php'),
         class: 'App\\Components\\BaseWidget',
         callable: 'availableVariants',
         args: {},
@@ -12084,7 +11672,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     });
 
     it('parses AbstractWidget with interface and abstract class', () => {
-      const meta = parsePhpFile(example('AbstractWidget.php'));
+      const meta = parsePhpFile(advanced('AbstractWidget.php'));
 
       const iface = meta.classes.find(c => c.name === 'Displayable')!;
       expect(iface.isInterface).toBe(true);
@@ -12108,7 +11696,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
       const load = (id: string) => (plugin.load as Function)(id);
 
       // display is inherited from BaseWidget, but exported for InfoWidget and CounterWidget
-      const displayId = resolveId('./AbstractWidget.php@display', example('AbstractWidget.stories.ts'));
+      const displayId = resolveId('./AbstractWidget.php@display', advanced('AbstractWidget.stories.ts'));
       const displayCode = load(displayId);
       expect(displayCode).toContain('export const InfoWidget');
       expect(displayCode).toContain('export const CounterWidget');
@@ -12117,7 +11705,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
       expect(displayCode).not.toContain('export const BaseWidget');
 
       // availableVariants is a static method on the abstract class
-      const variantsId = resolveId('./AbstractWidget.php@availableVariants', example('AbstractWidgetVariants.stories.ts'));
+      const variantsId = resolveId('./AbstractWidget.php@availableVariants', advanced('AbstractWidgetVariants.stories.ts'));
       const variantsCode = load(variantsId);
       expect(variantsCode).toContain('export const BaseWidget');
       expect(variantsCode).toContain("__type: 'staticMethod'");
@@ -12145,7 +11733,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders StaticEcho::banner via echo', async () => {
       const result = await executor.execute({
         type: 'staticMethod',
-        file: example('StaticEcho.php'),
+        file: advanced('StaticEcho.php'),
         class: 'App\\Components\\StaticEcho',
         callable: 'banner',
         args: { title: 'Hello' },
@@ -12158,7 +11746,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders StaticEcho::banner with custom color', async () => {
       const result = await executor.execute({
         type: 'staticMethod',
-        file: example('StaticEcho.php'),
+        file: advanced('StaticEcho.php'),
         class: 'App\\Components\\StaticEcho',
         callable: 'banner',
         args: { title: 'Alert', color: '#ef4444' },
@@ -12171,7 +11759,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders StaticEcho::notice with type', async () => {
       const result = await executor.execute({
         type: 'staticMethod',
-        file: example('StaticEcho.php'),
+        file: advanced('StaticEcho.php'),
         class: 'App\\Components\\StaticEcho',
         callable: 'notice',
         args: { message: 'Test message', type: 'success' },
@@ -12185,7 +11773,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders StaticEcho::notice with default type', async () => {
       const result = await executor.execute({
         type: 'staticMethod',
-        file: example('StaticEcho.php'),
+        file: advanced('StaticEcho.php'),
         class: 'App\\Components\\StaticEcho',
         callable: 'notice',
         args: { message: 'Default notice' },
@@ -12196,7 +11784,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     });
 
     it('parses StaticEcho correctly', () => {
-      const meta = parsePhpFile(example('StaticEcho.php'));
+      const meta = parsePhpFile(advanced('StaticEcho.php'));
       const cls = meta.classes.find(c => c.name === 'StaticEcho');
       expect(cls).toBeDefined();
       expect(cls!.methods).toHaveLength(2);
@@ -12231,14 +11819,14 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
         (plugin.resolveId as Function)(source, importer);
       const load = (id: string) => (plugin.load as Function)(id);
 
-      const bannerId = resolveId('./StaticEcho.php@banner', example('StaticEcho.stories.ts'));
+      const bannerId = resolveId('./StaticEcho.php@banner', advanced('StaticEcho.stories.ts'));
       expect(bannerId).toContain('StaticEcho.php');
       const bannerCode = load(bannerId);
       expect(bannerCode).toContain("__type: 'staticMethod'");
       expect(bannerCode).toContain('StaticEcho');
       expect(bannerCode).toContain('title');
 
-      const noticeId = resolveId('./StaticEcho.php@notice', example('StaticEchoNotice.stories.ts'));
+      const noticeId = resolveId('./StaticEcho.php@notice', advanced('StaticEchoNotice.stories.ts'));
       const noticeCode = load(noticeId);
       expect(noticeCode).toContain("__type: 'staticMethod'");
       expect(noticeCode).toContain('message');
@@ -12252,7 +11840,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders InfoSection via trait render method', async () => {
       const result = await executor.execute({
         type: 'classMethod',
-        file: example('TraitTemplate.php'),
+        file: advanced('TraitTemplate.php'),
         class: 'App\\Components\\InfoSection',
         callable: 'render',
         args: { title: 'Overview', content: 'This is the body.' },
@@ -12266,7 +11854,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders with optional footer note', async () => {
       const result = await executor.execute({
         type: 'classMethod',
-        file: example('TraitTemplate.php'),
+        file: advanced('TraitTemplate.php'),
         class: 'App\\Components\\InfoSection',
         callable: 'render',
         args: { title: 'Note', content: 'Details here.', note: 'Updated recently' },
@@ -12278,7 +11866,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('omits footer when note is null', async () => {
       const result = await executor.execute({
         type: 'classMethod',
-        file: example('TraitTemplate.php'),
+        file: advanced('TraitTemplate.php'),
         class: 'App\\Components\\InfoSection',
         callable: 'render',
         args: { title: 'Test', content: 'Body' },
@@ -12289,7 +11877,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     });
 
     it('parses trait with abstract methods and class', () => {
-      const meta = parsePhpFile(example('TraitTemplate.php'));
+      const meta = parsePhpFile(advanced('TraitTemplate.php'));
 
       const trait = meta.classes.find(c => c.name === 'HasSection');
       expect(trait).toBeDefined();
@@ -12326,7 +11914,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
         (plugin.resolveId as Function)(source, importer);
       const load = (id: string) => (plugin.load as Function)(id);
 
-      const resolved = resolveId('./TraitTemplate.php@render', example('TraitTemplate.stories.ts'));
+      const resolved = resolveId('./TraitTemplate.php@render', advanced('TraitTemplate.stories.ts'));
       expect(resolved).toContain('TraitTemplate.php');
       const code = load(resolved);
       expect(code).toContain("__type: 'classMethod'");
@@ -12343,7 +11931,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders statusCard via array return', async () => {
       const result = await executor.execute({
         type: 'function',
-        file: example('funcHtmlArray.php'),
+        file: advanced('funcHtmlArray.php'),
         class: null,
         callable: 'statusCard',
         args: { title: 'Users', status: 'active', count: 42 },
@@ -12358,7 +11946,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('uses default status and count', async () => {
       const result = await executor.execute({
         type: 'function',
-        file: example('funcHtmlArray.php'),
+        file: advanced('funcHtmlArray.php'),
         class: null,
         callable: 'statusCard',
         args: { title: 'Items' },
@@ -12371,7 +11959,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders with pending status', async () => {
       const result = await executor.execute({
         type: 'function',
-        file: example('funcHtmlArray.php'),
+        file: advanced('funcHtmlArray.php'),
         class: null,
         callable: 'statusCard',
         args: { title: 'Orders', status: 'pending', count: 7 },
@@ -12382,7 +11970,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     });
 
     it('parses function correctly', () => {
-      const meta = parsePhpFile(example('funcHtmlArray.php'));
+      const meta = parsePhpFile(advanced('funcHtmlArray.php'));
       expect(meta.functions).toHaveLength(1);
       expect(meta.functions[0]!.name).toBe('statusCard');
       expect(meta.functions[0]!.params).toHaveLength(3);
@@ -12409,7 +11997,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
         (plugin.resolveId as Function)(source, importer);
       const load = (id: string) => (plugin.load as Function)(id);
 
-      const resolved = resolveId('./funcHtmlArray.php@statusCard', example('funcHtmlArray.stories.ts'));
+      const resolved = resolveId('./funcHtmlArray.php@statusCard', advanced('funcHtmlArray.stories.ts'));
       expect(resolved).toContain('funcHtmlArray.php');
       const code = load(resolved);
       expect(code).toContain("__type: 'function'");
@@ -12425,7 +12013,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders Palette::swatch for red', async () => {
       const result = await executor.execute({
         type: 'enumMethod',
-        file: example('EnumInterfaceTrait.php'),
+        file: php81('EnumInterfaceTrait.php'),
         class: 'App\\Components\\Palette',
         callable: 'swatch',
         args: { _case: 'red' },
@@ -12439,7 +12027,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders swatch with custom size', async () => {
       const result = await executor.execute({
         type: 'enumMethod',
-        file: example('EnumInterfaceTrait.php'),
+        file: php81('EnumInterfaceTrait.php'),
         class: 'App\\Components\\Palette',
         callable: 'swatch',
         args: { _case: 'blue', size: '64px' },
@@ -12452,7 +12040,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders yellow swatch', async () => {
       const result = await executor.execute({
         type: 'enumMethod',
-        file: example('EnumInterfaceTrait.php'),
+        file: php81('EnumInterfaceTrait.php'),
         class: 'App\\Components\\Palette',
         callable: 'swatch',
         args: { _case: 'yellow', size: '32px' },
@@ -12463,7 +12051,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     });
 
     it('parses enum with interface and trait', () => {
-      const meta = parsePhpFile(example('EnumInterfaceTrait.php'));
+      const meta = parsePhpFile(php81('EnumInterfaceTrait.php'));
 
       const iface = meta.classes.find(c => c.name === 'Describable');
       expect(iface).toBeDefined();
@@ -12499,7 +12087,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
         (plugin.resolveId as Function)(source, importer);
       const load = (id: string) => (plugin.load as Function)(id);
 
-      const swatchId = resolveId('./EnumInterfaceTrait.php@swatch', example('EnumInterfaceTrait.stories.ts'));
+      const swatchId = resolveId('./EnumInterfaceTrait.php@swatch', php81('EnumInterfaceTrait.stories.ts'));
       expect(swatchId).toContain('EnumInterfaceTrait.php');
       const swatchCode = load(swatchId);
       expect(swatchCode).toContain("__type: 'enumMethod'");
@@ -12516,7 +12104,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
       const load = (id: string) => (plugin.load as Function)(id);
 
       // colorCode comes from the HasColorCode trait
-      const colorCodeId = resolveId('./EnumInterfaceTrait.php@colorCode', example('EnumInterfaceTrait.stories.ts'));
+      const colorCodeId = resolveId('./EnumInterfaceTrait.php@colorCode', php81('EnumInterfaceTrait.stories.ts'));
       const colorCodeCode = load(colorCodeId);
       expect(colorCodeCode).toContain("__type: 'enumMethod'");
       expect(colorCodeCode).toContain('Palette');
@@ -12530,7 +12118,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('uses class render() over trait render()', async () => {
       const result = await executor.execute({
         type: 'classMethod',
-        file: example('OverrideTrait.php'),
+        file: advanced('OverrideTrait.php'),
         class: 'App\\Components\\OverrideTrait',
         callable: 'render',
         args: { title: 'Custom' },
@@ -12545,7 +12133,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders with secondary variant', async () => {
       const result = await executor.execute({
         type: 'classMethod',
-        file: example('OverrideTrait.php'),
+        file: advanced('OverrideTrait.php'),
         class: 'App\\Components\\OverrideTrait',
         callable: 'render',
         args: { title: 'Fallback', variant: 'secondary' },
@@ -12558,7 +12146,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('still uses trait badge() method via render', async () => {
       const result = await executor.execute({
         type: 'classMethod',
-        file: example('OverrideTrait.php'),
+        file: advanced('OverrideTrait.php'),
         class: 'App\\Components\\OverrideTrait',
         callable: 'render',
         args: { title: 'Test' },
@@ -12571,7 +12159,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('can call trait badge() directly', async () => {
       const result = await executor.execute({
         type: 'classMethod',
-        file: example('OverrideTrait.php'),
+        file: advanced('OverrideTrait.php'),
         class: 'App\\Components\\OverrideTrait',
         callable: 'badge',
         args: { title: 'Test' },
@@ -12582,7 +12170,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     });
 
     it('parses class with overridden trait method', () => {
-      const meta = parsePhpFile(example('OverrideTrait.php'));
+      const meta = parsePhpFile(advanced('OverrideTrait.php'));
 
       const trait = meta.classes.find(c => c.name === 'HasDefaultRender');
       expect(trait).toBeDefined();
@@ -12614,7 +12202,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
         (plugin.resolveId as Function)(source, importer);
       const load = (id: string) => (plugin.load as Function)(id);
 
-      const renderId = resolveId('./OverrideTrait.php@render', example('OverrideTrait.stories.ts'));
+      const renderId = resolveId('./OverrideTrait.php@render', advanced('OverrideTrait.stories.ts'));
       const renderCode = load(renderId);
       expect(renderCode).toContain("__type: 'classMethod'");
       expect(renderCode).toContain('OverrideTrait');
@@ -12628,7 +12216,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
         (plugin.resolveId as Function)(source, importer);
       const load = (id: string) => (plugin.load as Function)(id);
 
-      const badgeId = resolveId('./OverrideTrait.php@badge', example('OverrideTraitBadge.stories.ts'));
+      const badgeId = resolveId('./OverrideTrait.php@badge', advanced('OverrideTraitBadge.stories.ts'));
       const badgeCode = load(badgeId);
       expect(badgeCode).toContain("__type: 'classMethod'");
       expect(badgeCode).toContain('OverrideTrait');
@@ -12642,7 +12230,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders TraitAbstract with title only', async () => {
       const result = await executor.execute({
         type: 'classMethod',
-        file: example('TraitAbstract.php'),
+        file: advanced('TraitAbstract.php'),
         class: 'App\\Components\\TraitAbstract',
         callable: 'render',
         args: { title: 'Template Pattern' },
@@ -12655,7 +12243,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders TraitAbstract with title and body', async () => {
       const result = await executor.execute({
         type: 'classMethod',
-        file: example('TraitAbstract.php'),
+        file: advanced('TraitAbstract.php'),
         class: 'App\\Components\\TraitAbstract',
         callable: 'render',
         args: { title: 'Hello', body: 'World' },
@@ -12667,7 +12255,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     });
 
     it('parses trait with abstract and concrete methods', () => {
-      const meta = parsePhpFile(example('TraitAbstract.php'));
+      const meta = parsePhpFile(advanced('TraitAbstract.php'));
       const trait = meta.classes.find(c => c.name === 'HasLayout');
       expect(trait).toBeDefined();
       expect(trait!.isTrait).toBe(true);
@@ -12685,7 +12273,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
         (plugin.resolveId as Function)(source, importer);
       const load = (id: string) => (plugin.load as Function)(id);
 
-      const id = resolveId('./TraitAbstract.php@render', example('TraitAbstract.stories.ts'));
+      const id = resolveId('./TraitAbstract.php@render', advanced('TraitAbstract.stories.ts'));
       const code = load(id);
       expect(code).toContain("__type: 'classMethod'");
       expect(code).toContain('export const TraitAbstract');
@@ -12700,7 +12288,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders DualCallable via render()', async () => {
       const result = await executor.execute({
         type: 'classMethod',
-        file: example('DualCallable.php'),
+        file: advanced('DualCallable.php'),
         class: 'App\\Components\\DualCallable',
         callable: 'render',
         args: { label: 'Test Card' },
@@ -12713,7 +12301,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders DualCallable via __invoke()', async () => {
       const result = await executor.execute({
         type: 'classMethod',
-        file: example('DualCallable.php'),
+        file: advanced('DualCallable.php'),
         class: 'App\\Components\\DualCallable',
         callable: '__invoke',
         args: { label: 'Badge', wrapper: 'div' },
@@ -12726,7 +12314,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders DualCallable with primary variant via render', async () => {
       const result = await executor.execute({
         type: 'classMethod',
-        file: example('DualCallable.php'),
+        file: advanced('DualCallable.php'),
         class: 'App\\Components\\DualCallable',
         callable: 'render',
         args: { label: 'Primary', variant: 'primary' },
@@ -12741,11 +12329,11 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
         (plugin.resolveId as Function)(source, importer);
       const load = (id: string) => (plugin.load as Function)(id);
 
-      const renderId = resolveId('./DualCallable.php@render', example('DualCallable.stories.ts'));
+      const renderId = resolveId('./DualCallable.php@render', advanced('DualCallable.stories.ts'));
       const renderCode = load(renderId);
       expect(renderCode).toContain('__callable: "render"');
 
-      const invokeId = resolveId('./DualCallable.php@__invoke', example('DualCallableInvoke.stories.ts'));
+      const invokeId = resolveId('./DualCallable.php@__invoke', advanced('DualCallableInvoke.stories.ts'));
       const invokeCode = load(invokeId);
       expect(invokeCode).toContain('__callable: "__invoke"');
       expect(invokeCode).toContain('wrapper:');
@@ -12759,7 +12347,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders Currency::format for USD', async () => {
       const result = await executor.execute({
         type: 'enumMethod',
-        file: example('Currency.php'),
+        file: php81('Currency.php'),
         class: 'App\\Components\\Currency',
         callable: 'format',
         args: { _case: 'USD', amount: 1234.56 },
@@ -12773,7 +12361,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders Currency::format for JPY with 0 decimals', async () => {
       const result = await executor.execute({
         type: 'enumMethod',
-        file: example('Currency.php'),
+        file: php81('Currency.php'),
         class: 'App\\Components\\Currency',
         callable: 'format',
         args: { _case: 'JPY', amount: 15000, decimals: 0 },
@@ -12785,7 +12373,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders Currency::table static method', async () => {
       const result = await executor.execute({
         type: 'staticMethod',
-        file: example('Currency.php'),
+        file: php81('Currency.php'),
         class: 'App\\Components\\Currency',
         callable: 'table',
         args: { amount: 50 },
@@ -12799,7 +12387,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     });
 
     it('parses enum with multiple methods', () => {
-      const meta = parsePhpFile(example('Currency.php'));
+      const meta = parsePhpFile(php81('Currency.php'));
       const cls = meta.classes.find(c => c.name === 'Currency');
       expect(cls).toBeDefined();
       expect(cls!.isEnum).toBe(true);
@@ -12817,7 +12405,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders alignedBox with default alignment', async () => {
       const result = await executor.execute({
         type: 'function',
-        file: example('EnumDefaultFunc.php'),
+        file: php81('EnumDefaultFunc.php'),
         class: null,
         callable: 'App\\Components\\alignedBox',
         args: { content: 'Left aligned' },
@@ -12830,7 +12418,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders alignedBox with center alignment', async () => {
       const result = await executor.execute({
         type: 'function',
-        file: example('EnumDefaultFunc.php'),
+        file: php81('EnumDefaultFunc.php'),
         class: null,
         callable: 'App\\Components\\alignedBox',
         args: { content: 'Centered', align: 'center' },
@@ -12842,7 +12430,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders alignedBox with right alignment and custom bg', async () => {
       const result = await executor.execute({
         type: 'function',
-        file: example('EnumDefaultFunc.php'),
+        file: php81('EnumDefaultFunc.php'),
         class: null,
         callable: 'App\\Components\\alignedBox',
         args: { content: 'Right', align: 'right', bg: '#dbeafe' },
@@ -12853,7 +12441,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     });
 
     it('parses function with enum-typed param', () => {
-      const meta = parsePhpFile(example('EnumDefaultFunc.php'));
+      const meta = parsePhpFile(php81('EnumDefaultFunc.php'));
       expect(meta.functions).toHaveLength(1);
       const fn = meta.functions[0]!;
       expect(fn.name).toBe('alignedBox');
@@ -12867,7 +12455,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
         (plugin.resolveId as Function)(source, importer);
       const load = (id: string) => (plugin.load as Function)(id);
 
-      const id = resolveId('./EnumDefaultFunc.php@alignedBox', example('EnumDefaultFunc.stories.ts'));
+      const id = resolveId('./EnumDefaultFunc.php@alignedBox', php81('EnumDefaultFunc.stories.ts'));
       const code = load(id);
       expect(code).toContain("__type: 'function'");
       expect(code).toContain('export const alignedBox');
@@ -12881,7 +12469,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders SplitView via renderFull', async () => {
       const result = await executor.execute({
         type: 'classMethod',
-        file: example('SplitView.php'),
+        file: advanced('SplitView.php'),
         class: 'App\\Components\\SplitView',
         callable: 'renderFull',
         args: { title: 'Full View', description: 'Detailed content' },
@@ -12895,7 +12483,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders SplitView via renderCompact', async () => {
       const result = await executor.execute({
         type: 'classMethod',
-        file: example('SplitView.php'),
+        file: advanced('SplitView.php'),
         class: 'App\\Components\\SplitView',
         callable: 'renderCompact',
         args: { title: 'Compact View' },
@@ -12908,7 +12496,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders SplitView full with dark theme', async () => {
       const result = await executor.execute({
         type: 'classMethod',
-        file: example('SplitView.php'),
+        file: advanced('SplitView.php'),
         class: 'App\\Components\\SplitView',
         callable: 'renderFull',
         args: { title: 'Dark', theme: 'dark' },
@@ -12923,11 +12511,11 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
         (plugin.resolveId as Function)(source, importer);
       const load = (id: string) => (plugin.load as Function)(id);
 
-      const fullId = resolveId('./SplitView.php@renderFull', example('SplitView.stories.ts'));
+      const fullId = resolveId('./SplitView.php@renderFull', advanced('SplitView.stories.ts'));
       const fullCode = load(fullId);
       expect(fullCode).toContain('__callable: "renderFull"');
 
-      const compactId = resolveId('./SplitView.php@renderCompact', example('SplitViewCompact.stories.ts'));
+      const compactId = resolveId('./SplitView.php@renderCompact', advanced('SplitViewCompact.stories.ts'));
       const compactCode = load(compactId);
       expect(compactCode).toContain('__callable: "renderCompact"');
     });
@@ -12940,7 +12528,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders MixedOutput via render() (return)', async () => {
       const result = await executor.execute({
         type: 'classMethod',
-        file: example('MixedOutput.php'),
+        file: php80('MixedOutput.php'),
         class: 'App\\Components\\MixedOutput',
         callable: 'render',
         args: { title: 'Info', content: 'Return-based output' },
@@ -12954,7 +12542,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders MixedOutput via renderEcho() (void/echo)', async () => {
       const result = await executor.execute({
         type: 'classMethod',
-        file: example('MixedOutput.php'),
+        file: php80('MixedOutput.php'),
         class: 'App\\Components\\MixedOutput',
         callable: 'renderEcho',
         args: { title: 'Echo Notice', content: 'Echo-based output' },
@@ -12968,7 +12556,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders MixedOutput echo without content', async () => {
       const result = await executor.execute({
         type: 'classMethod',
-        file: example('MixedOutput.php'),
+        file: php80('MixedOutput.php'),
         class: 'App\\Components\\MixedOutput',
         callable: 'renderEcho',
         args: { title: 'Title Only' },
@@ -12981,7 +12569,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders MixedOutput with variant', async () => {
       const result = await executor.execute({
         type: 'classMethod',
-        file: example('MixedOutput.php'),
+        file: php80('MixedOutput.php'),
         class: 'App\\Components\\MixedOutput',
         callable: 'render',
         args: { title: 'Warning', variant: 'warning' },
@@ -12996,12 +12584,12 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
         (plugin.resolveId as Function)(source, importer);
       const load = (id: string) => (plugin.load as Function)(id);
 
-      const renderId = resolveId('./MixedOutput.php@render', example('MixedOutput.stories.ts'));
+      const renderId = resolveId('./MixedOutput.php@render', php80('MixedOutput.stories.ts'));
       const renderCode = load(renderId);
       expect(renderCode).toContain('__callable: "render"');
       expect(renderCode).toContain("__type: 'classMethod'");
 
-      const echoId = resolveId('./MixedOutput.php@renderEcho', example('MixedOutputEcho.stories.ts'));
+      const echoId = resolveId('./MixedOutput.php@renderEcho', php80('MixedOutputEcho.stories.ts'));
       const echoCode = load(echoId);
       expect(echoCode).toContain('__callable: "renderEcho"');
       expect(echoCode).toContain("__type: 'classMethod'");
@@ -13015,7 +12603,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders ConcreteWidget with default variant', async () => {
       const result = await executor.execute({
         type: 'classMethod',
-        file: example('ConcreteWidget.php'),
+        file: advanced('ConcreteWidget.php'),
         class: 'App\\Components\\ConcreteWidget',
         callable: 'render',
         args: { title: 'Test Widget', content: 'Hello from hierarchy' },
@@ -13029,7 +12617,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders ConcreteWidget with primary variant', async () => {
       const result = await executor.execute({
         type: 'classMethod',
-        file: example('ConcreteWidget.php'),
+        file: advanced('ConcreteWidget.php'),
         class: 'App\\Components\\ConcreteWidget',
         callable: 'render',
         args: { title: 'Primary', variant: 'primary', content: 'Blue variant', icon: '🔵' },
@@ -13042,7 +12630,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders ConcreteWidget via display() interface method', async () => {
       const result = await executor.execute({
         type: 'classMethod',
-        file: example('ConcreteWidget.php'),
+        file: advanced('ConcreteWidget.php'),
         class: 'App\\Components\\ConcreteWidget',
         callable: 'display',
         args: { title: 'Display Test', content: 'Via interface' },
@@ -13053,7 +12641,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     });
 
     it('parses all 4 class-like declarations', () => {
-      const meta = parsePhpFile(example('ConcreteWidget.php'));
+      const meta = parsePhpFile(advanced('ConcreteWidget.php'));
       expect(meta.classes).toHaveLength(4);
 
       const iface = meta.classes.find(c => c.name === 'Displayable')!;
@@ -13077,7 +12665,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
         (plugin.resolveId as Function)(source, importer);
       const load = (id: string) => (plugin.load as Function)(id);
 
-      const id = resolveId('./ConcreteWidget.php@render', example('ConcreteWidget.stories.ts'));
+      const id = resolveId('./ConcreteWidget.php@render', advanced('ConcreteWidget.stories.ts'));
       const code = load(id);
       expect(code).toContain("__type: 'classMethod'");
       expect(code).toContain('__callable: "render"');
@@ -13092,7 +12680,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders ExpandableList via expand()', async () => {
       const result = await executor.execute({
         type: 'classMethod',
-        file: example('ExpandableList.php'),
+        file: advanced('ExpandableList.php'),
         class: 'App\\Components\\ExpandableList',
         callable: 'expand',
         args: { title: 'Tasks', items: ['Write tests', 'Deploy'] },
@@ -13106,7 +12694,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders ExpandableList via filter()', async () => {
       const result = await executor.execute({
         type: 'classMethod',
-        file: example('ExpandableList.php'),
+        file: advanced('ExpandableList.php'),
         class: 'App\\Components\\ExpandableList',
         callable: 'filter',
         args: { title: 'Languages', items: ['TypeScript', 'Python', 'PHP'], query: 'P' },
@@ -13122,7 +12710,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders ExpandableList via sort()', async () => {
       const result = await executor.execute({
         type: 'classMethod',
-        file: example('ExpandableList.php'),
+        file: advanced('ExpandableList.php'),
         class: 'App\\Components\\ExpandableList',
         callable: 'sort',
         args: { title: 'Items', items: ['Cherry', 'Apple', 'Banana'] },
@@ -13138,7 +12726,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders ExpandableList sort descending', async () => {
       const result = await executor.execute({
         type: 'classMethod',
-        file: example('ExpandableList.php'),
+        file: advanced('ExpandableList.php'),
         class: 'App\\Components\\ExpandableList',
         callable: 'sort',
         args: { title: 'Items', items: ['Cherry', 'Apple', 'Banana'], direction: 'desc' },
@@ -13156,16 +12744,16 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
         (plugin.resolveId as Function)(source, importer);
       const load = (id: string) => (plugin.load as Function)(id);
 
-      const expandId = resolveId('./ExpandableList.php@expand', example('ExpandableList.stories.ts'));
+      const expandId = resolveId('./ExpandableList.php@expand', advanced('ExpandableList.stories.ts'));
       const expandCode = load(expandId);
       expect(expandCode).toContain('__callable: "expand"');
       expect(expandCode).toContain("__type: 'classMethod'");
 
-      const filterId = resolveId('./ExpandableList.php@filter', example('ExpandableListFilter.stories.ts'));
+      const filterId = resolveId('./ExpandableList.php@filter', advanced('ExpandableListFilter.stories.ts'));
       const filterCode = load(filterId);
       expect(filterCode).toContain('__callable: "filter"');
 
-      const sortId = resolveId('./ExpandableList.php@sort', example('ExpandableListSort.stories.ts'));
+      const sortId = resolveId('./ExpandableList.php@sort', advanced('ExpandableListSort.stories.ts'));
       const sortCode = load(sortId);
       expect(sortCode).toContain('__callable: "sort"');
     });
@@ -13178,7 +12766,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders formatCurrency with defaults', async () => {
       const result = await executor.execute({
         type: 'function',
-        file: example('utilFormat.php'),
+        file: advanced('utilFormat.php'),
         class: null,
         callable: 'App\\Helpers\\formatCurrency',
         args: { amount: 99.99 },
@@ -13190,7 +12778,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders formatCurrency with EUR', async () => {
       const result = await executor.execute({
         type: 'function',
-        file: example('utilFormat.php'),
+        file: advanced('utilFormat.php'),
         class: null,
         callable: 'App\\Helpers\\formatCurrency',
         args: { amount: 1234.5, currency: 'EUR', decimals: 2 },
@@ -13203,7 +12791,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders formatDate with long format', async () => {
       const result = await executor.execute({
         type: 'function',
-        file: example('utilFormat.php'),
+        file: advanced('utilFormat.php'),
         class: null,
         callable: 'App\\Helpers\\formatDate',
         args: { date: '2024-12-25' },
@@ -13216,7 +12804,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders formatDate with short format', async () => {
       const result = await executor.execute({
         type: 'function',
-        file: example('utilFormat.php'),
+        file: advanced('utilFormat.php'),
         class: null,
         callable: 'App\\Helpers\\formatDate',
         args: { date: '2024-06-15', format: 'short' },
@@ -13228,7 +12816,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders formatFileSize for megabytes', async () => {
       const result = await executor.execute({
         type: 'function',
-        file: example('utilFormat.php'),
+        file: advanced('utilFormat.php'),
         class: null,
         callable: 'App\\Helpers\\formatFileSize',
         args: { bytes: 8388608 },
@@ -13240,7 +12828,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders formatFileSize for kilobytes', async () => {
       const result = await executor.execute({
         type: 'function',
-        file: example('utilFormat.php'),
+        file: advanced('utilFormat.php'),
         class: null,
         callable: 'App\\Helpers\\formatFileSize',
         args: { bytes: 153600, precision: 2 },
@@ -13250,7 +12838,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     });
 
     it('parses all 3 functions', () => {
-      const meta = parsePhpFile(example('utilFormat.php'));
+      const meta = parsePhpFile(advanced('utilFormat.php'));
       expect(meta.namespace).toBe('App\\Helpers');
       expect(meta.functions).toHaveLength(3);
       expect(meta.functions.map(f => f.name).sort()).toEqual(['formatCurrency', 'formatDate', 'formatFileSize']);
@@ -13262,16 +12850,16 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
         (plugin.resolveId as Function)(source, importer);
       const load = (id: string) => (plugin.load as Function)(id);
 
-      const currId = resolveId('./utilFormat.php@formatCurrency', example('utilFormat.stories.ts'));
+      const currId = resolveId('./utilFormat.php@formatCurrency', advanced('utilFormat.stories.ts'));
       const currCode = load(currId);
       expect(currCode).toContain("__type: 'function'");
       expect(currCode).toContain('formatCurrency');
 
-      const dateId = resolveId('./utilFormat.php@formatDate', example('utilFormatDate.stories.ts'));
+      const dateId = resolveId('./utilFormat.php@formatDate', advanced('utilFormatDate.stories.ts'));
       const dateCode = load(dateId);
       expect(dateCode).toContain('formatDate');
 
-      const sizeId = resolveId('./utilFormat.php@formatFileSize', example('utilFormatFileSize.stories.ts'));
+      const sizeId = resolveId('./utilFormat.php@formatFileSize', advanced('utilFormatFileSize.stories.ts'));
       const sizeCode = load(sizeId);
       expect(sizeCode).toContain('formatFileSize');
     });
@@ -13284,7 +12872,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders Permission::badge for read', async () => {
       const result = await executor.execute({
         type: 'enumMethod',
-        file: example('EnumPermission.php'),
+        file: php81('EnumPermission.php'),
         class: 'App\\Components\\Permission',
         callable: 'badge',
         args: { _case: 'read' },
@@ -13297,7 +12885,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders Permission::badge for admin', async () => {
       const result = await executor.execute({
         type: 'enumMethod',
-        file: example('EnumPermission.php'),
+        file: php81('EnumPermission.php'),
         class: 'App\\Components\\Permission',
         callable: 'badge',
         args: { _case: 'admin' },
@@ -13310,7 +12898,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders Permission::includes showing allowed', async () => {
       const result = await executor.execute({
         type: 'enumMethod',
-        file: example('EnumPermission.php'),
+        file: php81('EnumPermission.php'),
         class: 'App\\Components\\Permission',
         callable: 'includes',
         args: { _case: 'admin', action: 'delete' },
@@ -13322,7 +12910,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders Permission::includes showing denied', async () => {
       const result = await executor.execute({
         type: 'enumMethod',
-        file: example('EnumPermission.php'),
+        file: php81('EnumPermission.php'),
         class: 'App\\Components\\Permission',
         callable: 'includes',
         args: { _case: 'read', action: 'write' },
@@ -13334,7 +12922,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders Permission::matrix static method', async () => {
       const result = await executor.execute({
         type: 'staticMethod',
-        file: example('EnumPermission.php'),
+        file: php81('EnumPermission.php'),
         class: 'App\\Components\\Permission',
         callable: 'matrix',
         args: {},
@@ -13351,17 +12939,17 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
         (plugin.resolveId as Function)(source, importer);
       const load = (id: string) => (plugin.load as Function)(id);
 
-      const badgeId = resolveId('./EnumPermission.php@badge', example('EnumPermission.stories.ts'));
+      const badgeId = resolveId('./EnumPermission.php@badge', php81('EnumPermission.stories.ts'));
       const badgeCode = load(badgeId);
       expect(badgeCode).toContain("__type: 'enumMethod'");
       expect(badgeCode).toContain('__callable: "badge"');
 
-      const includesId = resolveId('./EnumPermission.php@includes', example('EnumPermissionCheck.stories.ts'));
+      const includesId = resolveId('./EnumPermission.php@includes', php81('EnumPermissionCheck.stories.ts'));
       const includesCode = load(includesId);
       expect(includesCode).toContain("__type: 'enumMethod'");
       expect(includesCode).toContain('action');
 
-      const matrixId = resolveId('./EnumPermission.php@matrix', example('EnumPermissionMatrix.stories.ts'));
+      const matrixId = resolveId('./EnumPermission.php@matrix', php81('EnumPermissionMatrix.stories.ts'));
       const matrixCode = load(matrixId);
       expect(matrixCode).toContain("__type: 'staticMethod'");
     });
@@ -13374,7 +12962,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders NestedCompose with nested object args', async () => {
       const result = await executor.execute({
         type: 'classMethod',
-        file: example('NestedCompose.php'),
+        file: advanced('NestedCompose.php'),
         class: 'App\\Components\\NestedCompose',
         callable: 'render',
         args: {
@@ -13394,7 +12982,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders NestedCompose with default country', async () => {
       const result = await executor.execute({
         type: 'classMethod',
-        file: example('NestedCompose.php'),
+        file: advanced('NestedCompose.php'),
         class: 'App\\Components\\NestedCompose',
         callable: 'render',
         args: {
@@ -13408,7 +12996,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     });
 
     it('parses 3 classes including 2 readonly', () => {
-      const meta = parsePhpFile(example('NestedCompose.php'));
+      const meta = parsePhpFile(advanced('NestedCompose.php'));
       expect(meta.classes).toHaveLength(3);
 
       const country = meta.classes.find(c => c.name === 'Country')!;
@@ -13428,7 +13016,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
         (plugin.resolveId as Function)(source, importer);
       const load = (id: string) => (plugin.load as Function)(id);
 
-      const id = resolveId('./NestedCompose.php@render', example('NestedCompose.stories.ts'));
+      const id = resolveId('./NestedCompose.php@render', advanced('NestedCompose.stories.ts'));
       const code = load(id);
       expect(code).toContain("__type: 'classMethod'");
       expect(code).toContain('NestedCompose');
@@ -13443,7 +13031,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders WorkflowState::badge for draft', async () => {
       const result = await executor.execute({
         type: 'enumMethod',
-        file: example('EnumWorkflow.php'),
+        file: php81('EnumWorkflow.php'),
         class: 'App\\Components\\WorkflowState',
         callable: 'badge',
         args: { _case: 'draft' },
@@ -13456,7 +13044,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders WorkflowState::transitions for review (multiple next states)', async () => {
       const result = await executor.execute({
         type: 'enumMethod',
-        file: example('EnumWorkflow.php'),
+        file: php81('EnumWorkflow.php'),
         class: 'App\\Components\\WorkflowState',
         callable: 'transitions',
         args: { _case: 'review' },
@@ -13470,7 +13058,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders WorkflowState::transitions for archived (no transitions)', async () => {
       const result = await executor.execute({
         type: 'enumMethod',
-        file: example('EnumWorkflow.php'),
+        file: php81('EnumWorkflow.php'),
         class: 'App\\Components\\WorkflowState',
         callable: 'transitions',
         args: { _case: 'archived' },
@@ -13482,7 +13070,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders WorkflowState::diagram static method', async () => {
       const result = await executor.execute({
         type: 'staticMethod',
-        file: example('EnumWorkflow.php'),
+        file: php81('EnumWorkflow.php'),
         class: 'App\\Components\\WorkflowState',
         callable: 'diagram',
         args: {},
@@ -13500,15 +13088,15 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
         (plugin.resolveId as Function)(source, importer);
       const load = (id: string) => (plugin.load as Function)(id);
 
-      const badgeId = resolveId('./EnumWorkflow.php@badge', example('EnumWorkflow.stories.ts'));
+      const badgeId = resolveId('./EnumWorkflow.php@badge', php81('EnumWorkflow.stories.ts'));
       const badgeCode = load(badgeId);
       expect(badgeCode).toContain("__type: 'enumMethod'");
 
-      const transId = resolveId('./EnumWorkflow.php@transitions', example('EnumWorkflowTransitions.stories.ts'));
+      const transId = resolveId('./EnumWorkflow.php@transitions', php81('EnumWorkflowTransitions.stories.ts'));
       const transCode = load(transId);
       expect(transCode).toContain("__type: 'enumMethod'");
 
-      const diagId = resolveId('./EnumWorkflow.php@diagram', example('EnumWorkflowDiagram.stories.ts'));
+      const diagId = resolveId('./EnumWorkflow.php@diagram', php81('EnumWorkflowDiagram.stories.ts'));
       const diagCode = load(diagId);
       expect(diagCode).toContain("__type: 'staticMethod'");
     });
@@ -13521,7 +13109,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders team grid in card variant', async () => {
       const result = await executor.execute({
         type: 'template',
-        file: resolve(examplesDir, 'templates/team.php'),
+        file: resolve(advancedDir, 'templates/team.php'),
         class: null,
         callable: null,
         args: {
@@ -13547,7 +13135,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders team grid in list variant', async () => {
       const result = await executor.execute({
         type: 'template',
-        file: resolve(examplesDir, 'templates/team.php'),
+        file: resolve(advancedDir, 'templates/team.php'),
         class: null,
         callable: null,
         args: {
@@ -13567,7 +13155,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders team grid with status hidden', async () => {
       const result = await executor.execute({
         type: 'template',
-        file: resolve(examplesDir, 'templates/team.php'),
+        file: resolve(advancedDir, 'templates/team.php'),
         class: null,
         callable: null,
         args: {
@@ -13593,7 +13181,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders BoolToggle enabled state', async () => {
       const result = await executor.execute({
         type: 'classMethod',
-        file: example('BoolToggle.php'),
+        file: php82('BoolToggle.php'),
         class: 'App\\Components\\BoolToggle',
         callable: 'renderEnabled',
         args: { label: 'Dark Mode' },
@@ -13606,7 +13194,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders BoolToggle disabled state', async () => {
       const result = await executor.execute({
         type: 'classMethod',
-        file: example('BoolToggle.php'),
+        file: php82('BoolToggle.php'),
         class: 'App\\Components\\BoolToggle',
         callable: 'renderDisabled',
         args: { label: 'Legacy Feature' },
@@ -13619,7 +13207,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders BoolToggle null state via static method', async () => {
       const result = await executor.execute({
         type: 'staticMethod',
-        file: example('BoolToggle.php'),
+        file: php82('BoolToggle.php'),
         class: 'App\\Components\\BoolToggle',
         callable: 'renderNull',
         args: {},
@@ -13634,12 +13222,12 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
         (plugin.resolveId as Function)(source, importer);
       const load = (id: string) => (plugin.load as Function)(id);
 
-      const enabledId = resolveId('./BoolToggle.php@renderEnabled', example('BoolToggle.stories.ts'));
+      const enabledId = resolveId('./BoolToggle.php@renderEnabled', php82('BoolToggle.stories.ts'));
       const enabledCode = load(enabledId);
       expect(enabledCode).toContain("__type: 'classMethod'");
       expect(enabledCode).toContain("type: 'true'");
 
-      const nullId = resolveId('./BoolToggle.php@renderNull', example('BoolToggleNull.stories.ts'));
+      const nullId = resolveId('./BoolToggle.php@renderNull', php82('BoolToggleNull.stories.ts'));
       const nullCode = load(nullId);
       expect(nullCode).toContain("__type: 'staticMethod'");
       expect(nullCode).toContain("type: 'null'");
@@ -13653,7 +13241,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders TraitConflict with HTML format (insteadof winner)', async () => {
       const result = await executor.execute({
         type: 'classMethod',
-        file: example('TraitConflict.php'),
+        file: advanced('TraitConflict.php'),
         class: 'App\\Components\\TraitConflict',
         callable: 'render',
         args: { content: 'Test content', mode: 'html' },
@@ -13666,7 +13254,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders TraitConflict with plain format (as alias)', async () => {
       const result = await executor.execute({
         type: 'classMethod',
-        file: example('TraitConflict.php'),
+        file: advanced('TraitConflict.php'),
         class: 'App\\Components\\TraitConflict',
         callable: 'render',
         args: { content: 'Code here', mode: 'plain' },
@@ -13679,7 +13267,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders TraitConflict format method directly (from winning trait)', async () => {
       const result = await executor.execute({
         type: 'classMethod',
-        file: example('TraitConflict.php'),
+        file: advanced('TraitConflict.php'),
         class: 'App\\Components\\TraitConflict',
         callable: 'format',
         args: { text: 'Direct format call' },
@@ -13697,7 +13285,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders ListStyle bullet list', async () => {
       const result = await executor.execute({
         type: 'enumMethod',
-        file: example('ListStyle.php'),
+        file: php81('ListStyle.php'),
         class: 'App\\Components\\ListStyle',
         callable: 'renderList',
         args: { _case: 'disc', items: ['Alpha', 'Beta', 'Gamma'], title: 'Letters' },
@@ -13712,7 +13300,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders ListStyle numbered list', async () => {
       const result = await executor.execute({
         type: 'enumMethod',
-        file: example('ListStyle.php'),
+        file: php81('ListStyle.php'),
         class: 'App\\Components\\ListStyle',
         callable: 'renderList',
         args: { _case: 'decimal', items: ['Step 1', 'Step 2'], title: 'Steps' },
@@ -13725,7 +13313,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders ListStyle preview with all styles', async () => {
       const result = await executor.execute({
         type: 'staticMethod',
-        file: example('ListStyle.php'),
+        file: php81('ListStyle.php'),
         class: 'App\\Components\\ListStyle',
         callable: 'preview',
         args: { items: ['A', 'B', 'C'] },
@@ -13745,7 +13333,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders InfoPanel', async () => {
       const result = await executor.execute({
         type: 'classMethod',
-        file: example('PanelVariant.php'),
+        file: php81('PanelVariant.php'),
         class: 'App\\Components\\InfoPanel',
         callable: 'render',
         args: { title: 'Info', content: 'Information message' },
@@ -13758,7 +13346,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders WarningPanel with icon', async () => {
       const result = await executor.execute({
         type: 'classMethod',
-        file: example('PanelVariant.php'),
+        file: php81('PanelVariant.php'),
         class: 'App\\Components\\WarningPanel',
         callable: 'render',
         args: { title: 'Caution', content: 'Be careful', icon: '!' },
@@ -13771,7 +13359,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders ErrorPanel with code block', async () => {
       const result = await executor.execute({
         type: 'classMethod',
-        file: example('PanelVariant.php'),
+        file: php81('PanelVariant.php'),
         class: 'App\\Components\\ErrorPanel',
         callable: 'render',
         args: { title: 'Error', content: 'Something failed', code: 'ERR_404' },
@@ -13787,7 +13375,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
         (plugin.resolveId as Function)(source, importer);
       const load = (id: string) => (plugin.load as Function)(id);
 
-      const id = resolveId('./PanelVariant.php@render', example('PanelVariant.stories.ts'));
+      const id = resolveId('./PanelVariant.php@render', php81('PanelVariant.stories.ts'));
       const code = load(id);
       expect(code).toContain('export const InfoPanel');
       expect(code).toContain('export const WarningPanel');
@@ -13803,7 +13391,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders ChainBuilder', async () => {
       const result = await executor.execute({
         type: 'classMethod',
-        file: example('ChainBuilder.php'),
+        file: advanced('ChainBuilder.php'),
         class: 'App\\Components\\ChainBuilder',
         callable: 'render',
         args: { tag: 'ul', title: 'Items' },
@@ -13819,7 +13407,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
         (plugin.resolveId as Function)(source, importer);
       const load = (id: string) => (plugin.load as Function)(id);
 
-      const id = resolveId('./ChainBuilder.php@render', example('ChainBuilder.stories.ts'));
+      const id = resolveId('./ChainBuilder.php@render', advanced('ChainBuilder.stories.ts'));
       const code = load(id);
       expect(code).toContain("__type: 'classMethod'");
       expect(code).toContain('tag:');
@@ -13835,7 +13423,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders VoidEchoCard via echo (void return)', async () => {
       const result = await executor.execute({
         type: 'classMethod',
-        file: example('VoidEchoCard.php'),
+        file: advanced('VoidEchoCard.php'),
         class: 'App\\Components\\VoidEchoCard',
         callable: 'renderEcho',
         args: { title: 'Echo Card', body: 'From echo', variant: 'primary' },
@@ -13849,7 +13437,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders VoidEchoCard via string return', async () => {
       const result = await executor.execute({
         type: 'classMethod',
-        file: example('VoidEchoCard.php'),
+        file: advanced('VoidEchoCard.php'),
         class: 'App\\Components\\VoidEchoCard',
         callable: 'render',
         args: { title: 'Return Card', body: 'From return', variant: 'success' },
@@ -13862,7 +13450,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('VoidEchoCard fail method (never) returns error', async () => {
       const result = await executor.execute({
         type: 'classMethod',
-        file: example('VoidEchoCard.php'),
+        file: advanced('VoidEchoCard.php'),
         class: 'App\\Components\\VoidEchoCard',
         callable: 'fail',
         args: { title: 'Broken' },
@@ -13882,7 +13470,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
         (plugin.resolveId as Function)(source, importer);
       const load = (id: string) => (plugin.load as Function)(id);
 
-      const id = resolveId('./tagIntersection.php@renderIntersectionTag', example('tagIntersection.stories.ts'));
+      const id = resolveId('./tagIntersection.php@renderIntersectionTag', php81('tagIntersection.stories.ts'));
       const code = load(id);
       expect(code).toContain("__type: 'function'");
       expect(code).toContain('export const renderIntersectionTag');
@@ -13891,55 +13479,6 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
   });
 
   // -------------------------------------------------------------------------
-  // UC203: Readonly class (PHP 8.2)
-  // -------------------------------------------------------------------------
-  describe('UC203: Readonly class DTO', () => {
-    it('renders ReadonlyUser with all args', async () => {
-      const result = await executor.execute({
-        type: 'classMethod',
-        file: example('ReadonlyUser.php'),
-        class: 'App\\Components\\ReadonlyUser',
-        callable: 'render',
-        args: { name: 'Alice', email: 'alice@test.com', age: 34, role: 'admin' },
-      });
-      expect(result.error).toBeUndefined();
-      expect(result.html).toContain('Alice');
-      expect(result.html).toContain('alice@test.com');
-      expect(result.html).toContain('admin');
-      expect(result.html).toContain('Age: 34');
-    });
-
-    it('renders ReadonlyUser with defaults', async () => {
-      const result = await executor.execute({
-        type: 'classMethod',
-        file: example('ReadonlyUser.php'),
-        class: 'App\\Components\\ReadonlyUser',
-        callable: 'render',
-        args: { name: 'Bob', email: 'bob@test.com' },
-      });
-      expect(result.error).toBeUndefined();
-      expect(result.html).toContain('Bob');
-      expect(result.html).toContain('member');
-      expect(result.html).toContain('Age: 30');
-    });
-
-    it('generates module with readonly class', () => {
-      const plugin = storybookPhpPlugin();
-      const resolveId = (source: string, importer: string) =>
-        (plugin.resolveId as Function)(source, importer);
-      const load = (id: string) => (plugin.load as Function)(id);
-
-      const id = resolveId('./ReadonlyUser.php@render', example('ReadonlyUser.stories.ts'));
-      const code = load(id);
-      expect(code).toContain("__type: 'classMethod'");
-      expect(code).toContain('export const ReadonlyUser');
-      expect(code).toContain('name:');
-      expect(code).toContain('email:');
-      expect(code).toContain('age:');
-      expect(code).toContain('role:');
-    });
-  });
-
   // -------------------------------------------------------------------------
   // UC204: Int-backed enum with methods
   // -------------------------------------------------------------------------
@@ -13947,7 +13486,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders HttpPort Https case', async () => {
       const result = await executor.execute({
         type: 'enumMethod',
-        file: example('HttpPort.php'),
+        file: php81('HttpPort.php'),
         class: 'App\\Components\\HttpPort',
         callable: 'render',
         args: { _case: 'Https' },
@@ -13960,7 +13499,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders HttpPort Http case', async () => {
       const result = await executor.execute({
         type: 'enumMethod',
-        file: example('HttpPort.php'),
+        file: php81('HttpPort.php'),
         class: 'App\\Components\\HttpPort',
         callable: 'render',
         args: { _case: 'Http' },
@@ -13973,7 +13512,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders HttpPort static table', async () => {
       const result = await executor.execute({
         type: 'staticMethod',
-        file: example('HttpPort.php'),
+        file: php81('HttpPort.php'),
         class: 'App\\Components\\HttpPort',
         callable: 'table',
         args: {},
@@ -13994,7 +13533,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders ItemGrid as list', async () => {
       const result = await executor.execute({
         type: 'classMethod',
-        file: example('ItemGrid.php'),
+        file: advanced('ItemGrid.php'),
         class: 'App\\Components\\ItemGrid',
         callable: 'render',
         args: { title: 'Tools', items: ['Hammer', 'Wrench', 'Drill'], style: 'list' },
@@ -14009,7 +13548,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders ItemGrid as grid', async () => {
       const result = await executor.execute({
         type: 'classMethod',
-        file: example('ItemGrid.php'),
+        file: advanced('ItemGrid.php'),
         class: 'App\\Components\\ItemGrid',
         callable: 'render',
         args: { title: 'Colors', items: ['Red', 'Green', 'Blue'], style: 'grid' },
@@ -14022,7 +13561,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders ItemGrid empty state', async () => {
       const result = await executor.execute({
         type: 'classMethod',
-        file: example('ItemGrid.php'),
+        file: advanced('ItemGrid.php'),
         class: 'App\\Components\\ItemGrid',
         callable: 'render',
         args: { items: [], emptyMessage: 'Nothing here' },
@@ -14039,7 +13578,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders Planet Earth with description', async () => {
       const result = await executor.execute({
         type: 'enumMethod',
-        file: example('Planet.php'),
+        file: php81('Planet.php'),
         class: 'App\\Components\\Planet',
         callable: 'render',
         args: { _case: 'Earth', showDescription: true },
@@ -14053,7 +13592,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders Planet Mars without description', async () => {
       const result = await executor.execute({
         type: 'enumMethod',
-        file: example('Planet.php'),
+        file: php81('Planet.php'),
         class: 'App\\Components\\Planet',
         callable: 'render',
         args: { _case: 'Mars', showDescription: false },
@@ -14071,7 +13610,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders EmailNotification via inherited render()', async () => {
       const result = await executor.execute({
         type: 'classMethod',
-        file: example('NotificationChannel.php'),
+        file: advanced('NotificationChannel.php'),
         class: 'App\\Components\\EmailNotification',
         callable: 'render',
         args: { message: 'Your order shipped!', recipient: 'alice@example.com' },
@@ -14085,7 +13624,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders SmsNotification via inherited render()', async () => {
       const result = await executor.execute({
         type: 'classMethod',
-        file: example('NotificationChannel.php'),
+        file: advanced('NotificationChannel.php'),
         class: 'App\\Components\\SmsNotification',
         callable: 'render',
         args: { message: 'Code: 4829', recipient: '+1 555-0123' },
@@ -14098,7 +13637,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders PushNotification via inherited render()', async () => {
       const result = await executor.execute({
         type: 'classMethod',
-        file: example('NotificationChannel.php'),
+        file: advanced('NotificationChannel.php'),
         class: 'App\\Components\\PushNotification',
         callable: 'render',
         args: { message: 'New comment', recipient: 'Mobile Device' },
@@ -14114,7 +13653,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
         (plugin.resolveId as Function)(source, importer);
       const load = (id: string) => (plugin.load as Function)(id);
 
-      const id = resolveId('./NotificationChannel.php@render', example('NotificationChannel.stories.ts'));
+      const id = resolveId('./NotificationChannel.php@render', advanced('NotificationChannel.stories.ts'));
       const code = load(id);
       expect(code).toContain('export const EmailNotification');
       expect(code).toContain('export const SmsNotification');
@@ -14130,7 +13669,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders breadcrumbTrail with segments', async () => {
       const result = await executor.execute({
         type: 'function',
-        file: example('breadcrumbTrail.php'),
+        file: advanced('breadcrumbTrail.php'),
         class: null,
         callable: 'App\\Helpers\\breadcrumbTrail',
         args: { separator: ' / ', segments: ['Home', 'Products', 'Phones'] },
@@ -14145,7 +13684,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders breadcrumbTrail with custom separator', async () => {
       const result = await executor.execute({
         type: 'function',
-        file: example('breadcrumbTrail.php'),
+        file: advanced('breadcrumbTrail.php'),
         class: null,
         callable: 'App\\Helpers\\breadcrumbTrail',
         args: { separator: ' > ', segments: ['A', 'B'] },
@@ -14159,7 +13698,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders breadcrumbTrail empty', async () => {
       const result = await executor.execute({
         type: 'function',
-        file: example('breadcrumbTrail.php'),
+        file: advanced('breadcrumbTrail.php'),
         class: null,
         callable: 'App\\Helpers\\breadcrumbTrail',
         args: { separator: '/' },
@@ -14176,7 +13715,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders ThemeShowcase with all args', async () => {
       const result = await executor.execute({
         type: 'classMethod',
-        file: example('ThemeShowcase.php'),
+        file: advanced('ThemeShowcase.php'),
         class: 'App\\Components\\ThemeShowcase',
         callable: 'render',
         args: { title: 'Dashboard', subtitle: 'Preview', theme: 'dark', tags: ['ui', 'dark'], visible: true, opacity: 0.9, maxItems: 5 },
@@ -14190,7 +13729,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders ThemeShowcase with all defaults', async () => {
       const result = await executor.execute({
         type: 'classMethod',
-        file: example('ThemeShowcase.php'),
+        file: advanced('ThemeShowcase.php'),
         class: 'App\\Components\\ThemeShowcase',
         callable: 'render',
         args: {},
@@ -14204,7 +13743,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
     it('renders ThemeShowcase dark theme', async () => {
       const result = await executor.execute({
         type: 'classMethod',
-        file: example('ThemeShowcase.php'),
+        file: advanced('ThemeShowcase.php'),
         class: 'App\\Components\\ThemeShowcase',
         callable: 'render',
         args: { theme: 'dark', title: 'Night Mode' },

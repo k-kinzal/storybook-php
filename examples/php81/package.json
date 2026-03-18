@@ -1,18 +1,18 @@
 {
-  "name": "storybook-php-example-laravel",
+  "name": "storybook-php-example-php81",
   "version": "0.0.0",
   "private": true,
   "type": "module",
   "scripts": {
-    "storybook": "storybook dev -p 6014",
+    "storybook": "storybook dev -p 6009",
     "build-storybook": "storybook build"
   },
   "dependencies": {
     "storybook-php": "file:../../"
   },
   "devDependencies": {
+    "@storybook/builder-vite": "^10.2.19",
     "storybook": "^10.0.0",
-    "@storybook/builder-vite": "^10.0.0",
     "vite": "^6.0.0"
   }
 }
