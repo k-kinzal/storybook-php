@@ -11,8 +11,14 @@ import {
 export type NodeModulesState = "absent" | "symlink" | "real-with-packages" | "real-empty-or-cache";
 
 export function detectNodeModulesState(path: string): NodeModulesState {
-  if (!existsSync(path)) return "absent";
-  if (lstatSync(path).isSymbolicLink()) return "symlink";
+  let stat;
+  try {
+    stat = lstatSync(path);
+  } catch {
+    return "absent";
+  }
+  if (stat.isSymbolicLink()) return "symlink";
+  if (!stat.isDirectory()) return "absent";
   const hasPackages = readdirSync(path).some((e) => !e.startsWith("."));
   return hasPackages ? "real-with-packages" : "real-empty-or-cache";
 }
@@ -41,13 +47,24 @@ export function ensureLink(localPath: string, targetPath: string): (() => void) 
     renameSync(localPath, backedUp);
   }
 
-  symlinkSync(targetPath, localPath, "junction");
+  try {
+    symlinkSync(targetPath, localPath, "junction");
+  } catch {
+    // Restore backup if symlink creation failed
+    if (backedUp && existsSync(backedUp)) {
+      renameSync(backedUp, localPath);
+    }
+    return null;
+  }
 
   return () => {
     try {
-      if (existsSync(localPath) && lstatSync(localPath).isSymbolicLink()) {
-        unlinkSync(localPath);
-      }
+      const s = lstatSync(localPath);
+      if (s.isSymbolicLink()) unlinkSync(localPath);
+    } catch {
+      // already gone
+    }
+    try {
       if (backedUp && existsSync(backedUp)) {
         renameSync(backedUp, localPath);
       }

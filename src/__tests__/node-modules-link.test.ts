@@ -81,6 +81,18 @@ describe("detectNodeModulesState", () => {
 
     expect(detectNodeModulesState(nm())).toBe("real-empty-or-cache");
   });
+
+  it("returns 'symlink' when symlink target does not exist (dangling)", () => {
+    symlinkSync("/nonexistent/path", nm(), "junction");
+
+    expect(detectNodeModulesState(nm())).toBe("symlink");
+  });
+
+  it("returns 'absent' when path is a file, not a directory", () => {
+    writeFileSync(nm(), "not a directory");
+
+    expect(detectNodeModulesState(nm())).toBe("absent");
+  });
 });
 
 // ---------------------------------------------------------------------------
@@ -201,6 +213,29 @@ describe("ensureLink", () => {
       expect(lstatSync(nm()).isDirectory()).toBe(true);
       expect(lstatSync(nm()).isSymbolicLink()).toBe(false);
       expect(readdirSync(nm())).toEqual([]);
+    });
+  });
+
+  describe("when node_modules is a dangling symlink", () => {
+    it("returns null and leaves the symlink unchanged", () => {
+      symlinkSync("/nonexistent/path", nm(), "junction");
+
+      const target = createTargetWithPackage();
+      const result = ensureLink(nm(), target);
+
+      expect(result).toBeNull();
+      expect(readlinkSync(nm())).toBe("/nonexistent/path");
+    });
+  });
+
+  describe("when node_modules is a file", () => {
+    it("returns null because symlinkSync cannot replace a file", () => {
+      writeFileSync(nm(), "not a directory");
+
+      const target = createTargetWithPackage();
+      const result = ensureLink(nm(), target);
+
+      expect(result).toBeNull();
     });
   });
 
