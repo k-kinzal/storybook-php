@@ -1,5 +1,5 @@
 import { parsePhpFile } from './php-parser.js';
-import type { PhpFileMeta, PhpParamMeta, PhpClassMeta, PhpFunctionMeta } from './types.js';
+import type { PhpFileMeta, PhpParamMeta, PhpClassMeta } from './types.js';
 
 /**
  * Map a PHP type string to a TypeScript type string.

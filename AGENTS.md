@@ -7,18 +7,19 @@ Storybook 10 framework addon that renders PHP components as Storybook stories. U
 ## Tech Stack
 
 - **Runtime:** Node 20.19+, PHP 8.2+
-- **Build:** tsup (ESM-only), TypeScript 5.7+
-- **Test:** vitest 3.x (node env + jsdom for preview tests)
-- **Storybook:** v10.2.x with `@storybook/builder-vite`
-- **Lint:** eslint 9 (flat config)
+- **Build:** `vp pack` (tsdown/Rolldown, ESM-only), TypeScript 5.9+
+- **Toolchain:** Vite+ 0.1.x (`vp` CLI — bundles Vite 8, Vitest 4.1, Oxlint, Oxfmt)
+- **Test:** Vitest 4.1 via `vp test` (node env + jsdom for preview tests)
+- **Storybook:** v10.3.x with `@storybook/builder-vite`
+- **Lint:** Oxlint via `vp check`
 
 ## Commands
 
 ```bash
-npm run build      # tsup → dist/
-npm test           # vitest run (1071 tests, ~23s)
-npm run test:watch # vitest --watch
-npm run lint       # eslint src/
+npm run build      # vp pack → dist/
+npm test           # vp test run (1282 tests, ~28s)
+npm run test:watch # vp test --watch
+npm run lint       # vp check (oxlint)
 npm run typecheck  # tsc --noEmit
 ```
 

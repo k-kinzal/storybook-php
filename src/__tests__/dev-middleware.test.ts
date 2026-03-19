@@ -9,9 +9,9 @@ import { createPhpMiddleware, RENDER_PATH } from '../dev-middleware.js';
 const mockExecute = vi.fn();
 
 vi.mock('../php-executor.js', () => ({
-  PhpExecutor: vi.fn().mockImplementation(() => ({
-    execute: mockExecute,
-  })),
+  PhpExecutor: vi.fn().mockImplementation(function () {
+    return { execute: mockExecute };
+  }),
 }));
 
 // ---------------------------------------------------------------------------
