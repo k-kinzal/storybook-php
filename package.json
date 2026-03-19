@@ -1,6 +1,6 @@
 {
   "name": "storybook-php",
-  "version": "0.1.0",
+  "version": "0.0.0",
   "description": "Storybook 10 framework addon for rendering PHP components as stories",
   "keywords": [
     "component-driven",
