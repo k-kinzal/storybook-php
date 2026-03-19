@@ -28,4 +28,3 @@ PHP Runner (src/php/runner.php)
   ↓ Reflection-based arg matching, type casting, ob_start()
   → JSON { html } on stdout
 ```
-

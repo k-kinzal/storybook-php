@@ -697,10 +697,7 @@ function stripAnonymousClassBodies(body: string): string {
     const braceIdx = result.indexOf("{", start);
     if (braceIdx === -1) continue;
     const inner = extractBraceBody(result, braceIdx + 1);
-    result =
-      result.slice(0, braceIdx) +
-      "{}" +
-      result.slice(braceIdx + 1 + inner.length + 1);
+    result = result.slice(0, braceIdx) + "{}" + result.slice(braceIdx + 1 + inner.length + 1);
   }
   return result;
 }

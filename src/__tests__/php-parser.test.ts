@@ -2828,10 +2828,7 @@ class Tooltip {
     // -----------------------------------------------------------------------
     describe("class modifier order", () => {
       it("parses 'final readonly class' (standard order)", () => {
-        const meta = parsePhpSource(
-          `<?php\nfinal readonly class Foo {}`,
-          "test.php",
-        );
+        const meta = parsePhpSource(`<?php\nfinal readonly class Foo {}`, "test.php");
         const cls = meta.classes.find((c) => c.name === "Foo");
         expect(cls).toBeTruthy();
         expect(cls!.isFinal).toBe(true);
@@ -2839,10 +2836,7 @@ class Tooltip {
       });
 
       it("parses 'readonly final class' (reversed order)", () => {
-        const meta = parsePhpSource(
-          `<?php\nreadonly final class Foo {}`,
-          "test.php",
-        );
+        const meta = parsePhpSource(`<?php\nreadonly final class Foo {}`, "test.php");
         const cls = meta.classes.find((c) => c.name === "Foo");
         expect(cls).toBeTruthy();
         expect(cls!.isFinal).toBe(true);
@@ -2850,10 +2844,7 @@ class Tooltip {
       });
 
       it("parses 'readonly abstract class' (reversed order)", () => {
-        const meta = parsePhpSource(
-          `<?php\nreadonly abstract class Bar {}`,
-          "test.php",
-        );
+        const meta = parsePhpSource(`<?php\nreadonly abstract class Bar {}`, "test.php");
         const cls = meta.classes.find((c) => c.name === "Bar");
         expect(cls).toBeTruthy();
         expect(cls!.isAbstract).toBe(true);
@@ -2861,10 +2852,7 @@ class Tooltip {
       });
 
       it("parses 'abstract readonly class' (standard order)", () => {
-        const meta = parsePhpSource(
-          `<?php\nabstract readonly class Bar {}`,
-          "test.php",
-        );
+        const meta = parsePhpSource(`<?php\nabstract readonly class Bar {}`, "test.php");
         const cls = meta.classes.find((c) => c.name === "Bar");
         expect(cls).toBeTruthy();
         expect(cls!.isAbstract).toBe(true);
