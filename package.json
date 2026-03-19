@@ -10,15 +10,15 @@
     "storybook-framework",
     "ui"
   ],
+  "homepage": "https://github.com/k-kinzal/storybook-php#readme",
+  "bugs": {
+    "url": "https://github.com/k-kinzal/storybook-php/issues"
+  },
   "license": "MIT",
   "author": "k-kinzal",
   "repository": {
     "type": "git",
     "url": "https://github.com/k-kinzal/storybook-php.git"
-  },
-  "homepage": "https://github.com/k-kinzal/storybook-php#readme",
-  "bugs": {
-    "url": "https://github.com/k-kinzal/storybook-php/issues"
   },
   "bin": {
     "storybook-php": "./dist/cli.mjs"
