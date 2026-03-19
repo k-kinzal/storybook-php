@@ -15,7 +15,7 @@ export default defineConfig({
     sourcemap: true,
     clean: true,
     target: 'node20',
-    deps: { neverBundle: ['storybook', 'vite', 'typescript'] },
+    deps: { neverBundle: ['storybook', 'vite', 'typescript', '@storybook/builder-vite'] },
     splitting: true,
   },
   test: {
