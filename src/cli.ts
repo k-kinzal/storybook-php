@@ -3,12 +3,7 @@ import { resolve, relative, dirname } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { spawn } from "node:child_process";
 import { createRequire } from "node:module";
-import {
-  existsSync,
-  writeFileSync,
-  readdirSync,
-  statSync,
-} from "node:fs";
+import { existsSync, writeFileSync, readdirSync, statSync } from "node:fs";
 import { generateDtsForFile } from "./typegen.js";
 import { ensureLink } from "./node-modules-link.js";
 

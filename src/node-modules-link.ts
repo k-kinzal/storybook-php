@@ -8,11 +8,7 @@ import {
   unlinkSync,
 } from "node:fs";
 
-export type NodeModulesState =
-  | "absent"
-  | "symlink"
-  | "real-with-packages"
-  | "real-empty-or-cache";
+export type NodeModulesState = "absent" | "symlink" | "real-with-packages" | "real-empty-or-cache";
 
 export function detectNodeModulesState(path: string): NodeModulesState {
   if (!existsSync(path)) return "absent";
@@ -27,10 +23,7 @@ const BACKUP_SUFFIX = ".__sbphp_bak__";
  * Ensure a node_modules symlink exists at `localPath` pointing to `targetPath`.
  * Returns a cleanup function, or null if no action was needed.
  */
-export function ensureLink(
-  localPath: string,
-  targetPath: string,
-): (() => void) | null {
+export function ensureLink(localPath: string, targetPath: string): (() => void) | null {
   const state = detectNodeModulesState(localPath);
 
   if (state === "symlink" || state === "real-with-packages") {

@@ -1,5 +1,15 @@
 import { describe, it, expect, beforeEach, afterEach } from "vitest";
-import { mkdtempSync, mkdirSync, writeFileSync, symlinkSync, existsSync, lstatSync, readlinkSync, readdirSync, rmSync } from "node:fs";
+import {
+  mkdtempSync,
+  mkdirSync,
+  writeFileSync,
+  symlinkSync,
+  existsSync,
+  lstatSync,
+  readlinkSync,
+  readdirSync,
+  rmSync,
+} from "node:fs";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
 import { detectNodeModulesState, ensureLink } from "../node-modules-link.js";
