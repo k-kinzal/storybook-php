@@ -6,7 +6,7 @@ Storybook 10 framework addon that renders PHP components as Storybook stories. U
 
 ## Tech Stack
 
-- **Runtime:** Node 20.19+, PHP 8.2+
+- **Runtime:** Node 20.19+, PHP 8.0+
 - **Build:** `vp pack` (tsdown/Rolldown, ESM-only), TypeScript 5.9+
 - **Toolchain:** Vite+ 0.1.x (`vp` CLI — bundles Vite 8, Vitest 4.1, Oxlint, Oxfmt)
 - **Test:** Vitest 4.1 via `vp test` (node env + jsdom for preview tests)
@@ -23,7 +23,7 @@ npm run lint       # vp check (oxlint)
 npm run typecheck  # tsc --noEmit
 ```
 
-Integration tests in `src/__tests__/integration.test.ts` require PHP 8.2+ — they auto-skip if unavailable.
+Integration tests in `src/__tests__/integration.test.ts` require PHP 8.0+ — they auto-skip if unavailable. Tests for PHP 8.1+ features (enums, readonly, etc.) are individually skipped based on the detected PHP version.
 
 ## Architecture
 

@@ -127,8 +127,8 @@ function castWithNamedType(ReflectionNamedType $type, mixed $value, ReflectionPa
             throw new \RuntimeException("Cannot provide a value for 'never' type parameter");
     }
 
-    // Check for enum types
-    if (enum_exists($typeName)) {
+    // Check for enum types (enum_exists() requires PHP 8.1+)
+    if (function_exists('enum_exists') && enum_exists($typeName)) {
         if ($value instanceof $typeName) {
             return $value;
         }
@@ -319,6 +319,9 @@ try {
             break;
 
         case 'enumMethod':
+            if (!class_exists('ReflectionEnum')) {
+                throw new \RuntimeException("Enum methods require PHP 8.1+. Current PHP: " . PHP_VERSION);
+            }
             $__sb_ref = new ReflectionEnum($__sb_class);
             $__sb_caseValue = $__sb_args['_case'] ?? null;
             // Try backed enum ::from(), then fall back to name matching

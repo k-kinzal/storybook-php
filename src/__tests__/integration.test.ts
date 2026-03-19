@@ -1,6 +1,6 @@
 /**
  * Integration tests: verify every plan pattern runs through the PHP executor.
- * These require PHP 8.2+ installed on the system.
+ * These require PHP 8.0+ installed on the system.
  */
 import { describe, it, expect } from 'vitest';
 import { execSync } from 'node:child_process';
@@ -10,17 +10,24 @@ import { parsePhpFile } from '../php-parser.js';
 import { storybookPhpPlugin } from '../vite-plugin.js';
 import type { PhpRenderRequest } from '../types.js';
 
-let hasPhp = false;
+let phpMajor = 0;
+let phpMinor = 0;
 try {
   const out = execSync('php -v', { stdio: 'pipe' }).toString();
-  // Require PHP 8.2+
   const ver = out.match(/PHP (\d+)\.(\d+)/);
-  if (ver && (parseInt(ver[1]!) > 8 || (parseInt(ver[1]!) === 8 && parseInt(ver[2]!) >= 2))) {
-    hasPhp = true;
+  if (ver) {
+    phpMajor = parseInt(ver[1]!);
+    phpMinor = parseInt(ver[2]!);
   }
 } catch {
   // PHP not available
 }
+const hasPhp   = phpMajor > 8 || (phpMajor === 8 && phpMinor >= 0);
+const hasPhp81 = phpMajor > 8 || (phpMajor === 8 && phpMinor >= 1);
+const hasPhp82 = phpMajor > 8 || (phpMajor === 8 && phpMinor >= 2);
+const hasPhp83 = phpMajor > 8 || (phpMajor === 8 && phpMinor >= 3);
+const hasPhp84 = phpMajor > 8 || (phpMajor === 8 && phpMinor >= 4);
+const hasPhp85 = phpMajor > 8 || (phpMajor === 8 && phpMinor >= 5);
 
 const fixturesDir = resolve(import.meta.dirname!, 'fixtures');
 const examplesDir = resolve(import.meta.dirname!, '../../examples/basic/src');
@@ -262,7 +269,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
   // -------------------------------------------------------------------------
   // UC8: Laravel Component + Blade (real illuminate/view)
   // -------------------------------------------------------------------------
-  describe('UC8: Laravel Component + Blade', () => {
+  describe.skipIf(!hasPhp82)('UC8: Laravel Component + Blade', () => {
     const bladeExecutor = new PhpExecutor({ timeout: 10000, bootstrap: laravelBootstrap, adapter: laravelAdapter });
 
     it('renders BladeAlert via Blade template', async () => {
@@ -317,7 +324,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
   // -------------------------------------------------------------------------
   // UC9: Readonly class + enum params + object params (recursive instantiation)
   // -------------------------------------------------------------------------
-  describe('UC9: Readonly + enum + object params', () => {
+  describe.skipIf(!hasPhp82)('UC9: Readonly + enum + object params', () => {
     it('renders ProductCard with defaults', async () => {
       const result = await executor.execute({
         type: 'classMethod',
@@ -387,7 +394,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
   // -------------------------------------------------------------------------
   // UC11: Enum with methods
   // -------------------------------------------------------------------------
-  describe('UC11: Enum method', () => {
+  describe.skipIf(!hasPhp81)('UC11: Enum method', () => {
     it('renders Color::badge for red', async () => {
       const result = await executor.execute({
         type: 'enumMethod',
@@ -518,7 +525,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
   // -------------------------------------------------------------------------
   // UC15: Enum method with additional params
   // -------------------------------------------------------------------------
-  describe('UC15: Enum method with params', () => {
+  describe.skipIf(!hasPhp81)('UC15: Enum method with params', () => {
     it('renders Status::label with default params', async () => {
       const result = await executor.execute({
         type: 'enumMethod',
@@ -787,7 +794,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
   // -------------------------------------------------------------------------
   // UC23: Unit enum (non-backed)
   // -------------------------------------------------------------------------
-  describe('UC23: Unit enum', () => {
+  describe.skipIf(!hasPhp81)('UC23: Unit enum', () => {
     it('renders Size::button for Small', async () => {
       const result = await executor.execute({
         type: 'enumMethod',
@@ -1467,7 +1474,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
   // -------------------------------------------------------------------------
   // UC31: Int-backed enum (Priority)
   // -------------------------------------------------------------------------
-  describe('UC31: Int-backed enum', () => {
+  describe.skipIf(!hasPhp81)('UC31: Int-backed enum', () => {
     it('renders Priority badge with int value', async () => {
       const result = await executor.execute({
         type: 'enumMethod',
@@ -1839,7 +1846,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
   // -------------------------------------------------------------------------
   // UC37: Class with constants and mixed type (Notification)
   // -------------------------------------------------------------------------
-  describe('UC37: Class with constants and mixed type', () => {
+  describe.skipIf(!hasPhp82)('UC37: Class with constants and mixed type', () => {
     it('renders Notification with defaults', async () => {
       const result = await executor.execute({
         type: 'classMethod',
@@ -2210,7 +2217,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
   // -------------------------------------------------------------------------
   // UC41: Readonly properties without visibility (ValueCard)
   // -------------------------------------------------------------------------
-  describe('UC41: Readonly properties without visibility', () => {
+  describe.skipIf(!hasPhp81)('UC41: Readonly properties without visibility', () => {
     it('renders ValueCard with label and value', async () => {
       const result = await executor.execute({
         type: 'classMethod',
@@ -2336,7 +2343,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
   // -------------------------------------------------------------------------
   // UC43: Enum with match expression and multiple methods (Visibility)
   // -------------------------------------------------------------------------
-  describe('UC43: Enum with match expression', () => {
+  describe.skipIf(!hasPhp81)('UC43: Enum with match expression', () => {
     it('renders Visibility::badge for public', async () => {
       const result = await executor.execute({
         type: 'enumMethod',
@@ -2828,7 +2835,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
   // -------------------------------------------------------------------------
   // UC50: Unit enum with multiple methods (HttpMethod)
   // -------------------------------------------------------------------------
-  describe('UC50: Unit enum with multiple methods', () => {
+  describe.skipIf(!hasPhp81)('UC50: Unit enum with multiple methods', () => {
     it('renders HttpMethod::badge for GET', async () => {
       const result = await executor.execute({
         type: 'enumMethod',
@@ -2944,7 +2951,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
   // -------------------------------------------------------------------------
   // UC52: Invocable class with enum param (Divider)
   // -------------------------------------------------------------------------
-  describe('UC52: Invocable class with enum param', () => {
+  describe.skipIf(!hasPhp81)('UC52: Invocable class with enum param', () => {
     it('renders Divider with solid style', async () => {
       const result = await executor.execute({
         type: 'classMethod',
@@ -3643,7 +3650,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
   // -------------------------------------------------------------------------
   // UC60: Carousel - variadic constructor params + __toString
   // -------------------------------------------------------------------------
-  describe('UC60: Carousel with variadic params', () => {
+  describe.skipIf(!hasPhp81)('UC60: Carousel with variadic params', () => {
     it('renders Carousel with string items', async () => {
       const result = await executor.execute({
         type: 'classMethod',
@@ -3794,7 +3801,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
   // -------------------------------------------------------------------------
   // UC61: Enum implementing interface
   // -------------------------------------------------------------------------
-  describe('UC61: Enum implementing interface', () => {
+  describe.skipIf(!hasPhp81)('UC61: Enum implementing interface', () => {
     it('parses LogLevel enum with implements HasLabel', () => {
       const meta = parsePhpFile(php81('LogLevel.php'));
       const logLevel = meta.classes.find(c => c.name === 'LogLevel');
@@ -4265,7 +4272,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
   // -------------------------------------------------------------------------
   // UC67: Final readonly class with static factories (Money)
   // -------------------------------------------------------------------------
-  describe('UC67: Final readonly class + static factory', () => {
+  describe.skipIf(!hasPhp82)('UC67: Final readonly class + static factory', () => {
     it('renders Money via render()', async () => {
       const result = await executor.execute({
         type: 'classMethod',
@@ -4552,7 +4559,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
   // -------------------------------------------------------------------------
   // UC72: Readonly class (non-final)
   // -------------------------------------------------------------------------
-  describe('UC72: Readonly class', () => {
+  describe.skipIf(!hasPhp82)('UC72: Readonly class', () => {
     it('renders Settings with default args', async () => {
       const result = await executor.execute({
         type: 'classMethod',
@@ -4586,7 +4593,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
   // -------------------------------------------------------------------------
   // UC73: Object params with new default expression
   // -------------------------------------------------------------------------
-  describe('UC73: Object params with new default', () => {
+  describe.skipIf(!hasPhp81)('UC73: Object params with new default', () => {
     it('renders StyledCard with default CardStyle', async () => {
       const result = await executor.execute({
         type: 'classMethod',
@@ -4803,7 +4810,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
   // -------------------------------------------------------------------------
   // UC78: Mixed promoted/non-promoted constructor params
   // -------------------------------------------------------------------------
-  describe('UC78: Mixed promoted/non-promoted params (FormField)', () => {
+  describe.skipIf(!hasPhp81)('UC78: Mixed promoted/non-promoted params (FormField)', () => {
     it('renders FormField with auto-generated id', async () => {
       const result = await executor.execute({
         type: 'classMethod',
@@ -4955,7 +4962,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
   // -------------------------------------------------------------------------
   // UC84: Readonly properties with mixed promotion (UserProfile)
   // -------------------------------------------------------------------------
-  describe('UC84: Readonly promoted properties', () => {
+  describe.skipIf(!hasPhp81)('UC84: Readonly promoted properties', () => {
     it('renders UserProfile with initials', async () => {
       const result = await executor.execute({
         type: 'classMethod',
@@ -4986,7 +4993,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
   // -------------------------------------------------------------------------
   // UC85: Unit enum implementing interface (Weekday)
   // -------------------------------------------------------------------------
-  describe('UC85: Unit enum with interface', () => {
+  describe.skipIf(!hasPhp81)('UC85: Unit enum with interface', () => {
     it('renders Friday badge', async () => {
       const result = await executor.execute({
         type: 'enumMethod',
@@ -5017,7 +5024,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
   // -------------------------------------------------------------------------
   // UC86: Object params with new defaults (StyledText)
   // -------------------------------------------------------------------------
-  describe('UC86: Object param with new default', () => {
+  describe.skipIf(!hasPhp81)('UC86: Object param with new default', () => {
     it('renders with default TextStyle', async () => {
       const result = await executor.execute({
         type: 'classMethod',
@@ -5445,7 +5452,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
   // -------------------------------------------------------------------------
   // UC96: String-backed enum
   // -------------------------------------------------------------------------
-  describe('UC96: String-backed enum', () => {
+  describe.skipIf(!hasPhp81)('UC96: String-backed enum', () => {
     it('renders Language::greeting for English', async () => {
       const result = await executor.execute({
         type: 'enumMethod',
@@ -5536,7 +5543,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
   // -------------------------------------------------------------------------
   // UC98: Object parameter with `new` expression default
   // -------------------------------------------------------------------------
-  describe('UC98: Object param with new default', () => {
+  describe.skipIf(!hasPhp81)('UC98: Object param with new default', () => {
     it('renders DateRange with default config', async () => {
       const result = await executor.execute({
         type: 'classMethod',
@@ -5991,7 +5998,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
   // -------------------------------------------------------------------------
   // UC105: EnumTransition with multiple enum-typed params
   // -------------------------------------------------------------------------
-  describe('UC105: EnumTransition with multiple enum-typed params', () => {
+  describe.skipIf(!hasPhp81)('UC105: EnumTransition with multiple enum-typed params', () => {
     it('renders forward transition', async () => {
       const result = await executor.execute({
         type: 'classMethod',
@@ -6436,7 +6443,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
   // -------------------------------------------------------------------------
   // UC113: Standalone readonly class (ReadonlyContact)
   // -------------------------------------------------------------------------
-  describe('UC113: Standalone readonly class', () => {
+  describe.skipIf(!hasPhp82)('UC113: Standalone readonly class', () => {
     it('renders contact card with defaults', async () => {
       const result = await executor.execute({
         type: 'classMethod',
@@ -6556,7 +6563,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
   // -------------------------------------------------------------------------
   // UC115: Enum with static method (EnumCompass)
   // -------------------------------------------------------------------------
-  describe('UC115: Enum with static and instance methods', () => {
+  describe.skipIf(!hasPhp81)('UC115: Enum with static and instance methods', () => {
     it('renders compass arrow via enum instance method', async () => {
       const result = await executor.execute({
         type: 'enumMethod',
@@ -6891,7 +6898,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
   // -------------------------------------------------------------------------
   // UC118: Readonly without visibility
   // -------------------------------------------------------------------------
-  describe('UC118: Readonly without visibility', () => {
+  describe.skipIf(!hasPhp81)('UC118: Readonly without visibility', () => {
     it('renders ValueObject with all args', async () => {
       const result = await executor.execute({
         type: 'classMethod',
@@ -6936,7 +6943,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
   // -------------------------------------------------------------------------
   // UC119: new expression in default parameter
   // -------------------------------------------------------------------------
-  describe('UC119: New expression in default parameter', () => {
+  describe.skipIf(!hasPhp81)('UC119: New expression in default parameter', () => {
     it('renders StyledBox with defaults', async () => {
       const result = await executor.execute({
         type: 'classMethod',
@@ -6978,7 +6985,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
   // -------------------------------------------------------------------------
   // UC120: DNF (Disjunctive Normal Form) type parameters
   // -------------------------------------------------------------------------
-  describe('UC120: DNF type parameters', () => {
+  describe.skipIf(!hasPhp82)('UC120: DNF type parameters', () => {
     it('renders DnfParam with string badge', async () => {
       const result = await executor.execute({
         type: 'classMethod',
@@ -7032,7 +7039,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
   // -------------------------------------------------------------------------
   // UC121: Enum with constants
   // -------------------------------------------------------------------------
-  describe('UC121: Enum with constants', () => {
+  describe.skipIf(!hasPhp81)('UC121: Enum with constants', () => {
     it('renders EnumConstant badge via enum instance method', async () => {
       const result = await executor.execute({
         type: 'enumMethod',
@@ -7378,7 +7385,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
   // -------------------------------------------------------------------------
   // UC126: Multiple enums in one file
   // -------------------------------------------------------------------------
-  describe('UC126: Multiple enums in one file', () => {
+  describe.skipIf(!hasPhp81)('UC126: Multiple enums in one file', () => {
     it('renders TextAlign preview', async () => {
       const result = await executor.execute({
         type: 'enumMethod',
@@ -7918,7 +7925,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
   // -------------------------------------------------------------------------
   // UC133: Enum implementing multiple interfaces
   // -------------------------------------------------------------------------
-  describe('UC133: Enum implementing multiple interfaces', () => {
+  describe.skipIf(!hasPhp81)('UC133: Enum implementing multiple interfaces', () => {
     it('renders EnumMultiInterface::menuItem for Home', async () => {
       const result = await executor.execute({
         type: 'enumMethod',
@@ -8151,7 +8158,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
   // -------------------------------------------------------------------------
   // UC136: Pure enum with method params (Suit)
   // -------------------------------------------------------------------------
-  describe('UC136: Pure enum with method params', () => {
+  describe.skipIf(!hasPhp81)('UC136: Pure enum with method params', () => {
     it('renders Suit card with rank param', async () => {
       const result = await executor.execute({
         type: 'enumMethod',
@@ -8216,7 +8223,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
   // -------------------------------------------------------------------------
   // UC137: PHP 8.2 standalone types (true, false, null)
   // -------------------------------------------------------------------------
-  describe('UC137: PHP 8.2 standalone types', () => {
+  describe.skipIf(!hasPhp82)('UC137: PHP 8.2 standalone types', () => {
     it('renders StandaloneTypes with true/false params', async () => {
       const result = await executor.execute({
         type: 'classMethod',
@@ -8395,7 +8402,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
   // -------------------------------------------------------------------------
   // UC140: Enum with both static + instance methods
   // -------------------------------------------------------------------------
-  describe('UC140: Enum with static + instance methods', () => {
+  describe.skipIf(!hasPhp81)('UC140: Enum with static + instance methods', () => {
     it('renders badge via enum instance method', async () => {
       const result = await executor.execute({
         type: 'enumMethod',
@@ -8468,7 +8475,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
   // -------------------------------------------------------------------------
   // UC141: Class with enum-typed constructor parameter
   // -------------------------------------------------------------------------
-  describe('UC141: Enum-typed constructor parameter', () => {
+  describe.skipIf(!hasPhp81)('UC141: Enum-typed constructor parameter', () => {
     it('renders with default theme (Light)', async () => {
       const result = await executor.execute({
         type: 'classMethod',
@@ -8586,7 +8593,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
   // -------------------------------------------------------------------------
   // UC142: Echo-based enum method (void return)
   // -------------------------------------------------------------------------
-  describe('UC142: Echo-based enum method', () => {
+  describe.skipIf(!hasPhp81)('UC142: Echo-based enum method', () => {
     it('renders echo-based enum alert for success', async () => {
       const result = await executor.execute({
         type: 'enumMethod',
@@ -8882,7 +8889,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
   // -------------------------------------------------------------------------
   // UC146: Enum with multiple typed method parameters
   // -------------------------------------------------------------------------
-  describe('UC146: Enum with multiple typed method params', () => {
+  describe.skipIf(!hasPhp81)('UC146: Enum with multiple typed method params', () => {
     it('renders badge variant with label', async () => {
       const result = await executor.execute({
         type: 'enumMethod',
@@ -9033,7 +9040,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
   // -------------------------------------------------------------------------
   // UC147: Enum with trait
   // -------------------------------------------------------------------------
-  describe('UC147: Enum with trait', () => {
+  describe.skipIf(!hasPhp81)('UC147: Enum with trait', () => {
     it('renders TaskPriority badge via trait method', async () => {
       const result = await executor.execute({
         type: 'enumMethod',
@@ -9130,7 +9137,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
   // -------------------------------------------------------------------------
   // UC148: Promoted readonly union type parameters
   // -------------------------------------------------------------------------
-  describe('UC148: Promoted readonly union types', () => {
+  describe.skipIf(!hasPhp81)('UC148: Promoted readonly union types', () => {
     it('renders PromotedReadonlyUnion with string id', async () => {
       const result = await executor.execute({
         type: 'classMethod',
@@ -9613,7 +9620,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
   // -------------------------------------------------------------------------
   // UC152: PHP 8 attributes on constructor params and methods
   // -------------------------------------------------------------------------
-  describe('UC152: PHP 8 attributes (AttributeCard)', () => {
+  describe.skipIf(!hasPhp83)('UC152: PHP 8 attributes (AttributeCard)', () => {
     it('renders AttributeCard with attributes stripped', async () => {
       const result = await executor.execute({
         type: 'classMethod',
@@ -9699,7 +9706,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
   // -------------------------------------------------------------------------
   // UC153: Stringable return from class method (EnumToString)
   // -------------------------------------------------------------------------
-  describe('UC153: Stringable return from class method (EnumToString)', () => {
+  describe.skipIf(!hasPhp81)('UC153: Stringable return from class method (EnumToString)', () => {
     it('renders Mood enum via render method', async () => {
       const result = await executor.execute({
         type: 'enumMethod',
@@ -9791,7 +9798,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
   // -------------------------------------------------------------------------
   // UC154: Enum with trait providing static method
   // -------------------------------------------------------------------------
-  describe('UC154: Enum with trait static method (TraitStaticEnum)', () => {
+  describe.skipIf(!hasPhp81)('UC154: Enum with trait static method (TraitStaticEnum)', () => {
     it('renders Palette swatch via enum instance method', async () => {
       const result = await executor.execute({
         type: 'enumMethod',
@@ -10029,7 +10036,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
   // -------------------------------------------------------------------------
   // UC157: Intersection type parameters (updated Intersection.php)
   // -------------------------------------------------------------------------
-  describe('UC157: Intersection type parameters (Intersection)', () => {
+  describe.skipIf(!hasPhp81)('UC157: Intersection type parameters (Intersection)', () => {
     it('renders IntersectionBadge with string fallback', async () => {
       const result = await executor.execute({
         type: 'classMethod',
@@ -10370,7 +10377,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
   // -------------------------------------------------------------------------
   // UC161: Enum returning array with 'html' key
   // -------------------------------------------------------------------------
-  describe('UC161: Enum array return', () => {
+  describe.skipIf(!hasPhp81)('UC161: Enum array return', () => {
     it('renders EnumArrayReturn success card', async () => {
       const result = await executor.execute({
         type: 'enumMethod',
@@ -10698,7 +10705,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
   // -------------------------------------------------------------------------
   // UC166: callable/Closure type parameters (CallableLabel)
   // -------------------------------------------------------------------------
-  describe('UC166: callable/Closure params (CallableLabel)', () => {
+  describe.skipIf(!hasPhp81)('UC166: callable/Closure params (CallableLabel)', () => {
     it('renders CallableLabel with just label', async () => {
       const result = await executor.execute({
         type: 'classMethod',
@@ -10945,7 +10952,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
   // -------------------------------------------------------------------------
   // UC169: Enum with static factory methods (SeverityEnum)
   // -------------------------------------------------------------------------
-  describe('UC169: Enum static factory (SeverityEnum)', () => {
+  describe.skipIf(!hasPhp81)('UC169: Enum static factory (SeverityEnum)', () => {
     it('renders badge for Low case', async () => {
       const result = await executor.execute({
         type: 'enumMethod',
@@ -11424,7 +11431,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
   // -------------------------------------------------------------------------
   // UC175: Unit enum with static method (Season)
   // -------------------------------------------------------------------------
-  describe('UC175: Unit enum with static method (Season)', () => {
+  describe.skipIf(!hasPhp81)('UC175: Unit enum with static method (Season)', () => {
     it('renders Season.render instance method', async () => {
       const result = await executor.execute({
         type: 'enumMethod',
@@ -11531,7 +11538,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
   // -------------------------------------------------------------------------
   // UC176: Class composition — same-file class as typed constructor param (ComposedCard)
   // -------------------------------------------------------------------------
-  describe('UC176: Class composition (ComposedCard)', () => {
+  describe.skipIf(!hasPhp81)('UC176: Class composition (ComposedCard)', () => {
     it('renders ComposedCard with Author object', async () => {
       const result = await executor.execute({
         type: 'classMethod',
@@ -12009,7 +12016,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
   // -------------------------------------------------------------------------
   // UC181: Enum with interface AND trait combined
   // -------------------------------------------------------------------------
-  describe('UC181: Enum with interface and trait', () => {
+  describe.skipIf(!hasPhp81)('UC181: Enum with interface and trait', () => {
     it('renders Palette::swatch for red', async () => {
       const result = await executor.execute({
         type: 'enumMethod',
@@ -12343,7 +12350,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
   // -------------------------------------------------------------------------
   // UC185: Backed enum implementing Stringable
   // -------------------------------------------------------------------------
-  describe('UC185: Backed enum implementing Stringable', () => {
+  describe.skipIf(!hasPhp81)('UC185: Backed enum implementing Stringable', () => {
     it('renders Currency::format for USD', async () => {
       const result = await executor.execute({
         type: 'enumMethod',
@@ -12401,7 +12408,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
   // -------------------------------------------------------------------------
   // UC186: Function with enum-typed param and default
   // -------------------------------------------------------------------------
-  describe('UC186: Function with enum-typed param and default', () => {
+  describe.skipIf(!hasPhp81)('UC186: Function with enum-typed param and default', () => {
     it('renders alignedBox with default alignment', async () => {
       const result = await executor.execute({
         type: 'function',
@@ -12868,7 +12875,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
   // -------------------------------------------------------------------------
   // UC192: Enum with permission hierarchy (EnumPermission)
   // -------------------------------------------------------------------------
-  describe('UC192: Enum with permission hierarchy', () => {
+  describe.skipIf(!hasPhp81)('UC192: Enum with permission hierarchy', () => {
     it('renders Permission::badge for read', async () => {
       const result = await executor.execute({
         type: 'enumMethod',
@@ -12958,7 +12965,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
   // -------------------------------------------------------------------------
   // UC193: 3-level deep object composition (NestedCompose)
   // -------------------------------------------------------------------------
-  describe('UC193: 3-level deep object composition', () => {
+  describe.skipIf(!hasPhp82)('UC193: 3-level deep object composition', () => {
     it('renders NestedCompose with nested object args', async () => {
       const result = await executor.execute({
         type: 'classMethod',
@@ -13027,7 +13034,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
   // -------------------------------------------------------------------------
   // UC194: Enum state machine with transitions (EnumWorkflow)
   // -------------------------------------------------------------------------
-  describe('UC194: Enum state machine with transitions', () => {
+  describe.skipIf(!hasPhp81)('UC194: Enum state machine with transitions', () => {
     it('renders WorkflowState::badge for draft', async () => {
       const result = await executor.execute({
         type: 'enumMethod',
@@ -13177,7 +13184,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
   // -------------------------------------------------------------------------
   // UC196: PHP 8.2 standalone true/false/null types
   // -------------------------------------------------------------------------
-  describe('UC196: Standalone bool types', () => {
+  describe.skipIf(!hasPhp82)('UC196: Standalone bool types', () => {
     it('renders BoolToggle enabled state', async () => {
       const result = await executor.execute({
         type: 'classMethod',
@@ -13281,7 +13288,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
   // -------------------------------------------------------------------------
   // UC198: Enum with array-typed method parameters
   // -------------------------------------------------------------------------
-  describe('UC198: Enum array param', () => {
+  describe.skipIf(!hasPhp81)('UC198: Enum array param', () => {
     it('renders ListStyle bullet list', async () => {
       const result = await executor.execute({
         type: 'enumMethod',
@@ -13329,7 +13336,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
   // -------------------------------------------------------------------------
   // UC199: Abstract class with multiple concrete children
   // -------------------------------------------------------------------------
-  describe('UC199: Abstract multi child panels', () => {
+  describe.skipIf(!hasPhp81)('UC199: Abstract multi child panels', () => {
     it('renders InfoPanel', async () => {
       const result = await executor.execute({
         type: 'classMethod',
@@ -13419,7 +13426,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
   // -------------------------------------------------------------------------
   // UC201: Void/never return types
   // -------------------------------------------------------------------------
-  describe('UC201: Void and never return types', () => {
+  describe.skipIf(!hasPhp81)('UC201: Void and never return types', () => {
     it('renders VoidEchoCard via echo (void return)', async () => {
       const result = await executor.execute({
         type: 'classMethod',
@@ -13482,7 +13489,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
   // -------------------------------------------------------------------------
   // UC204: Int-backed enum with methods
   // -------------------------------------------------------------------------
-  describe('UC204: Int-backed enum', () => {
+  describe.skipIf(!hasPhp81)('UC204: Int-backed enum', () => {
     it('renders HttpPort Https case', async () => {
       const result = await executor.execute({
         type: 'enumMethod',
@@ -13574,7 +13581,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
   // -------------------------------------------------------------------------
   // UC206: Stringable enum with interfaces
   // -------------------------------------------------------------------------
-  describe('UC206: Stringable enum', () => {
+  describe.skipIf(!hasPhp81)('UC206: Stringable enum', () => {
     it('renders Planet Earth with description', async () => {
       const result = await executor.execute({
         type: 'enumMethod',
@@ -13711,7 +13718,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
   // -------------------------------------------------------------------------
   // UC209: Mixed defaults showcase
   // -------------------------------------------------------------------------
-  describe('UC209: Mixed defaults showcase', () => {
+  describe.skipIf(!hasPhp81)('UC209: Mixed defaults showcase', () => {
     it('renders ThemeShowcase with all args', async () => {
       const result = await executor.execute({
         type: 'classMethod',
@@ -13757,7 +13764,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
   // -------------------------------------------------------------------------
   // UC210: Final readonly class (FinalReadonlyPoint)
   // -------------------------------------------------------------------------
-  describe('UC210: Final readonly class (Point)', () => {
+  describe.skipIf(!hasPhp82)('UC210: Final readonly class (Point)', () => {
     it('renders Point with coordinates', async () => {
       const result = await executor.execute({
         type: 'classMethod',
@@ -13821,7 +13828,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
   // -------------------------------------------------------------------------
   // UC211: Int-backed enum with category logic (HttpStatusCode)
   // -------------------------------------------------------------------------
-  describe('UC211: Int-backed enum with category (HttpStatusCode)', () => {
+  describe.skipIf(!hasPhp81)('UC211: Int-backed enum with category (HttpStatusCode)', () => {
     it('renders OK badge', async () => {
       const result = await executor.execute({
         type: 'enumMethod',
@@ -13899,7 +13906,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
   // -------------------------------------------------------------------------
   // UC212: Enum implementing multiple interfaces (MenuAction)
   // -------------------------------------------------------------------------
-  describe('UC212: Enum implementing multiple interfaces (MenuAction)', () => {
+  describe.skipIf(!hasPhp81)('UC212: Enum implementing multiple interfaces (MenuAction)', () => {
     it('renders Copy menu item', async () => {
       const result = await executor.execute({
         type: 'enumMethod',
@@ -14081,7 +14088,7 @@ describe.skipIf(!hasPhp)('Integration: All Plan Patterns', () => {
   // -------------------------------------------------------------------------
   // UC215: DNF type parameter (DnfConfig)
   // -------------------------------------------------------------------------
-  describe('UC215: DNF type parameter (DnfConfig)', () => {
+  describe.skipIf(!hasPhp82)('UC215: DNF type parameter (DnfConfig)', () => {
     it('renders DnfConfig with string source', async () => {
       const result = await executor.execute({
         type: 'classMethod',

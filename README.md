@@ -335,7 +335,7 @@ This parses your PHP files and emits `.d.ts` declarations so that `args` in your
 
 ## PHP Requirements
 
-- **PHP 8.2+** is required on the machine running Storybook.
+- **PHP 8.0+** is required on the machine running Storybook.
 - The PHP binary must be available in `PATH` or specified via the `phpBinary` option.
 
 ### Supported Patterns
