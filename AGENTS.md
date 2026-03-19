@@ -1,29 +1,15 @@
-# AGENTS.md — storybook-php
+# AGENTS.md
 
-## Project Overview
+## Overview
 
-Storybook 10 framework addon that renders PHP components as Storybook stories. Users write `.stories.ts` files that import PHP classes/functions via `'./Component.php@method'` syntax. The Vite plugin resolves these imports into virtual JS modules, and a PHP runner executes the actual PHP code server-side on each render.
+PHP renders HTML server-side, and frameworks compose pages from partial templates and components. Storybook only supports client-side JS frameworks, so there is no way to preview these partials in isolation. This addon executes PHP server-side and pipes the rendered HTML into Storybook.
 
-## Tech Stack
+## Supported Versions
 
-- **Runtime:** Node 20.19+, PHP 8.0+
-- **Build:** `vp pack` (tsdown/Rolldown, ESM-only), TypeScript 5.9+
-- **Toolchain:** Vite+ 0.1.x (`vp` CLI — bundles Vite 8, Vitest 4.1, Oxlint, Oxfmt)
-- **Test:** Vitest 4.1 via `vp test` (node env + jsdom for preview tests)
-- **Storybook:** v10.3.x with `@storybook/builder-vite`
-- **Lint:** Oxlint via `vp check`
-
-## Commands
-
-```bash
-npm run build      # vp pack → dist/
-npm test           # vp test run (1282 tests, ~28s)
-npm run test:watch # vp test --watch
-npm run lint       # vp check (oxlint)
-npm run typecheck  # tsc --noEmit
-```
-
-Integration tests in `src/__tests__/integration.test.ts` require PHP 8.0+ — they auto-skip if unavailable. Tests for PHP 8.1+ features (enums, readonly, etc.) are individually skipped based on the detected PHP version.
+- **PHP:** 8.0–8.5
+- **Storybook:** 10.x
+- **Vite:** 5.x–8.x
+- **Node:** ≥20.19
 
 ## Architecture
 
@@ -43,122 +29,3 @@ PHP Runner (src/php/runner.php)
   → JSON { html } on stdout
 ```
 
-### Key Modules
-
-| File                    | Role                                                                           |
-| ----------------------- | ------------------------------------------------------------------------------ |
-| `src/types.ts`          | Internal types (`PhpComponent`, `PhpFileMeta`, `PhpRenderRequest`, etc.)       |
-| `src/public-types.ts`   | User-facing types (`Meta`, `StoryObj`, `Story`, `Decorator`)                   |
-| `src/index.ts`          | Public re-exports                                                              |
-| `src/php-parser.ts`     | Regex-based PHP parser. Extracts namespaces, classes, enums, functions, params |
-| `src/vite-plugin.ts`    | Vite plugin: `resolveId`, `load` (virtual modules), `configureServer`, HMR     |
-| `src/php-executor.ts`   | Spawns PHP process, sends JSON stdin, reads JSON stdout                        |
-| `src/php/runner.php`    | PHP-side executor. Uses Reflection for arg matching + type casting             |
-| `src/dev-middleware.ts` | Express-compatible `POST /__storybook_php/render` handler                      |
-| `src/preview.ts`        | Browser-side `renderToCanvas()` — fetches PHP HTML via the endpoint            |
-| `src/preset.ts`         | Storybook 10 preset: `core`, `viteFinal`                                       |
-| `src/typegen.ts`        | Generates `.d.ts` from PHP files (PHP type → TS type mapping)                  |
-| `src/cli.ts`            | `storybook-php typegen [dirs...]` CLI                                          |
-| `src/ts-plugin/`        | TypeScript Language Service Plugin for IDE support                             |
-
-### Supported PHP Callable Types
-
-The Vite plugin and PHP runner handle 5 types:
-
-| `__type`       | Execution                                 |
-| -------------- | ----------------------------------------- |
-| `classMethod`  | `new Class(ctorArgs)->method(methodArgs)` |
-| `staticMethod` | `Class::method(args)`                     |
-| `function`     | `functionFqn(args)` (supports namespaced) |
-| `template`     | `extract($args) + include $file`          |
-| `enumMethod`   | `Enum::from(_case)->method(args)`         |
-
-### Adapter System
-
-The `adapter` option allows customizing how method return values become HTML. This is essential for frameworks like Laravel where `Component::render()` returns a `View` object, not a string.
-
-**Configuration flow:** `main.ts options.adapter` → preset → Vite plugin → middleware → PhpExecutor → `runner.php`
-
-**Adapter file contract:** Must return a callable with signature:
-
-```php
-// adapter.php
-return function (mixed $result, string $buffered, ?object $instance): string {
-    // Custom logic, e.g. for Laravel Component:
-    if ($instance instanceof \Illuminate\View\Component) {
-        return $instance->resolveView()->with($instance->data())->render();
-    }
-    return resolveOutput($result, $buffered);
-};
-```
-
-The runner calls `resolveOutput()` by default. When adapter is set, the adapter callable is called instead. It receives the raw return value, the output buffer, and the instance (null for static/function/template calls).
-
-**Example: `examples/laravel/`** — uses `adapter.php` to bridge `Illuminate\View\Component` → HTML. Component classes extend `Component` directly (no wrapper needed).
-
-## Conventions
-
-- **ESM only.** No CJS output, no `require()`. Use `import.meta.url` for path resolution.
-- **Paths:** Use `import.meta.resolve()` or `new URL(..., import.meta.url)` — never `require.resolve`.
-- **Tests** go in `src/__tests__/`, fixtures in `src/__tests__/fixtures/`.
-- **PHP fixtures** are real `.php` files that are executed by the PHP runner in integration tests.
-- **Vite plugin virtual modules** are prefixed with `\0storybook-php:`.
-- **Function callables** use FQN (`App\Helpers\pill`), not short name — PHP needs the full namespace.
-- **Inherited methods** — the Vite plugin traverses `extends` within the same file to find parent methods.
-- **Multiple exports** — when multiple classes in a file match a callable, all are exported.
-
-## Storybook 10 Integration Notes
-
-- The `framework.name` in `.storybook/main.ts` must be `'storybook-php'` (SB10 auto-appends `/preset`).
-- Framework options flow through `options.presets.apply('frameworkOptions')` in `viteFinal`, **not** `options.frameworkOptions`.
-- `core.renderer = 'storybook-php'` causes SB10 to auto-load `storybook-php/preview` — don't also export `previewAnnotations` or the preview gets loaded twice.
-- For local development, `node_modules/storybook-php` must be a symlink to `./` so SB10 can resolve the package:
-  ```bash
-  ln -sf ../ node_modules/storybook-php
-  ```
-
-## Testing the Example
-
-```bash
-npm run build                          # build the plugin first
-ln -sf ../ node_modules/storybook-php  # create self-referencing symlink
-npx storybook dev -p 6006 --config-dir examples/basic/.storybook
-```
-
-Verify PHP rendering via:
-
-```bash
-curl -X POST http://localhost:6006/__storybook_php/render \
-  -H "Content-Type: application/json" \
-  -d '{"type":"classMethod","file":"/abs/path/Greeting.php","class":"App\\Components\\Greeting","callable":"render","args":{"name":"World"}}'
-```
-
-## Adding a New PHP Pattern
-
-1. Add a PHP fixture in `src/__tests__/fixtures/`
-2. Add parser tests in `src/__tests__/php-parser.test.ts`
-3. If it needs a new `__type`, update:
-   - `PhpCallableType` in `src/types.ts`
-   - `runner.php` switch statement
-   - `vite-plugin.ts` load handler + generator function
-   - `dev-middleware.ts` VALID_TYPES
-4. Add an integration test case in `src/__tests__/integration.test.ts`
-5. Add an example in the appropriate `examples/` subdirectory
-
-## Example Directories
-
-| Directory               | Port | Description                                                                   |
-| ----------------------- | ---- | ----------------------------------------------------------------------------- |
-| `examples/basic/`       | 6006 | Introductory examples — minimal representatives of each callable type         |
-| `examples/advanced/`    | 6007 | Advanced OOP, design patterns, templates, standalone functions                |
-| `examples/php80/`       | 6008 | PHP 8.0 features: union types, match, Stringable, mixed type                  |
-| `examples/php81/`       | 6009 | PHP 8.1 features: enums, readonly properties, intersection types, new in init |
-| `examples/php82/`       | 6010 | PHP 8.2 features: readonly classes, DNF types, standalone types               |
-| `examples/php83/`       | 6011 | PHP 8.3 features: typed class constants, #[Override], dynamic const fetch     |
-| `examples/php84/`       | 6012 | PHP 8.4 features: property hooks, asymmetric visibility, #[Deprecated]        |
-| `examples/php85/`       | 6013 | PHP 8.5 features: pipe operator, closure capture                              |
-| `examples/laravel/`     | 6014 | Laravel Blade component rendering patterns                                    |
-| `examples/symfony/`     | 6015 | Symfony Twig template rendering patterns                                      |
-| `examples/cakephp/`     | 6016 | CakePHP native PHP templates, Elements, View Cells                            |
-| `examples/codeigniter/` | 6017 | CodeIgniter 4 PHP views, layouts, View Parser                                 |
-| `examples/nette/`       | 6018 | Nette Latte template engine, n: attributes, filters                           |
