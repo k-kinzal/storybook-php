@@ -68,6 +68,6 @@ jobs:
           php-version: ${{ matrix.php }}
       - run: npm ci
       - name: Install Laravel example dependencies
-        if: matrix.php >= '8.4'
+        if: matrix.php >= '8.2'
         run: composer install --no-interaction --prefer-dist --working-dir=examples/laravel
       - run: npm test
