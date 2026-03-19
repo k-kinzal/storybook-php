@@ -89,7 +89,7 @@ const config: StorybookConfig = {
 };
 ```
 
-A default `vitest.config` is used automatically. To customize, create your own `vitest.config.ts`.
+A default `vitest.config` is used automatically. To customize, create your own `vitest.config.*`.
 
 ## Import Syntax
 

@@ -122,10 +122,34 @@ function runTest(cliArgs: string[]): void {
 
   // Use bundled vitest config if user has none and --config is not specified
   const configArgs: string[] = [];
-  if (
+  const useBundledConfig =
     !hasUserConfig() &&
-    !cliArgs.some((a) => a === "--config" || a === "-c" || a.startsWith("--config="))
-  ) {
+    !cliArgs.some((a) => a === "--config" || a === "-c" || a.startsWith("--config="));
+
+  if (useBundledConfig) {
+    // Bundled config requires these packages
+    const missing = ["@storybook/addon-vitest", "@vitest/browser-playwright"].filter((pkg) => {
+      try {
+        resolvePackageBin(pkg, "package.json");
+        return false;
+      } catch {
+        return true;
+      }
+    });
+    if (missing.length > 0) {
+      console.error(
+        [
+          `Missing test dependencies: ${missing.join(", ")}`,
+          "",
+          "  npx --package=vitest --package=@storybook/addon-vitest \\",
+          "      --package=@vitest/browser-playwright \\",
+          "      storybook-php test",
+          "",
+        ].join("\n"),
+      );
+      process.exit(1);
+    }
+
     const __filename = fileURLToPath(import.meta.url);
     const defaultConfig = resolve(dirname(__filename), "..", "templates", "vitest.config.mjs");
     configArgs.push("--config", defaultConfig, "--root", process.cwd());
