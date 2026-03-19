@@ -1,13 +1,13 @@
-import type { Meta, StoryObj } from 'storybook-php';
-import { Duration } from './Duration.php@render';
+import type { Meta, StoryObj } from "storybook-php";
+import { Duration } from "./Duration.php@render";
 
 const meta: Meta<typeof Duration> = {
   component: Duration,
-  title: 'Patterns/Duration',
+  title: "Patterns/Duration",
   argTypes: {
-    hours: { control: { type: 'range', min: 0, max: 24 } },
-    minutes: { control: { type: 'range', min: 0, max: 59 } },
-    seconds: { control: { type: 'range', min: 0, max: 59 } },
+    hours: { control: { type: "range", min: 0, max: 24 } },
+    minutes: { control: { type: "range", min: 0, max: 59 } },
+    seconds: { control: { type: "range", min: 0, max: 59 } },
   },
 };
 

@@ -1,11 +1,11 @@
-import type { Meta, StoryObj } from 'storybook-php';
-import { renderIntersectionTag } from './tagIntersection.php@renderIntersectionTag';
+import type { Meta, StoryObj } from "storybook-php";
+import { renderIntersectionTag } from "./tagIntersection.php@renderIntersectionTag";
 
 const meta: Meta<typeof renderIntersectionTag> = {
   component: renderIntersectionTag,
-  title: 'Functions/IntersectionTag',
+  title: "Functions/IntersectionTag",
   argTypes: {
-    size: { control: 'select', options: ['sm', 'md', 'lg'] },
+    size: { control: "select", options: ["sm", "md", "lg"] },
   },
 };
 
@@ -13,13 +13,13 @@ export default meta;
 type Story = StoryObj<typeof renderIntersectionTag>;
 
 export const Default: Story = {
-  args: { size: 'md' },
+  args: { size: "md" },
 };
 
 export const Small: Story = {
-  args: { size: 'sm' },
+  args: { size: "sm" },
 };
 
 export const Large: Story = {
-  args: { size: 'lg' },
+  args: { size: "lg" },
 };

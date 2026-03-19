@@ -1,11 +1,11 @@
-import type { Meta, StoryObj } from 'storybook-php';
-import { Priority } from './Priority.php@badge';
+import type { Meta, StoryObj } from "storybook-php";
+import { Priority } from "./Priority.php@badge";
 
 const meta: Meta<typeof Priority> = {
   component: Priority,
-  title: 'Enums/Priority',
+  title: "Enums/Priority",
   argTypes: {
-    _case: { control: 'select', options: [1, 2, 3, 4] },
+    _case: { control: "select", options: [1, 2, 3, 4] },
   },
 };
 

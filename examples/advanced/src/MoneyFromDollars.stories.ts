@@ -1,12 +1,12 @@
-import type { Meta, StoryObj } from 'storybook-php';
-import { Money } from './Money.php@fromDollars';
+import type { Meta, StoryObj } from "storybook-php";
+import { Money } from "./Money.php@fromDollars";
 
 const meta: Meta<typeof Money> = {
   component: Money,
-  title: 'Components/MoneyFromDollars',
+  title: "Components/MoneyFromDollars",
   argTypes: {
-    dollars: { control: 'number' },
-    currency: { control: 'select', options: ['USD', 'EUR', 'GBP', 'JPY'] },
+    dollars: { control: "number" },
+    currency: { control: "select", options: ["USD", "EUR", "GBP", "JPY"] },
   },
 };
 
@@ -18,5 +18,5 @@ export const Default: Story = {
 };
 
 export const Pounds: Story = {
-  args: { dollars: 125.00, currency: 'GBP' },
+  args: { dollars: 125.0, currency: "GBP" },
 };

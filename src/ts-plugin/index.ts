@@ -1,5 +1,5 @@
-import type ts from 'typescript';
-import { createPhpResolver } from './resolver.js';
+import type ts from "typescript";
+import { createPhpResolver } from "./resolver.js";
 
 interface PluginConfig {
   /** storybook-php framework options */
@@ -18,7 +18,7 @@ function init(modules: { typescript: typeof ts }): ts.server.PluginModule {
     // Copy all methods from the original language service
     for (const k of Object.keys(ls) as Array<keyof ts.LanguageService>) {
       const x = ls[k];
-      if (typeof x === 'function') {
+      if (typeof x === "function") {
         (proxy as unknown as Record<string, unknown>)[k] = (...args: unknown[]) =>
           (x as (...a: unknown[]) => unknown).apply(ls, args);
       }
@@ -31,9 +31,7 @@ function init(modules: { typescript: typeof ts }): ts.server.PluginModule {
         if (d.code === 2307 || d.code === 2792) {
           // "Cannot find module" errors
           const text =
-            typeof d.messageText === 'string'
-              ? d.messageText
-              : d.messageText.messageText;
+            typeof d.messageText === "string" ? d.messageText : d.messageText.messageText;
           if (/\.php(@\w+)?['"]/.test(text)) {
             return false; // Suppress for .php imports
           }

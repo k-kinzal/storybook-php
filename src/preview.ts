@@ -1,7 +1,7 @@
-import type { PhpComponent, PhpRenderRequest } from './types.js';
+import type { PhpComponent, PhpRenderRequest } from "./types.js";
 
-const RENDER_ENDPOINT = '/__storybook_php/render';
-const PHP_PLACEHOLDER = '<!-- storybook-php-content -->';
+const RENDER_ENDPOINT = "/__storybook_php/render";
+const PHP_PLACEHOLDER = "<!-- storybook-php-content -->";
 
 let currentAbortController: AbortController | null = null;
 
@@ -51,8 +51,8 @@ export async function renderToCanvas(
 
   try {
     const response = await fetch(RENDER_ENDPOINT, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify(request),
       signal,
     });
@@ -65,8 +65,8 @@ export async function renderToCanvas(
 
     if (result.error) {
       showError({
-        title: 'PHP Render Error',
-        description: result.error + (result.trace ? '\n\n' + result.trace : ''),
+        title: "PHP Render Error",
+        description: result.error + (result.trace ? "\n\n" + result.trace : ""),
       });
       return;
     }
@@ -80,11 +80,11 @@ export async function renderToCanvas(
     reExecuteScripts(canvasElement);
     showMain();
   } catch (err: unknown) {
-    if (err instanceof DOMException && err.name === 'AbortError') {
+    if (err instanceof DOMException && err.name === "AbortError") {
       return; // Stale request cancelled
     }
     showError({
-      title: 'PHP Render Error',
+      title: "PHP Render Error",
       description: err instanceof Error ? err.message : String(err),
     });
   }
@@ -92,9 +92,9 @@ export async function renderToCanvas(
 
 /** Re-execute <script> tags in rendered HTML */
 function reExecuteScripts(container: HTMLElement): void {
-  const scripts = container.querySelectorAll('script');
+  const scripts = container.querySelectorAll("script");
   scripts.forEach((oldScript) => {
-    const newScript = document.createElement('script');
+    const newScript = document.createElement("script");
     for (const attr of oldScript.attributes) {
       newScript.setAttribute(attr.name, attr.value);
     }
@@ -104,7 +104,12 @@ function reExecuteScripts(container: HTMLElement): void {
 }
 
 function isPhpComponent(value: unknown): value is PhpComponent {
-  return typeof value === 'object' && value !== null && '__php' in value && (value as Record<string, unknown>).__php === true;
+  return (
+    typeof value === "object" &&
+    value !== null &&
+    "__php" in value &&
+    (value as Record<string, unknown>).__php === true
+  );
 }
 
 /** Default render function for Storybook — returns a placeholder that
@@ -114,5 +119,5 @@ export function render(_args: Record<string, unknown>): string {
 }
 
 export const parameters = {
-  renderer: 'storybook-php',
+  renderer: "storybook-php",
 };

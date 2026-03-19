@@ -1,18 +1,18 @@
-import type { Meta, StoryObj } from 'storybook-php';
-import { BladePartial } from './BladePartial.php@render';
+import type { Meta, StoryObj } from "storybook-php";
+import { BladePartial } from "./BladePartial.php@render";
 
 const meta: Meta<typeof BladePartial> = {
   component: BladePartial,
-  title: 'Laravel/BladePartial',
+  title: "Laravel/BladePartial",
 };
 
 export default meta;
 type Story = StoryObj<typeof BladePartial>;
 
 export const Default: Story = {
-  args: { name: 'Feature', status: 'active' },
+  args: { name: "Feature", status: "active" },
 };
 
 export const Inactive: Story = {
-  args: { name: 'Legacy Module', status: 'inactive' },
+  args: { name: "Legacy Module", status: "inactive" },
 };

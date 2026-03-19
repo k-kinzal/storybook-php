@@ -1,5 +1,5 @@
-import type { Meta, StoryObj } from 'storybook-php';
-import { Card } from './Card.php@render';
+import type { Meta, StoryObj } from "storybook-php";
+import { Card } from "./Card.php@render";
 
 /**
  * Demonstrates decorator support. Decorators wrap the PHP-rendered
@@ -8,7 +8,7 @@ import { Card } from './Card.php@render';
  */
 const meta: Meta<typeof Card> = {
   component: Card,
-  title: 'Patterns/DecoratedCard',
+  title: "Patterns/DecoratedCard",
   decorators: [
     (storyFn) =>
       `<div style="padding: 24px; background: #f9fafb; border: 2px dashed #d1d5db; border-radius: 12px;">
@@ -17,8 +17,8 @@ const meta: Meta<typeof Card> = {
       </div>`,
   ],
   argTypes: {
-    title: { control: 'text' },
-    body: { control: 'text' },
+    title: { control: "text" },
+    body: { control: "text" },
   },
 };
 
@@ -26,11 +26,11 @@ export default meta;
 type Story = StoryObj<typeof Card>;
 
 export const WithWrapper: Story = {
-  args: { title: 'Decorated', body: 'This card is wrapped by a meta-level decorator.' },
+  args: { title: "Decorated", body: "This card is wrapped by a meta-level decorator." },
 };
 
 export const WithStoryDecorator: Story = {
-  args: { title: 'Double Decorated', body: 'Wrapped by both meta and story decorators.' },
+  args: { title: "Double Decorated", body: "Wrapped by both meta and story decorators." },
   decorators: [
     (storyFn) =>
       `<div style="padding: 16px; background: #eff6ff; border: 1px solid #bfdbfe; border-radius: 8px;">

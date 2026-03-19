@@ -14,12 +14,12 @@ npm install storybook-php storybook @storybook/builder-vite vite
 Create `.storybook/main.ts`:
 
 ```typescript
-import type { StorybookConfig } from 'storybook';
+import type { StorybookConfig } from "storybook";
 
 const config: StorybookConfig = {
-  stories: ['../src/**/*.stories.ts'],
+  stories: ["../src/**/*.stories.ts"],
   framework: {
-    name: 'storybook-php/preset',
+    name: "storybook-php/preset",
     options: {},
   },
 };
@@ -43,19 +43,19 @@ class Greeting {
 Write a story (`src/Greeting.stories.ts`):
 
 ```typescript
-import type { Meta, StoryObj } from 'storybook-php';
-import { Greeting } from './Greeting.php@render';
+import type { Meta, StoryObj } from "storybook-php";
+import { Greeting } from "./Greeting.php@render";
 
 const meta: Meta<typeof Greeting> = {
   component: Greeting,
-  title: 'Components/Greeting',
+  title: "Components/Greeting",
 };
 
 export default meta;
 type Story = StoryObj<typeof Greeting>;
 
 export const Default: Story = {
-  args: { name: 'World' },
+  args: { name: "World" },
 };
 ```
 
@@ -73,32 +73,32 @@ Configure options in `.storybook/main.ts` under `framework.options`:
 
 ```typescript
 const config: StorybookConfig = {
-  stories: ['../src/**/*.stories.ts'],
+  stories: ["../src/**/*.stories.ts"],
   framework: {
-    name: 'storybook-php/preset',
+    name: "storybook-php/preset",
     options: {
       // Path to a PHP bootstrap file (autoloader, framework config, etc.)
-      bootstrap: new URL('../bootstrap.php', import.meta.url).pathname,
+      bootstrap: new URL("../bootstrap.php", import.meta.url).pathname,
 
       // PHP binary path (default: 'php')
-      phpBinary: '/usr/bin/php',
+      phpBinary: "/usr/bin/php",
 
       // Render timeout in milliseconds (default: 5000)
       timeout: 5000,
 
       // Default method name when @method is omitted from import (default: none)
-      defaultMethod: 'render',
+      defaultMethod: "render",
     },
   },
 };
 ```
 
-| Option | Type | Default | Description |
-| --- | --- | --- | --- |
-| `bootstrap` | `string` | `undefined` | Path to a PHP file executed before each render (autoloader, config, etc.) |
-| `phpBinary` | `string` | `'php'` | Path to the PHP binary |
-| `timeout` | `number` | `5000` | Render timeout in milliseconds |
-| `defaultMethod` | `string` | `undefined` | Method name used when `@method` is omitted from the import specifier |
+| Option          | Type     | Default     | Description                                                               |
+| --------------- | -------- | ----------- | ------------------------------------------------------------------------- |
+| `bootstrap`     | `string` | `undefined` | Path to a PHP file executed before each render (autoloader, config, etc.) |
+| `phpBinary`     | `string` | `'php'`     | Path to the PHP binary                                                    |
+| `timeout`       | `number` | `5000`      | Render timeout in milliseconds                                            |
+| `defaultMethod` | `string` | `undefined` | Method name used when `@method` is omitted from the import specifier      |
 
 ## Writing Stories
 
@@ -132,15 +132,15 @@ class Card {
 ```
 
 ```typescript
-import { Card } from './Card.php@render';
+import { Card } from "./Card.php@render";
 
 const meta: Meta<typeof Card> = {
   component: Card,
-  title: 'Components/Card',
+  title: "Components/Card",
 };
 
 export const Default: Story = {
-  args: { title: 'Hello', body: 'World', variant: 'primary' },
+  args: { title: "Hello", body: "World", variant: "primary" },
 };
 ```
 
@@ -159,10 +159,10 @@ class Alert {
 ```
 
 ```typescript
-import { Alert } from './Alert.php@danger';
+import { Alert } from "./Alert.php@danger";
 
 export const Danger: Story = {
-  args: { message: 'Something went wrong!', dismissible: true },
+  args: { message: "Something went wrong!", dismissible: true },
 };
 ```
 
@@ -178,10 +178,10 @@ function badge(string $label, string $color = 'gray'): string {
 ```
 
 ```typescript
-import { badge } from './badge.php@badge';
+import { badge } from "./badge.php@badge";
 
 export const Default: Story = {
-  args: { label: 'New', color: 'green' },
+  args: { label: "New", color: "green" },
 };
 ```
 
@@ -198,14 +198,14 @@ Plain `.php` template files are imported without the `@method` suffix. Variables
 ```
 
 ```typescript
-import CardTemplate from './templates/card.php';
+import CardTemplate from "./templates/card.php";
 
 const meta: Meta = {
   component: CardTemplate,
-  title: 'Templates/Card',
+  title: "Templates/Card",
   argTypes: {
-    title: { control: 'text' },
-    body: { control: 'text' },
+    title: { control: "text" },
+    body: { control: "text" },
   },
 };
 ```
@@ -226,10 +226,10 @@ class Button {
 ```
 
 ```typescript
-import { Button } from './Button.php@__invoke';
+import { Button } from "./Button.php@__invoke";
 
 export const Default: Story = {
-  args: { label: 'Click me', variant: 'primary' },
+  args: { label: "Click me", variant: "primary" },
 };
 ```
 
@@ -250,10 +250,10 @@ enum Color: string {
 ```
 
 ```typescript
-import { Color } from './Color.php@swatch';
+import { Color } from "./Color.php@swatch";
 
 export const Red: Story = {
-  args: { _case: 'Red' },
+  args: { _case: "Red" },
 };
 ```
 
@@ -276,10 +276,10 @@ class Layout {
 ```
 
 ```typescript
-import { Layout } from './Layout.php@render';
+import { Layout } from "./Layout.php@render";
 
 export const Default: Story = {
-  args: { title: 'My Application' },
+  args: { title: "My Application" },
 };
 ```
 
@@ -340,14 +340,14 @@ This parses your PHP files and emits `.d.ts` declarations so that `args` in your
 
 ### Supported Patterns
 
-| Pattern | Import Syntax | Args Source |
-| --- | --- | --- |
-| Class instance method | `./File.php@render` | Constructor params + method params |
-| Static method | `./File.php@danger` | Method params only |
-| Standalone function | `./file.php@funcName` | Function params |
-| Template file | `./file.php` (default import) | Template variables from args |
-| Invocable class | `./File.php@__invoke` | Constructor params + `__invoke` params |
-| Enum method | `./File.php@swatch` | `_case` + method params |
+| Pattern               | Import Syntax                 | Args Source                            |
+| --------------------- | ----------------------------- | -------------------------------------- |
+| Class instance method | `./File.php@render`           | Constructor params + method params     |
+| Static method         | `./File.php@danger`           | Method params only                     |
+| Standalone function   | `./file.php@funcName`         | Function params                        |
+| Template file         | `./file.php` (default import) | Template variables from args           |
+| Invocable class       | `./File.php@__invoke`         | Constructor params + `__invoke` params |
+| Enum method           | `./File.php@swatch`           | `_case` + method params                |
 
 ## API Reference
 
@@ -403,7 +403,7 @@ The descriptor object exported from virtual PHP modules.
 ```typescript
 interface PhpComponent<TArgs = Record<string, unknown>> {
   __php: true;
-  __type: 'classMethod' | 'staticMethod' | 'function' | 'template' | 'enumMethod';
+  __type: "classMethod" | "staticMethod" | "function" | "template" | "enumMethod";
   __file: string;
   __class: string | null;
   __callable: string | null;
@@ -444,17 +444,17 @@ npm run typecheck
 
 ### Example Projects
 
-| Directory | Port | Description |
-|-----------|------|-------------|
-| `examples/basic/` | 6006 | Introductory examples — each callable type's simplest form |
-| `examples/advanced/` | 6007 | Advanced OOP, design patterns, templates |
-| `examples/php80/` | 6008 | PHP 8.0: union types, match, Stringable, mixed |
-| `examples/php81/` | 6009 | PHP 8.1: enums, readonly, intersection types |
-| `examples/php82/` | 6010 | PHP 8.2: readonly classes, DNF types |
-| `examples/php83/` | 6011 | PHP 8.3: typed constants, #[Override] |
-| `examples/php84/` | 6012 | PHP 8.4: property hooks, asymmetric visibility |
-| `examples/php85/` | 6013 | PHP 8.5: pipe operator |
-| `examples/laravel/` | 6014 | Laravel Blade components |
+| Directory            | Port | Description                                                |
+| -------------------- | ---- | ---------------------------------------------------------- |
+| `examples/basic/`    | 6006 | Introductory examples — each callable type's simplest form |
+| `examples/advanced/` | 6007 | Advanced OOP, design patterns, templates                   |
+| `examples/php80/`    | 6008 | PHP 8.0: union types, match, Stringable, mixed             |
+| `examples/php81/`    | 6009 | PHP 8.1: enums, readonly, intersection types               |
+| `examples/php82/`    | 6010 | PHP 8.2: readonly classes, DNF types                       |
+| `examples/php83/`    | 6011 | PHP 8.3: typed constants, #[Override]                      |
+| `examples/php84/`    | 6012 | PHP 8.4: property hooks, asymmetric visibility             |
+| `examples/php85/`    | 6013 | PHP 8.5: pipe operator                                     |
+| `examples/laravel/`  | 6014 | Laravel Blade components                                   |
 
 To run any example:
 

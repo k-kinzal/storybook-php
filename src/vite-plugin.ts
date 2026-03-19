@@ -1,18 +1,18 @@
-import type { Plugin, ViteDevServer } from 'vite';
-import { resolve, dirname, isAbsolute } from 'node:path';
-import { parsePhpFile } from './php-parser.js';
-import { createPhpMiddleware } from './dev-middleware.js';
-import type { FrameworkOptions, PhpClassMeta, PhpMethodMeta, PhpParamMeta } from './types.js';
+import type { Plugin, ViteDevServer } from "vite";
+import { resolve, dirname, isAbsolute } from "node:path";
+import { parsePhpFile } from "./php-parser.js";
+import { createPhpMiddleware } from "./dev-middleware.js";
+import type { FrameworkOptions, PhpClassMeta, PhpMethodMeta, PhpParamMeta } from "./types.js";
 
 const PHP_RE = /\.php(?:@(\w+))?$/;
-const VIRTUAL_PREFIX = '\0storybook-php:';
+const VIRTUAL_PREFIX = "\0storybook-php:";
 
 function paramsToArgMap(params: PhpParamMeta[]): string {
-  if (params.length === 0) return '{}';
+  if (params.length === 0) return "{}";
 
   const entries = params.map((p) => {
     const parts: string[] = [
-      `type: '${p.type ?? 'unknown'}'`,
+      `type: '${p.type ?? "unknown"}'`,
       `required: ${p.required}`,
       `position: ${p.position}`,
       `nullable: ${p.nullable}`,
@@ -20,10 +20,10 @@ function paramsToArgMap(params: PhpParamMeta[]): string {
     if (p.default !== undefined) {
       parts.push(`default: ${JSON.stringify(p.default)}`);
     }
-    return `    ${p.name}: { ${parts.join(', ')} }`;
+    return `    ${p.name}: { ${parts.join(", ")} }`;
   });
 
-  return `{\n${entries.join(',\n')}\n  }`;
+  return `{\n${entries.join(",\n")}\n  }`;
 }
 
 function generateTemplateModule(filePath: string): string {
@@ -131,15 +131,15 @@ function generateEnumMethodModule(
 
 export function storybookPhpPlugin(options: FrameworkOptions = {}): Plugin {
   return {
-    name: 'storybook-php',
-    enforce: 'pre',
+    name: "storybook-php",
+    enforce: "pre",
 
     resolveId(source: string, importer: string | undefined) {
       const match = source.match(PHP_RE);
       if (!match) return null;
 
       const callable = match[1] ?? options.defaultMethod ?? null;
-      const phpPath = source.replace(/@\w+$/, '');
+      const phpPath = source.replace(/@\w+$/, "");
 
       let absPath: string;
       if (isAbsolute(phpPath)) {
@@ -150,18 +150,18 @@ export function storybookPhpPlugin(options: FrameworkOptions = {}): Plugin {
         return null;
       }
 
-      return `${VIRTUAL_PREFIX}${absPath}?callable=${callable ?? ''}`;
+      return `${VIRTUAL_PREFIX}${absPath}?callable=${callable ?? ""}`;
     },
 
     load(id: string) {
       if (!id.startsWith(VIRTUAL_PREFIX)) return null;
 
       const rest = id.slice(VIRTUAL_PREFIX.length);
-      const qIdx = rest.indexOf('?');
+      const qIdx = rest.indexOf("?");
       const filePath = qIdx === -1 ? rest : rest.slice(0, qIdx);
-      const query = qIdx === -1 ? '' : rest.slice(qIdx + 1);
+      const query = qIdx === -1 ? "" : rest.slice(qIdx + 1);
       const params = new URLSearchParams(query);
-      const callableName = params.get('callable') || null;
+      const callableName = params.get("callable") || null;
 
       const meta = parsePhpFile(filePath!);
 
@@ -207,9 +207,7 @@ export function storybookPhpPlugin(options: FrameworkOptions = {}): Plugin {
         // Traverse traits used by this class (within the same file), recursively
         if (cls.traits && cls.traits.length > 0) {
           for (const traitName of cls.traits) {
-            const trait = meta.classes.find(
-              (c) => c.name === traitName || c.fqn === traitName,
-            );
+            const trait = meta.classes.find((c) => c.name === traitName || c.fqn === traitName);
             if (trait) {
               const traitMethod = findMethodInTraitChain(trait, methodName);
               if (traitMethod) {
@@ -221,9 +219,7 @@ export function storybookPhpPlugin(options: FrameworkOptions = {}): Plugin {
 
         // Traverse parent class if it's in the same file
         if (cls.extends) {
-          const parent = meta.classes.find(
-            (c) => c.name === cls.extends || c.fqn === cls.extends,
-          );
+          const parent = meta.classes.find((c) => c.name === cls.extends || c.fqn === cls.extends);
           if (parent) {
             const found = findMethodInHierarchy(parent, methodName);
             if (found) {
@@ -239,9 +235,7 @@ export function storybookPhpPlugin(options: FrameworkOptions = {}): Plugin {
       const resolveConstructorParams = (cls: PhpClassMeta): PhpParamMeta[] => {
         if (cls.constructorParams.length > 0) return cls.constructorParams;
         if (cls.extends) {
-          const parent = meta.classes.find(
-            (c) => c.name === cls.extends || c.fqn === cls.extends,
-          );
+          const parent = meta.classes.find((c) => c.name === cls.extends || c.fqn === cls.extends);
           if (parent) return resolveConstructorParams(parent);
         }
         return [];
@@ -251,19 +245,14 @@ export function storybookPhpPlugin(options: FrameworkOptions = {}): Plugin {
       const modules: string[] = [];
 
       // Helper: find a method on an enum, checking traits recursively if needed
-      const findEnumMethod = (
-        cls: PhpClassMeta,
-        methodName: string,
-      ): PhpMethodMeta | null => {
+      const findEnumMethod = (cls: PhpClassMeta, methodName: string): PhpMethodMeta | null => {
         const method = cls.methods.find((m) => m.name === methodName);
         if (method) return method;
 
         // Traverse traits used by this enum (within the same file), recursively
         if (cls.traits && cls.traits.length > 0) {
           for (const traitName of cls.traits) {
-            const trait = meta.classes.find(
-              (c) => c.name === traitName || c.fqn === traitName,
-            );
+            const trait = meta.classes.find((c) => c.name === traitName || c.fqn === traitName);
             if (trait) {
               const traitMethod = findMethodInTraitChain(trait, methodName);
               if (traitMethod) return traitMethod;
@@ -311,17 +300,27 @@ export function storybookPhpPlugin(options: FrameworkOptions = {}): Plugin {
             // Inherited static methods are already handled by the defining class's iteration.
             const definedDirectly = cls.methods.some((m) => m.name === callableName);
             if (definedDirectly) {
-              modules.push(generateStaticMethodModule(filePath!, found.cls, found.method, callableName));
+              modules.push(
+                generateStaticMethodModule(filePath!, found.cls, found.method, callableName),
+              );
             }
           } else {
             const ctorParams = resolveConstructorParams(found.cls);
-            modules.push(generateClassMethodModule(filePath!, found.cls, found.method, callableName, ctorParams));
+            modules.push(
+              generateClassMethodModule(
+                filePath!,
+                found.cls,
+                found.method,
+                callableName,
+                ctorParams,
+              ),
+            );
           }
         }
       }
 
       if (modules.length > 0) {
-        return modules.join('\n');
+        return modules.join("\n");
       }
 
       // Search standalone functions
@@ -346,7 +345,7 @@ export function storybookPhpPlugin(options: FrameworkOptions = {}): Plugin {
     },
 
     handleHotUpdate({ file, server }) {
-      if (!file.endsWith('.php')) return;
+      if (!file.endsWith(".php")) return;
 
       // Invalidate all virtual modules derived from this PHP file
       const mods = [...server.moduleGraph.idToModuleMap.values()].filter(
@@ -355,7 +354,7 @@ export function storybookPhpPlugin(options: FrameworkOptions = {}): Plugin {
 
       if (mods.length > 0) {
         mods.forEach((mod) => server.moduleGraph.invalidateModule(mod));
-        server.ws.send({ type: 'full-reload' });
+        server.ws.send({ type: "full-reload" });
         return [];
       }
     },

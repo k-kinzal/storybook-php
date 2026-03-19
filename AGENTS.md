@@ -45,33 +45,33 @@ PHP Runner (src/php/runner.php)
 
 ### Key Modules
 
-| File | Role |
-|------|------|
-| `src/types.ts` | Internal types (`PhpComponent`, `PhpFileMeta`, `PhpRenderRequest`, etc.) |
-| `src/public-types.ts` | User-facing types (`Meta`, `StoryObj`, `Story`, `Decorator`) |
-| `src/index.ts` | Public re-exports |
-| `src/php-parser.ts` | Regex-based PHP parser. Extracts namespaces, classes, enums, functions, params |
-| `src/vite-plugin.ts` | Vite plugin: `resolveId`, `load` (virtual modules), `configureServer`, HMR |
-| `src/php-executor.ts` | Spawns PHP process, sends JSON stdin, reads JSON stdout |
-| `src/php/runner.php` | PHP-side executor. Uses Reflection for arg matching + type casting |
-| `src/dev-middleware.ts` | Express-compatible `POST /__storybook_php/render` handler |
-| `src/preview.ts` | Browser-side `renderToCanvas()` — fetches PHP HTML via the endpoint |
-| `src/preset.ts` | Storybook 10 preset: `core`, `viteFinal` |
-| `src/typegen.ts` | Generates `.d.ts` from PHP files (PHP type → TS type mapping) |
-| `src/cli.ts` | `storybook-php typegen [dirs...]` CLI |
-| `src/ts-plugin/` | TypeScript Language Service Plugin for IDE support |
+| File                    | Role                                                                           |
+| ----------------------- | ------------------------------------------------------------------------------ |
+| `src/types.ts`          | Internal types (`PhpComponent`, `PhpFileMeta`, `PhpRenderRequest`, etc.)       |
+| `src/public-types.ts`   | User-facing types (`Meta`, `StoryObj`, `Story`, `Decorator`)                   |
+| `src/index.ts`          | Public re-exports                                                              |
+| `src/php-parser.ts`     | Regex-based PHP parser. Extracts namespaces, classes, enums, functions, params |
+| `src/vite-plugin.ts`    | Vite plugin: `resolveId`, `load` (virtual modules), `configureServer`, HMR     |
+| `src/php-executor.ts`   | Spawns PHP process, sends JSON stdin, reads JSON stdout                        |
+| `src/php/runner.php`    | PHP-side executor. Uses Reflection for arg matching + type casting             |
+| `src/dev-middleware.ts` | Express-compatible `POST /__storybook_php/render` handler                      |
+| `src/preview.ts`        | Browser-side `renderToCanvas()` — fetches PHP HTML via the endpoint            |
+| `src/preset.ts`         | Storybook 10 preset: `core`, `viteFinal`                                       |
+| `src/typegen.ts`        | Generates `.d.ts` from PHP files (PHP type → TS type mapping)                  |
+| `src/cli.ts`            | `storybook-php typegen [dirs...]` CLI                                          |
+| `src/ts-plugin/`        | TypeScript Language Service Plugin for IDE support                             |
 
 ### Supported PHP Callable Types
 
 The Vite plugin and PHP runner handle 5 types:
 
-| `__type` | Execution |
-|----------|-----------|
-| `classMethod` | `new Class(ctorArgs)->method(methodArgs)` |
-| `staticMethod` | `Class::method(args)` |
-| `function` | `functionFqn(args)` (supports namespaced) |
-| `template` | `extract($args) + include $file` |
-| `enumMethod` | `Enum::from(_case)->method(args)` |
+| `__type`       | Execution                                 |
+| -------------- | ----------------------------------------- |
+| `classMethod`  | `new Class(ctorArgs)->method(methodArgs)` |
+| `staticMethod` | `Class::method(args)`                     |
+| `function`     | `functionFqn(args)` (supports namespaced) |
+| `template`     | `extract($args) + include $file`          |
+| `enumMethod`   | `Enum::from(_case)->method(args)`         |
 
 ### Adapter System
 
@@ -80,6 +80,7 @@ The `adapter` option allows customizing how method return values become HTML. Th
 **Configuration flow:** `main.ts options.adapter` → preset → Vite plugin → middleware → PhpExecutor → `runner.php`
 
 **Adapter file contract:** Must return a callable with signature:
+
 ```php
 // adapter.php
 return function (mixed $result, string $buffered, ?object $instance): string {
@@ -125,6 +126,7 @@ npx storybook dev -p 6006 --config-dir examples/basic/.storybook
 ```
 
 Verify PHP rendering via:
+
 ```bash
 curl -X POST http://localhost:6006/__storybook_php/render \
   -H "Content-Type: application/json" \
@@ -145,14 +147,14 @@ curl -X POST http://localhost:6006/__storybook_php/render \
 
 ## Example Directories
 
-| Directory | Port | Description |
-|-----------|------|-------------|
-| `examples/basic/` | 6006 | Introductory examples — minimal representatives of each callable type |
-| `examples/advanced/` | 6007 | Advanced OOP, design patterns, templates, standalone functions |
-| `examples/php80/` | 6008 | PHP 8.0 features: union types, match, Stringable, mixed type |
-| `examples/php81/` | 6009 | PHP 8.1 features: enums, readonly properties, intersection types, new in init |
-| `examples/php82/` | 6010 | PHP 8.2 features: readonly classes, DNF types, standalone types |
-| `examples/php83/` | 6011 | PHP 8.3 features: typed class constants, #[Override], dynamic const fetch |
-| `examples/php84/` | 6012 | PHP 8.4 features: property hooks, asymmetric visibility, #[Deprecated] |
-| `examples/php85/` | 6013 | PHP 8.5 features: pipe operator, closure capture |
-| `examples/laravel/` | 6014 | Laravel Blade component rendering patterns |
+| Directory            | Port | Description                                                                   |
+| -------------------- | ---- | ----------------------------------------------------------------------------- |
+| `examples/basic/`    | 6006 | Introductory examples — minimal representatives of each callable type         |
+| `examples/advanced/` | 6007 | Advanced OOP, design patterns, templates, standalone functions                |
+| `examples/php80/`    | 6008 | PHP 8.0 features: union types, match, Stringable, mixed type                  |
+| `examples/php81/`    | 6009 | PHP 8.1 features: enums, readonly properties, intersection types, new in init |
+| `examples/php82/`    | 6010 | PHP 8.2 features: readonly classes, DNF types, standalone types               |
+| `examples/php83/`    | 6011 | PHP 8.3 features: typed class constants, #[Override], dynamic const fetch     |
+| `examples/php84/`    | 6012 | PHP 8.4 features: property hooks, asymmetric visibility, #[Deprecated]        |
+| `examples/php85/`    | 6013 | PHP 8.5 features: pipe operator, closure capture                              |
+| `examples/laravel/`  | 6014 | Laravel Blade component rendering patterns                                    |

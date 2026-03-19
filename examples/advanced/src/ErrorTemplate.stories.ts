@@ -1,13 +1,13 @@
-import type { Meta, StoryObj } from 'storybook-php';
-import ErrorTemplate from './templates/error.php';
+import type { Meta, StoryObj } from "storybook-php";
+import ErrorTemplate from "./templates/error.php";
 
 const meta: Meta = {
   component: ErrorTemplate,
-  title: 'Templates/Error',
+  title: "Templates/Error",
   argTypes: {
-    code: { control: 'number' },
-    message: { control: 'text' },
-    showHome: { control: 'boolean' },
+    code: { control: "number" },
+    message: { control: "text" },
+    showHome: { control: "boolean" },
   },
 };
 
@@ -37,7 +37,7 @@ export const Maintenance: Story = {
 export const CustomMessage: Story = {
   args: {
     code: 404,
-    message: 'The article you were looking for has been removed.',
+    message: "The article you were looking for has been removed.",
   },
 };
 

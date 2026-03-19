@@ -1,13 +1,13 @@
-import type { Meta, StoryObj } from 'storybook-php';
-import { Progress } from './Progress.php@render';
+import type { Meta, StoryObj } from "storybook-php";
+import { Progress } from "./Progress.php@render";
 
 const meta: Meta<typeof Progress> = {
   component: Progress,
-  title: 'Components/Progress',
+  title: "Components/Progress",
   argTypes: {
-    value: { control: { type: 'number', min: 0, max: 100 } },
-    max: { control: { type: 'number', min: 1 } },
-    label: { control: 'text' },
+    value: { control: { type: "number", min: 0, max: 100 } },
+    max: { control: { type: "number", min: 1 } },
+    label: { control: "text" },
   },
 };
 
@@ -19,13 +19,13 @@ export const Default: Story = {
 };
 
 export const Full: Story = {
-  args: { value: 100, label: 'Complete' },
+  args: { value: 100, label: "Complete" },
 };
 
 export const WithStringValue: Story = {
-  args: { value: '42', max: 100 },
+  args: { value: "42", max: 100 },
 };
 
 export const CustomMax: Story = {
-  args: { value: 3, max: 10, label: '3 of 10' },
+  args: { value: 3, max: 10, label: "3 of 10" },
 };

@@ -8,7 +8,7 @@ export type {
   ArgType,
   PhpComponent,
   PhpRenderer,
-} from './public-types.js';
+} from "./public-types.js";
 
 export type {
   PhpCallableType,
@@ -22,4 +22,4 @@ export type {
   PhpRenderRequest,
   PhpRenderResponse,
   FrameworkOptions,
-} from './types.js';
+} from "./types.js";

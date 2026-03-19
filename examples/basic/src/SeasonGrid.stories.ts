@@ -1,9 +1,9 @@
-import type { Meta, StoryObj } from 'storybook-php';
-import { Season } from './Season.php@grid';
+import type { Meta, StoryObj } from "storybook-php";
+import { Season } from "./Season.php@grid";
 
 const meta: Meta<typeof Season> = {
   component: Season,
-  title: 'Enums/SeasonGrid',
+  title: "Enums/SeasonGrid",
 };
 
 export default meta;

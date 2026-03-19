@@ -1,9 +1,9 @@
-import type { Meta, StoryObj } from 'storybook-php';
-import { Temperature } from './Temperature.php@fromFahrenheit';
+import type { Meta, StoryObj } from "storybook-php";
+import { Temperature } from "./Temperature.php@fromFahrenheit";
 
 const meta: Meta<typeof Temperature> = {
   component: Temperature,
-  title: 'Components/TemperatureFromF',
+  title: "Components/TemperatureFromF",
 };
 
 export default meta;

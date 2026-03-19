@@ -1,13 +1,13 @@
-import type { Meta, StoryObj } from 'storybook-php';
-import { InfoBox } from './Renderable.php@render';
+import type { Meta, StoryObj } from "storybook-php";
+import { InfoBox } from "./Renderable.php@render";
 
 const meta: Meta<typeof InfoBox> = {
   component: InfoBox,
-  title: 'Components/InfoBox',
+  title: "Components/InfoBox",
   argTypes: {
-    title: { control: 'text' },
-    message: { control: 'text' },
-    icon: { control: 'text' },
+    title: { control: "text" },
+    message: { control: "text" },
+    icon: { control: "text" },
   },
 };
 
@@ -15,9 +15,9 @@ export default meta;
 type Story = StoryObj<typeof InfoBox>;
 
 export const Default: Story = {
-  args: { title: 'Information', message: 'This is an informational message.' },
+  args: { title: "Information", message: "This is an informational message." },
 };
 
 export const CustomIcon: Story = {
-  args: { title: 'Success', message: 'Operation completed.', icon: '✅' },
+  args: { title: "Success", message: "Operation completed.", icon: "✅" },
 };

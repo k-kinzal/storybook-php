@@ -1,12 +1,12 @@
-import type { Meta, StoryObj } from 'storybook-php';
-import { generateTable } from './generatorFunc.php@generateTable';
+import type { Meta, StoryObj } from "storybook-php";
+import { generateTable } from "./generatorFunc.php@generateTable";
 
 const meta: Meta<typeof generateTable> = {
   component: generateTable,
-  title: 'Functions/GeneratorTable',
+  title: "Functions/GeneratorTable",
   argTypes: {
-    rows: { control: { type: 'range', min: 1, max: 10 } },
-    cols: { control: { type: 'range', min: 1, max: 8 } },
+    rows: { control: { type: "range", min: 1, max: 10 } },
+    cols: { control: { type: "range", min: 1, max: 8 } },
   },
 };
 

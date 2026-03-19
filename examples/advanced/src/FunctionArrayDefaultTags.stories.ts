@@ -1,11 +1,11 @@
-import type { Meta, StoryObj } from 'storybook-php';
-import { renderTagList } from './FunctionArrayDefault.php@renderTagList';
+import type { Meta, StoryObj } from "storybook-php";
+import { renderTagList } from "./FunctionArrayDefault.php@renderTagList";
 
 const meta: Meta<typeof renderTagList> = {
   component: renderTagList,
-  title: 'Functions/FunctionArrayDefault/Tags',
+  title: "Functions/FunctionArrayDefault/Tags",
   argTypes: {
-    color: { control: 'color' },
+    color: { control: "color" },
   },
 };
 
@@ -17,5 +17,5 @@ export const Default: Story = {
 };
 
 export const CustomTags: Story = {
-  args: { tags: ['react', 'vue', 'svelte'], color: '#ec4899' },
+  args: { tags: ["react", "vue", "svelte"], color: "#ec4899" },
 };

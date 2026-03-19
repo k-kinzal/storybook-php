@@ -1,11 +1,11 @@
-import type { Meta, StoryObj } from 'storybook-php';
-import { renderMatrix } from './nestedGrid.php@renderMatrix';
+import type { Meta, StoryObj } from "storybook-php";
+import { renderMatrix } from "./nestedGrid.php@renderMatrix";
 
 const meta: Meta<typeof renderMatrix> = {
   component: renderMatrix,
-  title: 'Functions/NestedMatrix',
+  title: "Functions/NestedMatrix",
   argTypes: {
-    label: { control: 'text' },
+    label: { control: "text" },
   },
 };
 
@@ -13,9 +13,15 @@ export default meta;
 type Story = StoryObj<typeof renderMatrix>;
 
 export const Identity: Story = {
-  args: { label: 'Identity Matrix' },
+  args: { label: "Identity Matrix" },
 };
 
 export const Custom: Story = {
-  args: { label: 'Rotation', matrix: [[0, -1], [1, 0]] },
+  args: {
+    label: "Rotation",
+    matrix: [
+      [0, -1],
+      [1, 0],
+    ],
+  },
 };

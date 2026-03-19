@@ -1,9 +1,9 @@
-import type { Meta, StoryObj } from 'storybook-php';
-import { HttpStatusCode } from './HttpStatusCode.php@table';
+import type { Meta, StoryObj } from "storybook-php";
+import { HttpStatusCode } from "./HttpStatusCode.php@table";
 
 const meta: Meta<typeof HttpStatusCode> = {
   component: HttpStatusCode,
-  title: 'Enums/HttpStatusCode/Table',
+  title: "Enums/HttpStatusCode/Table",
 };
 
 export default meta;

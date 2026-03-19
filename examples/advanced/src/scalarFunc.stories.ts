@@ -1,12 +1,12 @@
-import type { Meta, StoryObj } from 'storybook-php';
-import { calcDiscount } from './scalarFunc.php@calcDiscount';
+import type { Meta, StoryObj } from "storybook-php";
+import { calcDiscount } from "./scalarFunc.php@calcDiscount";
 
 const meta: Meta<typeof calcDiscount> = {
   component: calcDiscount,
-  title: 'Functions/CalcDiscount',
+  title: "Functions/CalcDiscount",
   argTypes: {
-    price: { control: { type: 'number', min: 0, step: 0.01 } },
-    percent: { control: { type: 'range', min: 0, max: 100, step: 5 } },
+    price: { control: { type: "number", min: 0, step: 0.01 } },
+    percent: { control: { type: "range", min: 0, max: 100, step: 5 } },
   },
 };
 

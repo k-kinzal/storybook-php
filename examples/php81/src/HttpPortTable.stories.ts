@@ -1,9 +1,9 @@
-import type { Meta, StoryObj } from 'storybook-php';
-import { HttpPort } from './HttpPort.php@table';
+import type { Meta, StoryObj } from "storybook-php";
+import { HttpPort } from "./HttpPort.php@table";
 
 const meta: Meta<typeof HttpPort> = {
   component: HttpPort,
-  title: 'Enums/HttpPortTable',
+  title: "Enums/HttpPortTable",
 };
 
 export default meta;

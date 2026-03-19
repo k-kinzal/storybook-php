@@ -1,12 +1,12 @@
-import type { Meta, StoryObj } from 'storybook-php';
-import { ScalarReturn } from './ScalarReturn.php@renderPercent';
+import type { Meta, StoryObj } from "storybook-php";
+import { ScalarReturn } from "./ScalarReturn.php@renderPercent";
 
 const meta: Meta<typeof ScalarReturn> = {
   component: ScalarReturn,
-  title: 'Components/ScalarReturn/Percent',
+  title: "Components/ScalarReturn/Percent",
   argTypes: {
-    current: { control: { type: 'number', min: 0, max: 200 } },
-    total: { control: { type: 'number', min: 1, max: 200 } },
+    current: { control: { type: "number", min: 0, max: 200 } },
+    total: { control: { type: "number", min: 1, max: 200 } },
   },
 };
 

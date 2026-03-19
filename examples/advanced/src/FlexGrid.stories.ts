@@ -1,12 +1,12 @@
-import type { Meta, StoryObj } from 'storybook-php';
-import { FlexGrid } from './FlexGrid.php@render';
+import type { Meta, StoryObj } from "storybook-php";
+import { FlexGrid } from "./FlexGrid.php@render";
 
 const meta: Meta<typeof FlexGrid> = {
   component: FlexGrid,
-  title: 'Components/FlexGrid',
+  title: "Components/FlexGrid",
   argTypes: {
-    columns: { control: { type: 'number', min: 1, max: 6 } },
-    gap: { control: 'text' },
+    columns: { control: { type: "number", min: 1, max: 6 } },
+    gap: { control: "text" },
   },
 };
 
@@ -15,21 +15,21 @@ type Story = StoryObj<typeof FlexGrid>;
 
 export const ThreeColumn: Story = {
   args: {
-    id: 'demo-grid',
-    items: ['Item 1', 'Item 2', 'Item 3', 'Item 4', 'Item 5', 'Item 6'],
+    id: "demo-grid",
+    items: ["Item 1", "Item 2", "Item 3", "Item 4", "Item 5", "Item 6"],
     columns: 3,
-    gap: '16px',
+    gap: "16px",
   },
 };
 
 export const TwoColumn: Story = {
   args: {
-    id: 'two-col',
-    items: ['Alpha', 'Beta', 'Gamma', 'Delta'],
+    id: "two-col",
+    items: ["Alpha", "Beta", "Gamma", "Delta"],
     columns: 2,
   },
 };
 
 export const Empty: Story = {
-  args: { id: 'empty-grid', items: [] },
+  args: { id: "empty-grid", items: [] },
 };

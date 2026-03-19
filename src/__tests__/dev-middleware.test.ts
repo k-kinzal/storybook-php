@@ -1,14 +1,14 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
-import type { IncomingMessage, ServerResponse } from 'node:http';
-import { EventEmitter } from 'node:events';
-import { createPhpMiddleware, RENDER_PATH } from '../dev-middleware.js';
+import { describe, it, expect, vi, beforeEach } from "vitest";
+import type { IncomingMessage, ServerResponse } from "node:http";
+import { EventEmitter } from "node:events";
+import { createPhpMiddleware, RENDER_PATH } from "../dev-middleware.js";
 
 // ---------------------------------------------------------------------------
 // Mock PhpExecutor
 // ---------------------------------------------------------------------------
 const mockExecute = vi.fn();
 
-vi.mock('../php-executor.js', () => ({
+vi.mock("../php-executor.js", () => ({
   PhpExecutor: vi.fn().mockImplementation(function () {
     return { execute: mockExecute };
   }),
@@ -17,11 +17,7 @@ vi.mock('../php-executor.js', () => ({
 // ---------------------------------------------------------------------------
 // Helpers to create mock req/res objects
 // ---------------------------------------------------------------------------
-function createMockReq(
-  method: string,
-  url: string,
-  body?: string,
-): IncomingMessage {
+function createMockReq(method: string, url: string, body?: string): IncomingMessage {
   const emitter = new EventEmitter();
   const req = emitter as unknown as IncomingMessage;
   req.method = method;
@@ -30,12 +26,12 @@ function createMockReq(
   // Simulate body delivery on next tick
   if (body !== undefined) {
     process.nextTick(() => {
-      emitter.emit('data', Buffer.from(body));
-      emitter.emit('end');
+      emitter.emit("data", Buffer.from(body));
+      emitter.emit("end");
     });
   } else {
     process.nextTick(() => {
-      emitter.emit('end');
+      emitter.emit("end");
     });
   }
 
@@ -50,7 +46,7 @@ function createMockRes(): ServerResponse & {
   const res = {
     _status: 0,
     _headers: {} as Record<string, string>,
-    _body: '',
+    _body: "",
     writeHead(status: number, headers?: Record<string, string>) {
       res._status = status;
       if (headers) {
@@ -73,7 +69,7 @@ function createMockRes(): ServerResponse & {
 // ---------------------------------------------------------------------------
 // Tests
 // ---------------------------------------------------------------------------
-describe('createPhpMiddleware', () => {
+describe("createPhpMiddleware", () => {
   beforeEach(() => {
     vi.clearAllMocks();
   });
@@ -83,8 +79,8 @@ describe('createPhpMiddleware', () => {
   // -------------------------------------------------------------------------
   // Routing: non-matching requests call next()
   // -------------------------------------------------------------------------
-  it('calls next() for non-POST requests', async () => {
-    const req = createMockReq('GET', RENDER_PATH);
+  it("calls next() for non-POST requests", async () => {
+    const req = createMockReq("GET", RENDER_PATH);
     const res = createMockRes();
     const next = vi.fn();
 
@@ -94,8 +90,8 @@ describe('createPhpMiddleware', () => {
     expect(res._status).toBe(0);
   });
 
-  it('calls next() for wrong path', async () => {
-    const req = createMockReq('POST', '/some/other/path');
+  it("calls next() for wrong path", async () => {
+    const req = createMockReq("POST", "/some/other/path");
     const res = createMockRes();
     const next = vi.fn();
 
@@ -105,8 +101,8 @@ describe('createPhpMiddleware', () => {
     expect(res._status).toBe(0);
   });
 
-  it('calls next() for GET to wrong path', async () => {
-    const req = createMockReq('GET', '/other');
+  it("calls next() for GET to wrong path", async () => {
+    const req = createMockReq("GET", "/other");
     const res = createMockRes();
     const next = vi.fn();
 
@@ -118,12 +114,12 @@ describe('createPhpMiddleware', () => {
   // -------------------------------------------------------------------------
   // Validation errors
   // -------------------------------------------------------------------------
-  it('returns 400 for invalid type', async () => {
+  it("returns 400 for invalid type", async () => {
     const body = JSON.stringify({
-      type: 'invalidType',
-      file: '/some/file.php',
+      type: "invalidType",
+      file: "/some/file.php",
     });
-    const req = createMockReq('POST', RENDER_PATH, body);
+    const req = createMockReq("POST", RENDER_PATH, body);
     const res = createMockRes();
     const next = vi.fn();
 
@@ -132,12 +128,12 @@ describe('createPhpMiddleware', () => {
     expect(next).not.toHaveBeenCalled();
     expect(res._status).toBe(400);
     const parsed = JSON.parse(res._body) as { error: string };
-    expect(parsed.error).toContain('Invalid type');
+    expect(parsed.error).toContain("Invalid type");
   });
 
-  it('returns 400 for missing type', async () => {
-    const body = JSON.stringify({ file: '/some/file.php' });
-    const req = createMockReq('POST', RENDER_PATH, body);
+  it("returns 400 for missing type", async () => {
+    const body = JSON.stringify({ file: "/some/file.php" });
+    const req = createMockReq("POST", RENDER_PATH, body);
     const res = createMockRes();
     const next = vi.fn();
 
@@ -147,9 +143,9 @@ describe('createPhpMiddleware', () => {
     expect(res._status).toBe(400);
   });
 
-  it('returns 400 for missing file', async () => {
-    const body = JSON.stringify({ type: 'classMethod' });
-    const req = createMockReq('POST', RENDER_PATH, body);
+  it("returns 400 for missing file", async () => {
+    const body = JSON.stringify({ type: "classMethod" });
+    const req = createMockReq("POST", RENDER_PATH, body);
     const res = createMockRes();
     const next = vi.fn();
 
@@ -158,25 +154,25 @@ describe('createPhpMiddleware', () => {
     expect(next).not.toHaveBeenCalled();
     expect(res._status).toBe(400);
     const parsed = JSON.parse(res._body) as { error: string };
-    expect(parsed.error).toContain('Missing required field: file');
+    expect(parsed.error).toContain("Missing required field: file");
   });
 
   // -------------------------------------------------------------------------
   // Successful execution
   // -------------------------------------------------------------------------
-  it('returns 200 with HTML for valid request', async () => {
+  it("returns 200 with HTML for valid request", async () => {
     mockExecute.mockResolvedValueOnce({
-      html: '<div>Hello</div>',
+      html: "<div>Hello</div>",
     });
 
     const body = JSON.stringify({
-      type: 'classMethod',
-      file: '/some/file.php',
-      class: 'App\\MyClass',
-      callable: 'render',
-      args: { name: 'World' },
+      type: "classMethod",
+      file: "/some/file.php",
+      class: "App\\MyClass",
+      callable: "render",
+      args: { name: "World" },
     });
-    const req = createMockReq('POST', RENDER_PATH, body);
+    const req = createMockReq("POST", RENDER_PATH, body);
     const res = createMockRes();
     const next = vi.fn();
 
@@ -184,35 +180,35 @@ describe('createPhpMiddleware', () => {
 
     expect(next).not.toHaveBeenCalled();
     expect(res._status).toBe(200);
-    expect(res._headers['Content-Type']).toBe('application/json');
+    expect(res._headers["Content-Type"]).toBe("application/json");
 
     const parsed = JSON.parse(res._body) as { html: string };
-    expect(parsed.html).toBe('<div>Hello</div>');
+    expect(parsed.html).toBe("<div>Hello</div>");
 
     // Verify executor was called with proper request
     expect(mockExecute).toHaveBeenCalledWith({
-      type: 'classMethod',
-      file: '/some/file.php',
-      class: 'App\\MyClass',
-      callable: 'render',
-      args: { name: 'World' },
+      type: "classMethod",
+      file: "/some/file.php",
+      class: "App\\MyClass",
+      callable: "render",
+      args: { name: "World" },
       bootstrap: null,
     });
   });
 
-  it('returns 200 for staticMethod type', async () => {
+  it("returns 200 for staticMethod type", async () => {
     mockExecute.mockResolvedValueOnce({
       html: '<div class="alert">Error</div>',
     });
 
     const body = JSON.stringify({
-      type: 'staticMethod',
-      file: '/some/alert.php',
-      class: 'App\\Alert',
-      callable: 'danger',
-      args: { message: 'Error' },
+      type: "staticMethod",
+      file: "/some/alert.php",
+      class: "App\\Alert",
+      callable: "danger",
+      args: { message: "Error" },
     });
-    const req = createMockReq('POST', RENDER_PATH, body);
+    const req = createMockReq("POST", RENDER_PATH, body);
     const res = createMockRes();
     const next = vi.fn();
 
@@ -221,18 +217,18 @@ describe('createPhpMiddleware', () => {
     expect(res._status).toBe(200);
   });
 
-  it('returns 200 for function type', async () => {
+  it("returns 200 for function type", async () => {
     mockExecute.mockResolvedValueOnce({
-      html: '<span>badge</span>',
+      html: "<span>badge</span>",
     });
 
     const body = JSON.stringify({
-      type: 'function',
-      file: '/some/functions.php',
-      callable: 'badge',
-      args: { label: 'New' },
+      type: "function",
+      file: "/some/functions.php",
+      callable: "badge",
+      args: { label: "New" },
     });
-    const req = createMockReq('POST', RENDER_PATH, body);
+    const req = createMockReq("POST", RENDER_PATH, body);
     const res = createMockRes();
     const next = vi.fn();
 
@@ -241,17 +237,17 @@ describe('createPhpMiddleware', () => {
     expect(res._status).toBe(200);
   });
 
-  it('returns 200 for template type', async () => {
+  it("returns 200 for template type", async () => {
     mockExecute.mockResolvedValueOnce({
-      html: '<div>template</div>',
+      html: "<div>template</div>",
     });
 
     const body = JSON.stringify({
-      type: 'template',
-      file: '/some/template.php',
-      args: { title: 'Hi' },
+      type: "template",
+      file: "/some/template.php",
+      args: { title: "Hi" },
     });
-    const req = createMockReq('POST', RENDER_PATH, body);
+    const req = createMockReq("POST", RENDER_PATH, body);
     const res = createMockRes();
     const next = vi.fn();
 
@@ -260,19 +256,19 @@ describe('createPhpMiddleware', () => {
     expect(res._status).toBe(200);
   });
 
-  it('returns 200 for enumMethod type', async () => {
+  it("returns 200 for enumMethod type", async () => {
     mockExecute.mockResolvedValueOnce({
       html: '<span style="color:red">Red</span>',
     });
 
     const body = JSON.stringify({
-      type: 'enumMethod',
-      file: '/some/enum.php',
-      class: 'App\\Color',
-      callable: 'badge',
-      args: { _case: 'red' },
+      type: "enumMethod",
+      file: "/some/enum.php",
+      class: "App\\Color",
+      callable: "badge",
+      args: { _case: "red" },
     });
-    const req = createMockReq('POST', RENDER_PATH, body);
+    const req = createMockReq("POST", RENDER_PATH, body);
     const res = createMockRes();
     const next = vi.fn();
 
@@ -284,21 +280,21 @@ describe('createPhpMiddleware', () => {
   // -------------------------------------------------------------------------
   // Executor error propagation
   // -------------------------------------------------------------------------
-  it('returns 500 when executor returns an error', async () => {
+  it("returns 500 when executor returns an error", async () => {
     mockExecute.mockResolvedValueOnce({
-      html: '',
-      error: 'PHP fatal error',
-      trace: 'stack trace here',
+      html: "",
+      error: "PHP fatal error",
+      trace: "stack trace here",
     });
 
     const body = JSON.stringify({
-      type: 'classMethod',
-      file: '/some/file.php',
-      class: 'App\\Broken',
-      callable: 'render',
+      type: "classMethod",
+      file: "/some/file.php",
+      class: "App\\Broken",
+      callable: "render",
       args: {},
     });
-    const req = createMockReq('POST', RENDER_PATH, body);
+    const req = createMockReq("POST", RENDER_PATH, body);
     const res = createMockRes();
     const next = vi.fn();
 
@@ -307,14 +303,14 @@ describe('createPhpMiddleware', () => {
     expect(next).not.toHaveBeenCalled();
     expect(res._status).toBe(500);
     const parsed = JSON.parse(res._body) as { error: string };
-    expect(parsed.error).toBe('PHP fatal error');
+    expect(parsed.error).toBe("PHP fatal error");
   });
 
   // -------------------------------------------------------------------------
   // Invalid JSON body
   // -------------------------------------------------------------------------
-  it('returns 500 for invalid JSON body', async () => {
-    const req = createMockReq('POST', RENDER_PATH, 'not valid json{{{');
+  it("returns 500 for invalid JSON body", async () => {
+    const req = createMockReq("POST", RENDER_PATH, "not valid json{{{");
     const res = createMockRes();
     const next = vi.fn();
 
@@ -329,14 +325,14 @@ describe('createPhpMiddleware', () => {
   // -------------------------------------------------------------------------
   // Defaults for optional fields
   // -------------------------------------------------------------------------
-  it('fills in defaults for optional fields (class, callable, args, bootstrap)', async () => {
-    mockExecute.mockResolvedValueOnce({ html: '<p>ok</p>' });
+  it("fills in defaults for optional fields (class, callable, args, bootstrap)", async () => {
+    mockExecute.mockResolvedValueOnce({ html: "<p>ok</p>" });
 
     const body = JSON.stringify({
-      type: 'template',
-      file: '/some/template.php',
+      type: "template",
+      file: "/some/template.php",
     });
-    const req = createMockReq('POST', RENDER_PATH, body);
+    const req = createMockReq("POST", RENDER_PATH, body);
     const res = createMockRes();
     const next = vi.fn();
 
@@ -344,8 +340,8 @@ describe('createPhpMiddleware', () => {
 
     expect(res._status).toBe(200);
     expect(mockExecute).toHaveBeenCalledWith({
-      type: 'template',
-      file: '/some/template.php',
+      type: "template",
+      file: "/some/template.php",
       class: null,
       callable: null,
       args: {},

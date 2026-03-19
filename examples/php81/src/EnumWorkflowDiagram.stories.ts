@@ -1,9 +1,9 @@
-import type { Meta, StoryObj } from 'storybook-php';
-import { WorkflowState } from './EnumWorkflow.php@diagram';
+import type { Meta, StoryObj } from "storybook-php";
+import { WorkflowState } from "./EnumWorkflow.php@diagram";
 
 const meta: Meta<typeof WorkflowState> = {
   component: WorkflowState,
-  title: 'Enums/Workflow/Diagram',
+  title: "Enums/Workflow/Diagram",
 };
 
 export default meta;

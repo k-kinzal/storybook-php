@@ -2,8 +2,26 @@
   "name": "storybook-php",
   "version": "0.1.0",
   "description": "Storybook 10 framework addon for rendering PHP components as stories",
-  "type": "module",
+  "keywords": [
+    "component-driven",
+    "php",
+    "storybook",
+    "storybook-addon",
+    "storybook-framework",
+    "ui"
+  ],
   "license": "MIT",
+  "bin": {
+    "storybook-php": "./dist/cli.mjs"
+  },
+  "files": [
+    "dist",
+    "client.d.ts",
+    "src/php",
+    "README.md",
+    "LICENSE"
+  ],
+  "type": "module",
   "exports": {
     ".": {
       "types": "./dist/index.d.mts",
@@ -23,16 +41,6 @@
     },
     "./package.json": "./package.json"
   },
-  "bin": {
-    "storybook-php": "./dist/cli.mjs"
-  },
-  "files": [
-    "dist",
-    "client.d.ts",
-    "src/php",
-    "README.md",
-    "LICENSE"
-  ],
   "scripts": {
     "build": "vp pack",
     "dev": "vp pack --watch",
@@ -44,9 +52,16 @@
     "prepare": "npm run build"
   },
   "dependencies": {
-    "storybook": "^10.3.0",
     "@storybook/builder-vite": "^10.3.0",
+    "storybook": "^10.3.0",
     "vite": "^5.0.0 || ^6.0.0 || ^7.0.0 || ^8.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^25.5.0",
+    "jsdom": "^29.0.0",
+    "typescript": "^5.9.0",
+    "vite": "^8.0.0",
+    "vite-plus": "^0.1.12"
   },
   "peerDependencies": {
     "storybook": "^10.0.0",
@@ -60,22 +75,7 @@
       "optional": true
     }
   },
-  "devDependencies": {
-    "@types/node": "^25.5.0",
-    "jsdom": "^29.0.0",
-    "typescript": "^5.9.0",
-    "vite": "^8.0.0",
-    "vite-plus": "^0.1.12"
-  },
   "engines": {
     "node": ">=20.19.0"
-  },
-  "keywords": [
-    "storybook",
-    "php",
-    "storybook-addon",
-    "storybook-framework",
-    "component-driven",
-    "ui"
-  ]
+  }
 }

@@ -1,9 +1,9 @@
-import type { Meta, StoryObj } from 'storybook-php';
-import { Palette } from './TraitStaticEnum.php@showcase';
+import type { Meta, StoryObj } from "storybook-php";
+import { Palette } from "./TraitStaticEnum.php@showcase";
 
 const meta: Meta<typeof Palette> = {
   component: Palette,
-  title: 'Enums/TraitStaticEnumShowcase',
+  title: "Enums/TraitStaticEnumShowcase",
 };
 
 export default meta;

@@ -1,8 +1,8 @@
 #!/usr/bin/env node
-import { resolve, relative, dirname } from 'node:path';
-import { fileURLToPath } from 'node:url';
-import { spawn } from 'node:child_process';
-import { createRequire } from 'node:module';
+import { resolve, relative, dirname } from "node:path";
+import { fileURLToPath } from "node:url";
+import { spawn } from "node:child_process";
+import { createRequire } from "node:module";
 import {
   symlinkSync,
   unlinkSync,
@@ -11,22 +11,22 @@ import {
   writeFileSync,
   readdirSync,
   statSync,
-} from 'node:fs';
-import { generateDtsForFile } from './typegen.js';
+} from "node:fs";
+import { generateDtsForFile } from "./typegen.js";
 
-const [,, command, ...args] = process.argv;
+const [, , command, ...args] = process.argv;
 
 switch (command) {
-  case 'start':
-    runStorybook('dev', args);
+  case "start":
+    runStorybook("dev", args);
     break;
-  case 'build':
-    runStorybook('build', args);
+  case "build":
+    runStorybook("build", args);
     break;
-  case 'test':
+  case "test":
     runTest(args);
     break;
-  case 'typegen':
+  case "typegen":
     runTypegen(args);
     break;
   default:
@@ -35,7 +35,7 @@ switch (command) {
 }
 
 function ensureNodeModulesLink(): (() => void) | null {
-  const localNodeModules = resolve('node_modules');
+  const localNodeModules = resolve("node_modules");
 
   // Already has node_modules — don't touch it
   if (existsSync(localNodeModules)) {
@@ -45,10 +45,10 @@ function ensureNodeModulesLink(): (() => void) | null {
   // This package lives at <node_modules>/storybook-php/dist/cli.mjs
   // so parent node_modules = two levels up from package root
   const __filename = fileURLToPath(import.meta.url);
-  const packageRoot = resolve(dirname(__filename), '..');
+  const packageRoot = resolve(dirname(__filename), "..");
   const parentNodeModules = dirname(packageRoot);
 
-  symlinkSync(parentNodeModules, localNodeModules, 'junction');
+  symlinkSync(parentNodeModules, localNodeModules, "junction");
 
   return () => {
     try {
@@ -67,23 +67,23 @@ function withCleanup(cleanup: (() => void) | null, child: ReturnType<typeof spaw
     process.exit(code ?? 1);
   };
 
-  for (const sig of ['SIGINT', 'SIGTERM', 'SIGHUP'] as const) {
+  for (const sig of ["SIGINT", "SIGTERM", "SIGHUP"] as const) {
     process.on(sig, () => {
       cleanup?.();
       child.kill(sig);
     });
   }
-  child.on('close', exit);
+  child.on("close", exit);
 }
 
 function runStorybook(cmd: string, cliArgs: string[]): void {
   const require = createRequire(import.meta.url);
-  const storybookBin = require.resolve('storybook/internal/bin/dispatcher');
+  const storybookBin = require.resolve("storybook/internal/bin/dispatcher");
 
   const cleanup = ensureNodeModulesLink();
 
   const child = spawn(process.execPath, [storybookBin, cmd, ...cliArgs], {
-    stdio: 'inherit',
+    stdio: "inherit",
   });
 
   withCleanup(cleanup, child);
@@ -94,32 +94,32 @@ function runTest(cliArgs: string[]): void {
 
   let vitestBin: string;
   try {
-    vitestBin = require.resolve('vitest/vitest.mjs');
+    vitestBin = require.resolve("vitest/vitest.mjs");
   } catch {
     console.error(
       [
-        'vitest not found. Add it via --package:',
-        '',
-        '  npx --package=storybook-php --package=vitest \\',
-        '      --package=@vitest/browser-playwright \\',
-        '      -- storybook-php test',
-        '',
-      ].join('\n'),
+        "vitest not found. Add it via --package:",
+        "",
+        "  npx --package=storybook-php --package=vitest \\",
+        "      --package=@vitest/browser-playwright \\",
+        "      -- storybook-php test",
+        "",
+      ].join("\n"),
     );
     process.exit(1);
   }
 
   const cleanup = ensureNodeModulesLink();
 
-  const child = spawn(process.execPath, [vitestBin, 'run', ...cliArgs], {
-    stdio: 'inherit',
+  const child = spawn(process.execPath, [vitestBin, "run", ...cliArgs], {
+    stdio: "inherit",
   });
 
   withCleanup(cleanup, child);
 }
 
 function runTypegen(dirs: string[]): void {
-  const targetDirs = dirs.length > 0 ? dirs : ['src'];
+  const targetDirs = dirs.length > 0 ? dirs : ["src"];
   let count = 0;
 
   for (const dir of targetDirs) {
@@ -127,7 +127,7 @@ function runTypegen(dirs: string[]): void {
     walkPhpFiles(absDir, (phpPath) => {
       const dts = generateDtsForFile(phpPath);
       if (dts.trim()) {
-        const dtsPath = phpPath + '.d.ts';
+        const dtsPath = phpPath + ".d.ts";
         writeFileSync(dtsPath, dts);
         console.log(`  ${relative(process.cwd(), dtsPath)}`);
         count++;
@@ -141,14 +141,14 @@ function runTypegen(dirs: string[]): void {
 function printUsage(): void {
   console.log(
     [
-      'Usage: storybook-php <command> [options]',
-      '',
-      'Commands:',
-      '  start [opts]      Start Storybook dev server',
-      '  build [opts]      Build static Storybook',
-      '  test [opts]       Run tests via vitest',
-      '  typegen [dirs...] Generate .d.ts files for PHP sources',
-    ].join('\n'),
+      "Usage: storybook-php <command> [options]",
+      "",
+      "Commands:",
+      "  start [opts]      Start Storybook dev server",
+      "  build [opts]      Build static Storybook",
+      "  test [opts]       Run tests via vitest",
+      "  typegen [dirs...] Generate .d.ts files for PHP sources",
+    ].join("\n"),
   );
 }
 
@@ -156,9 +156,9 @@ function walkPhpFiles(dir: string, cb: (path: string) => void): void {
   for (const entry of readdirSync(dir)) {
     const full = resolve(dir, entry);
     const stat = statSync(full);
-    if (stat.isDirectory() && entry !== 'node_modules' && entry !== 'vendor') {
+    if (stat.isDirectory() && entry !== "node_modules" && entry !== "vendor") {
       walkPhpFiles(full, cb);
-    } else if (entry.endsWith('.php')) {
+    } else if (entry.endsWith(".php")) {
       cb(full);
     }
   }

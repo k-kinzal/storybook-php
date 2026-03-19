@@ -1,9 +1,9 @@
-import type { Meta, StoryObj } from 'storybook-php';
-import { BaseWidget } from './AbstractWidget.php@availableVariants';
+import type { Meta, StoryObj } from "storybook-php";
+import { BaseWidget } from "./AbstractWidget.php@availableVariants";
 
 const meta: Meta<typeof BaseWidget> = {
   component: BaseWidget,
-  title: 'Patterns/AbstractWidgetVariants',
+  title: "Patterns/AbstractWidgetVariants",
 };
 
 export default meta;

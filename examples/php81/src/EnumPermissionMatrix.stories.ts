@@ -1,9 +1,9 @@
-import type { Meta, StoryObj } from 'storybook-php';
-import { Permission } from './EnumPermission.php@matrix';
+import type { Meta, StoryObj } from "storybook-php";
+import { Permission } from "./EnumPermission.php@matrix";
 
 const meta: Meta<typeof Permission> = {
   component: Permission,
-  title: 'Enums/Permission/Matrix',
+  title: "Enums/Permission/Matrix",
 };
 
 export default meta;

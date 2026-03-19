@@ -1,56 +1,56 @@
-import { parsePhpFile } from './php-parser.js';
-import type { PhpFileMeta, PhpParamMeta, PhpClassMeta } from './types.js';
+import { parsePhpFile } from "./php-parser.js";
+import type { PhpFileMeta, PhpParamMeta, PhpClassMeta } from "./types.js";
 
 /**
  * Map a PHP type string to a TypeScript type string.
  */
 function phpTypeToTs(phpType: string | null, cls?: PhpClassMeta): string {
-  if (!phpType) return 'unknown';
+  if (!phpType) return "unknown";
 
   // Handle nullable ?Type
-  if (phpType.startsWith('?')) {
+  if (phpType.startsWith("?")) {
     return `${phpTypeToTs(phpType.slice(1), cls)} | null`;
   }
 
   // Handle union types A|B
-  if (phpType.includes('|')) {
-    const parts = phpType.split('|').map((p) => p.trim());
-    return parts.map((p) => phpTypeToTs(p, cls)).join(' | ');
+  if (phpType.includes("|")) {
+    const parts = phpType.split("|").map((p) => p.trim());
+    return parts.map((p) => phpTypeToTs(p, cls)).join(" | ");
   }
 
   // Primitive mapping
   switch (phpType.toLowerCase()) {
-    case 'string':
-      return 'string';
-    case 'int':
-    case 'integer':
-    case 'float':
-    case 'double':
-      return 'number';
-    case 'bool':
-    case 'boolean':
-      return 'boolean';
-    case 'array':
-      return 'unknown[]';
-    case 'object':
-    case 'mixed':
-      return 'unknown';
-    case 'void':
-      return 'void';
-    case 'null':
-      return 'null';
-    case 'self':
-    case 'static':
-      return 'Record<string, unknown>';
+    case "string":
+      return "string";
+    case "int":
+    case "integer":
+    case "float":
+    case "double":
+      return "number";
+    case "bool":
+    case "boolean":
+      return "boolean";
+    case "array":
+      return "unknown[]";
+    case "object":
+    case "mixed":
+      return "unknown";
+    case "void":
+      return "void";
+    case "null":
+      return "null";
+    case "self":
+    case "static":
+      return "Record<string, unknown>";
     default:
       // Could be a class type or enum type -- map to Record<string, unknown>
-      return 'Record<string, unknown>';
+      return "Record<string, unknown>";
   }
 }
 
 function paramToTsType(param: PhpParamMeta, cls?: PhpClassMeta): string {
   const baseType = phpTypeToTs(param.type, cls);
-  if (param.nullable && !param.type?.includes('|') && !param.type?.startsWith('?')) {
+  if (param.nullable && !param.type?.includes("|") && !param.type?.startsWith("?")) {
     return `${baseType} | null`;
   }
   return baseType;
@@ -66,12 +66,12 @@ function generateInterfaceForParams(
   }
 
   const lines = params.map((p) => {
-    const optional = !p.required ? '?' : '';
+    const optional = !p.required ? "?" : "";
     const tsType = paramToTsType(p, cls);
     return `  ${p.name}${optional}: ${tsType};`;
   });
 
-  return `interface ${interfaceName} {\n${lines.join('\n')}\n}\n`;
+  return `interface ${interfaceName} {\n${lines.join("\n")}\n}\n`;
 }
 
 /**
@@ -106,8 +106,8 @@ export function generateDts(meta: PhpFileMeta): string {
       for (const method of cls.methods) {
         const interfaceName = `${cls.name}_${method.name}_Args`;
         const caseParam: PhpParamMeta = {
-          name: '_case',
-          type: 'string',
+          name: "_case",
+          type: "string",
           nullable: false,
           required: true,
           isVariadic: false,
@@ -116,7 +116,7 @@ export function generateDts(meta: PhpFileMeta): string {
         };
         // Merge _case param with method params
         const allParams = [caseParam, ...method.params];
-        parts.push('');
+        parts.push("");
         parts.push(generateInterfaceForParams(interfaceName, allParams, cls));
         parts.push(`export declare const ${cls.name}: PhpComponent<${interfaceName}>;\n`);
       }
@@ -127,7 +127,7 @@ export function generateDts(meta: PhpFileMeta): string {
     for (const method of cls.methods) {
       const interfaceName = `${cls.name}_${method.name}_Args`;
       const allParams = [...cls.constructorParams, ...method.params];
-      parts.push('');
+      parts.push("");
       parts.push(generateInterfaceForParams(interfaceName, allParams, cls));
       parts.push(`export declare const ${cls.name}: PhpComponent<${interfaceName}>;\n`);
     }
@@ -136,19 +136,19 @@ export function generateDts(meta: PhpFileMeta): string {
   // Generate for standalone functions
   for (const fn of meta.functions) {
     const interfaceName = `${fn.name}_Args`;
-    parts.push('');
+    parts.push("");
     parts.push(generateInterfaceForParams(interfaceName, fn.params));
     parts.push(`export declare const ${fn.name}: PhpComponent<${interfaceName}>;\n`);
   }
 
   // If no classes or functions, generate template default export
   if (!hasClassExports && !hasFunctionExports) {
-    parts.push('');
-    parts.push('declare const _default: PhpComponent<Record<string, unknown>>;');
-    parts.push('export default _default;\n');
+    parts.push("");
+    parts.push("declare const _default: PhpComponent<Record<string, unknown>>;");
+    parts.push("export default _default;\n");
   }
 
-  return parts.join('\n');
+  return parts.join("\n");
 }
 
 /**

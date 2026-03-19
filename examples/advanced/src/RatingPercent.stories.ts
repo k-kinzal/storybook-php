@@ -1,12 +1,12 @@
-import type { Meta, StoryObj } from 'storybook-php';
-import { Rating } from './Rating.php@fromPercent';
+import type { Meta, StoryObj } from "storybook-php";
+import { Rating } from "./Rating.php@fromPercent";
 
 const meta: Meta<typeof Rating> = {
   component: Rating,
-  title: 'Components/RatingPercent',
+  title: "Components/RatingPercent",
   argTypes: {
-    percent: { control: { type: 'number', min: 0, max: 100 } },
-    max: { control: { type: 'number', min: 1, max: 10 } },
+    percent: { control: { type: "number", min: 0, max: 100 } },
+    max: { control: { type: "number", min: 1, max: 10 } },
   },
 };
 

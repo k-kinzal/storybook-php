@@ -1,13 +1,13 @@
-import type { Meta, StoryObj } from 'storybook-php';
-import { Pagination } from './Pagination.php@render';
+import type { Meta, StoryObj } from "storybook-php";
+import { Pagination } from "./Pagination.php@render";
 
 const meta: Meta<typeof Pagination> = {
   component: Pagination,
-  title: 'Components/Pagination',
+  title: "Components/Pagination",
   argTypes: {
-    total: { control: { type: 'number', min: 1, max: 500 } },
-    perPage: { control: { type: 'number', min: 5, max: 50 } },
-    current: { control: { type: 'number', min: 1, max: 50 } },
+    total: { control: { type: "number", min: 1, max: 500 } },
+    perPage: { control: { type: "number", min: 5, max: 50 } },
+    current: { control: { type: "number", min: 1, max: 50 } },
   },
 };
 

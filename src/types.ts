@@ -1,10 +1,10 @@
 /** Callable type supported by the PHP runner */
 export type PhpCallableType =
-  | 'classMethod'
-  | 'staticMethod'
-  | 'function'
-  | 'template'
-  | 'enumMethod';
+  | "classMethod"
+  | "staticMethod"
+  | "function"
+  | "template"
+  | "enumMethod";
 
 /** Definition for a single PHP parameter/argument */
 export interface PhpArgDef {
@@ -15,7 +15,7 @@ export interface PhpArgDef {
   default?: unknown;
   isVariadic?: boolean;
   isPromoted?: boolean;
-  visibility?: 'public' | 'protected' | 'private';
+  visibility?: "public" | "protected" | "private";
   enumType?: string;
   classType?: string;
   unionTypes?: string[];
@@ -42,7 +42,7 @@ export interface PhpComponent<TArgs extends Record<string, unknown> = Record<str
 export interface PhpMethodMeta {
   name: string;
   isStatic: boolean;
-  visibility: 'public' | 'protected' | 'private';
+  visibility: "public" | "protected" | "private";
   params: PhpParamMeta[];
   returnType: string | null;
 }
@@ -56,7 +56,7 @@ export interface PhpParamMeta {
   default?: string;
   isVariadic: boolean;
   isPromoted: boolean;
-  visibility?: 'public' | 'protected' | 'private';
+  visibility?: "public" | "protected" | "private";
   position: number;
 }
 
@@ -75,7 +75,7 @@ export interface PhpClassMeta {
   constructorParams: PhpParamMeta[];
   methods: PhpMethodMeta[];
   isEnum: boolean;
-  enumBackingType?: 'string' | 'int' | null;
+  enumBackingType?: "string" | "int" | null;
   enumCases?: string[];
 }
 

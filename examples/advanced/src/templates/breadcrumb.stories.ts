@@ -1,11 +1,11 @@
-import type { Meta, StoryObj } from 'storybook-php';
-import BreadcrumbTemplate from './breadcrumb.php';
+import type { Meta, StoryObj } from "storybook-php";
+import BreadcrumbTemplate from "./breadcrumb.php";
 
 const meta: Meta = {
   component: BreadcrumbTemplate,
-  title: 'Templates/Breadcrumb',
+  title: "Templates/Breadcrumb",
   argTypes: {
-    separator: { control: 'text' },
+    separator: { control: "text" },
   },
 };
 
@@ -15,34 +15,34 @@ type Story = StoryObj;
 export const Default: Story = {
   args: {
     items: [
-      { label: 'Home', url: '/' },
-      { label: 'Products', url: '/products' },
-      { label: 'Widget' },
+      { label: "Home", url: "/" },
+      { label: "Products", url: "/products" },
+      { label: "Widget" },
     ],
-    separator: '/',
+    separator: "/",
   },
 };
 
 export const Arrow: Story = {
   args: {
     items: [
-      { label: 'Dashboard', url: '/dash' },
-      { label: 'Settings', url: '/settings' },
-      { label: 'Profile' },
+      { label: "Dashboard", url: "/dash" },
+      { label: "Settings", url: "/settings" },
+      { label: "Profile" },
     ],
-    separator: '>',
+    separator: ">",
   },
 };
 
 export const Long: Story = {
   args: {
     items: [
-      { label: 'Home', url: '/' },
-      { label: 'Category', url: '/cat' },
-      { label: 'Subcategory', url: '/sub' },
-      { label: 'Product', url: '/prod' },
-      { label: 'Details' },
+      { label: "Home", url: "/" },
+      { label: "Category", url: "/cat" },
+      { label: "Subcategory", url: "/sub" },
+      { label: "Product", url: "/prod" },
+      { label: "Details" },
     ],
-    separator: '/',
+    separator: "/",
   },
 };

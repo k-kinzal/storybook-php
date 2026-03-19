@@ -1,12 +1,12 @@
-import type { Meta, StoryObj } from 'storybook-php';
-import { formatBytes } from './scalarFunc.php@formatBytes';
+import type { Meta, StoryObj } from "storybook-php";
+import { formatBytes } from "./scalarFunc.php@formatBytes";
 
 const meta: Meta<typeof formatBytes> = {
   component: formatBytes,
-  title: 'Functions/FormatBytes',
+  title: "Functions/FormatBytes",
   argTypes: {
-    bytes: { control: { type: 'number', min: 0 } },
-    precision: { control: { type: 'number', min: 0, max: 6 } },
+    bytes: { control: { type: "number", min: 0 } },
+    precision: { control: { type: "number", min: 0, max: 6 } },
   },
 };
 

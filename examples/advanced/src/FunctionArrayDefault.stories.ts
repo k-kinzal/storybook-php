@@ -1,12 +1,12 @@
-import type { Meta, StoryObj } from 'storybook-php';
-import { renderNav } from './FunctionArrayDefault.php@renderNav';
+import type { Meta, StoryObj } from "storybook-php";
+import { renderNav } from "./FunctionArrayDefault.php@renderNav";
 
 const meta: Meta<typeof renderNav> = {
   component: renderNav,
-  title: 'Functions/FunctionArrayDefault',
+  title: "Functions/FunctionArrayDefault",
   argTypes: {
-    separator: { control: 'text' },
-    activeClass: { control: 'text' },
+    separator: { control: "text" },
+    activeClass: { control: "text" },
   },
 };
 
@@ -18,5 +18,5 @@ export const Default: Story = {
 };
 
 export const CustomItems: Story = {
-  args: { items: ['Dashboard', 'Settings', 'Profile', 'Logout'], separator: ' / ' },
+  args: { items: ["Dashboard", "Settings", "Profile", "Logout"], separator: " / " },
 };

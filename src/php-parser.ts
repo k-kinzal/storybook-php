@@ -1,18 +1,18 @@
-import { readFileSync } from 'node:fs';
+import { readFileSync } from "node:fs";
 import type {
   PhpFileMeta,
   PhpClassMeta,
   PhpFunctionMeta,
   PhpMethodMeta,
   PhpParamMeta,
-} from './types.js';
+} from "./types.js";
 
 // ---------------------------------------------------------------------------
 // Public API
 // ---------------------------------------------------------------------------
 
 export function parsePhpFile(filePath: string): PhpFileMeta {
-  const source = readFileSync(filePath, 'utf-8');
+  const source = readFileSync(filePath, "utf-8");
   return parsePhpSource(source, filePath);
 }
 
@@ -41,7 +41,7 @@ function preprocess(source: string): string {
  * and nowdoc strings.
  */
 function replaceStrings(source: string): string {
-  let result = '';
+  let result = "";
   let i = 0;
   const len = source.length;
 
@@ -50,8 +50,8 @@ function replaceStrings(source: string): string {
 
     // Skip multi-line comments (/* ... */) so that quotes inside comments
     // are not mistaken for string delimiters (e.g. "don't" in a doc block).
-    if (ch === '/' && source[i + 1] === '*') {
-      const end = source.indexOf('*/', i + 2);
+    if (ch === "/" && source[i + 1] === "*") {
+      const end = source.indexOf("*/", i + 2);
       if (end !== -1) {
         result += source.slice(i, end + 2);
         i = end + 2;
@@ -60,9 +60,8 @@ function replaceStrings(source: string): string {
     }
 
     // Skip single-line comments (// and # but not #[)
-    if ((ch === '/' && source[i + 1] === '/') ||
-        (ch === '#' && source[i + 1] !== '[')) {
-      const end = source.indexOf('\n', i);
+    if ((ch === "/" && source[i + 1] === "/") || (ch === "#" && source[i + 1] !== "[")) {
+      const end = source.indexOf("\n", i);
       if (end !== -1) {
         result += source.slice(i, end);
         i = end; // keep the newline for next iteration
@@ -74,7 +73,7 @@ function replaceStrings(source: string): string {
     }
 
     // Check for heredoc / nowdoc: <<<LABEL or <<<'LABEL'
-    if (ch === '<' && source[i + 1] === '<' && source[i + 2] === '<') {
+    if (ch === "<" && source[i + 1] === "<" && source[i + 2] === "<") {
       const afterArrows = i + 3;
       // Match optional quote, identifier, optional quote, then newline
       const heredocMatch = source.slice(afterArrows).match(/^(\s*)(')?([\w]+)\2\s*\n/);
@@ -83,16 +82,16 @@ function replaceStrings(source: string): string {
         const fullMatchLen = heredocMatch[0].length;
         const startOfBody = afterArrows + fullMatchLen;
         // Find the closing label at the start of a line (PHP 7.3+ allows indented)
-        const closingRe = new RegExp(`^\\s*${label}\\s*;?\\s*$`, 'm');
+        const closingRe = new RegExp(`^\\s*${label}\\s*;?\\s*$`, "m");
         const bodySlice = source.slice(startOfBody);
         const closingMatch = closingRe.exec(bodySlice);
         if (closingMatch) {
           const endOfHeredoc = startOfBody + closingMatch.index! + closingMatch[0].length;
-          result += `<<<${heredocMatch[0]}${'__PLACEHOLDER__'}
+          result += `<<<${heredocMatch[0]}${"__PLACEHOLDER__"}
 ${label}\n`;
           i = endOfHeredoc;
           // Skip optional newline after closing label
-          if (source[i] === '\n') i++;
+          if (source[i] === "\n") i++;
           continue;
         }
       }
@@ -105,7 +104,7 @@ ${label}\n`;
     if (ch === "'") {
       i++; // skip opening quote
       while (i < len) {
-        if (source[i] === '\\') {
+        if (source[i] === "\\") {
           i += 2; // skip escaped char
           continue;
         }
@@ -123,7 +122,7 @@ ${label}\n`;
     if (ch === '"') {
       i++; // skip opening quote
       while (i < len) {
-        if (source[i] === '\\') {
+        if (source[i] === "\\") {
           i += 2; // skip escaped char
           continue;
         }
@@ -148,26 +147,26 @@ ${label}\n`;
  * Strip single-line comments (// and # but not #[) and multi-line comments.
  */
 function stripComments(source: string): string {
-  let result = '';
+  let result = "";
   let i = 0;
   const len = source.length;
 
   while (i < len) {
     // Multi-line comment /* ... */
-    if (source[i] === '/' && source[i + 1] === '*') {
-      const end = source.indexOf('*/', i + 2);
+    if (source[i] === "/" && source[i + 1] === "*") {
+      const end = source.indexOf("*/", i + 2);
       if (end !== -1) {
         // Preserve newlines so line structure is maintained
         const comment = source.slice(i, end + 2);
-        result += comment.replace(/[^\n]/g, ' ');
+        result += comment.replace(/[^\n]/g, " ");
         i = end + 2;
         continue;
       }
     }
 
     // Single-line comment //
-    if (source[i] === '/' && source[i + 1] === '/') {
-      const end = source.indexOf('\n', i);
+    if (source[i] === "/" && source[i + 1] === "/") {
+      const end = source.indexOf("\n", i);
       if (end !== -1) {
         i = end; // keep the newline
       } else {
@@ -177,8 +176,8 @@ function stripComments(source: string): string {
     }
 
     // Single-line comment # (but not #[)
-    if (source[i] === '#' && source[i + 1] !== '[') {
-      const end = source.indexOf('\n', i);
+    if (source[i] === "#" && source[i + 1] !== "[") {
+      const end = source.indexOf("\n", i);
       if (end !== -1) {
         i = end;
       } else {
@@ -198,18 +197,18 @@ function stripComments(source: string): string {
  * Strip PHP 8 attributes #[...] including nested brackets.
  */
 function stripAttributes(source: string): string {
-  let result = '';
+  let result = "";
   let i = 0;
   const len = source.length;
 
   while (i < len) {
-    if (source[i] === '#' && source[i + 1] === '[') {
+    if (source[i] === "#" && source[i + 1] === "[") {
       // Skip the attribute
       let depth = 0;
       i++; // skip #
       while (i < len) {
-        if (source[i] === '[') depth++;
-        else if (source[i] === ']') {
+        if (source[i] === "[") depth++;
+        else if (source[i] === "]") {
           depth--;
           if (depth === 0) {
             i++; // skip closing ]
@@ -266,9 +265,9 @@ function extractClasses(source: string, ns: string | null): PhpClassMeta[] {
     const name = match[5]!;
     const afterName = match[6]!;
 
-    const isEnum = keyword === 'enum';
-    const isTrait = keyword === 'trait';
-    const isInterface = keyword === 'interface';
+    const isEnum = keyword === "enum";
+    const isTrait = keyword === "trait";
+    const isInterface = keyword === "interface";
 
     // Extract the body using brace counting
     const bodyStart = match.index + match[0].length;
@@ -277,13 +276,13 @@ function extractClasses(source: string, ns: string | null): PhpClassMeta[] {
     // Parse extends / implements / enum backing type
     let extendsClass: string | null = null;
     const implementsList: string[] = [];
-    let enumBackingType: 'string' | 'int' | null = null;
+    let enumBackingType: "string" | "int" | null = null;
 
     if (isEnum) {
       // Enum backing type: enum Name: string
       const backingMatch = /:\s*(string|int)/.exec(afterName);
       if (backingMatch) {
-        enumBackingType = backingMatch[1] as 'string' | 'int';
+        enumBackingType = backingMatch[1] as "string" | "int";
       }
     }
 
@@ -295,7 +294,10 @@ function extractClasses(source: string, ns: string | null): PhpClassMeta[] {
     const implementsMatch = /implements\s+([\w\\,\s]+)/.exec(afterName);
     if (implementsMatch) {
       implementsList.push(
-        ...implementsMatch[1]!.split(',').map((s) => s.trim()).filter(Boolean),
+        ...implementsMatch[1]!
+          .split(",")
+          .map((s) => s.trim())
+          .filter(Boolean),
       );
     }
 
@@ -312,11 +314,14 @@ function extractClasses(source: string, ns: string | null): PhpClassMeta[] {
     // Extract trait usage: use TraitName; or use TraitA, TraitB;
     // Both classes and enums can use traits in PHP 8.1+
     const traits: string[] = [];
-    if (keyword === 'class' || keyword === 'enum' || keyword === 'trait') {
+    if (keyword === "class" || keyword === "enum" || keyword === "trait") {
       const traitRe = /\buse\s+([\w\\]+(?:\s*,\s*[\w\\]+)*)\s*[;{]/g;
       let traitMatch: RegExpExecArray | null;
       while ((traitMatch = traitRe.exec(body)) !== null) {
-        const traitNames = traitMatch[1]!.split(',').map((s) => s.trim()).filter(Boolean);
+        const traitNames = traitMatch[1]!
+          .split(",")
+          .map((s) => s.trim())
+          .filter(Boolean);
         traits.push(...traitNames);
       }
     }
@@ -354,10 +359,7 @@ function extractClasses(source: string, ns: string | null): PhpClassMeta[] {
 // Standalone function extraction
 // ---------------------------------------------------------------------------
 
-function extractStandaloneFunctions(
-  source: string,
-  ns: string | null,
-): PhpFunctionMeta[] {
+function extractStandaloneFunctions(source: string, ns: string | null): PhpFunctionMeta[] {
   const functions: PhpFunctionMeta[] = [];
 
   // First, identify all class-like body ranges so we can exclude functions inside them
@@ -380,15 +382,13 @@ function extractStandaloneFunctions(
     const funcName = funcMatch[1]!;
 
     // Skip if this is __construct or a method inside a class body
-    if (funcName === '__construct') continue;
+    if (funcName === "__construct") continue;
 
     // Check if this function is inside any class-like body
-    const insideClass = classRanges.some(
-      (r) => funcPos > r.start && funcPos < r.end,
-    );
+    const insideClass = classRanges.some((r) => funcPos > r.start && funcPos < r.end);
     if (insideClass) continue;
 
-    const rawParams = funcMatch[2] ?? '';
+    const rawParams = funcMatch[2] ?? "";
     const returnType = funcMatch[3] ?? null;
 
     const params = parseParams(rawParams);
@@ -406,11 +406,11 @@ function extractStandaloneFunctions(
 
 function extractConstructorParams(classBody: string): PhpParamMeta[] {
   // Match __construct with its parameter list. Use bracket-aware extraction.
-  const ctorIdx = classBody.indexOf('function __construct');
+  const ctorIdx = classBody.indexOf("function __construct");
   if (ctorIdx === -1) return [];
 
   // Find opening paren
-  const parenOpen = classBody.indexOf('(', ctorIdx);
+  const parenOpen = classBody.indexOf("(", ctorIdx);
   if (parenOpen === -1) return [];
 
   // Bracket-aware: find closing paren
@@ -426,25 +426,24 @@ function extractMethods(classBody: string): PhpMethodMeta[] {
   const methods: PhpMethodMeta[] = [];
 
   // Pattern: (visibility) (static) function name(params): returnType
-  const methodRe =
-    /\b(public|protected|private)\s+(static\s+)?function\s+(\w+)\s*\(/g;
+  const methodRe = /\b(public|protected|private)\s+(static\s+)?function\s+(\w+)\s*\(/g;
 
   let match: RegExpExecArray | null;
   while ((match = methodRe.exec(classBody)) !== null) {
-    const visibility = match[1] as 'public' | 'protected' | 'private';
+    const visibility = match[1] as "public" | "protected" | "private";
     const isStatic = !!match[2];
     const name = match[3]!;
 
     // Skip __construct from methods list (it's handled separately)
-    if (name === '__construct') continue;
+    if (name === "__construct") continue;
 
     // Extract params: find the full parameter list
-    const parenStart = classBody.indexOf('(', match.index + match[0].length - 1);
+    const parenStart = classBody.indexOf("(", match.index + match[0].length - 1);
     const rawParams = extractParenContent(classBody, parenStart + 1);
     const params = parseParams(rawParams);
 
     // Extract return type: look after the closing paren
-    const afterParen = classBody.indexOf(')', parenStart + 1 + rawParams.length);
+    const afterParen = classBody.indexOf(")", parenStart + 1 + rawParams.length);
     let returnType: string | null = null;
     if (afterParen !== -1) {
       const afterParenSlice = classBody.slice(afterParen + 1, afterParen + 100);
@@ -470,19 +469,19 @@ function extractMethods(classBody: string): PhpMethodMeta[] {
 function splitParams(raw: string): string[] {
   const params: string[] = [];
   let depth = 0;
-  let current = '';
+  let current = "";
 
   for (let i = 0; i < raw.length; i++) {
     const ch = raw[i]!;
-    if (ch === '(' || ch === '[' || ch === '{') {
+    if (ch === "(" || ch === "[" || ch === "{") {
       depth++;
       current += ch;
-    } else if (ch === ')' || ch === ']' || ch === '}') {
+    } else if (ch === ")" || ch === "]" || ch === "}") {
       depth--;
       current += ch;
-    } else if (ch === ',' && depth === 0) {
+    } else if (ch === "," && depth === 0) {
       params.push(current.trim());
-      current = '';
+      current = "";
     } else {
       current += ch;
     }
@@ -530,10 +529,10 @@ function parseOneParam(raw: string, position: number): PhpParamMeta | null {
   let remaining = raw.trim();
 
   // Extract visibility
-  let visibility: 'public' | 'protected' | 'private' | undefined;
+  let visibility: "public" | "protected" | "private" | undefined;
   const visMatch = /^(public|protected|private)\s+/.exec(remaining);
   if (visMatch) {
-    visibility = visMatch[1] as 'public' | 'protected' | 'private';
+    visibility = visMatch[1] as "public" | "protected" | "private";
     remaining = remaining.slice(visMatch[0].length);
   }
 
@@ -563,9 +562,9 @@ function parseOneParam(raw: string, position: number): PhpParamMeta | null {
   // Also handle union types: A|B $name, intersection: A&B $name, DNF: (A&B)|C $name
 
   // Check for variadic before the $name
-  if (remaining.includes('...')) {
+  if (remaining.includes("...")) {
     isVariadic = true;
-    remaining = remaining.replace('...', '');
+    remaining = remaining.replace("...", "");
   }
 
   // Split into type and name
@@ -574,7 +573,7 @@ function parseOneParam(raw: string, position: number): PhpParamMeta | null {
   let nullable = false;
 
   // Find the parameter name ($variable)
-  const dollarIdx = remaining.lastIndexOf('$');
+  const dollarIdx = remaining.lastIndexOf("$");
   if (dollarIdx === -1) return null;
 
   name = remaining.slice(dollarIdx + 1).trim();
@@ -583,14 +582,14 @@ function parseOneParam(raw: string, position: number): PhpParamMeta | null {
   if (beforeDollar) {
     type = beforeDollar;
     // Handle nullable ?Type
-    if (type.startsWith('?')) {
+    if (type.startsWith("?")) {
       nullable = true;
       type = type.slice(1);
     }
     // Union types containing null are also nullable
-    if (type.includes('|')) {
-      const unionParts = type.split('|').map((s) => s.trim());
-      if (unionParts.some((p) => p.toLowerCase() === 'null')) {
+    if (type.includes("|")) {
+      const unionParts = type.split("|").map((s) => s.trim());
+      if (unionParts.some((p) => p.toLowerCase() === "null")) {
         nullable = true;
       }
     }
@@ -619,11 +618,11 @@ function findTopLevelEquals(s: string): number {
   let depth = 0;
   for (let i = 0; i < s.length; i++) {
     const ch = s[i]!;
-    if (ch === '(' || ch === '[' || ch === '{') depth++;
-    else if (ch === ')' || ch === ']' || ch === '}') depth--;
-    else if (ch === '=' && depth === 0) {
+    if (ch === "(" || ch === "[" || ch === "{") depth++;
+    else if (ch === ")" || ch === "]" || ch === "}") depth--;
+    else if (ch === "=" && depth === 0) {
       // Make sure it's not == or ===
-      if (s[i + 1] !== '=') return i;
+      if (s[i + 1] !== "=") return i;
     }
   }
   return -1;
@@ -643,8 +642,8 @@ function extractBraceBody(source: string, startIdx: number): string {
   let i = startIdx;
 
   while (i < source.length && depth > 0) {
-    if (source[i] === '{') depth++;
-    else if (source[i] === '}') depth--;
+    if (source[i] === "{") depth++;
+    else if (source[i] === "}") depth--;
     if (depth > 0) i++;
   }
 
@@ -661,8 +660,8 @@ function extractParenContent(source: string, startIdx: number): string {
   let i = startIdx;
 
   while (i < source.length && depth > 0) {
-    if (source[i] === '(') depth++;
-    else if (source[i] === ')') depth--;
+    if (source[i] === "(") depth++;
+    else if (source[i] === ")") depth--;
     if (depth > 0) i++;
   }
 

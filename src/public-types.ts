@@ -1,4 +1,4 @@
-import type { PhpComponent, PhpRenderer } from './types.js';
+import type { PhpComponent, PhpRenderer } from "./types.js";
 
 /** Extract the args type from a PhpComponent */
 type ArgsFromComponent<C> = C extends PhpComponent<infer A> ? A : Record<string, unknown>;
@@ -36,10 +36,7 @@ export type StoryFn<TComponent extends PhpComponent = PhpComponent> = (
 ) => string;
 
 /** Decorator function */
-export type Decorator = (
-  storyFn: () => string,
-  context: StoryContext,
-) => string;
+export type Decorator = (storyFn: () => string, context: StoryContext) => string;
 
 /** Story context passed to decorators and play functions */
 export interface StoryContext {

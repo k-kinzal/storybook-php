@@ -1,9 +1,9 @@
-import type { Meta, StoryObj } from 'storybook-php';
-import { EnumStaticInstance } from './EnumStaticInstance.php@all';
+import type { Meta, StoryObj } from "storybook-php";
+import { EnumStaticInstance } from "./EnumStaticInstance.php@all";
 
 const meta: Meta<typeof EnumStaticInstance> = {
   component: EnumStaticInstance,
-  title: 'Enums/EnumStaticInstanceAll',
+  title: "Enums/EnumStaticInstanceAll",
 };
 
 export default meta;

@@ -1,93 +1,94 @@
-import { describe, it, expect } from 'vitest';
-import { generateDts } from '../typegen.js';
-import { parsePhpSource } from '../php-parser.js';
-import { readFileSync } from 'node:fs';
-import { resolve } from 'node:path';
+import { describe, it, expect } from "vitest";
+import { generateDts } from "../typegen.js";
+import { parsePhpSource } from "../php-parser.js";
+import { readFileSync } from "node:fs";
+import { resolve } from "node:path";
 
-const fixture = (name: string) =>
-  readFileSync(resolve(__dirname, 'fixtures', name), 'utf-8');
+const fixture = (name: string) => readFileSync(resolve(__dirname, "fixtures", name), "utf-8");
 
 const fixtureSource = (name: string) =>
-  parsePhpSource(fixture(name), resolve(__dirname, 'fixtures', name));
+  parsePhpSource(fixture(name), resolve(__dirname, "fixtures", name));
 
-describe('Type Generation', () => {
+describe("Type Generation", () => {
   // -----------------------------------------------------------------------
   // 1. Simple class: constructor args + method args
   // -----------------------------------------------------------------------
-  it('generates interface with constructor args + method args for simple class', () => {
-    const meta = fixtureSource('SimpleComponent.php');
+  it("generates interface with constructor args + method args for simple class", () => {
+    const meta = fixtureSource("SimpleComponent.php");
     const dts = generateDts(meta);
 
     expect(dts).toContain("import type { PhpComponent } from 'storybook-php';");
-    expect(dts).toContain('interface SimpleComponent_render_Args');
-    expect(dts).toContain('name: string;');
-    expect(dts).toContain('age?: number;');
-    expect(dts).toContain('export declare const SimpleComponent: PhpComponent<SimpleComponent_render_Args>;');
+    expect(dts).toContain("interface SimpleComponent_render_Args");
+    expect(dts).toContain("name: string;");
+    expect(dts).toContain("age?: number;");
+    expect(dts).toContain(
+      "export declare const SimpleComponent: PhpComponent<SimpleComponent_render_Args>;",
+    );
   });
 
   // -----------------------------------------------------------------------
   // 2. Static method: only method args
   // -----------------------------------------------------------------------
-  it('generates interface with only method args for static method', () => {
-    const meta = fixtureSource('StaticMethods.php');
+  it("generates interface with only method args for static method", () => {
+    const meta = fixtureSource("StaticMethods.php");
     const dts = generateDts(meta);
 
-    expect(dts).toContain('interface Alert_danger_Args');
-    expect(dts).toContain('message: string;');
-    expect(dts).toContain('dismissible?: boolean;');
-    expect(dts).toContain('export declare const Alert: PhpComponent<Alert_danger_Args>;');
+    expect(dts).toContain("interface Alert_danger_Args");
+    expect(dts).toContain("message: string;");
+    expect(dts).toContain("dismissible?: boolean;");
+    expect(dts).toContain("export declare const Alert: PhpComponent<Alert_danger_Args>;");
   });
 
   // -----------------------------------------------------------------------
   // 3. Standalone function
   // -----------------------------------------------------------------------
-  it('generates function-style interface for standalone functions', () => {
-    const meta = fixtureSource('StandaloneFunctions.php');
+  it("generates function-style interface for standalone functions", () => {
+    const meta = fixtureSource("StandaloneFunctions.php");
     const dts = generateDts(meta);
 
-    expect(dts).toContain('interface badge_Args');
-    expect(dts).toContain('label: string;');
-    expect(dts).toContain('color?: string;');
-    expect(dts).toContain('export declare const badge: PhpComponent<badge_Args>;');
+    expect(dts).toContain("interface badge_Args");
+    expect(dts).toContain("label: string;");
+    expect(dts).toContain("color?: string;");
+    expect(dts).toContain("export declare const badge: PhpComponent<badge_Args>;");
 
-    expect(dts).toContain('interface icon_Args');
-    expect(dts).toContain('name: string;');
-    expect(dts).toContain('size?: number;');
-    expect(dts).toContain('export declare const icon: PhpComponent<icon_Args>;');
+    expect(dts).toContain("interface icon_Args");
+    expect(dts).toContain("name: string;");
+    expect(dts).toContain("size?: number;");
+    expect(dts).toContain("export declare const icon: PhpComponent<icon_Args>;");
   });
 
   // -----------------------------------------------------------------------
   // 4. Enum with method
   // -----------------------------------------------------------------------
-  it('generates interface with _case arg for enum methods', () => {
-    const meta = fixtureSource('EnumComponent.php');
+  it("generates interface with _case arg for enum methods", () => {
+    const meta = fixtureSource("EnumComponent.php");
     const dts = generateDts(meta);
 
-    expect(dts).toContain('interface Color_badge_Args');
-    expect(dts).toContain('_case: string;');
-    expect(dts).toContain('export declare const Color: PhpComponent<Color_badge_Args>;');
+    expect(dts).toContain("interface Color_badge_Args");
+    expect(dts).toContain("_case: string;");
+    expect(dts).toContain("export declare const Color: PhpComponent<Color_badge_Args>;");
 
     // Enum with label method that has a param
-    expect(dts).toContain('interface Color_label_Args');
-    expect(dts).toContain('prefix?: string;');
+    expect(dts).toContain("interface Color_label_Args");
+    expect(dts).toContain("prefix?: string;");
   });
 
   // -----------------------------------------------------------------------
   // 5. Template: default export
   // -----------------------------------------------------------------------
-  it('generates default export for template files', () => {
-    const meta = fixtureSource('TemplateFile.php');
+  it("generates default export for template files", () => {
+    const meta = fixtureSource("TemplateFile.php");
     const dts = generateDts(meta);
 
     expect(dts).toContain("import type { PhpComponent } from 'storybook-php';");
-    expect(dts).toContain('declare const _default: PhpComponent<Record<string, unknown>>;');
-    expect(dts).toContain('export default _default;');
+    expect(dts).toContain("declare const _default: PhpComponent<Record<string, unknown>>;");
+    expect(dts).toContain("export default _default;");
   });
 
   // -----------------------------------------------------------------------
   // 6. PHP type mapping
   // -----------------------------------------------------------------------
-  it('maps PHP types to TypeScript types correctly', () => {
+  it("maps PHP types to TypeScript types correctly", () => {
     const source = `<?php
 class TypeTest {
     public function __construct(
@@ -104,102 +105,102 @@ class TypeTest {
     }
 }
 `;
-    const meta = parsePhpSource(source, 'test.php');
+    const meta = parsePhpSource(source, "test.php");
     const dts = generateDts(meta);
 
     // string -> string
-    expect(dts).toContain('a: string;');
+    expect(dts).toContain("a: string;");
     // int -> number
-    expect(dts).toContain('b: number;');
+    expect(dts).toContain("b: number;");
     // float -> number
-    expect(dts).toContain('c: number;');
+    expect(dts).toContain("c: number;");
     // bool -> boolean
-    expect(dts).toContain('d: boolean;');
+    expect(dts).toContain("d: boolean;");
     // array -> unknown[]
-    expect(dts).toContain('e: unknown[];');
+    expect(dts).toContain("e: unknown[];");
     // ?string -> string | null
-    expect(dts).toContain('f?: string | null;');
+    expect(dts).toContain("f?: string | null;");
   });
 
   // -----------------------------------------------------------------------
   // 7. Optional params have ? in interface
   // -----------------------------------------------------------------------
-  it('marks optional params with ? in interface', () => {
-    const meta = fixtureSource('ComplexComponent.php');
+  it("marks optional params with ? in interface", () => {
+    const meta = fixtureSource("ComplexComponent.php");
     const dts = generateDts(meta);
 
-    expect(dts).toContain('interface ComplexComponent_render_Args');
+    expect(dts).toContain("interface ComplexComponent_render_Args");
     // title is required
-    expect(dts).toContain('title: string;');
+    expect(dts).toContain("title: string;");
     // subtitle is nullable with default null -- optional
-    expect(dts).toContain('subtitle?: string | null;');
+    expect(dts).toContain("subtitle?: string | null;");
     // featured has a default -- optional
-    expect(dts).toContain('featured?: boolean;');
+    expect(dts).toContain("featured?: boolean;");
     // items has a default -- optional
-    expect(dts).toContain('items?: unknown[];');
+    expect(dts).toContain("items?: unknown[];");
   });
 
   // -----------------------------------------------------------------------
   // 8. Multiple classes -> multiple exports
   // -----------------------------------------------------------------------
-  it('generates multiple exports for multiple classes', () => {
-    const meta = fixtureSource('MultipleClasses.php');
+  it("generates multiple exports for multiple classes", () => {
+    const meta = fixtureSource("MultipleClasses.php");
     const dts = generateDts(meta);
 
-    expect(dts).toContain('interface Header_render_Args');
-    expect(dts).toContain('export declare const Header: PhpComponent<Header_render_Args>;');
+    expect(dts).toContain("interface Header_render_Args");
+    expect(dts).toContain("export declare const Header: PhpComponent<Header_render_Args>;");
 
-    expect(dts).toContain('interface Footer_render_Args');
-    expect(dts).toContain('export declare const Footer: PhpComponent<Footer_render_Args>;');
+    expect(dts).toContain("interface Footer_render_Args");
+    expect(dts).toContain("export declare const Footer: PhpComponent<Footer_render_Args>;");
   });
 
   // -----------------------------------------------------------------------
   // Additional type mapping tests
   // -----------------------------------------------------------------------
-  it('maps union types correctly', () => {
+  it("maps union types correctly", () => {
     const source = `<?php
 class UnionDemo {
     public function handle(string|int $id): void {}
 }
 `;
-    const meta = parsePhpSource(source, 'test.php');
+    const meta = parsePhpSource(source, "test.php");
     const dts = generateDts(meta);
 
-    expect(dts).toContain('id: string | number;');
+    expect(dts).toContain("id: string | number;");
   });
 
-  it('maps object and mixed to unknown', () => {
+  it("maps object and mixed to unknown", () => {
     const source = `<?php
 class MixedDemo {
     public function handle(object $a, mixed $b): void {}
 }
 `;
-    const meta = parsePhpSource(source, 'test.php');
+    const meta = parsePhpSource(source, "test.php");
     const dts = generateDts(meta);
 
-    expect(dts).toContain('a: unknown;');
-    expect(dts).toContain('b: unknown;');
+    expect(dts).toContain("a: unknown;");
+    expect(dts).toContain("b: unknown;");
   });
 
-  it('maps class-typed params to Record<string, unknown>', () => {
+  it("maps class-typed params to Record<string, unknown>", () => {
     const source = `<?php
 class ClassParam {
     public function handle(SomeService $service): void {}
 }
 `;
-    const meta = parsePhpSource(source, 'test.php');
+    const meta = parsePhpSource(source, "test.php");
     const dts = generateDts(meta);
 
-    expect(dts).toContain('service: Record<string, unknown>;');
+    expect(dts).toContain("service: Record<string, unknown>;");
   });
 
-  it('maps untyped params to unknown', () => {
+  it("maps untyped params to unknown", () => {
     const source = `<?php
 function loose($anything): void {}
 `;
-    const meta = parsePhpSource(source, 'test.php');
+    const meta = parsePhpSource(source, "test.php");
     const dts = generateDts(meta);
 
-    expect(dts).toContain('anything: unknown;');
+    expect(dts).toContain("anything: unknown;");
   });
 });

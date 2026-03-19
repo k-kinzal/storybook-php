@@ -1,9 +1,9 @@
-import type { Meta, StoryObj } from 'storybook-php';
-import { TypedConstant } from './TypedConstant.php@render';
+import type { Meta, StoryObj } from "storybook-php";
+import { TypedConstant } from "./TypedConstant.php@render";
 
 const meta: Meta<typeof TypedConstant> = {
   component: TypedConstant,
-  title: 'PHP83/TypedConstant',
+  title: "PHP83/TypedConstant",
 };
 
 export default meta;
@@ -14,5 +14,5 @@ export const Default: Story = {
 };
 
 export const Custom: Story = {
-  args: { text: 'Long text that might be truncated', maxLength: 10 },
+  args: { text: "Long text that might be truncated", maxLength: 10 },
 };

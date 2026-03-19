@@ -1,12 +1,12 @@
-import type { Meta, StoryObj } from 'storybook-php';
-import { formatFileSize } from './utilFormat.php@formatFileSize';
+import type { Meta, StoryObj } from "storybook-php";
+import { formatFileSize } from "./utilFormat.php@formatFileSize";
 
 const meta: Meta<typeof formatFileSize> = {
   component: formatFileSize,
-  title: 'Functions/FormatFileSize',
+  title: "Functions/FormatFileSize",
   argTypes: {
-    bytes: { control: { type: 'number', min: 0 } },
-    precision: { control: { type: 'number', min: 0, max: 3 } },
+    bytes: { control: { type: "number", min: 0 } },
+    precision: { control: { type: "number", min: 0, max: 3 } },
   },
 };
 
