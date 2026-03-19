@@ -75,7 +75,8 @@ npx storybook-php start
 ## Testing
 
 ```bash
-npx --package=vitest --package=@storybook/addon-vitest \
+npx --package=storybook-php --package=vitest \
+    --package=@storybook/addon-vitest \
     --package=@vitest/browser-playwright \
     storybook-php test
 ```
