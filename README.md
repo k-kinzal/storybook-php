@@ -15,7 +15,7 @@ import type { StorybookConfig } from "storybook";
 const config: StorybookConfig = {
   stories: ["../src/**/*.stories.ts"],
   framework: {
-    name: "storybook-php/preset",
+    name: "storybook-php",
     options: {},
   },
 };
@@ -55,16 +55,8 @@ export const Default: Story = {
 };
 ```
 
-Run directly with `npx`:
-
 ```bash
 npx storybook-php start
-```
-
-Or install as a project dependency:
-
-```bash
-npm install storybook-php storybook @storybook/builder-vite vite
 ```
 
 ## npx storybook-php
@@ -73,10 +65,31 @@ npm install storybook-php storybook @storybook/builder-vite vite
 | ------------------------------------- | ------------------------------------ |
 | `npx storybook-php start [opts]`      | Start Storybook dev server           |
 | `npx storybook-php build [opts]`      | Build static Storybook               |
-| `npx storybook-php test [opts]`       | Run tests via vitest                 |
+| `npx storybook-php test [opts]`       | Run Storybook tests                  |
 | `npx storybook-php typegen [dirs...]` | Generate .d.ts files for PHP sources |
 
 `start` and `build` accept the same options as the `storybook` CLI (e.g. `-p 6006`).
+
+`typegen` defaults to the `src` directory when no directories are specified.
+
+## Testing
+
+```bash
+npx --package=vitest --package=@storybook/addon-vitest \
+    --package=@vitest/browser-playwright \
+    storybook-php test
+```
+
+Add `@storybook/addon-vitest` to `.storybook/main.ts`:
+
+```typescript
+const config: StorybookConfig = {
+  addons: ["@storybook/addon-vitest"],
+  // ...
+};
+```
+
+A default `vitest.config` is used automatically. To customize, create your own `vitest.config.ts`.
 
 ## Import Syntax
 

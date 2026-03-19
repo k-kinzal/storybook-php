@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 import { resolve, relative, dirname } from "node:path";
-import { fileURLToPath } from "node:url";
+import { fileURLToPath, pathToFileURL } from "node:url";
 import { spawn } from "node:child_process";
 import { createRequire } from "node:module";
 import {
@@ -89,33 +89,61 @@ function runStorybook(cmd: string, cliArgs: string[]): void {
   withCleanup(cleanup, child);
 }
 
-function runTest(cliArgs: string[]): void {
-  const require = createRequire(import.meta.url);
+function resolvePackageBin(pkg: string, bin: string): string {
+  const bases = [
+    import.meta.url,
+    pathToFileURL(resolve(process.cwd(), "_resolve.js")).href,
+  ];
+  for (const base of bases) {
+    try {
+      const pkgJson = createRequire(base).resolve(`${pkg}/package.json`);
+      return resolve(dirname(pkgJson), bin);
+    } catch {
+      // continue
+    }
+  }
+  throw new Error(`${pkg} not found. Install it in your project:\n\n  npm install -D ${pkg}\n`);
+}
 
+function runTest(cliArgs: string[]): void {
   let vitestBin: string;
   try {
-    vitestBin = require.resolve("vitest/vitest.mjs");
+    vitestBin = resolvePackageBin("vitest", "vitest.mjs");
   } catch {
     console.error(
       [
-        "vitest not found. Add it via --package:",
+        "vitest not found. Install test dependencies or use --package:",
         "",
-        "  npx --package=storybook-php --package=vitest \\",
+        "  npx --package=vitest --package=@storybook/addon-vitest \\",
         "      --package=@vitest/browser-playwright \\",
-        "      -- storybook-php test",
+        "      storybook-php test",
         "",
       ].join("\n"),
     );
     process.exit(1);
   }
 
+  // Use bundled vitest config if user has none and --config is not specified
+  const configArgs: string[] = [];
+  if (!hasUserConfig() && !cliArgs.some((a) => a === "--config" || a === "-c" || a.startsWith("--config="))) {
+    const __filename = fileURLToPath(import.meta.url);
+    const defaultConfig = resolve(dirname(__filename), "..", "templates", "vitest.config.mjs");
+    configArgs.push("--config", defaultConfig, "--root", process.cwd());
+  }
+
   const cleanup = ensureNodeModulesLink();
 
-  const child = spawn(process.execPath, [vitestBin, "run", ...cliArgs], {
+  const child = spawn(process.execPath, [vitestBin, "run", ...configArgs, ...cliArgs], {
     stdio: "inherit",
   });
 
   withCleanup(cleanup, child);
+}
+
+function hasUserConfig(): boolean {
+  const bases = ["vitest.config", "vitest.workspace"];
+  const exts = [".ts", ".mts", ".cts", ".js", ".mjs", ".cjs"];
+  return bases.some((base) => exts.some((ext) => existsSync(resolve(base + ext))));
 }
 
 function runTypegen(dirs: string[]): void {
@@ -146,7 +174,7 @@ function printUsage(): void {
       "Commands:",
       "  start [opts]      Start Storybook dev server",
       "  build [opts]      Build static Storybook",
-      "  test [opts]       Run tests via vitest",
+      "  test [opts]       Run Storybook tests",
       "  typegen [dirs...] Generate .d.ts files for PHP sources",
     ].join("\n"),
   );
