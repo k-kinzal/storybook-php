@@ -136,6 +136,24 @@ ${label}\n`;
       continue;
     }
 
+    // Backtick string (shell exec)
+    if (ch === "`") {
+      i++; // skip opening backtick
+      while (i < len) {
+        if (source[i] === "\\") {
+          i += 2; // skip escaped char
+          continue;
+        }
+        if (source[i] === "`") {
+          i++; // skip closing backtick
+          break;
+        }
+        i++;
+      }
+      result += "`__PLACEHOLDER__`";
+      continue;
+    }
+
     result += ch;
     i++;
   }
@@ -231,7 +249,7 @@ function stripAttributes(source: string): string {
 // ---------------------------------------------------------------------------
 
 function extractNamespace(source: string): string | null {
-  const match = /namespace\s+([\w\\]+)\s*;/.exec(source);
+  const match = /namespace\s+([\w\\]+)\s*[;{]/.exec(source);
   return match ? match[1]! : null;
 }
 
@@ -241,15 +259,13 @@ function extractNamespace(source: string): string | null {
 
 /**
  * Pattern that matches class-like declarations. We capture:
- *   1: abstract
- *   2: final
- *   3: readonly
- *   4: keyword (class|enum|interface|trait)
- *   5: name
- *   6: rest-of-line up to {
+ *   1: modifier prefix (any order of abstract/final/readonly)
+ *   2: keyword (class|enum|interface|trait)
+ *   3: name
+ *   4: rest-of-line up to {
  */
 const CLASS_LIKE_RE =
-  /\b(abstract\s+)?(final\s+)?(readonly\s+)?(class|enum|interface|trait)\s+(\w+)([^{]*)\{/g;
+  /\b((?:(?:abstract|final|readonly)\s+)*)(class|enum|interface|trait)\s+(\w+)([^{]*)\{/g;
 
 function extractClasses(source: string, ns: string | null): PhpClassMeta[] {
   const classes: PhpClassMeta[] = [];
@@ -258,12 +274,17 @@ function extractClasses(source: string, ns: string | null): PhpClassMeta[] {
   CLASS_LIKE_RE.lastIndex = 0;
 
   while ((match = CLASS_LIKE_RE.exec(source)) !== null) {
-    const isAbstract = !!match[1];
-    const isFinal = !!match[2];
-    const isReadonly = !!match[3];
-    const keyword = match[4]!;
-    const name = match[5]!;
-    const afterName = match[6]!;
+    const modifiers = match[1] || "";
+    const isAbstract = /\babstract\b/.test(modifiers);
+    const isFinal = /\bfinal\b/.test(modifiers);
+    const isReadonly = /\breadonly\b/.test(modifiers);
+    const keyword = match[2]!;
+    const name = match[3]!;
+    const afterName = match[4]!;
+
+    // Skip anonymous classes: "new class { }" or "new class extends Foo { }"
+    const before = source.slice(Math.max(0, match.index - 20), match.index);
+    if (/\bnew\s*$/.test(before)) continue;
 
     const isEnum = keyword === "enum";
     const isTrait = keyword === "trait";
@@ -286,9 +307,11 @@ function extractClasses(source: string, ns: string | null): PhpClassMeta[] {
       }
     }
 
-    const extendsMatch = /extends\s+([\w\\]+)/.exec(afterName);
+    const extendsMatch = /extends\s+([\w\\]+(?:\s*,\s*[\w\\]+)*)/.exec(afterName);
     if (extendsMatch) {
-      extendsClass = extendsMatch[1]!;
+      // For interfaces that extend multiple parents, take the first one
+      // (downstream code expects a single string)
+      extendsClass = extendsMatch[1]!.split(",")[0]!.trim();
     }
 
     const implementsMatch = /implements\s+([\w\\,\s]+)/.exec(afterName);
@@ -301,12 +324,13 @@ function extractClasses(source: string, ns: string | null): PhpClassMeta[] {
       );
     }
 
-    // Extract enum cases
+    // Extract enum cases (only at top-level, not inside methods)
     const enumCases: string[] = [];
     if (isEnum) {
+      const topLevel = extractTopLevelContent(body);
       const caseRe = /\bcase\s+(\w+)/g;
       let caseMatch: RegExpExecArray | null;
-      while ((caseMatch = caseRe.exec(body)) !== null) {
+      while ((caseMatch = caseRe.exec(topLevel)) !== null) {
         enumCases.push(caseMatch[1]!);
       }
     }
@@ -372,12 +396,11 @@ function extractStandaloneFunctions(source: string, ns: string | null): PhpFunct
     classRanges.push({ start: clsMatch.index, end: bodyStart + body.length + 1 });
   }
 
-  // Now find all function declarations
-  const funcRe =
-    /\bfunction\s+(\w+)\s*\(([^)]*(?:\([^)]*\)[^)]*)*)\)\s*(?::\s*([\w\\|&?()]+))?\s*\{/g;
+  // Now find all function declarations (bracket-aware)
+  const funcStartRe = /\bfunction\s+(\w+)\s*\(/g;
 
   let funcMatch: RegExpExecArray | null;
-  while ((funcMatch = funcRe.exec(source)) !== null) {
+  while ((funcMatch = funcStartRe.exec(source)) !== null) {
     const funcPos = funcMatch.index;
     const funcName = funcMatch[1]!;
 
@@ -388,9 +411,17 @@ function extractStandaloneFunctions(source: string, ns: string | null): PhpFunct
     const insideClass = classRanges.some((r) => funcPos > r.start && funcPos < r.end);
     if (insideClass) continue;
 
-    const rawParams = funcMatch[2] ?? "";
-    const returnType = funcMatch[3] ?? null;
+    // Bracket-aware param extraction
+    const parenStart = funcPos + funcMatch[0].length - 1;
+    const rawParams = extractParenContent(source, parenStart + 1);
+    const afterCloseParen = parenStart + 1 + rawParams.length;
 
+    // Check for optional return type and opening brace
+    const afterSlice = source.slice(afterCloseParen + 1, afterCloseParen + 256);
+    const retBraceMatch = /^\s*(?::\s*([\w\\|&?()\s]+?))?\s*\{/.exec(afterSlice);
+    if (!retBraceMatch) continue;
+
+    const returnType = retBraceMatch[1]?.replace(/\s+/g, "") ?? null;
     const params = parseParams(rawParams);
     const fqn = ns ? `${ns}\\${funcName}` : funcName;
 
@@ -405,16 +436,19 @@ function extractStandaloneFunctions(source: string, ns: string | null): PhpFunct
 // ---------------------------------------------------------------------------
 
 function extractConstructorParams(classBody: string): PhpParamMeta[] {
-  // Match __construct with its parameter list. Use bracket-aware extraction.
-  const ctorIdx = classBody.indexOf("function __construct");
-  if (ctorIdx === -1) return [];
+  // Strip anonymous class bodies so their constructors don't leak
+  const cleaned = stripAnonymousClassBodies(classBody);
+
+  // Use regex with word boundary to avoid matching __constructHelper etc.
+  const ctorMatch = /\bfunction\s+__construct\s*\(/.exec(cleaned);
+  if (!ctorMatch) return [];
 
   // Find opening paren
-  const parenOpen = classBody.indexOf("(", ctorIdx);
+  const parenOpen = cleaned.indexOf("(", ctorMatch.index);
   if (parenOpen === -1) return [];
 
   // Bracket-aware: find closing paren
-  const rawParams = extractParenContent(classBody, parenOpen + 1);
+  const rawParams = extractParenContent(cleaned, parenOpen + 1);
   return parseParams(rawParams);
 }
 
@@ -425,31 +459,37 @@ function extractConstructorParams(classBody: string): PhpParamMeta[] {
 function extractMethods(classBody: string): PhpMethodMeta[] {
   const methods: PhpMethodMeta[] = [];
 
-  // Pattern: (visibility) (static) function name(params): returnType
-  const methodRe = /\b(public|protected|private)\s+(static\s+)?function\s+(\w+)\s*\(/g;
+  // Strip anonymous class bodies so their methods don't leak into the parent
+  const cleaned = stripAnonymousClassBodies(classBody);
+
+  // Pattern: capture all modifiers (any order) before `function`
+  const methodRe =
+    /\b((?:(?:public|protected|private|static|abstract|final)\s+)*)function\s+(\w+)\s*\(/g;
 
   let match: RegExpExecArray | null;
-  while ((match = methodRe.exec(classBody)) !== null) {
-    const visibility = match[1] as "public" | "protected" | "private";
-    const isStatic = !!match[2];
-    const name = match[3]!;
+  while ((match = methodRe.exec(cleaned)) !== null) {
+    const modifiers = match[1] || "";
+    const visMatch = /\b(public|protected|private)\b/.exec(modifiers);
+    const visibility = (visMatch?.[1] as "public" | "protected" | "private") ?? "public";
+    const isStatic = /\bstatic\b/.test(modifiers);
+    const name = match[2]!;
 
     // Skip __construct from methods list (it's handled separately)
     if (name === "__construct") continue;
 
     // Extract params: find the full parameter list
-    const parenStart = classBody.indexOf("(", match.index + match[0].length - 1);
-    const rawParams = extractParenContent(classBody, parenStart + 1);
+    const parenStart = cleaned.indexOf("(", match.index + match[0].length - 1);
+    const rawParams = extractParenContent(cleaned, parenStart + 1);
     const params = parseParams(rawParams);
 
     // Extract return type: look after the closing paren
-    const afterParen = classBody.indexOf(")", parenStart + 1 + rawParams.length);
+    const afterParen = cleaned.indexOf(")", parenStart + 1 + rawParams.length);
     let returnType: string | null = null;
     if (afterParen !== -1) {
-      const afterParenSlice = classBody.slice(afterParen + 1, afterParen + 100);
-      const retMatch = /^\s*:\s*([\w\\|&?()]+)/.exec(afterParenSlice);
+      const afterParenSlice = cleaned.slice(afterParen + 1, afterParen + 256);
+      const retMatch = /^\s*:\s*([\w\\|&?()\s]+?)(?=\s*[{;])/.exec(afterParenSlice);
       if (retMatch) {
-        returnType = retMatch[1]!;
+        returnType = retMatch[1]!.replace(/\s+/g, "");
       }
     }
 
@@ -534,6 +574,12 @@ function parseOneParam(raw: string, position: number): PhpParamMeta | null {
   if (visMatch) {
     visibility = visMatch[1] as "public" | "protected" | "private";
     remaining = remaining.slice(visMatch[0].length);
+  }
+
+  // Skip PHP 8.4 asymmetric visibility: private(set) / protected(set)
+  const asymMatch = /^(private|protected)\(set\)\s+/.exec(remaining);
+  if (asymMatch) {
+    remaining = remaining.slice(asymMatch[0].length);
   }
 
   // Extract readonly
@@ -626,6 +672,61 @@ function findTopLevelEquals(s: string): number {
     }
   }
   return -1;
+}
+
+// ---------------------------------------------------------------------------
+// Anonymous class body stripping
+// ---------------------------------------------------------------------------
+
+/**
+ * Replace the bodies of anonymous classes (`new class { ... }`) with `{}`
+ * so that methods/constructors inside anonymous classes don't leak into
+ * the parent class's method/constructor lists.
+ */
+function stripAnonymousClassBodies(body: string): string {
+  const anonRe = /\bnew\s+class\b/g;
+  let result = body;
+  const matchPositions: number[] = [];
+  let m: RegExpExecArray | null;
+  while ((m = anonRe.exec(body)) !== null) {
+    matchPositions.push(m.index);
+  }
+  // Process from end to start so indices remain valid
+  for (let i = matchPositions.length - 1; i >= 0; i--) {
+    const start = matchPositions[i]!;
+    const braceIdx = result.indexOf("{", start);
+    if (braceIdx === -1) continue;
+    const inner = extractBraceBody(result, braceIdx + 1);
+    result =
+      result.slice(0, braceIdx) +
+      "{}" +
+      result.slice(braceIdx + 1 + inner.length + 1);
+  }
+  return result;
+}
+
+// ---------------------------------------------------------------------------
+// Top-level content extraction (skip nested braces)
+// ---------------------------------------------------------------------------
+
+/**
+ * Return only the characters at brace depth 0 within a body string.
+ * Used to avoid matching keywords (e.g. `case`) inside nested method bodies.
+ */
+function extractTopLevelContent(body: string): string {
+  let result = "";
+  let depth = 0;
+  for (let i = 0; i < body.length; i++) {
+    const ch = body[i]!;
+    if (ch === "{") {
+      depth++;
+    } else if (ch === "}") {
+      depth--;
+    } else if (depth === 0) {
+      result += ch;
+    }
+  }
+  return result;
 }
 
 // ---------------------------------------------------------------------------

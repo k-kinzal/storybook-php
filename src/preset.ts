@@ -1,5 +1,3 @@
-import { dirname, resolve } from "node:path";
-import { fileURLToPath } from "node:url";
 import type { FrameworkOptions } from "./types.js";
 
 interface PresetInterface {
@@ -16,14 +14,6 @@ export const core = {
   // renderer is 'storybook-php' — SB10 auto-loads storybook-php/preview
   renderer: "storybook-php",
 };
-
-export function previewAnnotations(
-  entries: (string | { bare: string; absolute: string })[] = [],
-): (string | { bare: string; absolute: string })[] {
-  const __filename = fileURLToPath(import.meta.url);
-  const previewPath = resolve(dirname(__filename), "preview.mjs");
-  return [...entries, { bare: "storybook-php/preview", absolute: previewPath }];
-}
 
 export async function viteFinal(
   config: Record<string, unknown>,

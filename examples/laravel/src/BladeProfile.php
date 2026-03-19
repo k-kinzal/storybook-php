@@ -21,6 +21,6 @@ class BladeProfile extends Component
 
     public function render(): \Illuminate\Contracts\View\View
     {
-        return view('components.profile');
+        return $this->view('components.profile');
     }
 }

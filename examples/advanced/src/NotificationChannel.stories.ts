@@ -22,13 +22,11 @@ export const Email: Story = {
 };
 
 export const Sms: StoryObj<typeof SmsNotification> = {
-  render: (args) => args,
   component: SmsNotification,
   args: { recipient: "+1 555-0123", message: "Your verification code is 4829." },
 };
 
 export const Push: StoryObj<typeof PushNotification> = {
-  render: (args) => args,
   component: PushNotification,
   args: { recipient: "Mobile Device", message: "New comment on your post." },
 };

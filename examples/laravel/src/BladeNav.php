@@ -22,6 +22,6 @@ class BladeNav extends Component
 
     public function render(): \Illuminate\Contracts\View\View
     {
-        return view('components.nav');
+        return $this->view('components.nav');
     }
 }

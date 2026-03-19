@@ -13,6 +13,6 @@ class BladePartial extends Component
 
     public function render(): \Illuminate\Contracts\View\View
     {
-        return view('components.partial-demo');
+        return $this->view('components.partial-demo');
     }
 }

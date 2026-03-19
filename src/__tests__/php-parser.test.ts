@@ -2818,4 +2818,560 @@ class Tooltip {
       expect(theme.default).toBe("Theme::Light");
     });
   });
+
+  // =========================================================================
+  // Parser edge cases — breakage patterns
+  // =========================================================================
+  describe("Parser edge cases — breakage patterns", () => {
+    // -----------------------------------------------------------------------
+    // 1. Class modifier order
+    // -----------------------------------------------------------------------
+    describe("class modifier order", () => {
+      it("parses 'final readonly class' (standard order)", () => {
+        const meta = parsePhpSource(
+          `<?php\nfinal readonly class Foo {}`,
+          "test.php",
+        );
+        const cls = meta.classes.find((c) => c.name === "Foo");
+        expect(cls).toBeTruthy();
+        expect(cls!.isFinal).toBe(true);
+        expect(cls!.isReadonly).toBe(true);
+      });
+
+      it("parses 'readonly final class' (reversed order)", () => {
+        const meta = parsePhpSource(
+          `<?php\nreadonly final class Foo {}`,
+          "test.php",
+        );
+        const cls = meta.classes.find((c) => c.name === "Foo");
+        expect(cls).toBeTruthy();
+        expect(cls!.isFinal).toBe(true);
+        expect(cls!.isReadonly).toBe(true);
+      });
+
+      it("parses 'readonly abstract class' (reversed order)", () => {
+        const meta = parsePhpSource(
+          `<?php\nreadonly abstract class Bar {}`,
+          "test.php",
+        );
+        const cls = meta.classes.find((c) => c.name === "Bar");
+        expect(cls).toBeTruthy();
+        expect(cls!.isAbstract).toBe(true);
+        expect(cls!.isReadonly).toBe(true);
+      });
+
+      it("parses 'abstract readonly class' (standard order)", () => {
+        const meta = parsePhpSource(
+          `<?php\nabstract readonly class Bar {}`,
+          "test.php",
+        );
+        const cls = meta.classes.find((c) => c.name === "Bar");
+        expect(cls).toBeTruthy();
+        expect(cls!.isAbstract).toBe(true);
+        expect(cls!.isReadonly).toBe(true);
+      });
+    });
+
+    // -----------------------------------------------------------------------
+    // 2. Anonymous classes
+    // -----------------------------------------------------------------------
+    describe("anonymous classes", () => {
+      it("skips anonymous class from 'new class extends Foo {}'", () => {
+        const source = `<?php
+namespace App;
+
+class RealFactory {
+    public function create(): object {
+        return new class extends \\stdClass {
+            public function hello(): string { return 'hi'; }
+        };
+    }
+}`;
+        const meta = parsePhpSource(source, "test.php");
+        const names = meta.classes.map((c) => c.name);
+        expect(names).toContain("RealFactory");
+        expect(names).not.toContain("extends");
+        expect(names).toHaveLength(1);
+      });
+    });
+
+    // -----------------------------------------------------------------------
+    // 3. Enum method with switch-case
+    // -----------------------------------------------------------------------
+    describe("enum method with switch-case", () => {
+      it("ignores switch-case values inside enum methods", () => {
+        const source = `<?php
+enum Priority: int {
+    case Low = 1;
+    case Medium = 2;
+    case High = 3;
+
+    public function label(): string {
+        switch ($this->value) {
+            case 1: return 'Low';
+            case 2: return 'Medium';
+            case 3: return 'High';
+        }
+        return '';
+    }
+}`;
+        const meta = parsePhpSource(source, "test.php");
+        const enumMeta = meta.classes.find((c) => c.name === "Priority");
+        expect(enumMeta).toBeTruthy();
+        expect(enumMeta!.isEnum).toBe(true);
+        expect(enumMeta!.enumCases).toEqual(["Low", "Medium", "High"]);
+      });
+
+      it("correctly parses enum without switch statements", () => {
+        const source = `<?php
+enum Color: string {
+    case Red = 'red';
+    case Green = 'green';
+    case Blue = 'blue';
+}`;
+        const meta = parsePhpSource(source, "test.php");
+        const enumMeta = meta.classes.find((c) => c.name === "Color");
+        expect(enumMeta).toBeTruthy();
+        expect(enumMeta!.enumCases).toEqual(["Red", "Green", "Blue"]);
+      });
+    });
+
+    // -----------------------------------------------------------------------
+    // 4. Standalone function with deep paren nesting
+    // -----------------------------------------------------------------------
+    describe("standalone function with deep paren nesting", () => {
+      it("parses 2-level nested parens in default value", () => {
+        const source = `<?php
+function deepNested(Closure $fn = new Closure(new ReflectionFunction('strlen'))): void {}
+`;
+        const meta = parsePhpSource(source, "test.php");
+        const fn = meta.functions.find((f) => f.name === "deepNested");
+        expect(fn).toBeTruthy();
+        expect(fn!.params).toHaveLength(1);
+        expect(fn!.params[0]!.name).toBe("fn");
+        expect(fn!.returnType).toBe("void");
+      });
+
+      it("parses 1-level nested parens (supported)", () => {
+        const source = `<?php
+function shallow(array $items = array('a')): void {}
+`;
+        const meta = parsePhpSource(source, "test.php");
+        const fn = meta.functions.find((f) => f.name === "shallow");
+        expect(fn).toBeTruthy();
+        expect(fn!.params).toHaveLength(1);
+        expect(fn!.params[0]!.name).toBe("items");
+      });
+    });
+
+    // -----------------------------------------------------------------------
+    // 5. Method without visibility modifier
+    // -----------------------------------------------------------------------
+    describe("method without visibility modifier", () => {
+      it("detects method without visibility keyword (defaults to public)", () => {
+        const source = `<?php
+class LegacyWidget {
+    function render(): string { return 'hello'; }
+}`;
+        const meta = parsePhpSource(source, "test.php");
+        const cls = meta.classes.find((c) => c.name === "LegacyWidget");
+        expect(cls).toBeTruthy();
+        expect(cls!.methods).toHaveLength(1);
+        expect(cls!.methods[0]!.name).toBe("render");
+        expect(cls!.methods[0]!.visibility).toBe("public");
+        expect(cls!.methods[0]!.returnType).toBe("string");
+      });
+
+      it("detects method with explicit visibility (control)", () => {
+        const source = `<?php
+class ModernWidget {
+    public function render(): string { return 'hello'; }
+}`;
+        const meta = parsePhpSource(source, "test.php");
+        const cls = meta.classes.find((c) => c.name === "ModernWidget");
+        expect(cls).toBeTruthy();
+        expect(cls!.methods).toHaveLength(1);
+        expect(cls!.methods[0]!.name).toBe("render");
+      });
+    });
+
+    // -----------------------------------------------------------------------
+    // 6. Braced namespace
+    // -----------------------------------------------------------------------
+    describe("braced namespace", () => {
+      it("extracts braced namespace correctly", () => {
+        const source = `<?php
+namespace App\\Models {
+    class User {
+        public function __construct(public string $name) {}
+    }
+}`;
+        const meta = parsePhpSource(source, "test.php");
+        expect(meta.namespace).toBe("App\\Models");
+        const cls = meta.classes.find((c) => c.name === "User");
+        expect(cls).toBeTruthy();
+        expect(cls!.fqn).toBe("App\\Models\\User");
+      });
+
+      it("correctly extracts semicolon namespace (control)", () => {
+        const source = `<?php
+namespace App\\Models;
+
+class User {
+    public function __construct(public string $name) {}
+}`;
+        const meta = parsePhpSource(source, "test.php");
+        expect(meta.namespace).toBe("App\\Models");
+        const cls = meta.classes.find((c) => c.name === "User");
+        expect(cls!.fqn).toBe("App\\Models\\User");
+      });
+    });
+
+    // -----------------------------------------------------------------------
+    // 7. Backtick strings (shell exec)
+    // -----------------------------------------------------------------------
+    describe("backtick strings", () => {
+      it("ignores class keywords inside backtick strings", () => {
+        const source = `<?php
+class Runner {
+    public function execute(): string {
+        $out = \`echo class FakeClass {}\`;
+        return $out;
+    }
+}`;
+        const meta = parsePhpSource(source, "test.php");
+        const names = meta.classes.map((c) => c.name);
+        expect(names).toContain("Runner");
+        expect(names).not.toContain("FakeClass");
+        expect(names).toHaveLength(1);
+      });
+    });
+
+    // -----------------------------------------------------------------------
+    // 8. Extremely long return type (>100 chars)
+    // -----------------------------------------------------------------------
+    describe("long return type", () => {
+      it("captures return type longer than 100 chars", () => {
+        const longType =
+          "VeryLongNamespacePrefix\\SomeExtremelyVerboseClassName|AnotherRidiculouslyLongNamespace\\WithEvenMoreStuff";
+        const source = `<?php
+class TypeTest {
+    public function process(): ${longType} {
+        return new \\stdClass();
+    }
+}`;
+        const meta = parsePhpSource(source, "test.php");
+        const cls = meta.classes.find((c) => c.name === "TypeTest");
+        expect(cls).toBeTruthy();
+        const method = cls!.methods.find((m) => m.name === "process");
+        expect(method).toBeTruthy();
+        expect(method!.returnType).toBe(longType);
+      });
+
+      it("captures normal-length return type (control)", () => {
+        const source = `<?php
+class ShortType {
+    public function get(): string|int|null {
+        return null;
+    }
+}`;
+        const meta = parsePhpSource(source, "test.php");
+        const cls = meta.classes.find((c) => c.name === "ShortType");
+        const method = cls!.methods.find((m) => m.name === "get");
+        expect(method!.returnType).toBe("string|int|null");
+      });
+    });
+
+    // -----------------------------------------------------------------------
+    // 9. static before visibility (Bug 1)
+    // -----------------------------------------------------------------------
+    describe("static before visibility", () => {
+      it("parses 'static public function' as public + static", () => {
+        const source = `<?php
+class Util {
+    static public function helper(): void {}
+}`;
+        const meta = parsePhpSource(source, "test.php");
+        const cls = meta.classes.find((c) => c.name === "Util");
+        expect(cls).toBeTruthy();
+        const method = cls!.methods.find((m) => m.name === "helper");
+        expect(method).toBeTruthy();
+        expect(method!.isStatic).toBe(true);
+        expect(method!.visibility).toBe("public");
+      });
+
+      it("parses 'static protected function' as protected + static", () => {
+        const source = `<?php
+class Util {
+    static protected function secret(): string { return ''; }
+}`;
+        const meta = parsePhpSource(source, "test.php");
+        const cls = meta.classes.find((c) => c.name === "Util");
+        const method = cls!.methods.find((m) => m.name === "secret");
+        expect(method).toBeTruthy();
+        expect(method!.isStatic).toBe(true);
+        expect(method!.visibility).toBe("protected");
+      });
+
+      it("parses 'public static function' (standard order, control)", () => {
+        const source = `<?php
+class Util {
+    public static function standard(): void {}
+}`;
+        const meta = parsePhpSource(source, "test.php");
+        const cls = meta.classes.find((c) => c.name === "Util");
+        const method = cls!.methods.find((m) => m.name === "standard");
+        expect(method).toBeTruthy();
+        expect(method!.isStatic).toBe(true);
+        expect(method!.visibility).toBe("public");
+      });
+    });
+
+    // -----------------------------------------------------------------------
+    // 10. Interface multiple extends (Bug 2)
+    // -----------------------------------------------------------------------
+    describe("interface multiple extends", () => {
+      it("captures first parent when interface extends multiple", () => {
+        const source = `<?php
+interface Composite extends Readable, Writable, Seekable {
+    public function process(): void;
+}`;
+        const meta = parsePhpSource(source, "test.php");
+        const cls = meta.classes.find((c) => c.name === "Composite");
+        expect(cls).toBeTruthy();
+        expect(cls!.isInterface).toBe(true);
+        expect(cls!.extends).toBe("Readable");
+      });
+
+      it("still works for single extends (control)", () => {
+        const source = `<?php
+interface Child extends Parent {
+    public function doStuff(): void;
+}`;
+        const meta = parsePhpSource(source, "test.php");
+        const cls = meta.classes.find((c) => c.name === "Child");
+        expect(cls).toBeTruthy();
+        expect(cls!.extends).toBe("Parent");
+      });
+    });
+
+    // -----------------------------------------------------------------------
+    // 11. Anonymous class methods leaking to parent (Bug 3)
+    // -----------------------------------------------------------------------
+    describe("anonymous class methods do not leak to parent", () => {
+      it("does not include anonymous class methods in parent class", () => {
+        const source = `<?php
+class Container {
+    public function create(): object {
+        return new class {
+            public function innerMethod(): string { return 'inner'; }
+            private function secretInner(): void {}
+        };
+    }
+    public function realMethod(): void {}
+}`;
+        const meta = parsePhpSource(source, "test.php");
+        const cls = meta.classes.find((c) => c.name === "Container");
+        expect(cls).toBeTruthy();
+        const methodNames = cls!.methods.map((m) => m.name);
+        expect(methodNames).toContain("create");
+        expect(methodNames).toContain("realMethod");
+        expect(methodNames).not.toContain("innerMethod");
+        expect(methodNames).not.toContain("secretInner");
+        expect(methodNames).toHaveLength(2);
+      });
+    });
+
+    // -----------------------------------------------------------------------
+    // 12. Return type with spaces in union/intersection (Bug 4)
+    // -----------------------------------------------------------------------
+    describe("return type with spaces in union/intersection", () => {
+      it("captures spaced union return type on a method", () => {
+        const source = `<?php
+class Converter {
+    public function convert(): int | string {
+        return 42;
+    }
+}`;
+        const meta = parsePhpSource(source, "test.php");
+        const cls = meta.classes.find((c) => c.name === "Converter");
+        const method = cls!.methods.find((m) => m.name === "convert");
+        expect(method).toBeTruthy();
+        expect(method!.returnType).toBe("int|string");
+      });
+
+      it("captures spaced intersection return type on a method", () => {
+        const source = `<?php
+class Intersector {
+    public function combine(): Foo & Bar {
+        return new class implements Foo, Bar {};
+    }
+}`;
+        const meta = parsePhpSource(source, "test.php");
+        const cls = meta.classes.find((c) => c.name === "Intersector");
+        const method = cls!.methods.find((m) => m.name === "combine");
+        expect(method).toBeTruthy();
+        expect(method!.returnType).toBe("Foo&Bar");
+      });
+
+      it("captures spaced union return type on a standalone function", () => {
+        const source = `<?php
+function convert(): int | string | null {
+    return null;
+}`;
+        const meta = parsePhpSource(source, "test.php");
+        const fn = meta.functions.find((f) => f.name === "convert");
+        expect(fn).toBeTruthy();
+        expect(fn!.returnType).toBe("int|string|null");
+      });
+    });
+
+    // -----------------------------------------------------------------------
+    // 13. Anonymous class constructor leaking to parent (Bug 5)
+    // -----------------------------------------------------------------------
+    describe("anonymous class constructor does not leak to parent", () => {
+      it("ignores anonymous class __construct when parent has none", () => {
+        const source = `<?php
+class Outer {
+    public function make(): object {
+        return new class {
+            public function __construct(public string $x) {}
+            public function inner(): void {}
+        };
+    }
+}`;
+        const meta = parsePhpSource(source, "test.php");
+        const cls = meta.classes.find((c) => c.name === "Outer");
+        expect(cls).toBeTruthy();
+        expect(cls!.constructorParams).toHaveLength(0);
+        // Also should not leak inner method
+        const methodNames = cls!.methods.map((m) => m.name);
+        expect(methodNames).not.toContain("inner");
+      });
+
+      it("uses parent __construct when both parent and anon class have one", () => {
+        const source = `<?php
+class WithCtor {
+    public function __construct(public int $id) {}
+    public function make(): object {
+        return new class {
+            public function __construct(public string $anonParam) {}
+        };
+    }
+}`;
+        const meta = parsePhpSource(source, "test.php");
+        const cls = meta.classes.find((c) => c.name === "WithCtor");
+        expect(cls).toBeTruthy();
+        expect(cls!.constructorParams).toHaveLength(1);
+        expect(cls!.constructorParams[0]!.name).toBe("id");
+        expect(cls!.constructorParams[0]!.type).toBe("int");
+      });
+    });
+
+    // -----------------------------------------------------------------------
+    // 14. __construct prefix collision (Bug 6)
+    // -----------------------------------------------------------------------
+    describe("__construct prefix collision", () => {
+      it("does not match __constructHelper as a constructor", () => {
+        const source = `<?php
+class Builder {
+    private function __constructHelper(string $val): void {}
+}`;
+        const meta = parsePhpSource(source, "test.php");
+        const cls = meta.classes.find((c) => c.name === "Builder");
+        expect(cls).toBeTruthy();
+        expect(cls!.constructorParams).toHaveLength(0);
+      });
+
+      it("matches real __construct when __constructHelper also exists", () => {
+        const source = `<?php
+class Builder {
+    public function __construct(public string $name) {}
+    private function __constructHelper(string $val): void {}
+}`;
+        const meta = parsePhpSource(source, "test.php");
+        const cls = meta.classes.find((c) => c.name === "Builder");
+        expect(cls).toBeTruthy();
+        expect(cls!.constructorParams).toHaveLength(1);
+        expect(cls!.constructorParams[0]!.name).toBe("name");
+      });
+    });
+  });
+
+  // -----------------------------------------------------------------------
+  // PHP 8.4: AsymmetricVisibility
+  // -----------------------------------------------------------------------
+  describe("AsymmetricVisibility", () => {
+    it("parses asymmetric visibility (public private(set)) with correct types", () => {
+      const meta = parsePhpSource(fixture("AsymmetricVisibility.php"), "AsymmetricVisibility.php");
+
+      expect(meta.namespace).toBe("App\\Components");
+      const cls = meta.classes[0]!;
+      expect(cls.name).toBe("AsymmetricVisibility");
+      expect(cls.constructorParams).toHaveLength(3);
+
+      const title = cls.constructorParams[0]!;
+      expect(title.name).toBe("title");
+      expect(title.type).toBe("string");
+      expect(title.visibility).toBe("public");
+      expect(title.isPromoted).toBe(true);
+      expect(title.required).toBe(false);
+      expect(title.default).toBe("'__PLACEHOLDER__'");
+
+      const status = cls.constructorParams[1]!;
+      expect(status.name).toBe("status");
+      expect(status.type).toBe("string");
+      expect(status.visibility).toBe("public");
+      expect(status.isPromoted).toBe(true);
+      expect(status.required).toBe(false);
+
+      const views = cls.constructorParams[2]!;
+      expect(views.name).toBe("views");
+      expect(views.type).toBe("int");
+      expect(views.visibility).toBe("public");
+      expect(views.isPromoted).toBe(true);
+      expect(views.required).toBe(false);
+      expect(views.default).toBe("0");
+
+      // Methods
+      expect(cls.methods).toHaveLength(1);
+      expect(cls.methods[0]!.name).toBe("render");
+      expect(cls.methods[0]!.returnType).toBe("string");
+    });
+  });
+
+  // -----------------------------------------------------------------------
+  // PHP 8.4: PropertyHook
+  // -----------------------------------------------------------------------
+  describe("PropertyHook", () => {
+    it("parses class with property hooks without breaking constructor or methods", () => {
+      const meta = parsePhpSource(fixture("PropertyHook.php"), "PropertyHook.php");
+
+      expect(meta.namespace).toBe("App\\Components");
+      const cls = meta.classes[0]!;
+      expect(cls.name).toBe("PropertyHook");
+
+      // Constructor params (not promoted — just regular params)
+      expect(cls.constructorParams).toHaveLength(2);
+
+      const displayName = cls.constructorParams[0]!;
+      expect(displayName.name).toBe("displayName");
+      expect(displayName.type).toBe("string");
+      expect(displayName.required).toBe(false);
+      expect(displayName.default).toBe("'__PLACEHOLDER__'");
+      expect(displayName.isPromoted).toBe(false);
+
+      const age = cls.constructorParams[1]!;
+      expect(age.name).toBe("age");
+      expect(age.type).toBe("int");
+      expect(age.required).toBe(false);
+      expect(age.default).toBe("0");
+      expect(age.isPromoted).toBe(false);
+
+      // Methods — render only, property hooks should not be detected as methods
+      expect(cls.methods).toHaveLength(1);
+      expect(cls.methods[0]!.name).toBe("render");
+      expect(cls.methods[0]!.returnType).toBe("string");
+    });
+  });
 });
