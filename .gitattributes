@@ -1,0 +1,32 @@
+# Auto detect text files and ensure LF line endings
+* text=auto eol=lf
+
+# Explicit file type settings
+*.ts text eol=lf
+*.tsx text eol=lf
+*.js text eol=lf
+*.mjs text eol=lf
+*.json text eol=lf
+*.yaml text eol=lf
+*.yml text eol=lf
+*.md text eol=lf
+*.php text eol=lf
+*.html text eol=lf
+*.css text eol=lf
+
+# Mark generated files (hide diffs on GitHub)
+package-lock.json linguist-generated
+composer.lock linguist-generated
+
+# Mark vendored/example PHP files so GitHub language stats show TS as primary
+examples/**/*.php linguist-vendored
+src/__tests__/fixtures/*.php linguist-vendored
+
+# Exclude non-essential files from `git archive` / GitHub source downloads
+.github/ export-ignore
+examples/ export-ignore
+src/__tests__/ export-ignore
+AGENTS.md export-ignore
+.editorconfig export-ignore
+.gitattributes export-ignore
+.npmignore export-ignore

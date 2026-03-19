@@ -4,7 +4,11 @@ tsup.config.ts
 vitest.config.ts
 eslint.config.js
 .gitignore
+.gitattributes
+.editorconfig
 examples/
 src/__tests__/
 coverage/
 .DS_Store
+SECURITY.md
+AGENTS.md
