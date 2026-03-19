@@ -55,13 +55,13 @@ export const Default: Story = {
 };
 ```
 
-`npx` で直接実行できます:
+Run directly with `npx`:
 
 ```bash
 npx storybook-php start
 ```
 
-プロジェクトの依存として追加する場合:
+Or install as a project dependency:
 
 ```bash
 npm install storybook-php storybook @storybook/builder-vite vite
