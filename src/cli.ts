@@ -3,16 +3,9 @@ import { resolve, relative, dirname } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { spawn } from "node:child_process";
 import { createRequire } from "node:module";
-import {
-  symlinkSync,
-  unlinkSync,
-  lstatSync,
-  existsSync,
-  writeFileSync,
-  readdirSync,
-  statSync,
-} from "node:fs";
+import { existsSync, writeFileSync, readdirSync, statSync } from "node:fs";
 import { generateDtsForFile } from "./typegen.js";
+import { ensureLink } from "./node-modules-link.js";
 
 const [, , command, ...args] = process.argv;
 
@@ -37,28 +30,13 @@ switch (command) {
 function ensureNodeModulesLink(): (() => void) | null {
   const localNodeModules = resolve("node_modules");
 
-  // Already has node_modules — don't touch it
-  if (existsSync(localNodeModules)) {
-    return null;
-  }
-
   // This package lives at <node_modules>/storybook-php/dist/cli.mjs
   // so parent node_modules = two levels up from package root
   const __filename = fileURLToPath(import.meta.url);
   const packageRoot = resolve(dirname(__filename), "..");
   const parentNodeModules = dirname(packageRoot);
 
-  symlinkSync(parentNodeModules, localNodeModules, "junction");
-
-  return () => {
-    try {
-      if (existsSync(localNodeModules) && lstatSync(localNodeModules).isSymbolicLink()) {
-        unlinkSync(localNodeModules);
-      }
-    } catch {
-      // best-effort cleanup
-    }
-  };
+  return ensureLink(localNodeModules, parentNodeModules);
 }
 
 function withCleanup(cleanup: (() => void) | null, child: ReturnType<typeof spawn>): void {
@@ -111,7 +89,8 @@ function runTest(cliArgs: string[]): void {
       [
         "vitest not found. Install test dependencies or use --package:",
         "",
-        "  npx --package=vitest --package=@storybook/addon-vitest \\",
+        "  npx --package=storybook-php --package=vitest \\",
+        "      --package=@storybook/addon-vitest \\",
         "      --package=@vitest/browser-playwright \\",
         "      storybook-php test",
         "",
@@ -141,7 +120,8 @@ function runTest(cliArgs: string[]): void {
         [
           `Missing test dependencies: ${missing.join(", ")}`,
           "",
-          "  npx --package=vitest --package=@storybook/addon-vitest \\",
+          "  npx --package=storybook-php --package=vitest \\",
+          "      --package=@storybook/addon-vitest \\",
           "      --package=@vitest/browser-playwright \\",
           "      storybook-php test",
           "",
