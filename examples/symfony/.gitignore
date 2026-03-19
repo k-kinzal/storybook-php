@@ -1,0 +1,4 @@
+node_modules/
+vendor/
+storybook-static/
+__screenshots__/

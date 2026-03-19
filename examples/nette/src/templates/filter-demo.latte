@@ -1,0 +1,10 @@
+<div class="filter-demo">
+  <div class="user-avatar" n:class="$role === admin ? role-admin, $role === moderator ? role-mod">
+    <span class="initials">{$name|initials}</span>
+  </div>
+  <h3>{$name}</h3>
+  <p>{$name|upper}</p>
+  <div class="bio">{$bio|noescape}</div>
+  <a href="{$website}">Visit Website</a>
+  <p class="role">Role: {$role|capitalize}</p>
+</div>

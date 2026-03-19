@@ -1,0 +1,17 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>{% block title %}Default Title{% endblock %}</title>
+</head>
+<body>
+  <header class="layout-header">
+    <nav>{% block nav %}Home{% endblock %}</nav>
+  </header>
+  <main class="layout-content">
+    {% block content %}{% endblock %}
+  </main>
+  <footer class="layout-footer">
+    {% block footer %}&copy; 2026 Storybook PHP{% endblock %}
+  </footer>
+</body>
+</html>

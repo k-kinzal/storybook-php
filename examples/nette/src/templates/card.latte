@@ -1,0 +1,8 @@
+<div n:class="card, $featured ? card-featured">
+  <img n:if="$image" src="{$image}" alt="{$title}" class="card-image">
+  <div class="card-body">
+    <h3 class="card-title">{$title}</h3>
+    <p class="card-text">{$body}</p>
+  </div>
+  <div n:if="$footer" class="card-footer">{$footer}</div>
+</div>

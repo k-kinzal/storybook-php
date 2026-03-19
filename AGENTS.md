@@ -147,14 +147,18 @@ curl -X POST http://localhost:6006/__storybook_php/render \
 
 ## Example Directories
 
-| Directory            | Port | Description                                                                   |
-| -------------------- | ---- | ----------------------------------------------------------------------------- |
-| `examples/basic/`    | 6006 | Introductory examples — minimal representatives of each callable type         |
-| `examples/advanced/` | 6007 | Advanced OOP, design patterns, templates, standalone functions                |
-| `examples/php80/`    | 6008 | PHP 8.0 features: union types, match, Stringable, mixed type                  |
-| `examples/php81/`    | 6009 | PHP 8.1 features: enums, readonly properties, intersection types, new in init |
-| `examples/php82/`    | 6010 | PHP 8.2 features: readonly classes, DNF types, standalone types               |
-| `examples/php83/`    | 6011 | PHP 8.3 features: typed class constants, #[Override], dynamic const fetch     |
-| `examples/php84/`    | 6012 | PHP 8.4 features: property hooks, asymmetric visibility, #[Deprecated]        |
-| `examples/php85/`    | 6013 | PHP 8.5 features: pipe operator, closure capture                              |
-| `examples/laravel/`  | 6014 | Laravel Blade component rendering patterns                                    |
+| Directory               | Port | Description                                                                   |
+| ----------------------- | ---- | ----------------------------------------------------------------------------- |
+| `examples/basic/`       | 6006 | Introductory examples — minimal representatives of each callable type         |
+| `examples/advanced/`    | 6007 | Advanced OOP, design patterns, templates, standalone functions                |
+| `examples/php80/`       | 6008 | PHP 8.0 features: union types, match, Stringable, mixed type                  |
+| `examples/php81/`       | 6009 | PHP 8.1 features: enums, readonly properties, intersection types, new in init |
+| `examples/php82/`       | 6010 | PHP 8.2 features: readonly classes, DNF types, standalone types               |
+| `examples/php83/`       | 6011 | PHP 8.3 features: typed class constants, #[Override], dynamic const fetch     |
+| `examples/php84/`       | 6012 | PHP 8.4 features: property hooks, asymmetric visibility, #[Deprecated]        |
+| `examples/php85/`       | 6013 | PHP 8.5 features: pipe operator, closure capture                              |
+| `examples/laravel/`     | 6014 | Laravel Blade component rendering patterns                                    |
+| `examples/symfony/`     | 6015 | Symfony Twig template rendering patterns                                      |
+| `examples/cakephp/`     | 6016 | CakePHP native PHP templates, Elements, View Cells                            |
+| `examples/codeigniter/` | 6017 | CodeIgniter 4 PHP views, layouts, View Parser                                 |
+| `examples/nette/`       | 6018 | Nette Latte template engine, n: attributes, filters                           |

@@ -1,0 +1,12 @@
+<div class="card{% if featured %} card-featured{% endif %}">
+  {% if image %}
+    <img src="{{ image }}" alt="{{ title }}" class="card-image">
+  {% endif %}
+  <div class="card-body">
+    <h3 class="card-title">{{ title }}</h3>
+    <p class="card-text">{{ body }}</p>
+  </div>
+  {% if footer %}
+    <div class="card-footer">{{ footer }}</div>
+  {% endif %}
+</div>

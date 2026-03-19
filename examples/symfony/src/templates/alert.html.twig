@@ -1,0 +1,9 @@
+<div class="alert alert-{{ type }}{% if dismissible %} alert-dismissible{% endif %}" role="alert">
+  <strong>{{ title }}</strong>
+  {% if message %}
+    <p>{{ message }}</p>
+  {% endif %}
+  {% if dismissible %}
+    <button type="button" class="close" aria-label="Close">&times;</button>
+  {% endif %}
+</div>

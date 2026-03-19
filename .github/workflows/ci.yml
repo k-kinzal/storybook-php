@@ -70,4 +70,16 @@ jobs:
       - name: Install Laravel example dependencies
         if: matrix.php >= '8.2'
         run: composer install --no-interaction --prefer-dist --working-dir=examples/laravel
+      - name: Install Symfony example dependencies
+        if: matrix.php >= '8.2'
+        run: composer install --no-interaction --prefer-dist --working-dir=examples/symfony
+      - name: Install CakePHP example dependencies
+        if: matrix.php >= '8.2'
+        run: composer install --no-interaction --prefer-dist --working-dir=examples/cakephp
+      - name: Install CodeIgniter example dependencies
+        if: matrix.php >= '8.2'
+        run: composer install --no-interaction --prefer-dist --working-dir=examples/codeigniter
+      - name: Install Nette example dependencies
+        if: matrix.php >= '8.2'
+        run: composer install --no-interaction --prefer-dist --working-dir=examples/nette
       - run: npm test

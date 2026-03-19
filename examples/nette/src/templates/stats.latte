@@ -1,0 +1,8 @@
+<div class="stats-grid">
+  {foreach $items as $item}
+    <div class="stat-card" style="border-top: 3px solid {$color}">
+      <div class="stat-value">{$item['value']}</div>
+      <div class="stat-label">{$item['label']}</div>
+    </div>
+  {/foreach}
+</div>

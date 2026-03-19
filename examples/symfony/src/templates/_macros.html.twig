@@ -1,0 +1,13 @@
+{% macro field(label, value) %}
+  <div class="field">
+    <dt class="field-label">{{ label|upper }}</dt>
+    <dd class="field-value">{{ value }}</dd>
+  </div>
+{% endmacro %}
+
+{% macro datefield(label, dateStr) %}
+  <div class="field">
+    <dt class="field-label">{{ label|upper }}</dt>
+    <dd class="field-value">{{ dateStr }}</dd>
+  </div>
+{% endmacro %}

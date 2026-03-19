@@ -1,0 +1,10 @@
+{% import '_macros.html.twig' as macros %}
+
+<div class="user-profile">
+  <h3>User Profile</h3>
+  <dl class="profile-fields">
+    {{ macros.field('Username', username) }}
+    {{ macros.field('Role', role) }}
+    {{ macros.datefield('Joined', joinedAt) }}
+  </dl>
+</div>

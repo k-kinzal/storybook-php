@@ -1,0 +1,26 @@
+{
+  "name": "storybook-php-example-symfony",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "storybook": "storybook dev -p 6015",
+    "build-storybook": "storybook build",
+    "test:vrt": "vitest run",
+    "test:vrt:update": "vitest run --update"
+  },
+  "dependencies": {
+    "storybook-php": "file:../../"
+  },
+  "devDependencies": {
+    "@storybook/addon-vitest": "^10.3.0",
+    "@storybook/builder-vite": "^10.3.0",
+    "@vitest/browser-playwright": "^4.1.0",
+    "playwright": "^1.58.0",
+    "storybook": "^10.3.0",
+    "storybook-addon-vis": "^3.1.0",
+    "vite": "^8.0.0",
+    "vitest": "^4.1.0",
+    "vitest-plugin-vis": "^4.2.0"
+  }
+}
