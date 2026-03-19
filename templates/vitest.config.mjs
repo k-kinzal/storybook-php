@@ -4,9 +4,7 @@ import { playwright } from "@vitest/browser-playwright";
 import { defineConfig } from "vitest/config";
 
 export default defineConfig({
-  plugins: [
-    storybookTest({ configDir: resolve(process.cwd(), ".storybook") }),
-  ],
+  plugins: [storybookTest({ configDir: resolve(process.cwd(), ".storybook") })],
   test: {
     browser: {
       enabled: true,

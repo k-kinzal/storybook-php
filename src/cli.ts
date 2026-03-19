@@ -90,10 +90,7 @@ function runStorybook(cmd: string, cliArgs: string[]): void {
 }
 
 function resolvePackageBin(pkg: string, bin: string): string {
-  const bases = [
-    import.meta.url,
-    pathToFileURL(resolve(process.cwd(), "_resolve.js")).href,
-  ];
+  const bases = [import.meta.url, pathToFileURL(resolve(process.cwd(), "_resolve.js")).href];
   for (const base of bases) {
     try {
       const pkgJson = createRequire(base).resolve(`${pkg}/package.json`);
@@ -125,7 +122,10 @@ function runTest(cliArgs: string[]): void {
 
   // Use bundled vitest config if user has none and --config is not specified
   const configArgs: string[] = [];
-  if (!hasUserConfig() && !cliArgs.some((a) => a === "--config" || a === "-c" || a.startsWith("--config="))) {
+  if (
+    !hasUserConfig() &&
+    !cliArgs.some((a) => a === "--config" || a === "-c" || a.startsWith("--config="))
+  ) {
     const __filename = fileURLToPath(import.meta.url);
     const defaultConfig = resolve(dirname(__filename), "..", "templates", "vitest.config.mjs");
     configArgs.push("--config", defaultConfig, "--root", process.cwd());

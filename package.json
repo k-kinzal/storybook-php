@@ -79,9 +79,15 @@
     "vitest": "^3.0.0 || ^4.0.0"
   },
   "peerDependenciesMeta": {
-    "@storybook/addon-vitest": { "optional": true },
-    "@vitest/browser-playwright": { "optional": true },
-    "vitest": { "optional": true }
+    "@storybook/addon-vitest": {
+      "optional": true
+    },
+    "@vitest/browser-playwright": {
+      "optional": true
+    },
+    "vitest": {
+      "optional": true
+    }
   },
   "engines": {
     "node": ">=20.19.0"
