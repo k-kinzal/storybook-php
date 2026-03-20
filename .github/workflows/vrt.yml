@@ -1,0 +1,228 @@
+name: VRT
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+  pull-requests: write
+  actions: read
+
+jobs:
+  vrt:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - example: basic
+            php: "8.4"
+            pkg: npm
+            composer: false
+          - example: advanced
+            php: "8.4"
+            pkg: pnpm
+            composer: false
+          - example: laravel
+            php: "8.4"
+            pkg: pnpm
+            composer: true
+          - example: symfony
+            php: "8.4"
+            pkg: npm-install
+            composer: true
+          - example: cakephp
+            php: "8.4"
+            pkg: npm-install
+            composer: true
+          - example: codeigniter
+            php: "8.4"
+            pkg: npm-install
+            composer: true
+          - example: nette
+            php: "8.4"
+            pkg: npm-install
+            composer: true
+          - example: php80
+            php: "8.0"
+            pkg: npm-install
+            composer: false
+          - example: php81
+            php: "8.1"
+            pkg: npm-install
+            composer: false
+          - example: php82
+            php: "8.2"
+            pkg: npm-install
+            composer: false
+          - example: php83
+            php: "8.3"
+            pkg: npm-install
+            composer: false
+          - example: php84
+            php: "8.4"
+            pkg: pnpm
+            composer: false
+          - example: php85
+            php: "8.5"
+            pkg: npm-install
+            composer: false
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ matrix.php }}
+
+      - name: Setup pnpm
+        if: matrix.pkg == 'pnpm'
+        uses: pnpm/action-setup@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: ${{ matrix.pkg == 'pnpm' && 'pnpm' || (matrix.pkg == 'npm' && 'npm' || '') }}
+          cache-dependency-path: ${{ matrix.pkg == 'pnpm' && format('examples/{0}/pnpm-lock.yaml', matrix.example) || (matrix.pkg == 'npm' && format('examples/{0}/package-lock.json', matrix.example) || '') }}
+
+      - name: Install Composer dependencies
+        if: matrix.composer == true
+        working-directory: examples/${{ matrix.example }}
+        run: composer install --no-interaction --prefer-dist
+
+      - name: Install Node dependencies (npm ci)
+        if: matrix.pkg == 'npm'
+        working-directory: examples/${{ matrix.example }}
+        run: npm ci
+
+      - name: Install Node dependencies (pnpm)
+        if: matrix.pkg == 'pnpm'
+        working-directory: examples/${{ matrix.example }}
+        run: pnpm install --frozen-lockfile
+
+      - name: Install Node dependencies (npm install)
+        if: matrix.pkg == 'npm-install'
+        working-directory: examples/${{ matrix.example }}
+        run: npm install
+
+      - name: Install Playwright browsers
+        working-directory: examples/${{ matrix.example }}
+        run: npx playwright install --with-deps chromium
+
+      - name: Restore VRT baselines (PR)
+        if: github.event_name == 'pull_request'
+        uses: actions/cache/restore@v4
+        with:
+          path: examples/${{ matrix.example }}/__vis__/linux/__baselines__
+          key: vrt-baselines-${{ matrix.example }}-${{ github.sha }}
+          restore-keys: |
+            vrt-baselines-${{ matrix.example }}-
+
+      - name: Run VRT (update baselines)
+        if: github.event_name == 'push'
+        working-directory: examples/${{ matrix.example }}
+        run: npx vitest run --update
+
+      - name: Run VRT (compare)
+        if: github.event_name == 'pull_request'
+        working-directory: examples/${{ matrix.example }}
+        continue-on-error: true
+        run: npx vitest run
+
+      - name: Save VRT baselines (main)
+        if: github.event_name == 'push'
+        uses: actions/cache/save@v4
+        with:
+          path: examples/${{ matrix.example }}/__vis__/linux/__baselines__
+          key: vrt-baselines-${{ matrix.example }}-${{ github.sha }}
+
+      - name: Upload VRT results
+        if: github.event_name == 'pull_request'
+        uses: actions/upload-artifact@v4
+        with:
+          name: vrt-results-${{ matrix.example }}
+          path: |
+            examples/${{ matrix.example }}/__vis__/linux/__diffs__/
+            examples/${{ matrix.example }}/__vis__/linux/__results__/
+            examples/${{ matrix.example }}/__vis__/linux/__baselines__/
+          if-no-files-found: ignore
+          retention-days: 7
+
+  vrt-report:
+    needs: vrt
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          sparse-checkout: .github/scripts
+
+      - name: Download all VRT results
+        uses: actions/download-artifact@v4
+        with:
+          pattern: vrt-results-*
+          path: vrt-results
+          merge-multiple: false
+
+      - name: Generate HTML report
+        env:
+          PR_URL: ${{ github.event.pull_request.html_url }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          RUN_ID: ${{ github.run_id }}
+        run: |
+          chmod +x .github/scripts/generate-vrt-report.sh
+          .github/scripts/generate-vrt-report.sh "${{ github.event.pull_request.number }}"
+
+      - name: Upload HTML report
+        if: hashFiles('vrt-report.html') != ''
+        uses: actions/upload-artifact@v4
+        with:
+          name: vrt-report
+          path: vrt-report.html
+
+      - name: Comment on PR
+        if: env.HAS_DIFFS == 'true'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const diffSummary = fs.readFileSync('diff-summary.md', 'utf8');
+            const runUrl = `https://github.com/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`;
+
+            const body = [
+              '## 🔍 VRT: Visual diffs detected\n',
+              diffSummary,
+              `\n📎 [View VRT Report](${runUrl})`,
+            ].join('\n');
+
+            const marker = '<!-- vrt-report -->';
+            const fullBody = `${marker}\n${body}`;
+
+            const { data: comments } = await github.rest.issues.listComments({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+            });
+
+            const existing = comments.find(c => c.body.includes(marker));
+
+            if (existing) {
+              await github.rest.issues.updateComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                comment_id: existing.id,
+                body: fullBody,
+              });
+            } else {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.issue.number,
+                body: fullBody,
+              });
+            }
