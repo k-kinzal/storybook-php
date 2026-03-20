@@ -20,7 +20,7 @@ jobs:
         include:
           - example: basic
             php: "8.4"
-            pkg: npm
+            pkg: npm-install
             composer: false
           - example: advanced
             php: "8.4"
@@ -97,11 +97,6 @@ jobs:
 
       - name: Build storybook-php package
         run: npm install && npm run build
-
-      - name: Install Node dependencies (npm ci)
-        if: matrix.pkg == 'npm'
-        working-directory: examples/${{ matrix.example }}
-        run: npm ci
 
       - name: Install Node dependencies (pnpm)
         if: matrix.pkg == 'pnpm'
