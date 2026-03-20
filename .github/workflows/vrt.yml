@@ -72,7 +72,7 @@ jobs:
             composer: false
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - name: Setup PHP
         uses: shivammathur/setup-php@v2
@@ -81,12 +81,12 @@ jobs:
 
       - name: Setup pnpm
         if: matrix.pkg == 'pnpm'
-        uses: pnpm/action-setup@v4
+        uses: pnpm/action-setup@v5
         with:
           version: 9
 
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v6
         with:
           node-version: 22
 
@@ -114,7 +114,7 @@ jobs:
 
       - name: Restore VRT baselines (PR)
         if: github.event_name == 'pull_request'
-        uses: actions/cache/restore@v4
+        uses: actions/cache/restore@v5
         with:
           path: examples/${{ matrix.example }}/__vis__/linux/__baselines__
           key: vrt-baselines-${{ matrix.example }}-${{ github.sha }}
@@ -134,14 +134,14 @@ jobs:
 
       - name: Save VRT baselines (main)
         if: github.event_name == 'push'
-        uses: actions/cache/save@v4
+        uses: actions/cache/save@v5
         with:
           path: examples/${{ matrix.example }}/__vis__/linux/__baselines__
           key: vrt-baselines-${{ matrix.example }}-${{ github.sha }}
 
       - name: Upload VRT results
         if: github.event_name == 'pull_request'
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: vrt-results-${{ matrix.example }}
           path: |
@@ -156,12 +156,12 @@ jobs:
     if: github.event_name == 'pull_request'
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
         with:
           sparse-checkout: .github/scripts
 
       - name: Download all VRT results
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           pattern: vrt-results-*
           path: vrt-results
@@ -178,14 +178,14 @@ jobs:
 
       - name: Upload HTML report
         if: hashFiles('vrt-report.html') != ''
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: vrt-report
           path: vrt-report.html
 
       - name: Comment on PR
         if: env.HAS_DIFFS == 'true'
-        uses: actions/github-script@v7
+        uses: actions/github-script@v8
         with:
           script: |
             const fs = require('fs');
