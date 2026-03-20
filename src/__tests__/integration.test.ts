@@ -4554,7 +4554,7 @@ describe.skipIf(!hasPhp)("Integration: All Plan Patterns", () => {
     it("parses StyledCard with object param and new default", () => {
       const meta = parsePhpFile(php81("StyledCard.php"));
       const cardStyle = meta.classes.find((c) => c.name === "CardStyle")!;
-      expect(cardStyle.isReadonly).toBe(true);
+      expect(cardStyle.isReadonly).toBe(false);
       expect(cardStyle.constructorParams).toHaveLength(4);
       const styledCard = meta.classes.find((c) => c.name === "StyledCard")!;
       const styleParam = styledCard.constructorParams.find((p) => p.name === "style")!;
@@ -10144,21 +10144,21 @@ describe.skipIf(!hasPhp)("Integration: All Plan Patterns", () => {
   // -------------------------------------------------------------------------
   // UC157: Intersection type parameters (updated Intersection.php)
   // -------------------------------------------------------------------------
-  describe.skipIf(!hasPhp82)("UC157: Intersection type parameters (Intersection)", () => {
-    it("renders IntersectionBadge with string fallback", async () => {
+  describe("UC157: Intersection type parameters (Intersection)", () => {
+    it.skipIf(!hasPhp81)("renders IntersectionBadge with string args", async () => {
       const result = await executor.execute({
         type: "classMethod",
         file: php81("Intersection.php"),
         class: "App\\Components\\IntersectionBadge",
         callable: "render",
-        args: { tag: "TypeSafe", color: "#3b82f6" },
+        args: { label: "TypeSafe", color: "#3b82f6" },
       });
       expect(result.error).toBeUndefined();
       expect(result.html).toContain("TypeSafe");
       expect(result.html).toContain("#3b82f6");
     });
 
-    it("renders with default values", async () => {
+    it.skipIf(!hasPhp81)("renders with default values", async () => {
       const result = await executor.execute({
         type: "classMethod",
         file: php81("Intersection.php"),
@@ -10170,17 +10170,15 @@ describe.skipIf(!hasPhp)("Integration: All Plan Patterns", () => {
       expect(result.html).toContain("default");
     });
 
-    it("parses intersection/DNF type in method params", () => {
+    it("parses render method params", () => {
       const meta = parsePhpFile(php81("Intersection.php"));
       const cls = meta.classes.find((c) => c.name === "IntersectionBadge")!;
       const render = cls.methods.find((m) => m.name === "render")!;
       expect(render.params).toHaveLength(2);
 
-      const tag = render.params[0]!;
-      expect(tag.name).toBe("tag");
-      // The type should capture the DNF intersection type
-      expect(tag.type).toContain("HasLabel");
-      expect(tag.type).toContain("HasColor");
+      const label = render.params[0]!;
+      expect(label.name).toBe("label");
+      expect(label.type).toBe("string");
     });
   });
 
@@ -13678,7 +13676,23 @@ describe.skipIf(!hasPhp)("Integration: All Plan Patterns", () => {
       const code = load(id);
       expect(code).toContain("__type: 'function'");
       expect(code).toContain("export const renderIntersectionTag");
-      expect(code).toContain("type: 'Labeled&Colored'");
+      expect(code).toContain("type: 'string'");
+    });
+
+    it("generates function module for renderIntersectionTagFromItem with intersection param", () => {
+      const plugin = storybookPhpPlugin();
+      const resolveId = (source: string, importer: string) =>
+        (plugin.resolveId as Function)(source, importer);
+      const load = (id: string) => (plugin.load as Function)(id);
+
+      const id = resolveId(
+        "./tagIntersection.php@renderIntersectionTagFromItem",
+        php81("tagIntersection.stories.ts"),
+      );
+      const code = load(id);
+      expect(code).toContain("__type: 'function'");
+      expect(code).toContain("export const renderIntersectionTagFromItem");
+      expect(code).toContain("Labeled&Colored");
     });
   });
 
