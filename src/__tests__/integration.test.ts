@@ -10145,7 +10145,7 @@ describe.skipIf(!hasPhp)("Integration: All Plan Patterns", () => {
   // UC157: Intersection type parameters (updated Intersection.php)
   // -------------------------------------------------------------------------
   describe("UC157: Intersection type parameters (Intersection)", () => {
-    it("renders IntersectionBadge with string args", async () => {
+    it.skipIf(!hasPhp81)("renders IntersectionBadge with string args", async () => {
       const result = await executor.execute({
         type: "classMethod",
         file: php81("Intersection.php"),
@@ -10158,7 +10158,7 @@ describe.skipIf(!hasPhp)("Integration: All Plan Patterns", () => {
       expect(result.html).toContain("#3b82f6");
     });
 
-    it("renders with default values", async () => {
+    it.skipIf(!hasPhp81)("renders with default values", async () => {
       const result = await executor.execute({
         type: "classMethod",
         file: php81("Intersection.php"),
