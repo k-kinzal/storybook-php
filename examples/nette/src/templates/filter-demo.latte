@@ -1,5 +1,5 @@
 <div class="filter-demo">
-  <div class="user-avatar" n:class="$role === admin ? role-admin, $role === moderator ? role-mod">
+  <div n:class="user-avatar, $role === 'admin' ? role-admin, $role === 'moderator' ? role-mod">
     <span class="initials">{$name|initials}</span>
   </div>
   <h3>{$name}</h3>

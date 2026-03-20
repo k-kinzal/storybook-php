@@ -5,11 +5,11 @@ namespace App\Components;
  * Demonstrates constructor parameters with object defaults using new expressions.
  * PHP 8.1+ allows `new ClassName()` as default parameter values.
  */
-readonly class ThemeConfig {
+class ThemeConfig {
     public function __construct(
-        public string $primaryColor = '#3b82f6',
-        public string $fontFamily = 'system-ui, sans-serif',
-        public int $borderRadius = 8,
+        public readonly string $primaryColor = '#3b82f6',
+        public readonly string $fontFamily = 'system-ui, sans-serif',
+        public readonly int $borderRadius = 8,
     ) {}
 }
 

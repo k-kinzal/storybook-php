@@ -1,4 +1,4 @@
-<div class="alert alert-{$type}" n:class="$dismissible ? alert-dismissible" role="alert">
+<div n:class="alert, 'alert-' . $type, $dismissible ? alert-dismissible" role="alert">
   <strong>{$title}</strong>
   <p n:if="$message">{$message}</p>
   <button n:if="$dismissible" type="button" class="close" aria-label="Close">&times;</button>

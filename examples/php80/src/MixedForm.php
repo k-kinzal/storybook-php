@@ -10,7 +10,7 @@ class MixedForm {
     private string $id;
 
     public function __construct(
-        public readonly string $label,
+        public string $label,
         private string $type = 'text',
         ?string $id = null,
         private bool $required = false,

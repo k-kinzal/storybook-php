@@ -13,7 +13,7 @@ interface Colored {
     public function color(): string;
 }
 
-function renderIntersectionTag(Labeled&Colored $item, string $size = 'md'): string {
+function renderIntersectionTag(string $label = 'Tag', string $color = '#3b82f6', string $size = 'md'): string {
     $fontSize = match ($size) {
         'sm' => '11px',
         'lg' => '16px',
@@ -24,5 +24,13 @@ function renderIntersectionTag(Labeled&Colored $item, string $size = 'md'): stri
         'lg' => '6px 14px',
         default => '3px 10px',
     };
-    return "<span style=\"display: inline-block; padding: {$padding}; background: {$item->color()}; color: white; border-radius: 4px; font-size: {$fontSize}; font-weight: 600; font-family: system-ui;\">{$item->label()}</span>";
+    return "<span style=\"display: inline-block; padding: {$padding}; background: {$color}; color: white; border-radius: 4px; font-size: {$fontSize}; font-weight: 600; font-family: system-ui;\">{$label}</span>";
+}
+
+/**
+ * Render a tag from an object implementing both Labeled and Colored
+ * (intersection type, PHP 8.1+).
+ */
+function renderIntersectionTagFromItem(Labeled&Colored $item, string $size = 'md'): string {
+    return renderIntersectionTag($item->label(), $item->color(), $size);
 }
