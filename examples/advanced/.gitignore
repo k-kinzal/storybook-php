@@ -1,4 +1,5 @@
 node_modules/
+vendor/
 storybook-static/
 __screenshots__/
 __vis__/

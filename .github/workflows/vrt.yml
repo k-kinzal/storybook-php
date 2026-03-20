@@ -25,7 +25,7 @@ jobs:
           - example: advanced
             php: "8.4"
             pkg: pnpm
-            composer: false
+            composer: true
           - example: laravel
             php: "8.4"
             pkg: pnpm
