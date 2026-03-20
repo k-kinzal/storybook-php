@@ -48,7 +48,11 @@ PASSED_COUNT="${#PASSED_EXAMPLES[@]}"
 
 # Helper: base64 encode a file (Linux & macOS compatible)
 b64_encode() {
-  base64 -w 0 "$1" 2>/dev/null || base64 "$1"
+  if base64 -w 0 /dev/null >/dev/null 2>&1; then
+    base64 -w 0 "$1"
+  else
+    base64 "$1" | tr -d '\n'
+  fi
 }
 
 # ── Begin HTML output ──
@@ -180,8 +184,13 @@ cat >> "$OUTPUT" << EOF
 EOF
 
 for example in $(printf '%s\n' "${PASSED_EXAMPLES[@]}" | sort); do
+  active_class=""
+  if [ -z "$first_project" ]; then
+    first_project="$example"
+    active_class=" active"
+  fi
   cat >> "$OUTPUT" << EOF
-  <div class="sidebar-row" onclick="selectProject('${example}')" data-project="${example}">
+  <div class="sidebar-row${active_class}" onclick="selectProject('${example}')" data-project="${example}">
     <span class="sidebar-dot sidebar-dot--passed"></span>
     <span class="sidebar-name">${example}</span>
   </div>
@@ -278,8 +287,10 @@ done
 
 # Passed example panels
 for example in $(printf '%s\n' "${PASSED_EXAMPLES[@]}" | sort); do
+  active_class=""
+  [ "$example" = "$first_project" ] && active_class=" active"
   cat >> "$OUTPUT" << EOF
-<div class="pass-panel" data-panel="${example}">
+<div class="pass-panel${active_class}" data-panel="${example}">
   <svg class="pass-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
   <span class="pass-text">All snapshots match baseline.</span>
 </div>
