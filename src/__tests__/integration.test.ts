@@ -13678,6 +13678,22 @@ describe.skipIf(!hasPhp)("Integration: All Plan Patterns", () => {
       expect(code).toContain("export const renderIntersectionTag");
       expect(code).toContain("type: 'string'");
     });
+
+    it("generates function module for renderIntersectionTagFromItem with intersection param", () => {
+      const plugin = storybookPhpPlugin();
+      const resolveId = (source: string, importer: string) =>
+        (plugin.resolveId as Function)(source, importer);
+      const load = (id: string) => (plugin.load as Function)(id);
+
+      const id = resolveId(
+        "./tagIntersection.php@renderIntersectionTagFromItem",
+        php81("tagIntersection.stories.ts"),
+      );
+      const code = load(id);
+      expect(code).toContain("__type: 'function'");
+      expect(code).toContain("export const renderIntersectionTagFromItem");
+      expect(code).toContain("Labeled&Colored");
+    });
   });
 
   // -------------------------------------------------------------------------
