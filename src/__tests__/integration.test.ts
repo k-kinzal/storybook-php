@@ -371,6 +371,8 @@ describe.skipIf(!hasPhp)("Integration: All Plan Patterns", () => {
       // Badge partial rendered at multiple nesting levels
       expect(result.html).toContain("active");
       expect(result.html).toContain("pending");
+      // $showAlert conditional rendering
+      expect(result.html).toContain('data-pattern="alert"');
     });
   });
 

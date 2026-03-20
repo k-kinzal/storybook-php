@@ -35,4 +35,11 @@
     <section data-pattern="include-then-component" style="margin-bottom: 24px;">
         @include('partials.component-wrapper', ['wrapperHeading' => 'Mixed Nesting'])
     </section>
+
+    {{-- Conditional section using $showAlert --}}
+    @if($showAlert)
+        <section data-pattern="alert" style="margin-bottom: 24px; padding: 12px 16px; background: #fef3c7; border: 1px solid #f59e0b; border-radius: 8px; color: #92400e;">
+            <strong>Alert:</strong> This alert is conditionally rendered via $showAlert.
+        </section>
+    @endif
 </div>

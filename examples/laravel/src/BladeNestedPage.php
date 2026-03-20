@@ -7,7 +7,9 @@ use Illuminate\View\Component;
 
 class BladeNestedPage extends Component
 {
-    /** @param list<array{name: string, status: string}> $items */
+    /**
+     * @param array<int, array{name: string, status: string}> $items
+     */
     public function __construct(
         public string $title = 'Nested Page',
         public string $subtitle = 'Testing multi-level Blade rendering',
