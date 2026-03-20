@@ -336,6 +336,44 @@ describe.skipIf(!hasPhp)("Integration: All Plan Patterns", () => {
       expect(result.html).toContain("$56K");
       expect(result.html).toContain("#10b981");
     });
+
+    it("renders BladeNestedPage with multi-level nesting", async () => {
+      const result = await bladeExecutor.execute({
+        type: "classMethod",
+        file: laravel("BladeNestedPage.php"),
+        class: "App\\Components\\BladeNestedPage",
+        callable: "render",
+        args: {
+          title: "Test Page",
+          subtitle: "Integration test",
+          items: [
+            { name: "Alpha", status: "active" },
+            { name: "Beta", status: "pending" },
+          ],
+          showAlert: true,
+        },
+      });
+      expect(result.error).toBeUndefined();
+      // Pattern 1+2: @include section-header
+      expect(result.html).toContain('data-pattern="include"');
+      expect(result.html).toContain("Test Page");
+      // Pattern 3: nested @include (badge inside wrapper)
+      expect(result.html).toContain('data-pattern="nested-include"');
+      // Pattern 4: @component/@slot
+      expect(result.html).toContain('data-pattern="component-slot"');
+      expect(result.html).toContain("card-slot");
+      // Pattern 5: @each
+      expect(result.html).toContain('data-pattern="each"');
+      expect(result.html).toContain("Alpha");
+      expect(result.html).toContain("Beta");
+      // Pattern 6: @include → @component (mixed nesting)
+      expect(result.html).toContain('data-pattern="include-then-component"');
+      // Badge partial rendered at multiple nesting levels
+      expect(result.html).toContain("active");
+      expect(result.html).toContain("pending");
+      // $showAlert conditional rendering
+      expect(result.html).toContain('data-pattern="alert"');
+    });
   });
 
   // -------------------------------------------------------------------------
