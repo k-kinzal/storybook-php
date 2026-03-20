@@ -5,12 +5,12 @@ namespace App\Components;
  * Demonstrates object-typed parameters with `new ClassName()` default expressions.
  * PHP 8.1+ allows `new` in default parameter values.
  */
-readonly class CardStyle {
+class CardStyle {
     public function __construct(
-        public string $borderColor = '#d1d5db',
-        public string $bgColor = '#ffffff',
-        public int $padding = 16,
-        public int $radius = 8,
+        public readonly string $borderColor = '#d1d5db',
+        public readonly string $bgColor = '#ffffff',
+        public readonly int $padding = 16,
+        public readonly int $radius = 8,
     ) {}
 }
 

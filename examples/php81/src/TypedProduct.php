@@ -17,11 +17,11 @@ enum Currency: string {
     }
 }
 
-readonly class PriceConfig {
+class PriceConfig {
     public function __construct(
-        public int $decimals = 2,
-        public string $thousandsSep = ',',
-        public string $decimalPoint = '.',
+        public readonly int $decimals = 2,
+        public readonly string $thousandsSep = ',',
+        public readonly string $decimalPoint = '.',
     ) {}
 }
 
