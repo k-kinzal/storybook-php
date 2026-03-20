@@ -4,6 +4,7 @@
  */
 import { describe, it, expect } from "vitest";
 import { execSync } from "node:child_process";
+import { existsSync } from "node:fs";
 import { resolve } from "node:path";
 import { PhpExecutor } from "../php-executor.js";
 import { parsePhpFile } from "../php-parser.js";
@@ -39,6 +40,10 @@ const php83Dir = resolve(import.meta.dirname!, "../../examples/php83/src");
 const php84Dir = resolve(import.meta.dirname!, "../../examples/php84/src");
 const php85Dir = resolve(import.meta.dirname!, "../../examples/php85/src");
 const laravelDir = resolve(import.meta.dirname!, "../../examples/laravel/src");
+const advancedBootstrap = resolve(import.meta.dirname!, "../../examples/advanced/bootstrap.php");
+const hasAdvancedVendor = existsSync(
+  resolve(import.meta.dirname!, "../../examples/advanced/vendor/autoload.php"),
+);
 const laravelBootstrap = resolve(import.meta.dirname!, "../../examples/laravel/bootstrap.php");
 const laravelAdapter = resolve(import.meta.dirname!, "../../examples/laravel/adapter.php");
 const fixture = (name: string) => resolve(fixturesDir, name);
@@ -13218,6 +13223,60 @@ describe.skipIf(!hasPhp)("Integration: All Plan Patterns", () => {
       expect(code).toContain("__type: 'classMethod'");
       expect(code).toContain("NestedCompose");
       expect(code).toContain('__callable: "render"');
+    });
+  });
+
+  // -------------------------------------------------------------------------
+  // UC221: Autoloaded 3-level nested classes (ContactCard via Composer PSR-4)
+  // -------------------------------------------------------------------------
+  describe.skipIf(!hasPhp82 || !hasAdvancedVendor)("UC221: Autoloaded nested classes", () => {
+    const autoloadExecutor = new PhpExecutor({ timeout: 10000, bootstrap: advancedBootstrap });
+
+    it("renders ContactCard with autoloaded Address and Country", async () => {
+      const result = await autoloadExecutor.execute({
+        type: "classMethod",
+        file: advanced("Autoload/ContactCard.php"),
+        class: "App\\Components\\Autoload\\ContactCard",
+        callable: "render",
+        args: {
+          name: "Jane Smith",
+          address: {
+            street: "123 Main St",
+            city: "San Francisco",
+            country: { code: "US", name: "United States" },
+          },
+          phone: "+1 555-0123",
+        },
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain("Jane Smith");
+      expect(result.html).toContain("123 Main St");
+      expect(result.html).toContain("San Francisco");
+      expect(result.html).toContain("United States");
+      expect(result.html).toContain("+1 555-0123");
+    });
+
+    it("renders ContactCard with default country via autoload", async () => {
+      const result = await autoloadExecutor.execute({
+        type: "classMethod",
+        file: advanced("Autoload/ContactCard.php"),
+        class: "App\\Components\\Autoload\\ContactCard",
+        callable: "render",
+        args: {
+          name: "John Doe",
+          address: { street: "10 Downing St", city: "London" },
+        },
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain("John Doe");
+      expect(result.html).toContain("United States");
+    });
+
+    it("parses ContactCard as the only class in its file", () => {
+      const meta = parsePhpFile(advanced("Autoload/ContactCard.php"));
+      expect(meta.classes).toHaveLength(1);
+      expect(meta.classes[0]!.name).toBe("ContactCard");
+      expect(meta.classes[0]!.constructorParams[1]!.type).toBe("Address");
     });
   });
 
