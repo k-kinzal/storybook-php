@@ -82,18 +82,21 @@ jobs:
       - name: Setup pnpm
         if: matrix.pkg == 'pnpm'
         uses: pnpm/action-setup@v4
+        with:
+          version: 9
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: 22
-          cache: ${{ matrix.pkg == 'pnpm' && 'pnpm' || (matrix.pkg == 'npm' && 'npm' || '') }}
-          cache-dependency-path: ${{ matrix.pkg == 'pnpm' && format('examples/{0}/pnpm-lock.yaml', matrix.example) || (matrix.pkg == 'npm' && format('examples/{0}/package-lock.json', matrix.example) || '') }}
 
       - name: Install Composer dependencies
         if: matrix.composer == true
         working-directory: examples/${{ matrix.example }}
         run: composer install --no-interaction --prefer-dist
+
+      - name: Build storybook-php package
+        run: npm install && npm run build
 
       - name: Install Node dependencies (npm ci)
         if: matrix.pkg == 'npm'
