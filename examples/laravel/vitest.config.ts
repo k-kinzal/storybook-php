@@ -4,7 +4,10 @@ import { storybookVis } from "storybook-addon-vis/vitest-plugin";
 import { defineConfig } from "vitest/config";
 
 export default defineConfig({
-  plugins: [storybookTest({ configDir: ".storybook" }), storybookVis({ comparisonMethod: "pixel" })],
+  plugins: [
+    storybookTest({ configDir: ".storybook" }),
+    storybookVis({ comparisonMethod: "pixel" }),
+  ],
   optimizeDeps: {
     include: ["storybook-addon-vis/vitest-setup"],
   },
