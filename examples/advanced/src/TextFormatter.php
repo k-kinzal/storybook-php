@@ -33,5 +33,5 @@ function slugify(string $text, string $separator = '-'): string
     $slug = strtolower(trim($text));
     $slug = preg_replace('/[^a-z0-9]+/', $separator, $slug);
     $slug = trim($slug, $separator);
-    return "<code class=\"slug\">{$slug}</code>";
+    return "<code class=\"slug\" style=\"font-family: system-ui;\">{$slug}</code>";
 }

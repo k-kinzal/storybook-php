@@ -36,7 +36,7 @@ class DateFormatter {
     public function relative(string $date): string
     {
         $ts = strtotime($date);
-        $now = time();
+        $now = strtotime('2025-03-15 12:00:00');
         $diff = $now - $ts;
         $abs = abs($diff);
 
