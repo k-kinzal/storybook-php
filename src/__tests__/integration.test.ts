@@ -14858,10 +14858,7 @@ describe.skipIf(!hasPhp)("Integration: All Plan Patterns", () => {
         class: "App\\Fixtures\\TagList",
         callable: "render",
         args: {
-          tags: [
-            { name: "Alpha" },
-            { name: "Beta" },
-          ],
+          tags: [{ name: "Alpha" }, { name: "Beta" }],
         },
       });
       expect(result.error).toBeUndefined();
@@ -14876,10 +14873,7 @@ describe.skipIf(!hasPhp)("Integration: All Plan Patterns", () => {
         class: "App\\Fixtures\\TagBoard",
         callable: "render",
         args: {
-          groups: [
-            [{ name: "A" }, { name: "B" }],
-            [{ name: "C" }],
-          ],
+          groups: [[{ name: "A" }, { name: "B" }], [{ name: "C" }]],
           title: "Nested",
         },
       });
@@ -14976,10 +14970,18 @@ describe.skipIf(!hasPhp)("Integration: All Plan Patterns", () => {
       expect(result.html).toContain("<h4>v2.0 Planning</h4>");
 
       // Tasks rendered (proves nested list<Task> + enum TaskStatus casting)
-      expect(result.html).toContain('<li class="task-done">Parser <span class="assignee">(Alice)</span></li>');
-      expect(result.html).toContain('<li class="task-done">Runner <span class="assignee">(Bob)</span></li>');
-      expect(result.html).toContain('<li class="task-in_progress">Docs <span class="assignee">(Alice)</span></li>');
-      expect(result.html).toContain('<li class="task-in_progress">Array casting <span class="assignee">(Alice)</span></li>');
+      expect(result.html).toContain(
+        '<li class="task-done">Parser <span class="assignee">(Alice)</span></li>',
+      );
+      expect(result.html).toContain(
+        '<li class="task-done">Runner <span class="assignee">(Bob)</span></li>',
+      );
+      expect(result.html).toContain(
+        '<li class="task-in_progress">Docs <span class="assignee">(Alice)</span></li>',
+      );
+      expect(result.html).toContain(
+        '<li class="task-in_progress">Array casting <span class="assignee">(Alice)</span></li>',
+      );
       expect(result.html).toContain('<li class="task-todo">Collection support</li>');
     });
 
@@ -14991,9 +14993,7 @@ describe.skipIf(!hasPhp)("Integration: All Plan Patterns", () => {
         callable: "render",
         args: {
           name: "Quick Prototype",
-          members: [
-            { name: "Charlie", role: "Solo Developer" },
-          ],
+          members: [{ name: "Charlie", role: "Solo Developer" }],
         },
       });
       expect(result.error).toBeUndefined();
