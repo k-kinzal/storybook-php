@@ -14798,4 +14798,300 @@ describe.skipIf(!hasPhp)("Integration: All Plan Patterns", () => {
       expect(facebook!.traits).toContain("HasShareLink");
     });
   });
+
+  // -------------------------------------------------------------------------
+  // UC222: PHPDoc array-of-class casting (@phpstan-param / @param)
+  // -------------------------------------------------------------------------
+  describe.skipIf(!hasPhp81)("UC222: PHPDoc array-of-class casting", () => {
+    it("casts list<Tag> via @phpstan-param", async () => {
+      const result = await executor.execute({
+        type: "classMethod",
+        file: fixture("ArrayOfObjects.php"),
+        class: "App\\Fixtures\\TagCloud",
+        callable: "render",
+        args: {
+          tags: [
+            { name: "PHP", color: "blue" },
+            { name: "JS", color: "yellow" },
+          ],
+          title: "Languages",
+        },
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain("Languages");
+      expect(result.html).toContain('<span class="tag" style="color: blue;">PHP</span>');
+      expect(result.html).toContain('<span class="tag" style="color: yellow;">JS</span>');
+    });
+
+    it("casts list<Tag> with default color", async () => {
+      const result = await executor.execute({
+        type: "classMethod",
+        file: fixture("ArrayOfObjects.php"),
+        class: "App\\Fixtures\\TagCloud",
+        callable: "render",
+        args: {
+          tags: [{ name: "Rust" }],
+        },
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('<span class="tag" style="color: gray;">Rust</span>');
+    });
+
+    it("handles empty array", async () => {
+      const result = await executor.execute({
+        type: "classMethod",
+        file: fixture("ArrayOfObjects.php"),
+        class: "App\\Fixtures\\TagCloud",
+        callable: "render",
+        args: {
+          tags: [],
+        },
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain("No tags");
+    });
+
+    it("casts Tag[] via @param syntax", async () => {
+      const result = await executor.execute({
+        type: "classMethod",
+        file: fixture("ArrayOfObjects.php"),
+        class: "App\\Fixtures\\TagList",
+        callable: "render",
+        args: {
+          tags: [
+            { name: "Alpha" },
+            { name: "Beta" },
+          ],
+        },
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain("<li>Alpha</li>");
+      expect(result.html).toContain("<li>Beta</li>");
+    });
+
+    it("casts nested list<list<Tag>> recursively", async () => {
+      const result = await executor.execute({
+        type: "classMethod",
+        file: fixture("ArrayOfObjects.php"),
+        class: "App\\Fixtures\\TagBoard",
+        callable: "render",
+        args: {
+          groups: [
+            [{ name: "A" }, { name: "B" }],
+            [{ name: "C" }],
+          ],
+          title: "Nested",
+        },
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain("Nested");
+      expect(result.html).toContain('<span class="tag">A</span>');
+      expect(result.html).toContain('<span class="tag">B</span>');
+      expect(result.html).toContain('<span class="tag">C</span>');
+      expect(result.html).toContain('data-group="0"');
+      expect(result.html).toContain('data-group="1"');
+    });
+
+    it("parser reads type as 'array' (docblock does not affect parser)", () => {
+      const meta = parsePhpFile(fixture("ArrayOfObjects.php"));
+      const tagCloud = meta.classes.find((c) => c.name === "TagCloud");
+      expect(tagCloud).toBeDefined();
+      const tagsParam = tagCloud!.constructorParams.find((p) => p.name === "tags");
+      expect(tagsParam).toBeDefined();
+      expect(tagsParam!.type).toBe("array");
+    });
+  });
+
+  // -------------------------------------------------------------------------
+  // UC223: Complex nested PHPDoc array casting (ProjectBoard)
+  //   4 levels deep: ProjectBoard → Member[] → Skill[] → SkillLevel (enum)
+  //                  ProjectBoard → Milestone[] → Task[] → TaskStatus (enum)
+  // -------------------------------------------------------------------------
+  describe.skipIf(!hasPhp82)("UC223: Complex nested PHPDoc array casting (ProjectBoard)", () => {
+    it("renders full project with members, skills, milestones, and tasks", async () => {
+      const result = await executor.execute({
+        type: "classMethod",
+        file: advanced("ProjectBoard.php"),
+        class: "App\\Components\\ProjectBoard",
+        callable: "render",
+        args: {
+          name: "Storybook PHP",
+          description: "A renderer for PHP components",
+          members: [
+            {
+              name: "Alice",
+              role: "Lead",
+              skills: [
+                { name: "PHP", level: "expert" },
+                { name: "TypeScript", level: "intermediate" },
+              ],
+            },
+            {
+              name: "Bob",
+              role: "Developer",
+              skills: [
+                { name: "PHP", level: "intermediate" },
+                { name: "CSS", level: "expert" },
+              ],
+            },
+          ],
+          milestones: [
+            {
+              name: "v1.0 Release",
+              tasks: [
+                { title: "Parser", status: "done", assignee: "Alice" },
+                { title: "Runner", status: "done", assignee: "Bob" },
+                { title: "Docs", status: "in_progress", assignee: "Alice" },
+              ],
+            },
+            {
+              name: "v2.0 Planning",
+              tasks: [
+                { title: "Array casting", status: "in_progress", assignee: "Alice" },
+                { title: "Collection support", status: "todo" },
+              ],
+            },
+          ],
+        },
+      });
+      expect(result.error).toBeUndefined();
+
+      // Top-level
+      expect(result.html).toContain("Storybook PHP");
+      expect(result.html).toContain("A renderer for PHP components");
+
+      // Members rendered (proves list<Member> casting)
+      expect(result.html).toContain("<strong>Alice</strong>");
+      expect(result.html).toContain("<strong>Bob</strong>");
+      expect(result.html).toContain('<span class="role">Lead</span>');
+      expect(result.html).toContain('<span class="role">Developer</span>');
+
+      // Skills rendered (proves nested list<Skill> + enum SkillLevel casting)
+      expect(result.html).toContain('<span class="skill skill-expert">PHP</span>');
+      expect(result.html).toContain('<span class="skill skill-intermediate">TypeScript</span>');
+      expect(result.html).toContain('<span class="skill skill-expert">CSS</span>');
+
+      // Milestones rendered (proves list<Milestone> casting)
+      expect(result.html).toContain("<h4>v1.0 Release</h4>");
+      expect(result.html).toContain("<h4>v2.0 Planning</h4>");
+
+      // Tasks rendered (proves nested list<Task> + enum TaskStatus casting)
+      expect(result.html).toContain('<li class="task-done">Parser <span class="assignee">(Alice)</span></li>');
+      expect(result.html).toContain('<li class="task-done">Runner <span class="assignee">(Bob)</span></li>');
+      expect(result.html).toContain('<li class="task-in_progress">Docs <span class="assignee">(Alice)</span></li>');
+      expect(result.html).toContain('<li class="task-in_progress">Array casting <span class="assignee">(Alice)</span></li>');
+      expect(result.html).toContain('<li class="task-todo">Collection support</li>');
+    });
+
+    it("renders with members but no milestones", async () => {
+      const result = await executor.execute({
+        type: "classMethod",
+        file: advanced("ProjectBoard.php"),
+        class: "App\\Components\\ProjectBoard",
+        callable: "render",
+        args: {
+          name: "Quick Prototype",
+          members: [
+            { name: "Charlie", role: "Solo Developer" },
+          ],
+        },
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain("Quick Prototype");
+      expect(result.html).toContain("<strong>Charlie</strong>");
+      // No milestones section content
+      expect(result.html).not.toContain("<h4>");
+    });
+
+    it("renders with empty members and milestones", async () => {
+      const result = await executor.execute({
+        type: "classMethod",
+        file: advanced("ProjectBoard.php"),
+        class: "App\\Components\\ProjectBoard",
+        callable: "render",
+        args: {
+          name: "Empty Board",
+          members: [],
+          milestones: [],
+          description: "Nothing here yet",
+        },
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain("Empty Board");
+      expect(result.html).toContain("Nothing here yet");
+      // No member or task content
+      expect(result.html).not.toContain('<div class="member">');
+      expect(result.html).not.toContain('<div class="milestone">');
+    });
+
+    it("renders member with skills using default enum value", async () => {
+      const result = await executor.execute({
+        type: "classMethod",
+        file: advanced("ProjectBoard.php"),
+        class: "App\\Components\\ProjectBoard",
+        callable: "render",
+        args: {
+          name: "Defaults Test",
+          members: [
+            {
+              name: "Dave",
+              role: "Intern",
+              skills: [{ name: "HTML" }],
+            },
+          ],
+        },
+      });
+      expect(result.error).toBeUndefined();
+      // Skill uses default SkillLevel::Beginner
+      expect(result.html).toContain('<span class="skill skill-beginner">HTML</span>');
+    });
+
+    it("renders task with default status and no assignee", async () => {
+      const result = await executor.execute({
+        type: "classMethod",
+        file: advanced("ProjectBoard.php"),
+        class: "App\\Components\\ProjectBoard",
+        callable: "render",
+        args: {
+          name: "Defaults Test",
+          members: [],
+          milestones: [
+            {
+              name: "Backlog",
+              tasks: [{ title: "Unassigned task" }],
+            },
+          ],
+        },
+      });
+      expect(result.error).toBeUndefined();
+      // Task uses default TaskStatus::Todo, no assignee
+      expect(result.html).toContain('<li class="task-todo">Unassigned task</li>');
+      expect(result.html).not.toContain("assignee");
+    });
+
+    it("parser detects ProjectBoard classes and array params", () => {
+      const meta = parsePhpFile(advanced("ProjectBoard.php"));
+
+      const board = meta.classes.find((c) => c.name === "ProjectBoard");
+      expect(board).toBeDefined();
+      const membersParam = board!.constructorParams.find((p) => p.name === "members");
+      expect(membersParam).toBeDefined();
+      expect(membersParam!.type).toBe("array");
+      const milestonesParam = board!.constructorParams.find((p) => p.name === "milestones");
+      expect(milestonesParam).toBeDefined();
+      expect(milestonesParam!.type).toBe("array");
+
+      const member = meta.classes.find((c) => c.name === "Member");
+      expect(member).toBeDefined();
+      const skillsParam = member!.constructorParams.find((p) => p.name === "skills");
+      expect(skillsParam).toBeDefined();
+      expect(skillsParam!.type).toBe("array");
+
+      const milestone = meta.classes.find((c) => c.name === "Milestone");
+      expect(milestone).toBeDefined();
+      const tasksParam = milestone!.constructorParams.find((p) => p.name === "tasks");
+      expect(tasksParam).toBeDefined();
+      expect(tasksParam!.type).toBe("array");
+    });
+  });
 });

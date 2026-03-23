@@ -9,6 +9,248 @@ declare(strict_types=1);
  * and writes a JSON response to stdout.
  */
 
+// ---------------------------------------------------------------------------
+// PHPDoc array type helpers
+// ---------------------------------------------------------------------------
+
+/**
+ * Parse PHPDoc @param / @phpstan-param / @psalm-param annotations from a
+ * function or method docblock.  Returns a map of parameter name → doc type.
+ *
+ * Priority per param: @phpstan-param > @psalm-param > @param.
+ */
+function parseDocBlockParamTypes(?ReflectionFunctionAbstract $ref): array
+{
+    if ($ref === null) {
+        return [];
+    }
+
+    $doc = $ref->getDocComment();
+    if ($doc === false) {
+        return [];
+    }
+
+    $types = [];
+
+    // Higher-priority annotations: @phpstan-param, @psalm-param
+    if (preg_match_all('/@(?:phpstan-param|psalm-param)\s+(.+?)\s+\$(\w+)/m', $doc, $matches, PREG_SET_ORDER)) {
+        foreach ($matches as $match) {
+            $types[$match[2]] = trim($match[1]);
+        }
+    }
+
+    // Fall back to @param for params not already covered
+    if (preg_match_all('/@param\s+(.+?)\s+\$(\w+)/m', $doc, $matches, PREG_SET_ORDER)) {
+        foreach ($matches as $match) {
+            if (!isset($types[$match[2]])) {
+                $types[$match[2]] = trim($match[1]);
+            }
+        }
+    }
+
+    return $types;
+}
+
+/**
+ * Split generic type arguments on commas at <> depth 0.
+ * e.g. "string, list<Foo>" → ["string", "list<Foo>"]
+ */
+function splitGenericArgs(string $inner): array
+{
+    $parts = [];
+    $depth = 0;
+    $current = '';
+    $len = strlen($inner);
+
+    for ($i = 0; $i < $len; $i++) {
+        $ch = $inner[$i];
+        if ($ch === '<') {
+            $depth++;
+            $current .= $ch;
+        } elseif ($ch === '>') {
+            $depth--;
+            $current .= $ch;
+        } elseif ($ch === ',' && $depth === 0) {
+            $parts[] = trim($current);
+            $current = '';
+        } else {
+            $current .= $ch;
+        }
+    }
+
+    $trimmed = trim($current);
+    if ($trimmed !== '') {
+        $parts[] = $trimmed;
+    }
+
+    return $parts;
+}
+
+/** Native array-like type names recognised by PHPStan / Psalm. */
+const NATIVE_ARRAY_TYPES = ['list', 'array', 'iterable', 'non-empty-list', 'non-empty-array'];
+
+/**
+ * Extract the inner value type from a generic / array doc type.
+ *
+ * Returns ['valueType' => string, 'wrapperClass' => string|null] or null.
+ *   - wrapperClass is null  for native array types (list, array, iterable …)
+ *   - wrapperClass is a class name for collection-like types (Collection …)
+ */
+function extractGenericValueType(string $docType): ?array
+{
+    // Strip nullable suffix/prefix: list<Foo>|null  →  list<Foo>
+    $type = preg_replace('/\|null$/i', '', $docType);
+    $type = preg_replace('/^null\|/i', '', $type);
+    $type = trim($type);
+
+    // ClassName[][] → ClassName[]  /  ClassName[] → ClassName
+    if (str_ends_with($type, '[]')) {
+        return ['valueType' => substr($type, 0, -2), 'wrapperClass' => null];
+    }
+
+    // Generic syntax: Something<…>
+    if (preg_match('/^(.+?)<(.+)>$/', $type, $m)) {
+        $outer = trim($m[1]);
+        $inner = trim($m[2]);
+        $args  = splitGenericArgs($inner);
+        // For two-arg generics (array<K,V>, Collection<K,V>), take the last arg as value type
+        $valueType = count($args) >= 2 ? trim($args[count($args) - 1]) : $inner;
+
+        $isNative = in_array(strtolower($outer), NATIVE_ARRAY_TYPES, true);
+        return [
+            'valueType'    => $valueType,
+            'wrapperClass' => $isNative ? null : $outer,
+        ];
+    }
+
+    return null;
+}
+
+/**
+ * Check whether a PHPDoc type string represents an array-like or generic type.
+ */
+function isArrayLikeType(string $type): bool
+{
+    $t = preg_replace('/\|null$/i', '', $type);
+    $t = preg_replace('/^null\|/i', '', $t);
+    $t = trim($t);
+
+    return str_ends_with($t, '[]') || (bool) preg_match('/^.+<.+>$/', $t);
+}
+
+/**
+ * Resolve a short class name to a FQN using the declaring namespace.
+ * Falls back to null when the class cannot be found.
+ */
+function resolveClassName(string $className, ReflectionParameter $param): ?string
+{
+    // Leading backslash → already absolute
+    $candidate = ltrim($className, '\\');
+
+    if (class_exists($candidate) || (function_exists('enum_exists') && enum_exists($candidate))) {
+        return $candidate;
+    }
+
+    // Try prepending the declaring namespace
+    $declaringFunc = $param->getDeclaringFunction();
+    $namespace = null;
+    if ($declaringFunc instanceof ReflectionMethod) {
+        $namespace = $declaringFunc->getDeclaringClass()->getNamespaceName();
+    } elseif (method_exists($declaringFunc, 'getNamespaceName')) {
+        $namespace = $declaringFunc->getNamespaceName();
+    }
+
+    if ($namespace !== null && $namespace !== '') {
+        $fqn = $namespace . '\\' . $candidate;
+        if (class_exists($fqn) || (function_exists('enum_exists') && enum_exists($fqn))) {
+            return $fqn;
+        }
+    }
+
+    return null;
+}
+
+/**
+ * Cast each element of an array using PHPDoc generic type information.
+ * Handles recursive nesting (e.g. list<list<Foo>>).
+ */
+function castArrayElements(array $value, string $docType, ReflectionParameter $param): array
+{
+    $info = extractGenericValueType($docType);
+    if ($info === null) {
+        return $value;
+    }
+
+    $innerType = $info['valueType'];
+
+    // Union inner types (e.g. Foo|Bar) — skip casting
+    if (str_contains($innerType, '|')) {
+        return $value;
+    }
+
+    // Inner type is itself array-like → recurse into each element
+    if (isArrayLikeType($innerType)) {
+        $result = [];
+        foreach ($value as $key => $item) {
+            $result[$key] = is_array($item) ? castArrayElements($item, $innerType, $param) : $item;
+        }
+        return $result;
+    }
+
+    // Try to resolve as a class
+    $resolved = resolveClassName($innerType, $param);
+    if ($resolved !== null && class_exists($resolved)) {
+        $result = [];
+        foreach ($value as $key => $item) {
+            if ($item instanceof $resolved) {
+                $result[$key] = $item;
+                continue;
+            }
+            $ref = new ReflectionClass($resolved);
+            $constructor = $ref->getConstructor();
+            if ($constructor !== null) {
+                $result[$key] = $ref->newInstanceArgs(matchArgs($constructor, (array) $item));
+            } else {
+                $result[$key] = $ref->newInstance();
+            }
+        }
+        return $result;
+    }
+
+    // Try to resolve as an enum
+    if (function_exists('enum_exists') && $resolved !== null && enum_exists($resolved)) {
+        $result = [];
+        foreach ($value as $key => $item) {
+            if ($item instanceof $resolved) {
+                $result[$key] = $item;
+                continue;
+            }
+            if (is_subclass_of($resolved, \BackedEnum::class)) {
+                try {
+                    $result[$key] = $resolved::from($item);
+                    continue;
+                } catch (\Throwable) {
+                    // fall through to name matching
+                }
+            }
+            foreach ($resolved::cases() as $case) {
+                if ($case->name === $item) {
+                    $result[$key] = $case;
+                    continue 2;
+                }
+            }
+            $result[$key] = $item;
+        }
+        return $result;
+    }
+
+    return $value;
+}
+
+// ---------------------------------------------------------------------------
+// Type scoring & casting
+// ---------------------------------------------------------------------------
+
 /**
  * Score how well a named type matches a given value.
  * Higher score = better match. Used to pick the best type in a union.
@@ -38,7 +280,7 @@ function scoreTypeMatch(ReflectionNamedType $type, mixed $value): int
 /**
  * Cast a value to match the expected type of a reflection parameter.
  */
-function castArg(ReflectionParameter $param, mixed $value): mixed
+function castArg(ReflectionParameter $param, mixed $value, ?string $docType = null): mixed
 {
     if ($value === null && $param->getType()?->allowsNull()) {
         return null;
@@ -67,7 +309,7 @@ function castArg(ReflectionParameter $param, mixed $value): mixed
         foreach ([...$namedTypes, ...$otherTypes] as $unionType) {
             try {
                 if ($unionType instanceof ReflectionNamedType) {
-                    return castWithNamedType($unionType, $value, $param);
+                    return castWithNamedType($unionType, $value, $param, $docType);
                 }
                 // For intersection types in DNF, return value as-is
                 return $value;
@@ -79,7 +321,7 @@ function castArg(ReflectionParameter $param, mixed $value): mixed
     }
 
     if ($type instanceof ReflectionNamedType) {
-        return castWithNamedType($type, $value, $param);
+        return castWithNamedType($type, $value, $param, $docType);
     }
 
     // ReflectionIntersectionType or unknown — return as-is
@@ -89,7 +331,7 @@ function castArg(ReflectionParameter $param, mixed $value): mixed
 /**
  * Cast a value using a specific ReflectionNamedType.
  */
-function castWithNamedType(ReflectionNamedType $type, mixed $value, ReflectionParameter $param): mixed
+function castWithNamedType(ReflectionNamedType $type, mixed $value, ReflectionParameter $param, ?string $docType = null): mixed
 {
     if ($value === null && $type->allowsNull()) {
         return null;
@@ -107,11 +349,14 @@ function castWithNamedType(ReflectionNamedType $type, mixed $value, ReflectionPa
         case 'bool':
             return (bool) $value;
         case 'array':
-            return is_array($value) ? $value : (array) $value;
+        case 'iterable':
+            $arr = is_array($value) ? $value : (array) $value;
+            if ($docType !== null) {
+                return castArrayElements($arr, $docType, $param);
+            }
+            return $arr;
         case 'object':
             return is_object($value) ? $value : (object) $value;
-        case 'iterable':
-            return is_array($value) ? $value : (array) $value;
         case 'callable':
             return $value;
         case 'mixed':
@@ -154,6 +399,19 @@ function castWithNamedType(ReflectionNamedType $type, mixed $value, ReflectionPa
         if ($value instanceof $typeName) {
             return $value;
         }
+        // Generic collection class: cast inner elements, pass array as first constructor arg
+        if ($docType !== null && is_array($value)) {
+            $info = extractGenericValueType($docType);
+            if ($info !== null && $info['wrapperClass'] !== null) {
+                $castedItems = castArrayElements($value, $docType, $param);
+                $ref = new ReflectionClass($typeName);
+                $constructor = $ref->getConstructor();
+                if ($constructor !== null) {
+                    return $ref->newInstanceArgs([$castedItems]);
+                }
+            }
+        }
+        // Original named-arg matching behavior
         $ref = new ReflectionClass($typeName);
         $constructor = $ref->getConstructor();
         if ($constructor !== null) {
@@ -175,6 +433,8 @@ function matchArgs(?ReflectionFunctionAbstract $ref, array $args): array
         return [];
     }
 
+    $docTypes = parseDocBlockParamTypes($ref);
+
     $ordered = [];
     foreach ($ref->getParameters() as $param) {
         $name = $param->getName();
@@ -194,7 +454,7 @@ function matchArgs(?ReflectionFunctionAbstract $ref, array $args): array
         }
 
         if (array_key_exists($name, $args)) {
-            $ordered[] = castArg($param, $args[$name]);
+            $ordered[] = castArg($param, $args[$name], $docTypes[$name] ?? null);
         } elseif ($param->isDefaultValueAvailable()) {
             $ordered[] = $param->getDefaultValue();
         } elseif ($param->allowsNull()) {
