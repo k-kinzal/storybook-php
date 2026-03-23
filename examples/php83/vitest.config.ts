@@ -17,7 +17,12 @@ export default defineConfig({
       ui: false,
       provider: playwright({
         launchOptions: {
-          args: ["--font-render-hinting=none", "--disable-font-subpixel-positioning", "--disable-lcd-text", "--force-color-profile=srgb"],
+          args: [
+            "--font-render-hinting=none",
+            "--disable-font-subpixel-positioning",
+            "--disable-lcd-text",
+            "--force-color-profile=srgb",
+          ],
         },
         contextOptions: {
           deviceScaleFactor: 2,
