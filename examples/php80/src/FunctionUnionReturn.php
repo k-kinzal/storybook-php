@@ -7,7 +7,7 @@ namespace App\Helpers;
 function formatValue(string $value, string $format = 'text'): string|int {
     return match($format) {
         'number' => (int) $value,
-        default => "<span class=\"formatted-value\" style=\"padding: 2px 6px; background: #f3f4f6; border-radius: 3px; font-family: monospace;\">{$value}</span>",
+        default => "<span class=\"formatted-value\" style=\"padding: 2px 6px; background: #f3f4f6; border-radius: 3px; font-family: system-ui;\">{$value}</span>",
     };
 }
 

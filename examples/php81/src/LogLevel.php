@@ -35,7 +35,7 @@ enum LogLevel: string implements HasLabel {
     }
 
     public function entry(string $message, string $timestamp = ''): string {
-        $time = $timestamp !== '' ? "<time style=\"color: #9ca3af; font-size: 12px; font-family: monospace;\">{$timestamp}</time> " : '';
-        return "<div class=\"log-entry log-entry-{$this->value}\" style=\"display: flex; align-items: center; gap: 8px; padding: 8px 12px; border-left: 3px solid; margin-bottom: 4px; font-family: monospace; font-size: 13px;\">{$time}{$this->badge()} <span>{$message}</span></div>";
+        $time = $timestamp !== '' ? "<time style=\"color: #9ca3af; font-size: 12px; font-family: system-ui;\">{$timestamp}</time> " : '';
+        return "<div class=\"log-entry log-entry-{$this->value}\" style=\"display: flex; align-items: center; gap: 8px; padding: 8px 12px; border-left: 3px solid; margin-bottom: 4px; font-family: system-ui; font-size: 13px;\">{$time}{$this->badge()} <span>{$message}</span></div>";
     }
 }

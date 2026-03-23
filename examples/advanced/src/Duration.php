@@ -26,7 +26,7 @@ class Duration {
         $display = implode(' ', $parts);
         $totalSec = $this->hours * 3600 + $this->minutes * 60 + $this->seconds;
         $barWidth = min(100, intval($totalSec / 36)); // max ~1h fills bar
-        return "<div class=\"duration\" style=\"font-family: monospace; display: inline-flex; align-items: center; gap: 10px;\"><span style=\"font-size: 18px; font-weight: bold;\">{$display}</span><div style=\"width: 120px; height: 6px; background: #e5e7eb; border-radius: 3px; overflow: hidden;\"><div style=\"width: {$barWidth}%; height: 100%; background: #3b82f6; border-radius: 3px;\"></div></div></div>";
+        return "<div class=\"duration\" style=\"font-family: system-ui; display: inline-flex; align-items: center; gap: 10px;\"><span style=\"font-size: 18px; font-weight: bold;\">{$display}</span><div style=\"width: 120px; height: 6px; background: #e5e7eb; border-radius: 3px; overflow: hidden;\"><div style=\"width: {$barWidth}%; height: 100%; background: #3b82f6; border-radius: 3px;\"></div></div></div>";
     }
 
     public static function fromSeconds(int $totalSeconds): self {

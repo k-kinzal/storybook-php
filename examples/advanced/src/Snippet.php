@@ -21,7 +21,7 @@ class Snippet {
         }
 
         return <<<HTML
-        <div class="snippet" style="border-radius: 8px; overflow: hidden; font-family: monospace; font-size: 13px;">
+        <div class="snippet" style="border-radius: 8px; overflow: hidden; font-family: system-ui; font-size: 13px;">
             <div class="snippet-header" style="background: #1e293b; color: #94a3b8; padding: 6px 12px; font-size: 11px; text-transform: uppercase;">{$language}</div>
             <pre style="background: #0f172a; color: #e2e8f0; padding: 16px; margin: 0; overflow-x: auto;"><code>{$escaped}</code></pre>
         </div>
@@ -31,6 +31,6 @@ class Snippet {
     public function inline(string $code): string
     {
         $escaped = htmlspecialchars($code, ENT_QUOTES);
-        return "<code style=\"background: #f1f5f9; color: #0f172a; padding: 2px 6px; border-radius: 4px; font-family: monospace; font-size: 13px;\">{$escaped}</code>";
+        return "<code style=\"background: #f1f5f9; color: #0f172a; padding: 2px 6px; border-radius: 4px; font-family: system-ui; font-size: 13px;\">{$escaped}</code>";
     }
 }
