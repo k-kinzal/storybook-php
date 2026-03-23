@@ -16,6 +16,9 @@ export default defineConfig({
       enabled: true,
       ui: false,
       provider: playwright({
+        launchOptions: {
+          args: ["--font-render-hinting=none", "--disable-font-subpixel-positioning"],
+        },
         contextOptions: {
           deviceScaleFactor: 2,
           viewport: { width: 960, height: 720 },
