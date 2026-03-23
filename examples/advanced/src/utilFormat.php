@@ -9,7 +9,7 @@ function formatCurrency(float $amount, string $currency = 'USD', int $decimals =
     $symbols = ['USD' => '$', 'EUR' => '€', 'GBP' => '£', 'JPY' => '¥'];
     $symbol = $symbols[$currency] ?? $currency;
     $formatted = number_format($amount, $decimals);
-    return "<span class=\"currency\" style=\"font-family: monospace; font-size: 18px; font-weight: bold; color: #111827;\">{$symbol}{$formatted}</span>";
+    return "<span class=\"currency\" style=\"font-family: system-ui; font-size: 18px; font-weight: bold; color: #111827;\">{$symbol}{$formatted}</span>";
 }
 
 function formatDate(string $date, string $format = 'long'): string {

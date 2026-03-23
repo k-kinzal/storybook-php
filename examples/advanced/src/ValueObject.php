@@ -17,7 +17,7 @@ class ValueObject {
             ? " <span style=\"font-size: 12px; color: #6b7280;\">{$this->unit}</span>"
             : '';
         return <<<HTML
-        <div class="value-object" style="display: inline-flex; align-items: baseline; gap: 8px; padding: 10px 16px; border: 1px solid #d1d5db; border-radius: 8px; font-family: monospace; background: #f9fafb;">
+        <div class="value-object" style="display: inline-flex; align-items: baseline; gap: 8px; padding: 10px 16px; border: 1px solid #d1d5db; border-radius: 8px; font-family: system-ui; background: #f9fafb;">
             <span style="color: #6b7280; font-size: 12px;">{$this->id}</span>
             <span style="font-size: 20px; font-weight: bold;">{$this->value}{$unitHtml}</span>
         </div>

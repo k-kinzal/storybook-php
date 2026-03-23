@@ -30,7 +30,7 @@ function renderMatrix(
     array $matrix = [[1, 0, 0], [0, 1, 0], [0, 0, 1]],
     string $label = 'Identity Matrix',
 ): string {
-    $html = "<div class=\"matrix\" style=\"font-family: monospace;\">";
+    $html = "<div class=\"matrix\" style=\"font-family: system-ui;\">";
     $html .= "<strong style=\"display: block; margin-bottom: 8px;\">{$label}</strong>";
     $html .= "<table style=\"border-collapse: collapse;\">";
     foreach ($matrix as $row) {

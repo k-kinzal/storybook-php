@@ -38,7 +38,7 @@ enum MenuAction: string implements Displayable, Accessible {
         return <<<HTML
         <div style="display: flex; justify-content: space-between; align-items: center; padding: 8px 16px; font-family: system-ui; min-width: 200px; cursor: pointer; border-radius: 4px;" onmouseover="this.style.background='#f3f4f6'" onmouseout="this.style.background='transparent'">
             <span style="font-size: 14px; color: #111827;">{$this->display()}</span>
-            <kbd style="padding: 2px 6px; background: #f9fafb; border: 1px solid #d1d5db; border-radius: 3px; font-size: 11px; color: #6b7280; font-family: monospace;">{$this->shortcut()}</kbd>
+            <kbd style="padding: 2px 6px; background: #f9fafb; border: 1px solid #d1d5db; border-radius: 3px; font-size: 11px; color: #6b7280; font-family: system-ui;">{$this->shortcut()}</kbd>
         </div>
         HTML;
     }

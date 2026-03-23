@@ -27,7 +27,7 @@ class DnfConfig {
             : '';
 
         return <<<HTML
-        <div style="padding: 14px 18px; background: #fafafa; border: 1px solid #e5e7eb; border-radius: 8px; font-family: monospace; font-size: 13px;">
+        <div style="padding: 14px 18px; background: #fafafa; border: 1px solid #e5e7eb; border-radius: 8px; font-family: system-ui; font-size: 13px;">
             <div style="display: flex; align-items: center; margin-bottom: 8px;">
                 <span style="font-weight: 700; color: #111827;">{$this->name}</span>{$debugBadge}
             </div>

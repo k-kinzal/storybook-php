@@ -10,7 +10,7 @@ function calcDiscount(float $price, float $percent = 10.0): string {
     $final = $price - $discount;
 
     return <<<HTML
-    <div class="calc-discount" style="display: inline-block; padding: 12px 16px; border: 1px solid #e5e7eb; border-radius: 8px; font-family: monospace; background: #f9fafb;">
+    <div class="calc-discount" style="display: inline-block; padding: 12px 16px; border: 1px solid #e5e7eb; border-radius: 8px; font-family: system-ui; background: #f9fafb;">
         <div style="color: #6b7280; font-size: 12px; margin-bottom: 4px;">Original: \${$price}</div>
         <div style="color: #ef4444; font-size: 12px; margin-bottom: 4px;">Discount: -{$percent}%</div>
         <div style="font-size: 20px; font-weight: bold; color: #22c55e;">\${$final}</div>
@@ -26,5 +26,5 @@ function formatBytes(int $bytes, int $precision = 2): string {
     $formatted = number_format($value, $precision);
     $unit = $units[(int) $factor];
 
-    return "<span class=\"format-bytes\" style=\"font-family: monospace; padding: 4px 10px; background: #f3f4f6; border-radius: 4px; font-size: 14px;\">{$formatted} {$unit}</span>";
+    return "<span class=\"format-bytes\" style=\"font-family: system-ui; padding: 4px 10px; background: #f3f4f6; border-radius: 4px; font-size: 14px;\">{$formatted} {$unit}</span>";
 }

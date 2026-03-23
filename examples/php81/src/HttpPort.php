@@ -33,7 +33,7 @@ enum HttpPort: int {
             $secure = $port->value === 443 || $port->value === 8443;
             $label = $secure ? 'Secure' : 'Standard';
             $color = $secure ? '#22c55e' : '#f59e0b';
-            $rows .= "<tr><td style=\"padding: 8px;\">{$port->name}</td><td style=\"padding: 8px; font-family: monospace;\">{$port->value}</td><td style=\"padding: 8px; color: {$color};\">{$label}</td></tr>";
+            $rows .= "<tr><td style=\"padding: 8px;\">{$port->name}</td><td style=\"padding: 8px; font-family: system-ui;\">{$port->value}</td><td style=\"padding: 8px; color: {$color};\">{$label}</td></tr>";
         }
         return <<<HTML
         <table class="port-table" style="border-collapse: collapse; font-family: system-ui; width: 100%;">

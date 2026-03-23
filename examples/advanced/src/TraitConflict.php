@@ -15,7 +15,7 @@ trait HasHtmlOutput {
 
 trait HasPlainOutput {
     public function format(string $text, string $tag = 'pre'): string {
-        return "<{$tag} class=\"plain-output\" style=\"padding: 12px; background: #f9fafb; border-radius: 8px; font-family: monospace; white-space: pre-wrap;\">{$text}</{$tag}>";
+        return "<{$tag} class=\"plain-output\" style=\"padding: 12px; background: #f9fafb; border-radius: 8px; font-family: system-ui; white-space: pre-wrap;\">{$text}</{$tag}>";
     }
 }
 

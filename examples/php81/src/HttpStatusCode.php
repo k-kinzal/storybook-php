@@ -40,7 +40,7 @@ enum HttpStatusCode: int {
         };
 
         return <<<HTML
-        <div style="display: inline-flex; align-items: center; gap: 10px; padding: 8px 14px; background: {$bgColor}; border: 1px solid {$color}30; border-radius: 8px; font-family: monospace;">
+        <div style="display: inline-flex; align-items: center; gap: 10px; padding: 8px 14px; background: {$bgColor}; border: 1px solid {$color}30; border-radius: 8px; font-family: system-ui;">
             <span style="font-size: 18px; font-weight: 700; color: {$color};">{$this->value}</span>
             <div>
                 <div style="font-size: 13px; font-weight: 600; color: #111827;">{$this->name}</div>

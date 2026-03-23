@@ -24,7 +24,7 @@ class FileSize {
         };
         [$bg, $fg, $border] = $colors;
 
-        return "<span style=\"display: inline-block; padding: 3px 10px; background: {$bg}; color: {$fg}; border: 1px solid {$border}; border-radius: 12px; font-size: 12px; font-weight: 600; font-family: monospace;\">{$formatted} {$units[$unit]}</span>";
+        return "<span style=\"display: inline-block; padding: 3px 10px; background: {$bg}; color: {$fg}; border: 1px solid {$border}; border-radius: 12px; font-size: 12px; font-weight: 600; font-family: system-ui;\">{$formatted} {$units[$unit]}</span>";
     }
 
     public static function bar(int|float $used, int|float $total, string $label = 'Storage'): string {

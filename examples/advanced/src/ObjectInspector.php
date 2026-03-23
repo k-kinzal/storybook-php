@@ -18,7 +18,7 @@ class ObjectInspector {
         }
         $bg = $variant === 'dark' ? '#1f2937' : '#f9fafb';
         $text = $variant === 'dark' ? '#f3f4f6' : '#111827';
-        return "<div class=\"object-inspector\" style=\"background:{$bg}; color:{$text}; border-radius: 8px; padding: 16px; font-family: monospace;\"><h4 style=\"margin: 0 0 8px;\">{$this->title}</h4><table>{$items}</table></div>";
+        return "<div class=\"object-inspector\" style=\"background:{$bg}; color:{$text}; border-radius: 8px; padding: 16px; font-family: system-ui;\"><h4 style=\"margin: 0 0 8px;\">{$this->title}</h4><table>{$items}</table></div>";
     }
 
     public function renderIterable(iterable $items, string $separator = ' | '): string {

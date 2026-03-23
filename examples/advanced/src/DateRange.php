@@ -22,6 +22,6 @@ class DateRange {
     public function render(): string {
         $startDate = date($this->config->format, strtotime($this->start));
         $endDate = date($this->config->format, strtotime($this->end));
-        return "<span class=\"date-range\" style=\"display: inline-flex; align-items: center; gap: 4px; padding: 6px 14px; border: 1px solid #d1d5db; border-radius: 6px; font-family: monospace; font-size: 14px;\"><time>{$startDate}</time><span style=\"color: #9ca3af;\">{$this->config->separator}</span><time>{$endDate}</time></span>";
+        return "<span class=\"date-range\" style=\"display: inline-flex; align-items: center; gap: 4px; padding: 6px 14px; border: 1px solid #d1d5db; border-radius: 6px; font-family: system-ui; font-size: 14px;\"><time>{$startDate}</time><span style=\"color: #9ca3af;\">{$this->config->separator}</span><time>{$endDate}</time></span>";
     }
 }

@@ -20,7 +20,7 @@ $showDescriptions = $showDescriptions ?? true;
                 <?php $i = 0; foreach ($section['settings'] as $key => $val): ?>
                     <div style="display: flex; justify-content: space-between; padding: 10px 16px; <?= $i > 0 ? 'border-top: 1px solid #f3f4f6;' : '' ?> <?= $readonly ? 'opacity: 0.7;' : '' ?>">
                         <span style="font-weight: 500; color: #374151;"><?= htmlspecialchars($key) ?></span>
-                        <span style="color: #6b7280; font-family: monospace; font-size: 13px;"><?= htmlspecialchars($val) ?></span>
+                        <span style="color: #6b7280; font-family: system-ui; font-size: 13px;"><?= htmlspecialchars($val) ?></span>
                     </div>
                 <?php $i++; endforeach; ?>
             </div>

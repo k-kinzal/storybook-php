@@ -24,7 +24,7 @@ class ConstExprDefaults {
         };
 
         return <<<HTML
-        <div class="const-defaults" style="padding: 16px; border: 1px solid #e5e7eb; border-radius: 8px; font-family: monospace; font-size: 13px;">
+        <div class="const-defaults" style="padding: 16px; border: 1px solid #e5e7eb; border-radius: 8px; font-family: system-ui; font-size: 13px;">
             <h4 style="margin: 0 0 12px 0; font-family: system-ui; font-size: 15px;">{$this->title}</h4>
             <dl style="margin: 0; display: grid; grid-template-columns: auto 1fr; gap: 4px 12px;">
                 <dt style="color: #6b7280;">separator:</dt><dd style="margin: 0; color: #111827;">{$sepDisplay}</dd>
