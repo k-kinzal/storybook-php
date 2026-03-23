@@ -23,7 +23,7 @@ class Snippet {
         return <<<HTML
         <div class="snippet" style="border-radius: 8px; overflow: hidden; font-family: system-ui; font-size: 13px;">
             <div class="snippet-header" style="background: #1e293b; color: #94a3b8; padding: 6px 12px; font-size: 11px; text-transform: uppercase;">{$language}</div>
-            <pre style="background: #0f172a; color: #e2e8f0; padding: 16px; margin: 0; overflow-x: auto;"><code>{$escaped}</code></pre>
+            <pre style="background: #0f172a; color: #e2e8f0; padding: 16px; margin: 0; overflow-x: auto; font-family: system-ui;"><code style="font-family: inherit;">{$escaped}</code></pre>
         </div>
         HTML;
     }
