@@ -14,7 +14,13 @@ export default defineConfig({
   test: {
     browser: {
       enabled: true,
-      provider: playwright(),
+      ui: false,
+      provider: playwright({
+        contextOptions: {
+          deviceScaleFactor: 2,
+          viewport: { width: 960, height: 720 },
+        },
+      }),
       instances: [{ browser: "chromium" }],
     },
     setupFiles: ["./vitest.setup.ts"],
