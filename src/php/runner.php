@@ -32,10 +32,19 @@ function parseDocBlockParamTypes(?ReflectionFunctionAbstract $ref): array
 
     $types = [];
 
-    // Higher-priority annotations: @phpstan-param, @psalm-param
-    if (preg_match_all('/@(?:phpstan-param|psalm-param)\s+(.+?)\s+\$(\w+)/m', $doc, $matches, PREG_SET_ORDER)) {
+    // Highest priority: @phpstan-param
+    if (preg_match_all('/@phpstan-param\s+(.+?)\s+\$(\w+)/m', $doc, $matches, PREG_SET_ORDER)) {
         foreach ($matches as $match) {
             $types[$match[2]] = trim($match[1]);
+        }
+    }
+
+    // Next priority: @psalm-param (only if not already set by @phpstan-param)
+    if (preg_match_all('/@psalm-param\s+(.+?)\s+\$(\w+)/m', $doc, $matches, PREG_SET_ORDER)) {
+        foreach ($matches as $match) {
+            if (!isset($types[$match[2]])) {
+                $types[$match[2]] = trim($match[1]);
+            }
         }
     }
 
@@ -200,14 +209,14 @@ function castArrayElements(array $value, string $docType, ReflectionParameter $p
     // Try to resolve as a class
     $resolved = resolveClassName($innerType, $param);
     if ($resolved !== null && class_exists($resolved)) {
+        $ref = new ReflectionClass($resolved);
+        $constructor = $ref->getConstructor();
         $result = [];
         foreach ($value as $key => $item) {
             if ($item instanceof $resolved) {
                 $result[$key] = $item;
                 continue;
             }
-            $ref = new ReflectionClass($resolved);
-            $constructor = $ref->getConstructor();
             if ($constructor !== null) {
                 $result[$key] = $ref->newInstanceArgs(matchArgs($constructor, (array) $item));
             } else {
@@ -219,13 +228,15 @@ function castArrayElements(array $value, string $docType, ReflectionParameter $p
 
     // Try to resolve as an enum
     if (function_exists('enum_exists') && $resolved !== null && enum_exists($resolved)) {
+        $isBacked = is_subclass_of($resolved, \BackedEnum::class);
+        $cases = $resolved::cases();
         $result = [];
         foreach ($value as $key => $item) {
             if ($item instanceof $resolved) {
                 $result[$key] = $item;
                 continue;
             }
-            if (is_subclass_of($resolved, \BackedEnum::class)) {
+            if ($isBacked) {
                 try {
                     $result[$key] = $resolved::from($item);
                     continue;
@@ -233,7 +244,7 @@ function castArrayElements(array $value, string $docType, ReflectionParameter $p
                     // fall through to name matching
                 }
             }
-            foreach ($resolved::cases() as $case) {
+            foreach ($cases as $case) {
                 if ($case->name === $item) {
                     $result[$key] = $case;
                     continue 2;
