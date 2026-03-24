@@ -19,6 +19,10 @@ export interface PhpArgDef {
   enumType?: string;
   classType?: string;
   unionTypes?: string[];
+  /** Valid values for select controls (e.g. enum case values, string option sets) */
+  options?: (string | number | boolean)[];
+  /** Element type for array/list parameters (e.g. "App\\Models\\Badge") */
+  elementType?: string;
 }
 
 /** Map of argument name → definition */
@@ -113,6 +117,54 @@ export interface PhpRenderResponse {
   trace?: string;
 }
 
+// ---------------------------------------------------------------------------
+// Type Map configuration (static type mapping)
+// ---------------------------------------------------------------------------
+
+/**
+ * Override or supplement argument metadata.
+ * String shorthand: just the PHP type name (e.g. "App\\Enums\\Status").
+ * Object form: rich metadata with options, elementType, etc.
+ */
+export type ArgOverride =
+  | string
+  | {
+      /** Override the PHP type */
+      type?: string;
+      /** Valid values for select controls (enum cases, string option sets) */
+      options?: (string | number | boolean)[];
+      /** Element type for array/list parameters */
+      elementType?: string;
+      nullable?: boolean;
+      required?: boolean;
+      default?: unknown;
+    };
+
+/** Target for a file mapping entry */
+export interface FileMapTarget {
+  /** Inline argument definitions (for files the parser can't handle, e.g. Blade) */
+  args?: Record<string, string | ArgOverride>;
+  /** Path to a PHP file to use as the type source instead */
+  phpFile?: string;
+  /** Method/callable name when using phpFile */
+  callable?: string;
+  /** Additional PHP files to parse for cross-file parent/trait resolution */
+  includes?: string[];
+}
+
+/** Static type mapping configuration */
+export interface TypeMapConfig {
+  /** Map file paths to type information sources */
+  files?: Record<string, FileMapTarget>;
+  /** Map PHP type → PHP type (interface/abstract → concrete, DI-style) */
+  bindings?: Record<string, string>;
+  /**
+   * Override argument metadata.
+   * Key format: "FQCN::$arg" or "FQCN::method::$arg"
+   */
+  args?: Record<string, string | ArgOverride>;
+}
+
 /** Framework options for storybook-php */
 export interface FrameworkOptions {
   /** Path to a PHP bootstrap file (autoloader, config, etc.) */
@@ -131,6 +183,10 @@ export interface FrameworkOptions {
    * (e.g. Laravel Component → resolveView + data).
    */
   adapter?: string;
+  /** Static type mapping configuration */
+  typeMap?: TypeMapConfig;
+  /** @internal Resolved config directory for path resolution */
+  _configDir?: string;
 }
 
 /** Storybook renderer type identifier */

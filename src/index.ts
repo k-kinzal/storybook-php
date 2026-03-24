@@ -22,4 +22,7 @@ export type {
   PhpRenderRequest,
   PhpRenderResponse,
   FrameworkOptions,
+  TypeMapConfig,
+  ArgOverride,
+  FileMapTarget,
 } from "./types.js";

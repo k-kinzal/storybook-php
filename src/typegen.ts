@@ -1,5 +1,12 @@
+import { resolve, isAbsolute } from "node:path";
 import { parsePhpFile } from "./php-parser.js";
-import type { PhpFileMeta, PhpParamMeta, PhpClassMeta } from "./types.js";
+import type {
+  PhpFileMeta,
+  PhpParamMeta,
+  PhpClassMeta,
+  TypeMapConfig,
+  ArgOverride,
+} from "./types.js";
 
 /**
  * Map a PHP type string to a TypeScript type string.
@@ -153,8 +160,79 @@ export function generateDts(meta: PhpFileMeta): string {
 
 /**
  * Generate TypeScript declaration (.d.ts) content for a PHP file path.
+ * Supports typeMap for files that need external type sources.
  */
-export function generateDtsForFile(filePath: string): string {
+export function generateDtsForFile(
+  filePath: string,
+  typeMap?: TypeMapConfig,
+  configDir?: string,
+): string {
+  const baseDir = configDir ?? process.cwd();
+
+  // Check if this file has a typeMap.files mapping
+  if (typeMap?.files) {
+    for (const [pattern, target] of Object.entries(typeMap.files)) {
+      const resolvedPattern = isAbsolute(pattern) ? pattern : resolve(baseDir, pattern);
+      if (filePath !== resolvedPattern) continue;
+
+      // Inline args: generate interface from the mapping directly
+      if (target.args) {
+        return generateDtsForInlineArgs(target.args);
+      }
+
+      // phpFile redirect: parse that file instead
+      if (target.phpFile) {
+        const phpFilePath = isAbsolute(target.phpFile)
+          ? target.phpFile
+          : resolve(baseDir, target.phpFile);
+        const meta = parsePhpFile(phpFilePath);
+        return generateDts(meta);
+      }
+    }
+  }
+
   const meta = parsePhpFile(filePath);
   return generateDts(meta);
+}
+
+/**
+ * Generate .d.ts content for inline args defined in typeMap.files[].args.
+ */
+function generateDtsForInlineArgs(args: Record<string, string | ArgOverride>): string {
+  const parts: string[] = [];
+  parts.push("import type { PhpComponent } from 'storybook-php';\n");
+
+  const params: PhpParamMeta[] = Object.entries(args).map(([name, def], position) => {
+    if (typeof def === "string") {
+      const nullable = def.startsWith("?");
+      const type = nullable ? def.slice(1) : def;
+      return {
+        name,
+        type,
+        nullable,
+        required: !nullable,
+        isVariadic: false,
+        isPromoted: false,
+        position,
+      };
+    }
+    return {
+      name,
+      type: def.type ?? "unknown",
+      nullable: def.nullable ?? false,
+      required: def.required ?? (def.default === undefined && !(def.nullable ?? false)),
+      default: def.default !== undefined ? String(def.default) : undefined,
+      isVariadic: false,
+      isPromoted: false,
+      position,
+    };
+  });
+
+  const interfaceName = "_default_Args";
+  parts.push("");
+  parts.push(generateInterfaceForParams(interfaceName, params));
+  parts.push("declare const _default: PhpComponent<_default_Args>;");
+  parts.push("export default _default;\n");
+
+  return parts.join("\n");
 }
