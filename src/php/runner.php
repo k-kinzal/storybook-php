@@ -291,7 +291,7 @@ function scoreTypeMatch(ReflectionNamedType $type, mixed $value): int
 /**
  * Cast a value to match the expected type of a reflection parameter.
  */
-function castArg(ReflectionParameter $param, mixed $value, ?string $docType = null): mixed
+function castArg(ReflectionParameter $param, mixed $value, ?string $docType = null, ?array $typeMap = null): mixed
 {
     if ($value === null && $param->getType()?->allowsNull()) {
         return null;
@@ -320,7 +320,7 @@ function castArg(ReflectionParameter $param, mixed $value, ?string $docType = nu
         foreach ([...$namedTypes, ...$otherTypes] as $unionType) {
             try {
                 if ($unionType instanceof ReflectionNamedType) {
-                    return castWithNamedType($unionType, $value, $param, $docType);
+                    return castWithNamedType($unionType, $value, $param, $docType, $typeMap);
                 }
                 // For intersection types in DNF, return value as-is
                 return $value;
@@ -332,7 +332,7 @@ function castArg(ReflectionParameter $param, mixed $value, ?string $docType = nu
     }
 
     if ($type instanceof ReflectionNamedType) {
-        return castWithNamedType($type, $value, $param, $docType);
+        return castWithNamedType($type, $value, $param, $docType, $typeMap);
     }
 
     // ReflectionIntersectionType or unknown — return as-is
@@ -342,13 +342,18 @@ function castArg(ReflectionParameter $param, mixed $value, ?string $docType = nu
 /**
  * Cast a value using a specific ReflectionNamedType.
  */
-function castWithNamedType(ReflectionNamedType $type, mixed $value, ReflectionParameter $param, ?string $docType = null): mixed
+function castWithNamedType(ReflectionNamedType $type, mixed $value, ReflectionParameter $param, ?string $docType = null, ?array $typeMap = null): mixed
 {
     if ($value === null && $type->allowsNull()) {
         return null;
     }
 
     $typeName = $type->getName();
+
+    // Apply typeMap.bindings: resolve interface/abstract → concrete class
+    if ($typeMap !== null && isset($typeMap['bindings'][$typeName])) {
+        $typeName = $typeMap['bindings'][$typeName];
+    }
 
     switch ($typeName) {
         case 'string':
@@ -426,7 +431,7 @@ function castWithNamedType(ReflectionNamedType $type, mixed $value, ReflectionPa
         $ref = new ReflectionClass($typeName);
         $constructor = $ref->getConstructor();
         if ($constructor !== null) {
-            return $ref->newInstanceArgs(matchArgs($constructor, (array) $value));
+            return $ref->newInstanceArgs(matchArgs($constructor, (array) $value, $typeMap));
         }
         return $ref->newInstance();
     }
@@ -438,13 +443,23 @@ function castWithNamedType(ReflectionNamedType $type, mixed $value, ReflectionPa
  * Match arguments from an associative array to the parameter order
  * expected by a ReflectionFunctionAbstract (method or function).
  */
-function matchArgs(?ReflectionFunctionAbstract $ref, array $args): array
+function matchArgs(?ReflectionFunctionAbstract $ref, array $args, ?array $typeMap = null): array
 {
     if ($ref === null) {
         return [];
     }
 
     $docTypes = parseDocBlockParamTypes($ref);
+
+    // Resolve class/method FQN for typeMap.args lookup
+    $classFqn = '';
+    $methodName = '';
+    if ($ref instanceof ReflectionMethod) {
+        $classFqn = $ref->getDeclaringClass()->getName();
+        $methodName = $ref->getName();
+    } elseif ($ref instanceof ReflectionFunction) {
+        $methodName = $ref->getName();
+    }
 
     $ordered = [];
     foreach ($ref->getParameters() as $param) {
@@ -465,7 +480,38 @@ function matchArgs(?ReflectionFunctionAbstract $ref, array $args): array
         }
 
         if (array_key_exists($name, $args)) {
-            $ordered[] = castArg($param, $args[$name], $docTypes[$name] ?? null);
+            // Resolve typeMap.args override for this parameter
+            $docType = $docTypes[$name] ?? null;
+            if ($typeMap !== null && isset($typeMap['args'])) {
+                // Try "FQCN::method::$name" first, then "FQCN::$name"
+                $override = $typeMap['args']["{$classFqn}::{$methodName}::\${$name}"]
+                    ?? $typeMap['args']["{$classFqn}::\${$name}"]
+                    ?? null;
+                if ($override !== null) {
+                    if (is_string($override)) {
+                        // String shorthand: use as docType directly
+                        $docType = $override;
+                    } elseif (is_array($override)) {
+                        if (array_key_exists('type', $override) && is_string($override['type'])) {
+                            // Explicit type override takes precedence
+                            $docType = $override['type'];
+                        } elseif (array_key_exists('elementType', $override) && $override['elementType'] !== null) {
+                            // Convert elementType into array docType (e.g. "string[]")
+                            // so that castArrayElements() can apply element-wise casting
+                            $paramType = $param->getType();
+                            $isArrayLike = $paramType instanceof \ReflectionNamedType
+                                && in_array($paramType->getName(), ['array', 'iterable'], true);
+                            $elementType = $override['elementType'];
+                            if ($isArrayLike && is_string($elementType) && $elementType !== '') {
+                                $docType = $elementType . '[]';
+                            } elseif (is_string($elementType)) {
+                                $docType = $elementType;
+                            }
+                        }
+                    }
+                }
+            }
+            $ordered[] = castArg($param, $args[$name], $docType, $typeMap);
         } elseif ($param->isDefaultValueAvailable()) {
             $ordered[] = $param->getDefaultValue();
         } elseif ($param->allowsNull()) {
@@ -525,6 +571,7 @@ try {
     $__sb_args        = $__sb_data['args'] ?? [];
     $__sb_bootstrap   = $__sb_data['bootstrap'] ?? null;
     $__sb_adapterPath = $__sb_data['adapter'] ?? null;
+    $__sb_typeMap     = $__sb_data['typeMap'] ?? null;
 
     // Bootstrap file (autoloader, config, etc.)
     if ($__sb_bootstrap !== null && $__sb_bootstrap !== '') {
@@ -553,11 +600,11 @@ try {
             $__sb_ref = new ReflectionClass($__sb_class);
             $__sb_constructor = $__sb_ref->getConstructor();
             $__sb_instance = $__sb_constructor !== null
-                ? $__sb_ref->newInstanceArgs(matchArgs($__sb_constructor, $__sb_args))
+                ? $__sb_ref->newInstanceArgs(matchArgs($__sb_constructor, $__sb_args, $__sb_typeMap))
                 : $__sb_ref->newInstance();
             $__sb_method = $__sb_ref->getMethod($__sb_callable);
             ob_start();
-            $__sb_result = $__sb_method->invokeArgs($__sb_instance, matchArgs($__sb_method, $__sb_args));
+            $__sb_result = $__sb_method->invokeArgs($__sb_instance, matchArgs($__sb_method, $__sb_args, $__sb_typeMap));
             $__sb_buffered = ob_get_clean();
             $__sb_html = $__sb_adapter ? $__sb_adapter($__sb_result, $__sb_buffered, $__sb_instance) : resolveOutput($__sb_result, $__sb_buffered);
             break;
@@ -566,7 +613,7 @@ try {
             $__sb_ref = new ReflectionClass($__sb_class);
             $__sb_method = $__sb_ref->getMethod($__sb_callable);
             ob_start();
-            $__sb_result = $__sb_method->invokeArgs(null, matchArgs($__sb_method, $__sb_args));
+            $__sb_result = $__sb_method->invokeArgs(null, matchArgs($__sb_method, $__sb_args, $__sb_typeMap));
             $__sb_buffered = ob_get_clean();
             $__sb_html = $__sb_adapter ? $__sb_adapter($__sb_result, $__sb_buffered, null) : resolveOutput($__sb_result, $__sb_buffered);
             break;
@@ -574,7 +621,7 @@ try {
         case 'function':
             $__sb_ref = new ReflectionFunction($__sb_callable);
             ob_start();
-            $__sb_result = $__sb_ref->invokeArgs(matchArgs($__sb_ref, $__sb_args));
+            $__sb_result = $__sb_ref->invokeArgs(matchArgs($__sb_ref, $__sb_args, $__sb_typeMap));
             $__sb_buffered = ob_get_clean();
             $__sb_html = $__sb_adapter ? $__sb_adapter($__sb_result, $__sb_buffered, null) : resolveOutput($__sb_result, $__sb_buffered);
             break;
@@ -614,7 +661,7 @@ try {
             $__sb_method = $__sb_ref->getMethod($__sb_callable);
             $__sb_methodArgs = array_diff_key($__sb_args, ['_case' => true]);
             ob_start();
-            $__sb_result = $__sb_method->invokeArgs($__sb_enumInstance, matchArgs($__sb_method, $__sb_methodArgs));
+            $__sb_result = $__sb_method->invokeArgs($__sb_enumInstance, matchArgs($__sb_method, $__sb_methodArgs, $__sb_typeMap));
             $__sb_buffered = ob_get_clean();
             $__sb_html = $__sb_adapter ? $__sb_adapter($__sb_result, $__sb_buffered, $__sb_enumInstance) : resolveOutput($__sb_result, $__sb_buffered);
             break;

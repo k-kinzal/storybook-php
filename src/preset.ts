@@ -26,6 +26,11 @@ export async function viteFinal(
     (await options.presets.apply<FrameworkOptions>("frameworkOptions", {} as FrameworkOptions)) ??
     {};
 
+  // Provide config directory for typeMap path resolution
+  if (!frameworkOptions._configDir) {
+    frameworkOptions._configDir = (options.configDir as string | undefined) ?? process.cwd();
+  }
+
   const existingPlugins = (config.plugins as unknown[] | undefined) ?? [];
 
   return {

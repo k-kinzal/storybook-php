@@ -1,0 +1,34 @@
+<?php
+
+namespace App\Components;
+
+interface Renderable
+{
+    public function toHtml(): string;
+}
+
+class HtmlBlock implements Renderable
+{
+    public function __construct(
+        private string $content,
+        private string $tag = 'div',
+    ) {}
+
+    public function toHtml(): string
+    {
+        return "<{$this->tag}>{$this->content}</{$this->tag}>";
+    }
+}
+
+class PageWithInterface
+{
+    public function __construct(
+        private string $title,
+        private Renderable $content,
+    ) {}
+
+    public function render(): string
+    {
+        return "<h1>{$this->title}</h1>" . $this->content->toHtml();
+    }
+}

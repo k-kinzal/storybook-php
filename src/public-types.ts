@@ -74,3 +74,4 @@ export interface ArgType {
 }
 
 export type { PhpComponent, PhpRenderer };
+export type { TypeMapConfig, ArgOverride, FileMapTarget } from "./types.js";

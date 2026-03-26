@@ -15094,4 +15094,80 @@ describe.skipIf(!hasPhp)("Integration: All Plan Patterns", () => {
       expect(tasksParam!.type).toBe("array");
     });
   });
+
+  // -------------------------------------------------------------------------
+  // typeMap: runtime bindings and args overrides
+  // -------------------------------------------------------------------------
+  describe("typeMap runtime", () => {
+    it("resolves interface to concrete class via typeMap.bindings", async () => {
+      const executor = new PhpExecutor({
+        timeout: 10000,
+        typeMap: {
+          bindings: {
+            "App\\Components\\Renderable": "App\\Components\\HtmlBlock",
+          },
+        },
+      });
+      const result = await executor.execute({
+        type: "classMethod",
+        file: fixture("TypeMapBindingTarget.php"),
+        class: "App\\Components\\PageWithInterface",
+        callable: "render",
+        args: {
+          title: "Test Page",
+          content: { content: "Hello from binding", tag: "p" },
+        },
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain("Test Page");
+      expect(result.html).toContain("<p>Hello from binding</p>");
+    });
+
+    it("applies typeMap.args elementType for array casting", async () => {
+      const executor = new PhpExecutor({
+        timeout: 10000,
+        typeMap: {
+          args: {
+            "App\\Components\\TagRenderer::$items": {
+              elementType: "string",
+            },
+          },
+        },
+      });
+      const result = await executor.execute({
+        type: "classMethod",
+        file: fixture("TypeMapElementType.php"),
+        class: "App\\Components\\TagRenderer",
+        callable: "render",
+        args: {
+          items: ["PHP", "Storybook"],
+        },
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain("<b>PHP</b>");
+      expect(result.html).toContain("<b>Storybook</b>");
+    });
+
+    it("applies typeMap.args string shorthand as type override", async () => {
+      const executor = new PhpExecutor({
+        timeout: 10000,
+        typeMap: {
+          args: {
+            "App\\Components\\TagRenderer::$items": "array",
+          },
+        },
+      });
+      const result = await executor.execute({
+        type: "classMethod",
+        file: fixture("TypeMapElementType.php"),
+        class: "App\\Components\\TagRenderer",
+        callable: "render",
+        args: {
+          items: ["A", "B"],
+        },
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain("<b>A</b>");
+    });
+  });
 });

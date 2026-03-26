@@ -2,7 +2,7 @@ import { spawn } from "node:child_process";
 import { resolve, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 import { existsSync } from "node:fs";
-import type { PhpRenderRequest, PhpRenderResponse } from "./types.js";
+import type { PhpRenderRequest, PhpRenderResponse, TypeMapConfig } from "./types.js";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
@@ -11,6 +11,7 @@ export interface PhpExecutorOptions {
   timeout?: number;
   bootstrap?: string;
   adapter?: string;
+  typeMap?: TypeMapConfig;
 }
 
 export class PhpExecutor {
@@ -19,6 +20,10 @@ export class PhpExecutor {
   private bootstrap: string | null;
   private adapter: string | null;
   private runnerPath: string;
+  private runtimeTypeMap: {
+    bindings?: Record<string, string>;
+    args?: Record<string, unknown>;
+  } | null;
 
   constructor(options: PhpExecutorOptions = {}) {
     this.phpBinary = options.phpBinary ?? "php";
@@ -26,6 +31,14 @@ export class PhpExecutor {
     this.bootstrap = options.bootstrap ?? null;
     this.adapter = options.adapter ?? null;
     this.runnerPath = this.resolveRunnerPath();
+    // Only send runtime-relevant parts of typeMap (bindings + args) to PHP
+    this.runtimeTypeMap =
+      options.typeMap?.bindings || options.typeMap?.args
+        ? {
+            ...(options.typeMap.bindings ? { bindings: options.typeMap.bindings } : {}),
+            ...(options.typeMap.args ? { args: options.typeMap.args } : {}),
+          }
+        : null;
   }
 
   /**
@@ -49,6 +62,7 @@ export class PhpExecutor {
       ...request,
       bootstrap: request.bootstrap ?? this.bootstrap,
       adapter: request.adapter ?? this.adapter,
+      ...(this.runtimeTypeMap ? { typeMap: this.runtimeTypeMap } : {}),
     });
 
     return new Promise((resolvePromise) => {

@@ -1085,4 +1085,169 @@ describe("Vite Plugin", () => {
       expect(code).toContain("theme:");
     });
   });
+
+  // -----------------------------------------------------------------------
+  // typeMap tests
+  // -----------------------------------------------------------------------
+  describe("typeMap", () => {
+    describe("typeMap.files with inline args", () => {
+      it("resolves a non-PHP file mapped via typeMap.files", () => {
+        const plugin = storybookPhpPlugin({
+          _configDir: FIXTURES,
+          typeMap: {
+            files: {
+              "TypeMapInlineTarget.blade.php": {
+                args: {
+                  title: "string",
+                  message: "?string",
+                },
+              },
+            },
+          },
+        });
+        const resolveId = getResolveId(plugin);
+        const result = resolveId(
+          "./TypeMapInlineTarget.blade.php",
+          resolve(FIXTURES, "some-story.ts"),
+        );
+        expect(result).toContain(VIRTUAL_PREFIX);
+        expect(result).toContain("mapped=1");
+      });
+
+      it("generates template module with inline args", () => {
+        const plugin = storybookPhpPlugin({
+          _configDir: FIXTURES,
+          typeMap: {
+            files: {
+              "TypeMapInlineTarget.blade.php": {
+                args: {
+                  title: "string",
+                  message: { type: "string", nullable: true, default: "hello" },
+                  count: { type: "int", required: true },
+                },
+              },
+            },
+          },
+        });
+        const load = getLoad(plugin);
+        const bladeFile = resolve(FIXTURES, "TypeMapInlineTarget.blade.php");
+        const code = load(`${VIRTUAL_PREFIX}${bladeFile}?callable=&mapped=1`);
+
+        expect(code).toBeTruthy();
+        expect(code).toContain("__type: 'template'");
+        expect(code).toContain("title:");
+        expect(code).toContain("type: 'string'");
+        expect(code).toContain("message:");
+        expect(code).toContain("count:");
+        expect(code).toContain("type: 'int'");
+      });
+    });
+
+    describe("typeMap.files with phpFile redirect", () => {
+      it("generates module from referenced PHP file", () => {
+        const plugin = storybookPhpPlugin({
+          _configDir: FIXTURES,
+          typeMap: {
+            files: {
+              "TypeMapInlineTarget.blade.php": {
+                phpFile: "SimpleComponent.php",
+                callable: "render",
+              },
+            },
+          },
+        });
+        const load = getLoad(plugin);
+        const bladeFile = resolve(FIXTURES, "TypeMapInlineTarget.blade.php");
+        const code = load(`${VIRTUAL_PREFIX}${bladeFile}?callable=render&mapped=1`);
+
+        expect(code).toBeTruthy();
+        expect(code).toContain("__type: 'classMethod'");
+        expect(code).toContain("SimpleComponent");
+      });
+    });
+
+    describe("typeMap.files with includes", () => {
+      it("resolves cross-file parent class constructor params", () => {
+        const plugin = storybookPhpPlugin({
+          _configDir: FIXTURES,
+          typeMap: {
+            files: {
+              "TypeMapChildClass.php": {
+                includes: ["TypeMapBaseClass.php"],
+              },
+            },
+          },
+        });
+        const load = getLoad(plugin);
+        const childFile = resolve(FIXTURES, "TypeMapChildClass.php");
+        const code = load(`${VIRTUAL_PREFIX}${childFile}?callable=render`);
+
+        expect(code).toBeTruthy();
+        expect(code).toContain("__type: 'classMethod'");
+        expect(code).toContain("export const TypeMapChild");
+        expect(code).toContain('__callable: "render"');
+      });
+    });
+
+    describe("typeMap.args overrides", () => {
+      it("applies options override to constructor param", () => {
+        const plugin = storybookPhpPlugin({
+          typeMap: {
+            args: {
+              "App\\Components\\SimpleComponent::$name": {
+                options: ["Alice", "Bob", "Charlie"],
+              },
+            },
+          },
+        });
+        const load = getLoad(plugin);
+        const file = resolve(FIXTURES, "SimpleComponent.php");
+        const code = load(`${VIRTUAL_PREFIX}${file}?callable=render`);
+
+        expect(code).toBeTruthy();
+        expect(code).toContain('options: ["Alice","Bob","Charlie"]');
+      });
+
+      it("applies type override to constructor param", () => {
+        const plugin = storybookPhpPlugin({
+          typeMap: {
+            args: {
+              "App\\Components\\SimpleComponent::$name": "App\\Enums\\NameEnum",
+            },
+          },
+        });
+        const load = getLoad(plugin);
+        const file = resolve(FIXTURES, "SimpleComponent.php");
+        const code = load(`${VIRTUAL_PREFIX}${file}?callable=render`);
+
+        expect(code).toBeTruthy();
+        // Backslashes should be escaped in the generated JS
+        expect(code).toContain("type: 'App\\\\Enums\\\\NameEnum'");
+      });
+    });
+
+    describe("type escaping", () => {
+      it("escapes backslashes in FQCN types for inline args", () => {
+        const plugin = storybookPhpPlugin({
+          _configDir: FIXTURES,
+          typeMap: {
+            files: {
+              "TypeMapInlineTarget.blade.php": {
+                args: {
+                  obj: "App\\Models\\User",
+                },
+              },
+            },
+          },
+        });
+        const load = getLoad(plugin);
+        const bladeFile = resolve(FIXTURES, "TypeMapInlineTarget.blade.php");
+        const code = load(`${VIRTUAL_PREFIX}${bladeFile}?callable=&mapped=1`);
+
+        expect(code).toBeTruthy();
+        // Backslashes should be escaped
+        expect(code).toContain("type: 'App\\\\Models\\\\User'");
+      });
+    });
+  });
 });
