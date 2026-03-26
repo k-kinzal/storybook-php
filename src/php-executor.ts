@@ -20,7 +20,10 @@ export class PhpExecutor {
   private bootstrap: string | null;
   private adapter: string | null;
   private runnerPath: string;
-  private runtimeTypeMap: { bindings?: Record<string, string>; args?: Record<string, unknown> } | null;
+  private runtimeTypeMap: {
+    bindings?: Record<string, string>;
+    args?: Record<string, unknown>;
+  } | null;
 
   constructor(options: PhpExecutorOptions = {}) {
     this.phpBinary = options.phpBinary ?? "php";

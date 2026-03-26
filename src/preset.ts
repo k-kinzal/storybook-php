@@ -28,8 +28,7 @@ export async function viteFinal(
 
   // Provide config directory for typeMap path resolution
   if (!frameworkOptions._configDir) {
-    frameworkOptions._configDir =
-      (options.configDir as string | undefined) ?? process.cwd();
+    frameworkOptions._configDir = (options.configDir as string | undefined) ?? process.cwd();
   }
 
   const existingPlugins = (config.plugins as unknown[] | undefined) ?? [];

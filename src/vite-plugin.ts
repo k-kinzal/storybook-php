@@ -487,9 +487,7 @@ function loadPhpFile(
       if (found.method.isStatic) {
         const definedDirectly = cls.methods.some((m) => m.name === callableName);
         if (definedDirectly) {
-          modules.push(
-            generateStaticMethodModule(filePath, found.cls, found.method, callableName),
-          );
+          modules.push(generateStaticMethodModule(filePath, found.cls, found.method, callableName));
         }
       } else {
         const ctorParams = resolveConstructorParams(found.cls);
