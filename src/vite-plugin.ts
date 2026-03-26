@@ -24,8 +24,9 @@ function paramsToArgMap(params: (PhpParamMeta | EnrichedParamMeta)[]): string {
   if (params.length === 0) return "{}";
 
   const entries = params.map((p) => {
+    const typeEscaped = (p.type ?? "unknown").replace(/\\/g, "\\\\").replace(/'/g, "\\'");
     const parts: string[] = [
-      `type: '${p.type ?? "unknown"}'`,
+      `type: '${typeEscaped}'`,
       `required: ${p.required}`,
       `position: ${p.position}`,
       `nullable: ${p.nullable}`,
@@ -205,8 +206,9 @@ function inlineArgsToArgMap(args: Record<string, string | ArgOverride>): string 
       elementType = def.elementType;
     }
 
+    const typeEscaped = type.replace(/\\/g, "\\\\").replace(/'/g, "\\'");
     const parts: string[] = [
-      `type: '${type}'`,
+      `type: '${typeEscaped}'`,
       `required: ${required}`,
       `position: ${position}`,
       `nullable: ${nullable}`,
@@ -326,7 +328,7 @@ function applyOverrideToParam(
     if (override.type !== undefined) param.type = override.type;
     if (override.nullable !== undefined) param.nullable = override.nullable;
     if (override.required !== undefined) param.required = override.required;
-    if (override.default !== undefined) param.default = String(override.default);
+    if (override.default !== undefined) param.default = override.default as string;
     if (override.options !== undefined) param.options = override.options;
     if (override.elementType !== undefined) param.elementType = override.elementType;
   }
@@ -519,6 +521,20 @@ export function storybookPhpPlugin(options: FrameworkOptions = {}): Plugin {
     enforce: "pre",
 
     resolveId(source: string, importer: string | undefined) {
+      // TypeMap file mappings checked first (e.g. .blade.php that also matches PHP_RE)
+      if (options.typeMap?.files && importer) {
+        const sourcePath = source.replace(/@\w+$/, "");
+        const absPath = isAbsolute(sourcePath)
+          ? sourcePath
+          : resolve(dirname(importer), sourcePath);
+        const configDir = options._configDir ?? process.cwd();
+        const mapping = findFileMapping(absPath, options.typeMap.files, configDir);
+        if (mapping) {
+          const callable = source.match(/@(\w+)$/)?.[1] ?? options.defaultMethod ?? null;
+          return `${VIRTUAL_PREFIX}${absPath}?callable=${callable ?? ""}&mapped=1`;
+        }
+      }
+
       // Standard .php imports
       const match = source.match(PHP_RE);
       if (match) {
@@ -535,20 +551,6 @@ export function storybookPhpPlugin(options: FrameworkOptions = {}): Plugin {
         }
 
         return `${VIRTUAL_PREFIX}${absPath}?callable=${callable ?? ""}`;
-      }
-
-      // TypeMap file mappings (e.g. .blade.php or other non-standard files)
-      if (options.typeMap?.files && importer) {
-        const sourcePath = source.replace(/@\w+$/, "");
-        const absPath = isAbsolute(sourcePath)
-          ? sourcePath
-          : resolve(dirname(importer), sourcePath);
-        const configDir = options._configDir ?? process.cwd();
-        const mapping = findFileMapping(absPath, options.typeMap.files, configDir);
-        if (mapping) {
-          const callable = source.match(/@(\w+)$/)?.[1] ?? options.defaultMethod ?? null;
-          return `${VIRTUAL_PREFIX}${absPath}?callable=${callable ?? ""}&mapped=1`;
-        }
       }
 
       return null;

@@ -488,12 +488,26 @@ function matchArgs(?ReflectionFunctionAbstract $ref, array $args, ?array $typeMa
                     ?? $typeMap['args']["{$classFqn}::\${$name}"]
                     ?? null;
                 if ($override !== null) {
-                    // String shorthand: use as docType directly
-                    // Object form: use 'type' as docType, 'elementType' for array casting
                     if (is_string($override)) {
+                        // String shorthand: use as docType directly
                         $docType = $override;
                     } elseif (is_array($override)) {
-                        $docType = $override['type'] ?? $override['elementType'] ?? $docType;
+                        if (array_key_exists('type', $override) && is_string($override['type'])) {
+                            // Explicit type override takes precedence
+                            $docType = $override['type'];
+                        } elseif (array_key_exists('elementType', $override) && $override['elementType'] !== null) {
+                            // Convert elementType into array docType (e.g. "string[]")
+                            // so that castArrayElements() can apply element-wise casting
+                            $paramType = $param->getType();
+                            $isArrayLike = $paramType instanceof \ReflectionNamedType
+                                && in_array($paramType->getName(), ['array', 'iterable'], true);
+                            $elementType = $override['elementType'];
+                            if ($isArrayLike && is_string($elementType) && $elementType !== '') {
+                                $docType = $elementType . '[]';
+                            } elseif (is_string($elementType)) {
+                                $docType = $elementType;
+                            }
+                        }
                     }
                 }
             }
