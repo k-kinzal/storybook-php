@@ -602,7 +602,9 @@ try {
     $__sb_html = '';
 
     // Context passed as 4th argument to adapter calls.
-    // Backward-compatible: PHP ignores extra positional arguments.
+    // Backward-compatible: PHP silently ignores extra positional arguments
+    // for user-defined functions and closures (only internal/C-level functions
+    // can raise "too many arguments" errors).
     $__sb_context = ['type' => $__sb_type, 'file' => $__sb_file, 'args' => $__sb_args];
 
     switch ($__sb_type) {

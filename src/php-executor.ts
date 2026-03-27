@@ -69,17 +69,22 @@ export class PhpExecutor {
 
   /**
    * Resolve a per-file adapter from adapterMap.
-   * Checks exact file match first, then suffix patterns.
+   * Checks exact file match first, then suffix patterns (longest suffix wins).
    */
   private resolveFileAdapter(filePath: string): string | null {
     if (!this.adapterMap) return null;
     // Exact file match takes priority
     if (this.adapterMap.files[filePath]) return this.adapterMap.files[filePath]!;
-    // Suffix pattern match
+    // Suffix pattern match — longest (most specific) suffix wins
+    let best: string | null = null;
+    let bestLen = 0;
     for (const { suffix, adapter } of this.adapterMap.patterns) {
-      if (filePath.endsWith(suffix)) return adapter;
+      if (filePath.endsWith(suffix) && suffix.length > bestLen) {
+        best = adapter;
+        bestLen = suffix.length;
+      }
     }
-    return null;
+    return best;
   }
 
   private mergeTypeMap(

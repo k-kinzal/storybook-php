@@ -173,6 +173,8 @@ function mergeFileMapTargets(pattern: FileMapTarget, exact: FileMapTarget): File
  * Supports both exact path matches and glob patterns (keys starting with "*").
  * When both an exact match and a pattern match exist, their fields are merged
  * with exact-match fields taking precedence.
+ *
+ * When multiple glob patterns match, the most specific one wins (longest suffix).
  */
 function findFileMapping(
   absPath: string,
@@ -181,12 +183,15 @@ function findFileMapping(
 ): FileMapTarget | null {
   let exactMatch: FileMapTarget | undefined;
   let patternMatch: FileMapTarget | undefined;
+  let patternSuffixLen = 0;
 
   for (const [key, target] of Object.entries(fileMap)) {
     if (key.startsWith("*")) {
       // Glob pattern: suffix match (e.g. "*.blade.php")
-      if (absPath.endsWith(key.slice(1))) {
+      const suffix = key.slice(1);
+      if (absPath.endsWith(suffix) && suffix.length > patternSuffixLen) {
         patternMatch = target;
+        patternSuffixLen = suffix.length;
       }
     } else {
       // Exact path match
@@ -650,11 +655,10 @@ export function storybookPhpPlugin(options: FrameworkOptions = {}): Plugin {
             return loadPhpFile(phpFilePath, redirectCallable, options);
           }
 
-          // Pattern-only match (e.g. adapter only, no args/phpFile/includes):
-          // generate template module with empty args to avoid parsing non-PHP files
-          if (!mapping.includes) {
-            return generateMappedTemplateModule(filePath!, "{}");
-          }
+          // Other mappings (adapter-only, includes-only): fall through to
+          // loadPhpFile which handles includes resolution and generates the
+          // appropriate module. For non-PHP files (e.g. .blade.php) with null
+          // callable, loadPhpFile returns a template module with empty args.
         }
       }
 
