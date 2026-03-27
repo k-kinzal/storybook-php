@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from "vitest";
-import { storybookPhpPlugin, VIRTUAL_PREFIX } from "../vite-plugin.js";
+import { storybookPhpPlugin, VIRTUAL_PREFIX, resolveAdapterMap } from "../vite-plugin.js";
 import { resolve } from "node:path";
 
 const FIXTURES = resolve(__dirname, "fixtures");
@@ -1247,6 +1247,165 @@ describe("Vite Plugin", () => {
         expect(code).toBeTruthy();
         // Backslashes should be escaped
         expect(code).toContain("type: 'App\\\\Models\\\\User'");
+      });
+    });
+
+    // -----------------------------------------------------------------
+    // typeMap.files glob pattern matching
+    // -----------------------------------------------------------------
+    describe("typeMap.files glob patterns", () => {
+      it("resolves a file matching a glob pattern (*.blade.php)", () => {
+        const plugin = storybookPhpPlugin({
+          _configDir: FIXTURES,
+          typeMap: {
+            files: {
+              "*.blade.php": {
+                adapter: "./blade-adapter.php",
+              },
+            },
+          },
+        });
+        const resolveId = getResolveId(plugin);
+        const result = resolveId(
+          "./TypeMapInlineTarget.blade.php",
+          resolve(FIXTURES, "some-story.ts"),
+        );
+        expect(result).toContain(VIRTUAL_PREFIX);
+        expect(result).toContain("mapped=1");
+      });
+
+      it("generates template module with empty args for pattern-only match", () => {
+        const plugin = storybookPhpPlugin({
+          _configDir: FIXTURES,
+          typeMap: {
+            files: {
+              "*.blade.php": {
+                adapter: "./blade-adapter.php",
+              },
+            },
+          },
+        });
+        const load = getLoad(plugin);
+        const bladeFile = resolve(FIXTURES, "TypeMapInlineTarget.blade.php");
+        const code = load(`${VIRTUAL_PREFIX}${bladeFile}?callable=&mapped=1`);
+
+        expect(code).toBeTruthy();
+        expect(code).toContain("__type: 'template'");
+        expect(code).toContain("__allArgs: {}");
+      });
+
+      it("merges pattern adapter with exact-match args", () => {
+        const plugin = storybookPhpPlugin({
+          _configDir: FIXTURES,
+          typeMap: {
+            files: {
+              "*.blade.php": {
+                adapter: "./blade-adapter.php",
+              },
+              "TypeMapInlineTarget.blade.php": {
+                args: {
+                  title: "string",
+                  message: "?string",
+                },
+              },
+            },
+          },
+        });
+        const resolveId = getResolveId(plugin);
+        const result = resolveId(
+          "./TypeMapInlineTarget.blade.php",
+          resolve(FIXTURES, "some-story.ts"),
+        );
+        expect(result).toContain("mapped=1");
+
+        const load = getLoad(plugin);
+        const bladeFile = resolve(FIXTURES, "TypeMapInlineTarget.blade.php");
+        const code = load(`${VIRTUAL_PREFIX}${bladeFile}?callable=&mapped=1`);
+
+        // Should have args from exact match
+        expect(code).toContain("title:");
+        expect(code).toContain("message:");
+        expect(code).toContain("__type: 'template'");
+      });
+
+      it("does not match a non-matching pattern", () => {
+        const plugin = storybookPhpPlugin({
+          _configDir: FIXTURES,
+          typeMap: {
+            files: {
+              "*.twig": {
+                adapter: "./twig-adapter.php",
+              },
+            },
+          },
+        });
+        const resolveId = getResolveId(plugin);
+        const result = resolveId(
+          "./TypeMapInlineTarget.blade.php",
+          resolve(FIXTURES, "some-story.ts"),
+        );
+        // .blade.php does not match *.twig, but does match PHP_RE
+        expect(result).not.toContain("mapped=1");
+      });
+
+      it("exact match overrides pattern match fields", () => {
+        const plugin = storybookPhpPlugin({
+          _configDir: FIXTURES,
+          typeMap: {
+            files: {
+              "*.blade.php": {
+                adapter: "./blade-adapter.php",
+                args: { defaultArg: "string" },
+              },
+              "TypeMapInlineTarget.blade.php": {
+                args: { title: "string" },
+              },
+            },
+          },
+        });
+        const load = getLoad(plugin);
+        const bladeFile = resolve(FIXTURES, "TypeMapInlineTarget.blade.php");
+        const code = load(`${VIRTUAL_PREFIX}${bladeFile}?callable=&mapped=1`);
+
+        expect(code).toBeTruthy();
+        // Exact match args override pattern args
+        expect(code).toContain("title:");
+        expect(code).not.toContain("defaultArg:");
+      });
+    });
+
+    // -----------------------------------------------------------------
+    // resolveAdapterMap
+    // -----------------------------------------------------------------
+    describe("resolveAdapterMap", () => {
+      it("extracts pattern and exact file adapters", () => {
+        const map = resolveAdapterMap(
+          {
+            "*.blade.php": { adapter: "./blade-adapter.php" },
+            "../src/special.php": { adapter: "./special-adapter.php" },
+            "../src/no-adapter.php": { args: { x: "string" } },
+          },
+          FIXTURES,
+        );
+
+        expect(map).toBeDefined();
+        expect(map!.patterns).toHaveLength(1);
+        expect(map!.patterns[0]!.suffix).toBe(".blade.php");
+        expect(map!.patterns[0]!.adapter).toContain("blade-adapter.php");
+        expect(Object.keys(map!.files)).toHaveLength(1);
+        const fileKey = Object.keys(map!.files)[0]!;
+        expect(fileKey).toContain("special.php");
+        expect(map!.files[fileKey]).toContain("special-adapter.php");
+      });
+
+      it("returns undefined when no adapters are configured", () => {
+        const map = resolveAdapterMap({ "../src/file.php": { args: { x: "string" } } }, FIXTURES);
+        expect(map).toBeUndefined();
+      });
+
+      it("returns undefined for undefined fileMap", () => {
+        const map = resolveAdapterMap(undefined, FIXTURES);
+        expect(map).toBeUndefined();
       });
     });
   });
