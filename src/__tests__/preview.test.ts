@@ -5,9 +5,13 @@ import { renderToCanvas, render } from "../preview.js";
 const mockShowMain = vi.fn();
 const mockShowError = vi.fn();
 
-function makeContext(component: any, args: Record<string, unknown> = {}) {
+function makeContext(
+  component: any,
+  args: Record<string, unknown> = {},
+  parameters?: Record<string, unknown>,
+) {
   return {
-    storyContext: { component, args, name: "Test", title: "Test", id: "test" },
+    storyContext: { component, args, parameters, name: "Test", title: "Test", id: "test" },
     storyFn: () => "<p>fallback</p>",
     showMain: mockShowMain,
     showError: mockShowError,
@@ -68,6 +72,40 @@ describe("renderToCanvas", () => {
       callable: "render",
       args: { name: "Alice", age: 30 },
     });
+  });
+
+  it("includes typeMap in POST body when parameters.typeMap is set", async () => {
+    const canvas = document.createElement("div");
+    const typeMap = {
+      bindings: { "App\\Iface": "App\\Concrete" },
+      args: { "App\\Foo::$bar": "string" },
+    };
+    const ctx = makeContext(phpComponent, { name: "Alice" }, { typeMap });
+
+    const mockFetch = vi.fn().mockResolvedValue({
+      json: () => Promise.resolve({ html: "<div>ok</div>" }),
+    });
+    vi.stubGlobal("fetch", mockFetch);
+
+    await renderToCanvas(ctx, canvas);
+
+    const body = JSON.parse(mockFetch.mock.calls[0][1].body);
+    expect(body.typeMap).toEqual(typeMap);
+  });
+
+  it("omits typeMap from POST body when parameters.typeMap is absent", async () => {
+    const canvas = document.createElement("div");
+    const ctx = makeContext(phpComponent, { name: "Alice" });
+
+    const mockFetch = vi.fn().mockResolvedValue({
+      json: () => Promise.resolve({ html: "<div>ok</div>" }),
+    });
+    vi.stubGlobal("fetch", mockFetch);
+
+    await renderToCanvas(ctx, canvas);
+
+    const body = JSON.parse(mockFetch.mock.calls[0][1].body);
+    expect(body.typeMap).toBeUndefined();
   });
 
   it("sets innerHTML to returned HTML on successful render", async () => {

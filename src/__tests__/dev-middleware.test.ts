@@ -193,6 +193,7 @@ describe("createPhpMiddleware", () => {
       callable: "render",
       args: { name: "World" },
       bootstrap: null,
+      typeMap: null,
     });
   });
 
@@ -323,6 +324,34 @@ describe("createPhpMiddleware", () => {
   });
 
   // -------------------------------------------------------------------------
+  // Per-story typeMap forwarding
+  // -------------------------------------------------------------------------
+  it("forwards typeMap from POST body to executor", async () => {
+    mockExecute.mockResolvedValueOnce({ html: "<p>ok</p>" });
+
+    const typeMap = {
+      bindings: { "App\\Iface": "App\\Concrete" },
+      args: { "App\\Foo::$bar": "string" },
+    };
+    const body = JSON.stringify({
+      type: "classMethod",
+      file: "/some/file.php",
+      class: "App\\MyClass",
+      callable: "render",
+      args: {},
+      typeMap,
+    });
+    const req = createMockReq("POST", RENDER_PATH, body);
+    const res = createMockRes();
+    const next = vi.fn();
+
+    await middleware(req, res, next);
+
+    expect(res._status).toBe(200);
+    expect(mockExecute).toHaveBeenCalledWith(expect.objectContaining({ typeMap }));
+  });
+
+  // -------------------------------------------------------------------------
   // Defaults for optional fields
   // -------------------------------------------------------------------------
   it("fills in defaults for optional fields (class, callable, args, bootstrap)", async () => {
@@ -346,6 +375,7 @@ describe("createPhpMiddleware", () => {
       callable: null,
       args: {},
       bootstrap: null,
+      typeMap: null,
     });
   });
 });

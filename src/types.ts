@@ -108,6 +108,8 @@ export interface PhpRenderRequest {
   args: Record<string, unknown>;
   bootstrap?: string | null;
   adapter?: string | null;
+  /** Per-story typeMap override (merged with global typeMap by the executor) */
+  typeMap?: StoryTypeMap | null;
 }
 
 /** Response from the PHP runner */
@@ -156,6 +158,21 @@ export interface FileMapTarget {
 export interface TypeMapConfig {
   /** Map file paths to type information sources */
   files?: Record<string, FileMapTarget>;
+  /** Map PHP type → PHP type (interface/abstract → concrete, DI-style) */
+  bindings?: Record<string, string>;
+  /**
+   * Override argument metadata.
+   * Key format: "FQCN::$arg" or "FQCN::method::$arg"
+   */
+  args?: Record<string, string | ArgOverride>;
+}
+
+/**
+ * Per-story typeMap override (runtime-relevant sections only).
+ * Use via `parameters.typeMap` in Meta or StoryObj.
+ * The `files` section is build-time only and cannot be overridden per-story.
+ */
+export interface StoryTypeMap {
   /** Map PHP type → PHP type (interface/abstract → concrete, DI-style) */
   bindings?: Record<string, string>;
   /**

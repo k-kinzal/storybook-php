@@ -20,6 +20,19 @@ class HtmlBlock implements Renderable
     }
 }
 
+class PlainTextBlock implements Renderable
+{
+    public function __construct(
+        private string $content,
+        private string $tag = 'span',
+    ) {}
+
+    public function toHtml(): string
+    {
+        return htmlspecialchars($this->content);
+    }
+}
+
 class PageWithInterface
 {
     public function __construct(
