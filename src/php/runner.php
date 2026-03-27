@@ -156,7 +156,7 @@ function resolveClassName(string $className, ReflectionParameter $param): ?strin
     // Leading backslash → already absolute
     $candidate = ltrim($className, '\\');
 
-    if (class_exists($candidate) || (function_exists('enum_exists') && enum_exists($candidate))) {
+    if (class_exists($candidate) || interface_exists($candidate) || (function_exists('enum_exists') && enum_exists($candidate))) {
         return $candidate;
     }
 
@@ -171,7 +171,7 @@ function resolveClassName(string $className, ReflectionParameter $param): ?strin
 
     if ($namespace !== null && $namespace !== '') {
         $fqn = $namespace . '\\' . $candidate;
-        if (class_exists($fqn) || (function_exists('enum_exists') && enum_exists($fqn))) {
+        if (class_exists($fqn) || interface_exists($fqn) || (function_exists('enum_exists') && enum_exists($fqn))) {
             return $fqn;
         }
     }
@@ -183,7 +183,7 @@ function resolveClassName(string $className, ReflectionParameter $param): ?strin
  * Cast each element of an array using PHPDoc generic type information.
  * Handles recursive nesting (e.g. list<list<Foo>>).
  */
-function castArrayElements(array $value, string $docType, ReflectionParameter $param): array
+function castArrayElements(array $value, string $docType, ReflectionParameter $param, ?array $typeMap = null): array
 {
     $info = extractGenericValueType($docType);
     if ($info === null) {
@@ -201,13 +201,19 @@ function castArrayElements(array $value, string $docType, ReflectionParameter $p
     if (isArrayLikeType($innerType)) {
         $result = [];
         foreach ($value as $key => $item) {
-            $result[$key] = is_array($item) ? castArrayElements($item, $innerType, $param) : $item;
+            $result[$key] = is_array($item) ? castArrayElements($item, $innerType, $param, $typeMap) : $item;
         }
         return $result;
     }
 
     // Try to resolve as a class
     $resolved = resolveClassName($innerType, $param);
+
+    // Apply typeMap.bindings: resolve interface/abstract → concrete class
+    if ($resolved !== null && $typeMap !== null && isset($typeMap['bindings'][$resolved])) {
+        $resolved = $typeMap['bindings'][$resolved];
+    }
+
     if ($resolved !== null && class_exists($resolved)) {
         $ref = new ReflectionClass($resolved);
         $constructor = $ref->getConstructor();
@@ -218,7 +224,7 @@ function castArrayElements(array $value, string $docType, ReflectionParameter $p
                 continue;
             }
             if ($constructor !== null) {
-                $result[$key] = $ref->newInstanceArgs(matchArgs($constructor, (array) $item));
+                $result[$key] = $ref->newInstanceArgs(matchArgs($constructor, (array) $item, $typeMap));
             } else {
                 $result[$key] = $ref->newInstance();
             }
@@ -368,7 +374,7 @@ function castWithNamedType(ReflectionNamedType $type, mixed $value, ReflectionPa
         case 'iterable':
             $arr = is_array($value) ? $value : (array) $value;
             if ($docType !== null) {
-                return castArrayElements($arr, $docType, $param);
+                return castArrayElements($arr, $docType, $param, $typeMap);
             }
             return $arr;
         case 'object':
@@ -419,7 +425,7 @@ function castWithNamedType(ReflectionNamedType $type, mixed $value, ReflectionPa
         if ($docType !== null && is_array($value)) {
             $info = extractGenericValueType($docType);
             if ($info !== null && $info['wrapperClass'] !== null) {
-                $castedItems = castArrayElements($value, $docType, $param);
+                $castedItems = castArrayElements($value, $docType, $param, $typeMap);
                 $ref = new ReflectionClass($typeName);
                 $constructor = $ref->getConstructor();
                 if ($constructor !== null) {
