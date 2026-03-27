@@ -15148,6 +15148,34 @@ describe.skipIf(!hasPhp)("Integration: All Plan Patterns", () => {
       expect(result.html).toContain("<b>Storybook</b>");
     });
 
+    it("resolves interface in list<> doc type via typeMap.bindings", async () => {
+      const executor = new PhpExecutor({
+        timeout: 10000,
+        typeMap: {
+          bindings: {
+            "App\\Components\\Renderable": "App\\Components\\HtmlBlock",
+          },
+        },
+      });
+      const result = await executor.execute({
+        type: "classMethod",
+        file: fixture("TypeMapBindingTarget.php"),
+        class: "App\\Components\\PageWithItems",
+        callable: "render",
+        args: {
+          title: "Items Page",
+          items: [
+            { content: "First", tag: "p" },
+            { content: "Second", tag: "span" },
+          ],
+        },
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain("Items Page");
+      expect(result.html).toContain("<p>First</p>");
+      expect(result.html).toContain("<span>Second</span>");
+    });
+
     it("applies typeMap.args string shorthand as type override", async () => {
       const executor = new PhpExecutor({
         timeout: 10000,
@@ -15255,6 +15283,60 @@ describe.skipIf(!hasPhp)("Integration: All Plan Patterns", () => {
       expect(result.error).toBeUndefined();
       expect(result.html).toContain("<b>A</b>");
       expect(result.html).toContain("<b>B</b>");
+    });
+
+    it("per-request bindings resolve interface in list<> doc type", async () => {
+      const executor = new PhpExecutor({
+        timeout: 10000,
+        typeMap: {
+          bindings: {
+            "App\\Components\\Renderable": "App\\Components\\HtmlBlock",
+          },
+        },
+      });
+      // Per-request override: bind to PlainTextBlock instead of HtmlBlock
+      const result = await executor.execute({
+        type: "classMethod",
+        file: fixture("TypeMapBindingTarget.php"),
+        class: "App\\Components\\PageWithItems",
+        callable: "render",
+        args: {
+          title: "Override Items",
+          items: [{ content: "plain text", tag: "div" }],
+        },
+        typeMap: {
+          bindings: {
+            "App\\Components\\Renderable": "App\\Components\\PlainTextBlock",
+          },
+        },
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain("Override Items");
+      // PlainTextBlock uses htmlspecialchars, no HTML tag wrapping
+      expect(result.html).toContain("plain text");
+      expect(result.html).not.toContain("<div>");
+    });
+
+    it("per-request bindings for list<> work when no global typeMap exists", async () => {
+      const executor = new PhpExecutor({ timeout: 10000 });
+      const result = await executor.execute({
+        type: "classMethod",
+        file: fixture("TypeMapBindingTarget.php"),
+        class: "App\\Components\\PageWithItems",
+        callable: "render",
+        args: {
+          title: "No Global",
+          items: [{ content: "Hello", tag: "p" }],
+        },
+        typeMap: {
+          bindings: {
+            "App\\Components\\Renderable": "App\\Components\\HtmlBlock",
+          },
+        },
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain("No Global");
+      expect(result.html).toContain("<p>Hello</p>");
     });
   });
 });

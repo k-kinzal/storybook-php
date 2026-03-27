@@ -45,3 +45,23 @@ class PageWithInterface
         return "<h1>{$this->title}</h1>" . $this->content->toHtml();
     }
 }
+
+class PageWithItems
+{
+    /**
+     * @param list<Renderable> $items
+     */
+    public function __construct(
+        private string $title,
+        private array $items,
+    ) {}
+
+    public function render(): string
+    {
+        $html = "<h1>{$this->title}</h1>";
+        foreach ($this->items as $item) {
+            $html .= $item->toHtml();
+        }
+        return $html;
+    }
+}
