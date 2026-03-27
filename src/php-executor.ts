@@ -2,7 +2,13 @@ import { spawn } from "node:child_process";
 import { resolve, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 import { existsSync } from "node:fs";
-import type { PhpRenderRequest, PhpRenderResponse, TypeMapConfig, StoryTypeMap } from "./types.js";
+import type {
+  PhpRenderRequest,
+  PhpRenderResponse,
+  TypeMapConfig,
+  StoryTypeMap,
+  AdapterMap,
+} from "./types.js";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
@@ -12,6 +18,8 @@ export interface PhpExecutorOptions {
   bootstrap?: string;
   adapter?: string;
   typeMap?: TypeMapConfig;
+  /** Pre-resolved adapter mappings from typeMap.files (patterns + exact paths) */
+  adapterMap?: AdapterMap;
 }
 
 export class PhpExecutor {
@@ -19,6 +27,7 @@ export class PhpExecutor {
   private timeout: number;
   private bootstrap: string | null;
   private adapter: string | null;
+  private adapterMap: AdapterMap | null;
   private runnerPath: string;
   private runtimeTypeMap: {
     bindings?: Record<string, string>;
@@ -30,6 +39,7 @@ export class PhpExecutor {
     this.timeout = options.timeout ?? 5000;
     this.bootstrap = options.bootstrap ?? null;
     this.adapter = options.adapter ?? null;
+    this.adapterMap = options.adapterMap ?? null;
     this.runnerPath = this.resolveRunnerPath();
     // Only send runtime-relevant parts of typeMap (bindings + args) to PHP
     this.runtimeTypeMap =
@@ -57,6 +67,26 @@ export class PhpExecutor {
     return candidates[0]!; // default, will error at runtime
   }
 
+  /**
+   * Resolve a per-file adapter from adapterMap.
+   * Checks exact file match first, then suffix patterns (longest suffix wins).
+   */
+  private resolveFileAdapter(filePath: string): string | null {
+    if (!this.adapterMap) return null;
+    // Exact file match takes priority
+    if (this.adapterMap.files[filePath]) return this.adapterMap.files[filePath]!;
+    // Suffix pattern match — longest (most specific) suffix wins
+    let best: string | null = null;
+    let bestLen = 0;
+    for (const { suffix, adapter } of this.adapterMap.patterns) {
+      if (filePath.endsWith(suffix) && suffix.length > bestLen) {
+        best = adapter;
+        bestLen = suffix.length;
+      }
+    }
+    return best;
+  }
+
   private mergeTypeMap(
     storyTypeMap: StoryTypeMap | null | undefined,
   ): { bindings?: Record<string, string>; args?: Record<string, unknown> } | null {
@@ -77,10 +107,12 @@ export class PhpExecutor {
     const { typeMap: storyTypeMap, ...rest } = request;
     const mergedTypeMap = this.mergeTypeMap(storyTypeMap);
 
+    const fileAdapter = this.resolveFileAdapter(rest.file);
+
     const input = JSON.stringify({
       ...rest,
       bootstrap: request.bootstrap ?? this.bootstrap,
-      adapter: request.adapter ?? this.adapter,
+      adapter: request.adapter ?? fileAdapter ?? this.adapter,
       ...(mergedTypeMap ? { typeMap: mergedTypeMap } : {}),
     });
 

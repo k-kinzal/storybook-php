@@ -485,4 +485,146 @@ describe.skipIf(!hasPhp)("PhpExecutor", () => {
       expect(result.html).toBe("");
     });
   });
+
+  // ---------------------------------------------------------------------------
+  // adapterMap: per-file adapter resolution
+  // ---------------------------------------------------------------------------
+  describe("adapterMap", () => {
+    it("uses pattern-matched adapter for matching file", async () => {
+      const adapterExecutor = new PhpExecutor({
+        timeout: 10000,
+        adapterMap: {
+          patterns: [{ suffix: "TemplateFile.php", adapter: fixture("adapter-context.php") }],
+          files: {},
+        },
+      });
+
+      const request: PhpRenderRequest = {
+        type: "template",
+        file: fixture("TemplateFile.php"),
+        class: null,
+        callable: null,
+        args: { title: "Test", body: "Content", variant: "info" },
+      };
+
+      const result = await adapterExecutor.execute(request);
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('data-adapter="context"');
+      expect(result.html).toContain("Template rendered via adapter");
+    });
+
+    it("uses exact file adapter over pattern adapter", async () => {
+      const adapterExecutor = new PhpExecutor({
+        timeout: 10000,
+        adapterMap: {
+          patterns: [],
+          files: {
+            [fixture("TemplateFile.php")]: fixture("adapter-context.php"),
+          },
+        },
+      });
+
+      const request: PhpRenderRequest = {
+        type: "template",
+        file: fixture("TemplateFile.php"),
+        class: null,
+        callable: null,
+        args: { title: "Test", body: "Body", variant: "primary" },
+      };
+
+      const result = await adapterExecutor.execute(request);
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('data-adapter="context"');
+      expect(result.html).toContain("Template rendered via adapter");
+    });
+
+    it("falls back to global adapter when no adapterMap match", async () => {
+      const adapterExecutor = new PhpExecutor({
+        timeout: 10000,
+        adapter: fixture("adapter-context.php"),
+        adapterMap: {
+          patterns: [{ suffix: ".twig", adapter: "/nonexistent/twig-adapter.php" }],
+          files: {},
+        },
+      });
+
+      // .php file doesn't match .twig pattern → falls back to global adapter
+      const request: PhpRenderRequest = {
+        type: "classMethod",
+        file: fixture("SimpleComponent.php"),
+        class: "App\\Components\\SimpleComponent",
+        callable: "render",
+        args: { name: "Alice", age: 30 },
+      };
+
+      const result = await adapterExecutor.execute(request);
+      expect(result.error).toBeUndefined();
+      // Global adapter wraps output with data-adapter="context"
+      expect(result.html).toContain('data-adapter="context"');
+      expect(result.html).toContain('data-type="classMethod"');
+    });
+  });
+
+  // ---------------------------------------------------------------------------
+  // Adapter context (4th argument)
+  // ---------------------------------------------------------------------------
+  describe("adapter context", () => {
+    it("passes context to adapter for classMethod", async () => {
+      const adapterExecutor = new PhpExecutor({
+        timeout: 10000,
+        adapter: fixture("adapter-context.php"),
+      });
+
+      const request: PhpRenderRequest = {
+        type: "classMethod",
+        file: fixture("SimpleComponent.php"),
+        class: "App\\Components\\SimpleComponent",
+        callable: "render",
+        args: { name: "Alice", age: 30 },
+      };
+
+      const result = await adapterExecutor.execute(request);
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('data-type="classMethod"');
+      expect(result.html).toContain("Alice is 30");
+    });
+
+    it("passes context to adapter for template type", async () => {
+      const adapterExecutor = new PhpExecutor({
+        timeout: 10000,
+        adapter: fixture("adapter-context.php"),
+      });
+
+      const request: PhpRenderRequest = {
+        type: "template",
+        file: fixture("TemplateFile.php"),
+        class: null,
+        callable: null,
+        args: { title: "Hello", body: "World", variant: "primary" },
+      };
+
+      const result = await adapterExecutor.execute(request);
+      expect(result.error).toBeUndefined();
+      // Template mode: adapter receives context with file and args
+      expect(result.html).toContain('data-adapter="context"');
+      expect(result.html).toContain("Template rendered via adapter");
+      expect(result.html).toContain(fixture("TemplateFile.php"));
+    });
+
+    it("template without adapter still uses include + extract", async () => {
+      // No adapter configured — default template behavior
+      const result = await executor.execute({
+        type: "template",
+        file: fixture("TemplateFile.php"),
+        class: null,
+        callable: null,
+        args: { title: "My Card", body: "Card content", variant: "primary" },
+      });
+
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain("My Card");
+      expect(result.html).toContain("Card content");
+      expect(result.html).toContain("card-primary");
+    });
+  });
 });

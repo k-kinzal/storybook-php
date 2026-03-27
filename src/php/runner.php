@@ -601,6 +601,12 @@ try {
 
     $__sb_html = '';
 
+    // Context passed as 4th argument to adapter calls.
+    // Backward-compatible: PHP silently ignores extra positional arguments
+    // for user-defined functions and closures (only internal/C-level functions
+    // can raise "too many arguments" errors).
+    $__sb_context = ['type' => $__sb_type, 'file' => $__sb_file, 'args' => $__sb_args];
+
     switch ($__sb_type) {
         case 'classMethod':
             $__sb_ref = new ReflectionClass($__sb_class);
@@ -612,7 +618,7 @@ try {
             ob_start();
             $__sb_result = $__sb_method->invokeArgs($__sb_instance, matchArgs($__sb_method, $__sb_args, $__sb_typeMap));
             $__sb_buffered = ob_get_clean();
-            $__sb_html = $__sb_adapter ? $__sb_adapter($__sb_result, $__sb_buffered, $__sb_instance) : resolveOutput($__sb_result, $__sb_buffered);
+            $__sb_html = $__sb_adapter ? $__sb_adapter($__sb_result, $__sb_buffered, $__sb_instance, $__sb_context) : resolveOutput($__sb_result, $__sb_buffered);
             break;
 
         case 'staticMethod':
@@ -621,7 +627,7 @@ try {
             ob_start();
             $__sb_result = $__sb_method->invokeArgs(null, matchArgs($__sb_method, $__sb_args, $__sb_typeMap));
             $__sb_buffered = ob_get_clean();
-            $__sb_html = $__sb_adapter ? $__sb_adapter($__sb_result, $__sb_buffered, null) : resolveOutput($__sb_result, $__sb_buffered);
+            $__sb_html = $__sb_adapter ? $__sb_adapter($__sb_result, $__sb_buffered, null, $__sb_context) : resolveOutput($__sb_result, $__sb_buffered);
             break;
 
         case 'function':
@@ -629,17 +635,25 @@ try {
             ob_start();
             $__sb_result = $__sb_ref->invokeArgs(matchArgs($__sb_ref, $__sb_args, $__sb_typeMap));
             $__sb_buffered = ob_get_clean();
-            $__sb_html = $__sb_adapter ? $__sb_adapter($__sb_result, $__sb_buffered, null) : resolveOutput($__sb_result, $__sb_buffered);
+            $__sb_html = $__sb_adapter ? $__sb_adapter($__sb_result, $__sb_buffered, null, $__sb_context) : resolveOutput($__sb_result, $__sb_buffered);
             break;
 
         case 'template':
-            // Use prefixed variable for args to avoid collisions with template variables.
-            // extract() with EXTR_SKIP won't overwrite runner's prefixed vars since
-            // user templates won't use $__sb_ prefixed names.
-            extract($__sb_args, EXTR_SKIP);
-            ob_start();
-            include $__sb_file;
-            $__sb_html = ob_get_clean();
+            if ($__sb_adapter !== null) {
+                // Delegate template rendering entirely to the adapter.
+                // This enables template engines (Blade, Twig, etc.) that cannot
+                // be rendered via simple include + extract.
+                $__sb_html = $__sb_adapter(null, '', null, $__sb_context);
+            } else {
+                // Default: extract args as local variables and include the file.
+                // Uses prefixed variable for args to avoid collisions with
+                // template variables — extract() with EXTR_SKIP won't overwrite
+                // runner's $__sb_ prefixed vars.
+                extract($__sb_args, EXTR_SKIP);
+                ob_start();
+                include $__sb_file;
+                $__sb_html = ob_get_clean();
+            }
             break;
 
         case 'enumMethod':
@@ -669,7 +683,7 @@ try {
             ob_start();
             $__sb_result = $__sb_method->invokeArgs($__sb_enumInstance, matchArgs($__sb_method, $__sb_methodArgs, $__sb_typeMap));
             $__sb_buffered = ob_get_clean();
-            $__sb_html = $__sb_adapter ? $__sb_adapter($__sb_result, $__sb_buffered, $__sb_enumInstance) : resolveOutput($__sb_result, $__sb_buffered);
+            $__sb_html = $__sb_adapter ? $__sb_adapter($__sb_result, $__sb_buffered, $__sb_enumInstance, $__sb_context) : resolveOutput($__sb_result, $__sb_buffered);
             break;
 
         default:

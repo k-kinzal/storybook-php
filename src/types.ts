@@ -152,6 +152,13 @@ export interface FileMapTarget {
   callable?: string;
   /** Additional PHP files to parse for cross-file parent/trait resolution */
   includes?: string[];
+  /**
+   * Path to a PHP adapter file for this file or pattern.
+   * Overrides the global `adapter` option for matching files.
+   * The file must return a callable with signature:
+   *   fn(mixed $result, string $buffered, ?object $instance, array $context): string
+   */
+  adapter?: string;
 }
 
 /** Static type mapping configuration */
@@ -204,6 +211,17 @@ export interface FrameworkOptions {
   typeMap?: TypeMapConfig;
   /** @internal Resolved config directory for path resolution */
   _configDir?: string;
+}
+
+/**
+ * @internal Pre-resolved adapter mappings from typeMap.files.
+ * Used by PhpExecutor to resolve per-file adapters at runtime.
+ */
+export interface AdapterMap {
+  /** Suffix-based patterns (e.g. ".blade.php" → adapter path) */
+  patterns: Array<{ suffix: string; adapter: string }>;
+  /** Exact file path → adapter path */
+  files: Record<string, string>;
 }
 
 /** Storybook renderer type identifier */

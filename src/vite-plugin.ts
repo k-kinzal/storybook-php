@@ -10,6 +10,7 @@ import type {
   PhpParamMeta,
   ArgOverride,
   FileMapTarget,
+  AdapterMap,
 } from "./types.js";
 
 const PHP_RE = /\.php(?:@(\w+))?$/;
@@ -155,21 +156,87 @@ function generateEnumMethodModule(
 // ---------------------------------------------------------------------------
 
 /**
- * Resolve a typeMap.files key (relative path) against a config base directory
- * and check if it matches the given absolute path.
+ * Merge two FileMapTarget objects. `exact` fields take precedence over `pattern`.
+ */
+function mergeFileMapTargets(pattern: FileMapTarget, exact: FileMapTarget): FileMapTarget {
+  const result: FileMapTarget = {};
+  if (exact.args ?? pattern.args) result.args = exact.args ?? pattern.args;
+  if (exact.phpFile ?? pattern.phpFile) result.phpFile = exact.phpFile ?? pattern.phpFile;
+  if (exact.callable ?? pattern.callable) result.callable = exact.callable ?? pattern.callable;
+  if (exact.includes ?? pattern.includes) result.includes = exact.includes ?? pattern.includes;
+  if (exact.adapter ?? pattern.adapter) result.adapter = exact.adapter ?? pattern.adapter;
+  return result;
+}
+
+/**
+ * Resolve a typeMap.files key against a config base directory.
+ * Supports both exact path matches and glob patterns (keys starting with "*").
+ * When both an exact match and a pattern match exist, their fields are merged
+ * with exact-match fields taking precedence.
+ *
+ * When multiple glob patterns match, the most specific one wins (longest suffix).
  */
 function findFileMapping(
   absPath: string,
   fileMap: Record<string, FileMapTarget>,
   configDir: string,
 ): FileMapTarget | null {
-  for (const [pattern, target] of Object.entries(fileMap)) {
-    const resolvedPattern = isAbsolute(pattern) ? pattern : resolve(configDir, pattern);
-    if (absPath === resolvedPattern) {
-      return target;
+  let exactMatch: FileMapTarget | undefined;
+  let patternMatch: FileMapTarget | undefined;
+  let patternSuffixLen = 0;
+
+  for (const [key, target] of Object.entries(fileMap)) {
+    if (key.startsWith("*")) {
+      // Glob pattern: suffix match (e.g. "*.blade.php")
+      const suffix = key.slice(1);
+      if (absPath.endsWith(suffix) && suffix.length > patternSuffixLen) {
+        patternMatch = target;
+        patternSuffixLen = suffix.length;
+      }
+    } else {
+      // Exact path match
+      const resolvedKey = isAbsolute(key) ? key : resolve(configDir, key);
+      if (absPath === resolvedKey) {
+        exactMatch = target;
+      }
     }
   }
-  return null;
+
+  if (!exactMatch && !patternMatch) return null;
+  if (!patternMatch) return exactMatch!;
+  if (!exactMatch) return patternMatch!;
+
+  return mergeFileMapTargets(patternMatch, exactMatch);
+}
+
+/**
+ * Extract adapter mappings from typeMap.files for runtime use by PhpExecutor.
+ * Resolves relative adapter paths against the config directory.
+ */
+function resolveAdapterMap(
+  fileMap: Record<string, FileMapTarget> | undefined,
+  configDir: string | undefined,
+): AdapterMap | undefined {
+  if (!fileMap) return undefined;
+  const dir = configDir ?? process.cwd();
+  const patterns: AdapterMap["patterns"] = [];
+  const files: AdapterMap["files"] = {};
+
+  for (const [key, target] of Object.entries(fileMap)) {
+    if (!target.adapter) continue;
+    const resolvedAdapter = isAbsolute(target.adapter)
+      ? target.adapter
+      : resolve(dir, target.adapter);
+
+    if (key.startsWith("*")) {
+      patterns.push({ suffix: key.slice(1), adapter: resolvedAdapter });
+    } else {
+      const resolvedKey = isAbsolute(key) ? key : resolve(dir, key);
+      files[resolvedKey] = resolvedAdapter;
+    }
+  }
+
+  return patterns.length > 0 || Object.keys(files).length > 0 ? { patterns, files } : undefined;
 }
 
 /**
@@ -587,6 +654,11 @@ export function storybookPhpPlugin(options: FrameworkOptions = {}): Plugin {
             const redirectCallable = mapping.callable ?? callableName;
             return loadPhpFile(phpFilePath, redirectCallable, options);
           }
+
+          // Other mappings (adapter-only, includes-only): fall through to
+          // loadPhpFile which handles includes resolution and generates the
+          // appropriate module. For non-PHP files (e.g. .blade.php) with null
+          // callable, loadPhpFile returns a template module with empty args.
         }
       }
 
@@ -594,12 +666,14 @@ export function storybookPhpPlugin(options: FrameworkOptions = {}): Plugin {
     },
 
     configureServer(server: ViteDevServer) {
+      const configDir = options._configDir ?? process.cwd();
       const middleware = createPhpMiddleware({
         phpBinary: options.phpBinary,
         timeout: options.timeout,
         bootstrap: options.bootstrap,
         adapter: options.adapter,
         typeMap: options.typeMap,
+        adapterMap: resolveAdapterMap(options.typeMap?.files, configDir),
       });
       server.middlewares.use(middleware as any);
     },
@@ -653,4 +727,4 @@ export function storybookPhpPlugin(options: FrameworkOptions = {}): Plugin {
   };
 }
 
-export { VIRTUAL_PREFIX };
+export { VIRTUAL_PREFIX, resolveAdapterMap };
