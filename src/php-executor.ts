@@ -2,7 +2,7 @@ import { spawn } from "node:child_process";
 import { resolve, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 import { existsSync } from "node:fs";
-import type { PhpRenderRequest, PhpRenderResponse, TypeMapConfig } from "./types.js";
+import type { PhpRenderRequest, PhpRenderResponse, TypeMapConfig, StoryTypeMap } from "./types.js";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
@@ -57,12 +57,31 @@ export class PhpExecutor {
     return candidates[0]!; // default, will error at runtime
   }
 
+  private mergeTypeMap(
+    storyTypeMap: StoryTypeMap | null | undefined,
+  ): { bindings?: Record<string, string>; args?: Record<string, unknown> } | null {
+    if (!this.runtimeTypeMap && !storyTypeMap) return null;
+    if (!storyTypeMap) return this.runtimeTypeMap;
+    if (!this.runtimeTypeMap) return storyTypeMap;
+    return {
+      ...(this.runtimeTypeMap.bindings || storyTypeMap.bindings
+        ? { bindings: { ...this.runtimeTypeMap.bindings, ...storyTypeMap.bindings } }
+        : {}),
+      ...(this.runtimeTypeMap.args || storyTypeMap.args
+        ? { args: { ...this.runtimeTypeMap.args, ...storyTypeMap.args } }
+        : {}),
+    };
+  }
+
   async execute(request: PhpRenderRequest): Promise<PhpRenderResponse> {
+    const { typeMap: storyTypeMap, ...rest } = request;
+    const mergedTypeMap = this.mergeTypeMap(storyTypeMap);
+
     const input = JSON.stringify({
-      ...request,
+      ...rest,
       bootstrap: request.bootstrap ?? this.bootstrap,
       adapter: request.adapter ?? this.adapter,
-      ...(this.runtimeTypeMap ? { typeMap: this.runtimeTypeMap } : {}),
+      ...(mergedTypeMap ? { typeMap: mergedTypeMap } : {}),
     });
 
     return new Promise((resolvePromise) => {

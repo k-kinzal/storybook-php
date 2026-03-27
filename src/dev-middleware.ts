@@ -1,6 +1,6 @@
 import type { IncomingMessage, ServerResponse } from "node:http";
 import { PhpExecutor, type PhpExecutorOptions } from "./php-executor.js";
-import type { PhpRenderRequest, PhpCallableType } from "./types.js";
+import type { PhpRenderRequest, PhpCallableType, StoryTypeMap } from "./types.js";
 
 const RENDER_PATH = "/__storybook_php/render";
 const VALID_TYPES: PhpCallableType[] = [
@@ -46,6 +46,7 @@ export function createPhpMiddleware(options: PhpExecutorOptions = {}) {
         callable: (data["callable"] as string) ?? null,
         args: (data["args"] as Record<string, unknown>) ?? {},
         bootstrap: (data["bootstrap"] as string) ?? null,
+        typeMap: (data["typeMap"] as StoryTypeMap) ?? null,
       };
 
       const result = await executor.execute(request);

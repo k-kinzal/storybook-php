@@ -1,4 +1,4 @@
-import type { PhpComponent, PhpRenderRequest } from "./types.js";
+import type { PhpComponent, PhpRenderRequest, StoryTypeMap } from "./types.js";
 
 const RENDER_ENDPOINT = "/__storybook_php/render";
 const PHP_PLACEHOLDER = "<!-- storybook-php-content -->";
@@ -9,6 +9,7 @@ interface RenderContext {
   storyContext: {
     component?: PhpComponent;
     args: Record<string, unknown>;
+    parameters?: Record<string, unknown>;
     name: string;
     title: string;
     id: string;
@@ -22,7 +23,7 @@ export async function renderToCanvas(
   { storyContext, storyFn, showMain, showError }: RenderContext,
   canvasElement: HTMLElement,
 ): Promise<void> {
-  const { component, args } = storyContext;
+  const { component, args, parameters } = storyContext;
 
   // If not a PHP component, use storyFn as plain HTML fallback
   if (!component || !isPhpComponent(component)) {
@@ -41,12 +42,15 @@ export async function renderToCanvas(
   currentAbortController = new AbortController();
   const { signal } = currentAbortController;
 
+  const storyTypeMap = parameters?.typeMap as StoryTypeMap | undefined;
+
   const request: PhpRenderRequest = {
     type: component.__type,
     file: component.__file,
     class: component.__class,
     callable: component.__callable,
     args: args ?? {},
+    ...(storyTypeMap ? { typeMap: storyTypeMap } : {}),
   };
 
   try {

@@ -26,3 +26,16 @@ class HtmlBlock implements Renderable
         return "<{$this->tag} style=\"padding: 8px; background: #f9fafb; border-radius: 4px;\">{$this->content}</{$this->tag}>";
     }
 }
+
+class PlainTextBlock implements Renderable
+{
+    public function __construct(
+        private string $content,
+        private string $tag = 'span',
+    ) {}
+
+    public function toHtml(): string
+    {
+        return "<pre style=\"padding: 8px; background: #fef3c7; border-radius: 4px; font-family: monospace; margin: 0;\">" . htmlspecialchars($this->content) . "</pre>";
+    }
+}

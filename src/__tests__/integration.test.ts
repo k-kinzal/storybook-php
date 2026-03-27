@@ -15170,4 +15170,91 @@ describe.skipIf(!hasPhp)("Integration: All Plan Patterns", () => {
       expect(result.html).toContain("<b>A</b>");
     });
   });
+
+  describe("per-story typeMap override", () => {
+    it("per-request bindings override global bindings", async () => {
+      const executor = new PhpExecutor({
+        timeout: 10000,
+        typeMap: {
+          bindings: {
+            "App\\Components\\Renderable": "App\\Components\\HtmlBlock",
+          },
+        },
+      });
+      // Per-request override: bind to PlainTextBlock instead
+      const result = await executor.execute({
+        type: "classMethod",
+        file: fixture("TypeMapBindingTarget.php"),
+        class: "App\\Components\\PageWithInterface",
+        callable: "render",
+        args: {
+          title: "Override Test",
+          content: { content: "plain text", tag: "span" },
+        },
+        typeMap: {
+          bindings: {
+            "App\\Components\\Renderable": "App\\Components\\PlainTextBlock",
+          },
+        },
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain("Override Test");
+      // PlainTextBlock wraps content with htmlspecialchars and no HTML tag
+      expect(result.html).toContain("plain text");
+    });
+
+    it("per-request args override global args", async () => {
+      const executor = new PhpExecutor({
+        timeout: 10000,
+        typeMap: {
+          args: {
+            "App\\Components\\TagRenderer::$items": "array",
+          },
+        },
+      });
+      // Per-request override: use elementType for proper casting
+      const result = await executor.execute({
+        type: "classMethod",
+        file: fixture("TypeMapElementType.php"),
+        class: "App\\Components\\TagRenderer",
+        callable: "render",
+        args: {
+          items: ["X", "Y"],
+        },
+        typeMap: {
+          args: {
+            "App\\Components\\TagRenderer::$items": {
+              elementType: "string",
+            },
+          },
+        },
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain("<b>X</b>");
+      expect(result.html).toContain("<b>Y</b>");
+    });
+
+    it("per-request typeMap works when no global typeMap exists", async () => {
+      const executor = new PhpExecutor({ timeout: 10000 });
+      const result = await executor.execute({
+        type: "classMethod",
+        file: fixture("TypeMapElementType.php"),
+        class: "App\\Components\\TagRenderer",
+        callable: "render",
+        args: {
+          items: ["A", "B"],
+        },
+        typeMap: {
+          args: {
+            "App\\Components\\TagRenderer::$items": {
+              elementType: "string",
+            },
+          },
+        },
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain("<b>A</b>");
+      expect(result.html).toContain("<b>B</b>");
+    });
+  });
 });
