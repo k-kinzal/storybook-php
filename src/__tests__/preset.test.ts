@@ -1,6 +1,10 @@
 import { describe, it, expect, vi } from "vite-plus/test";
 import { core, viteFinal } from "../preset.js";
 
+type NamedPlugin = {
+  name: string;
+};
+
 /** Helper: create mock SB10 options with presets.apply */
 function mockOptions(frameworkOptions: Record<string, unknown> = {}) {
   return {
@@ -8,6 +12,14 @@ function mockOptions(frameworkOptions: Record<string, unknown> = {}) {
       apply: vi.fn().mockResolvedValue(frameworkOptions),
     },
   };
+}
+
+function getPlugins(result: { plugins?: unknown }): NamedPlugin[] {
+  if (!Array.isArray(result.plugins)) {
+    return [];
+  }
+
+  return result.plugins as NamedPlugin[];
 }
 
 describe("preset", () => {
@@ -23,7 +35,7 @@ describe("preset", () => {
       const config = {};
       const result = await viteFinal(config, mockOptions());
 
-      const plugins = result.plugins as any[];
+      const plugins = getPlugins(result);
       expect(Array.isArray(plugins)).toBe(true);
       expect(plugins.length).toBe(1);
       expect(plugins[0].name).toBe("storybook-php");
@@ -34,7 +46,7 @@ describe("preset", () => {
       const config = { plugins: [existingPlugin] };
       const result = await viteFinal(config, mockOptions());
 
-      const plugins = result.plugins as any[];
+      const plugins = getPlugins(result);
       expect(plugins.length).toBe(2);
       expect(plugins[0]).toBe(existingPlugin);
       expect(plugins[1].name).toBe("storybook-php");
@@ -44,9 +56,9 @@ describe("preset", () => {
       const result = await viteFinal({}, mockOptions());
 
       expect(result).toBeDefined();
-      const plugins = result.plugins as any[];
+      const plugins = getPlugins(result);
       expect(Array.isArray(plugins)).toBe(true);
-      expect(plugins.some((p: any) => p.name === "storybook-php")).toBe(true);
+      expect(plugins.some((plugin) => plugin.name === "storybook-php")).toBe(true);
     });
 
     it("passes framework options from presets.apply to plugin", async () => {
@@ -54,7 +66,7 @@ describe("preset", () => {
       const result = await viteFinal({}, opts);
 
       expect(opts.presets.apply).toHaveBeenCalledWith("frameworkOptions", {});
-      const plugins = result.plugins as any[];
+      const plugins = getPlugins(result);
       expect(plugins[0].name).toBe("storybook-php");
     });
   });

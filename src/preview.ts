@@ -9,7 +9,7 @@ interface RenderContext {
   storyContext: {
     component?: PhpComponent;
     args: Record<string, unknown>;
-    parameters?: Record<string, unknown>;
+    parameters?: ({ typeMap?: StoryTypeMap } & Record<string, unknown>) | undefined;
     name: string;
     title: string;
     id: string;
@@ -42,7 +42,7 @@ export async function renderToCanvas(
   currentAbortController = new AbortController();
   const { signal } = currentAbortController;
 
-  const storyTypeMap = parameters?.typeMap as StoryTypeMap | undefined;
+  const storyTypeMap = parameters?.["typeMap"];
 
   const request: PhpRenderRequest = {
     type: component.__type,
@@ -112,7 +112,7 @@ function isPhpComponent(value: unknown): value is PhpComponent {
     typeof value === "object" &&
     value !== null &&
     "__php" in value &&
-    (value as Record<string, unknown>).__php === true
+    (value as Record<string, unknown>)["__php"] === true
   );
 }
 

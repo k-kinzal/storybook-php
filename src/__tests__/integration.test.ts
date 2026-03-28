@@ -9,6 +9,7 @@ import { dirname, resolve } from "node:path";
 import { PhpExecutor } from "../php-executor.js";
 import { parsePhpFile } from "../php-parser.js";
 import { storybookPhpPlugin } from "../vite-plugin.js";
+import { getLoad, getResolveId } from "./plugin-test-helpers.js";
 
 let phpMajor = 0;
 let phpMinor = 0;
@@ -585,8 +586,8 @@ describe.skipIf(!hasPhp)("Integration: All Plan Patterns", () => {
   describe("Vite plugin: virtual module generation", () => {
     const plugin = storybookPhpPlugin();
     // We only need load + resolveId
-    const resolveId = (plugin as any).resolveId.bind(plugin);
-    const load = (plugin as any).load.bind(plugin);
+    const resolveId = getResolveId(plugin);
+    const load = getLoad(plugin);
 
     it("UC2: Formatter@formatCurrency generates classMethod with ctor+method args", () => {
       const id = resolveId("./Formatter.php@formatCurrency", advanced("Formatter.php"));
@@ -892,8 +893,8 @@ describe.skipIf(!hasPhp)("Integration: All Plan Patterns", () => {
   // -------------------------------------------------------------------------
   describe("Vite plugin: new pattern virtual modules", () => {
     const plugin = storybookPhpPlugin();
-    const resolveId = (plugin as any).resolveId.bind(plugin);
-    const load = (plugin as any).load.bind(plugin);
+    const resolveId = getResolveId(plugin);
+    const load = getLoad(plugin);
 
     it("UC24: Accordion@toggle generates classMethod via trait", () => {
       const id = resolveId("./Accordion.php@toggle", advanced("Accordion.php"));
@@ -1278,8 +1279,8 @@ describe.skipIf(!hasPhp)("Integration: All Plan Patterns", () => {
   // -------------------------------------------------------------------------
   describe("Vite plugin: expanded example virtual modules", () => {
     const plugin = storybookPhpPlugin();
-    const resolveId = (plugin as any).resolveId.bind(plugin);
-    const load = (plugin as any).load.bind(plugin);
+    const resolveId = getResolveId(plugin);
+    const load = getLoad(plugin);
 
     it("UC29: Avatar@render generates classMethod for final class", () => {
       const id = resolveId("./Avatar.php@render", advanced("Avatar.php"));
@@ -1570,8 +1571,8 @@ describe.skipIf(!hasPhp)("Integration: All Plan Patterns", () => {
   // -------------------------------------------------------------------------
   describe("Vite plugin: UC36-UC40 virtual modules", () => {
     const plugin = storybookPhpPlugin();
-    const resolveId = (plugin as any).resolveId.bind(plugin);
-    const load = (plugin as any).load.bind(plugin);
+    const resolveId = getResolveId(plugin);
+    const load = getLoad(plugin);
 
     it("UC36: Modal@render generates classMethod", () => {
       const id = resolveId("./Modal.php@render", advanced("Modal.php"));
@@ -1862,8 +1863,8 @@ describe.skipIf(!hasPhp)("Integration: All Plan Patterns", () => {
   // -------------------------------------------------------------------------
   describe("Vite plugin: UC41-UC45 virtual modules", () => {
     const plugin = storybookPhpPlugin();
-    const resolveId = (plugin as any).resolveId.bind(plugin);
-    const load = (plugin as any).load.bind(plugin);
+    const resolveId = getResolveId(plugin);
+    const load = getLoad(plugin);
 
     it("UC42: DataRenderer@render generates classMethod with iterable/mixed", () => {
       const id = resolveId("./DataRenderer.php@render", advanced("DataRenderer.php"));
@@ -2499,8 +2500,8 @@ describe.skipIf(!hasPhp)("Integration: All Plan Patterns", () => {
   // -------------------------------------------------------------------------
   describe("Vite plugin: UC56-UC60 virtual modules", () => {
     const plugin = storybookPhpPlugin();
-    const resolveId = (plugin as any).resolveId.bind(plugin);
-    const load = (plugin as any).load.bind(plugin);
+    const resolveId = getResolveId(plugin);
+    const load = getLoad(plugin);
 
     it("UC56: Meter@render generates classMethod with union type", () => {
       const id = resolveId("./Meter.php@render", advanced("Meter.php"));
@@ -2803,8 +2804,8 @@ describe.skipIf(!hasPhp)("Integration: All Plan Patterns", () => {
   // -------------------------------------------------------------------------
   describe("Vite plugin: UC61-UC66 virtual modules", () => {
     const plugin = storybookPhpPlugin();
-    const resolveId = (plugin as any).resolveId.bind(plugin);
-    const load = (plugin as any).load.bind(plugin);
+    const resolveId = getResolveId(plugin);
+    const load = getLoad(plugin);
 
     it("UC61: LogLevel@badge generates enumMethod", () => {
       const id = resolveId("./LogLevel.php@badge", php81("LogLevel.php"));
@@ -3015,8 +3016,8 @@ describe.skipIf(!hasPhp)("Integration: All Plan Patterns", () => {
   // -------------------------------------------------------------------------
   describe("Vite plugin: new example virtual modules", () => {
     const plugin = storybookPhpPlugin();
-    const resolveId = (plugin as any).resolveId.bind(plugin);
-    const load = (plugin as any).load.bind(plugin);
+    const resolveId = getResolveId(plugin);
+    const load = getLoad(plugin);
 
     it("generates virtual module for AbstractShape.php@render (both subclasses)", () => {
       const id = resolveId("./AbstractShape.php@render", advanced("AbstractShape.php"));
@@ -3320,20 +3321,20 @@ describe.skipIf(!hasPhp)("Integration: All Plan Patterns", () => {
   // -------------------------------------------------------------------------
   describe("Vite plugin: UC81-UC90 virtual modules", () => {
     const plugin = storybookPhpPlugin({});
-    const resolveId = (plugin as any).resolveId.bind(plugin);
-    const load = (plugin as any).load.bind(plugin);
+    const resolveId = getResolveId(plugin);
+    const load = getLoad(plugin);
 
     it("resolves FeatureCard.php@render", async () => {
-      const id = await resolveId("./FeatureCard.php@render", advanced("FeatureCard.stories.ts"));
+      const id = resolveId("./FeatureCard.php@render", advanced("FeatureCard.stories.ts"));
       expect(id).toBeDefined();
-      const code = await load(id);
+      const code = load(id);
       expect(code).toContain("FeatureCard");
     });
 
     it("resolves Duration.php@render", async () => {
-      const id = await resolveId("./Duration.php@render", advanced("Duration.stories.ts"));
+      const id = resolveId("./Duration.php@render", advanced("Duration.stories.ts"));
       expect(id).toBeDefined();
-      const code = await load(id);
+      const code = load(id);
       expect(code).toContain("Duration");
     });
   });
@@ -3556,13 +3557,13 @@ describe.skipIf(!hasPhp)("Integration: All Plan Patterns", () => {
   // -------------------------------------------------------------------------
   describe("Vite plugin: UC96-UC101 virtual modules", () => {
     const plugin = storybookPhpPlugin({});
-    const resolveId = (plugin as any).resolveId.bind(plugin);
-    const load = (plugin as any).load.bind(plugin);
+    const resolveId = getResolveId(plugin);
+    const load = getLoad(plugin);
 
     it("resolves Language.php@greeting as enumMethod", async () => {
-      const id = await resolveId("./Language.php@greeting", php81("Language.stories.ts"));
+      const id = resolveId("./Language.php@greeting", php81("Language.stories.ts"));
       expect(id).toBeDefined();
-      const code = await load(id);
+      const code = load(id);
       expect(code).toContain("__type: 'enumMethod'");
       expect(code).toContain("Language");
       expect(code).toContain("_case:");
@@ -3570,25 +3571,25 @@ describe.skipIf(!hasPhp)("Integration: All Plan Patterns", () => {
     });
 
     it("resolves Renderable.php@render with multi-export (InfoBox + WarningBox)", async () => {
-      const id = await resolveId("./Renderable.php@render", advanced("InfoBox.stories.ts"));
+      const id = resolveId("./Renderable.php@render", advanced("InfoBox.stories.ts"));
       expect(id).toBeDefined();
-      const code = await load(id);
+      const code = load(id);
       expect(code).toContain("InfoBox");
       expect(code).toContain("WarningBox");
       expect(code).toContain("__type: 'classMethod'");
     });
 
     it("resolves blog.php template", async () => {
-      const id = await resolveId("./blog.php", advanced("templates/blog.stories.ts"));
+      const id = resolveId("./blog.php", advanced("templates/blog.stories.ts"));
       expect(id).toBeDefined();
-      const code = await load(id);
+      const code = load(id);
       expect(code).toContain("template");
     });
 
     it("resolves gallery.php template", async () => {
-      const id = await resolveId("./gallery.php", advanced("templates/gallery.stories.ts"));
+      const id = resolveId("./gallery.php", advanced("templates/gallery.stories.ts"));
       expect(id).toBeDefined();
-      const code = await load(id);
+      const code = load(id);
       expect(code).toContain("template");
     });
   });
@@ -4470,26 +4471,28 @@ describe.skipIf(!hasPhp)("Integration: All Plan Patterns", () => {
   // UC112-119: Vite plugin module generation
   // -------------------------------------------------------------------------
   describe("UC112-119: Vite plugin module generation", () => {
-    const plugin = storybookPhpPlugin() as any;
+    const plugin = storybookPhpPlugin();
+    const resolveId = getResolveId(plugin);
+    const load = getLoad(plugin);
 
     it("UC112: FloatGauge@render generates classMethod with float params", () => {
-      const id = plugin.resolveId("./FloatGauge.php@render", advancedImporter("FloatGauge.php"));
-      const code = plugin.load(id);
+      const id = resolveId("./FloatGauge.php@render", advancedImporter("FloatGauge.php"));
+      const code = load(id!);
       expect(code).toContain("__type: 'classMethod'");
       expect(code).toContain('__callable: "render"');
       expect(code).toContain("type: 'float'");
     });
 
     it("UC113: ReadonlyContact@render generates classMethod for readonly class", () => {
-      const id = plugin.resolveId("./ReadonlyContact.php@render", php82("Button.stories.ts"));
-      const code = plugin.load(id);
+      const id = resolveId("./ReadonlyContact.php@render", php82("Button.stories.ts"));
+      const code = load(id!);
       expect(code).toContain("__type: 'classMethod'");
       expect(code).toContain("ReadonlyContact");
     });
 
     it("UC119: NewDefaults@render generates classMethod for new-expression default", () => {
-      const id = plugin.resolveId("./NewDefaults.php@render", php81("Button.stories.ts"));
-      const code = plugin.load(id);
+      const id = resolveId("./NewDefaults.php@render", php81("Button.stories.ts"));
+      const code = load(id!);
       expect(code).toContain("__type: 'classMethod'");
       expect(code).toContain("StyledBox");
       expect(code).toContain("title:");
@@ -4667,8 +4670,8 @@ describe.skipIf(!hasPhp)("Integration: All Plan Patterns", () => {
 
     it("generates virtual module for enum instance method", () => {
       const plugin = storybookPhpPlugin({});
-      const resolveId = (plugin as any).resolveId.bind(plugin);
-      const load = (plugin as any).load.bind(plugin);
+      const resolveId = getResolveId(plugin);
+      const load = getLoad(plugin);
       const id = resolveId("./EnumConstant.php@badge", php81("EnumConstant.stories.ts"));
       const code = load(id);
       expect(code).toContain("__type: 'enumMethod'");
@@ -4678,8 +4681,8 @@ describe.skipIf(!hasPhp)("Integration: All Plan Patterns", () => {
 
     it("generates virtual module for enum static method", () => {
       const plugin = storybookPhpPlugin({});
-      const resolveId = (plugin as any).resolveId.bind(plugin);
-      const load = (plugin as any).load.bind(plugin);
+      const resolveId = getResolveId(plugin);
+      const load = getLoad(plugin);
       const id = resolveId("./EnumConstant.php@all", php81("EnumConstantAll.stories.ts"));
       const code = load(id);
       expect(code).toContain("__type: 'staticMethod'");
@@ -4750,8 +4753,8 @@ describe.skipIf(!hasPhp)("Integration: All Plan Patterns", () => {
 
     it("generates virtual modules for both concrete classes", () => {
       const plugin = storybookPhpPlugin({});
-      const resolveId = (plugin as any).resolveId.bind(plugin);
-      const load = (plugin as any).load.bind(plugin);
+      const resolveId = getResolveId(plugin);
+      const load = getLoad(plugin);
       const id = resolveId("./DeepInheritance.php@render", advanced("DeepInheritance.stories.ts"));
       const code = load(id);
       expect(code).toContain("InfoWidget");
@@ -4811,8 +4814,8 @@ describe.skipIf(!hasPhp)("Integration: All Plan Patterns", () => {
 
     it("generates virtual modules for generator functions", () => {
       const plugin = storybookPhpPlugin({});
-      const resolveId = (plugin as any).resolveId.bind(plugin);
-      const load = (plugin as any).load.bind(plugin);
+      const resolveId = getResolveId(plugin);
+      const load = getLoad(plugin);
 
       const listId = resolveId(
         "./generatorFunc.php@generateList",
@@ -4928,8 +4931,8 @@ describe.skipIf(!hasPhp)("Integration: All Plan Patterns", () => {
 
     it("generates virtual modules for static factories", () => {
       const plugin = storybookPhpPlugin({});
-      const resolveId = (plugin as any).resolveId.bind(plugin);
-      const load = (plugin as any).load.bind(plugin);
+      const resolveId = getResolveId(plugin);
+      const load = getLoad(plugin);
 
       const successId = resolveId(
         "./PrivateConstruct.php@success",
@@ -5074,8 +5077,8 @@ describe.skipIf(!hasPhp)("Integration: All Plan Patterns", () => {
   // -------------------------------------------------------------------------
   describe("Vite plugin: UC121-UC128 virtual modules", () => {
     const plugin = storybookPhpPlugin({});
-    const resolveId = (plugin as any).resolveId.bind(plugin);
-    const load = (plugin as any).load.bind(plugin);
+    const resolveId = getResolveId(plugin);
+    const load = getLoad(plugin);
 
     it("generates template module for modal template", () => {
       const id = resolveId("../templates/modal.php", advanced("templates/modal.stories.ts"));
@@ -5213,8 +5216,8 @@ describe.skipIf(!hasPhp)("Integration: All Plan Patterns", () => {
 
     it("generates virtual module for abstract static method (pill)", () => {
       const plugin = storybookPhpPlugin({});
-      const resolveId = (plugin as any).resolveId.bind(plugin);
-      const load = (plugin as any).load.bind(plugin);
+      const resolveId = getResolveId(plugin);
+      const load = getLoad(plugin);
       const id = resolveId("./AbstractFactory.php@pill", advanced("AbstractFactory.stories.ts"));
       const code = load(id);
       // Should contain AbstractFactory for the static method
@@ -5226,8 +5229,8 @@ describe.skipIf(!hasPhp)("Integration: All Plan Patterns", () => {
 
     it("generates virtual module for render (only concrete subclass)", () => {
       const plugin = storybookPhpPlugin({});
-      const resolveId = (plugin as any).resolveId.bind(plugin);
-      const load = (plugin as any).load.bind(plugin);
+      const resolveId = getResolveId(plugin);
+      const load = getLoad(plugin);
       const id = resolveId(
         "./AbstractFactory.php@render",
         advanced("AbstractFactoryBadge.stories.ts"),
@@ -5310,8 +5313,8 @@ describe.skipIf(!hasPhp)("Integration: All Plan Patterns", () => {
 
     it("generates virtual module for MixedVisibility", () => {
       const plugin = storybookPhpPlugin({});
-      const resolveId = (plugin as any).resolveId.bind(plugin);
-      const load = (plugin as any).load.bind(plugin);
+      const resolveId = getResolveId(plugin);
+      const load = getLoad(plugin);
       const id = resolveId("./MixedVisibility.php@render", advanced("MixedVisibility.stories.ts"));
       const code = load(id);
       expect(code).toContain("__type: 'classMethod'");
@@ -5408,8 +5411,8 @@ describe.skipIf(!hasPhp)("Integration: All Plan Patterns", () => {
 
     it("generates virtual module for enum instance method", () => {
       const plugin = storybookPhpPlugin({});
-      const resolveId = (plugin as any).resolveId.bind(plugin);
-      const load = (plugin as any).load.bind(plugin);
+      const resolveId = getResolveId(plugin);
+      const load = getLoad(plugin);
       const id = resolveId(
         "./EnumMultiInterface.php@menuItem",
         php81("EnumMultiInterface.stories.ts"),
@@ -5504,8 +5507,8 @@ describe.skipIf(!hasPhp)("Integration: All Plan Patterns", () => {
 
     it("generates classMethod module for render()", () => {
       const plugin = storybookPhpPlugin({});
-      const resolveId = (plugin as any).resolveId.bind(plugin);
-      const load = (plugin as any).load.bind(plugin);
+      const resolveId = getResolveId(plugin);
+      const load = getLoad(plugin);
       const id = resolveId("./StaticInstance.php@render", advanced("StaticInstance.stories.ts"));
       const code = load(id);
       expect(code).toContain("__type: 'classMethod'");
@@ -5515,8 +5518,8 @@ describe.skipIf(!hasPhp)("Integration: All Plan Patterns", () => {
 
     it("generates staticMethod module for fromMarkdown()", () => {
       const plugin = storybookPhpPlugin({});
-      const resolveId = (plugin as any).resolveId.bind(plugin);
-      const load = (plugin as any).load.bind(plugin);
+      const resolveId = getResolveId(plugin);
+      const load = getLoad(plugin);
       const id = resolveId(
         "./StaticInstance.php@fromMarkdown",
         advanced("StaticInstanceMarkdown.stories.ts"),
@@ -5651,8 +5654,8 @@ describe.skipIf(!hasPhp)("Integration: All Plan Patterns", () => {
 
     it("generates enumMethod module for Suit", () => {
       const plugin = storybookPhpPlugin({});
-      const resolveId = (plugin as any).resolveId.bind(plugin);
-      const load = (plugin as any).load.bind(plugin);
+      const resolveId = getResolveId(plugin);
+      const load = getLoad(plugin);
       const id = resolveId("./Suit.php@card", php81("Suit.stories.ts"));
       const code = load(id);
       expect(code).toContain("__type: 'enumMethod'");
@@ -5756,8 +5759,8 @@ describe.skipIf(!hasPhp)("Integration: All Plan Patterns", () => {
 
     it("generates module with nested namespace FQN", () => {
       const plugin = storybookPhpPlugin({});
-      const resolveId = (plugin as any).resolveId.bind(plugin);
-      const load = (plugin as any).load.bind(plugin);
+      const resolveId = getResolveId(plugin);
+      const load = getLoad(plugin);
       const id = resolveId("./NestedNamespace.php@render", advanced("NestedNamespace.stories.ts"));
       const code = load(id);
       expect(code).toContain("__type: 'classMethod'");
@@ -5821,8 +5824,8 @@ describe.skipIf(!hasPhp)("Integration: All Plan Patterns", () => {
 
     it("generates separate modules per method", () => {
       const plugin = storybookPhpPlugin({});
-      const resolveId = (plugin as any).resolveId.bind(plugin);
-      const load = (plugin as any).load.bind(plugin);
+      const resolveId = getResolveId(plugin);
+      const load = getLoad(plugin);
 
       const idRender = resolveId("./MultiRender.php@render", advanced("MultiRender.stories.ts"));
       const codeRender = load(idRender);
@@ -5899,8 +5902,8 @@ describe.skipIf(!hasPhp)("Integration: All Plan Patterns", () => {
 
     it("generates enumMethod module for badge", () => {
       const plugin = storybookPhpPlugin({});
-      const resolveId = (plugin as any).resolveId.bind(plugin);
-      const load = (plugin as any).load.bind(plugin);
+      const resolveId = getResolveId(plugin);
+      const load = getLoad(plugin);
       const id = resolveId(
         "./EnumStaticInstance.php@badge",
         php81("EnumStaticInstance.stories.ts"),
@@ -5911,8 +5914,8 @@ describe.skipIf(!hasPhp)("Integration: All Plan Patterns", () => {
 
     it("generates staticMethod module for all", () => {
       const plugin = storybookPhpPlugin({});
-      const resolveId = (plugin as any).resolveId.bind(plugin);
-      const load = (plugin as any).load.bind(plugin);
+      const resolveId = getResolveId(plugin);
+      const load = getLoad(plugin);
       const id = resolveId(
         "./EnumStaticInstance.php@all",
         php81("EnumStaticInstanceAll.stories.ts"),
@@ -6244,8 +6247,8 @@ describe.skipIf(!hasPhp)("Integration: All Plan Patterns", () => {
 
     it("generates function modules for each function", () => {
       const plugin = storybookPhpPlugin({});
-      const resolveId = (plugin as any).resolveId.bind(plugin);
-      const load = (plugin as any).load.bind(plugin);
+      const resolveId = getResolveId(plugin);
+      const load = getLoad(plugin);
 
       const idNav = resolveId(
         "./FunctionArrayDefault.php@renderNav",
@@ -6344,8 +6347,8 @@ describe.skipIf(!hasPhp)("Integration: All Plan Patterns", () => {
 
     it("generates enumMethod for instance and staticMethod for static", () => {
       const plugin = storybookPhpPlugin({});
-      const resolveId = (plugin as any).resolveId.bind(plugin);
-      const load = (plugin as any).load.bind(plugin);
+      const resolveId = getResolveId(plugin);
+      const load = getLoad(plugin);
 
       const idRender = resolveId(
         "./EnumMethodParams.php@render",
@@ -6492,8 +6495,8 @@ describe.skipIf(!hasPhp)("Integration: All Plan Patterns", () => {
 
     it("generates enumMethod module for trait method on enum", () => {
       const plugin = storybookPhpPlugin();
-      const resolveId = (plugin as any).resolveId.bind(plugin);
-      const load = (plugin as any).load.bind(plugin);
+      const resolveId = getResolveId(plugin);
+      const load = getLoad(plugin);
 
       const id = resolveId(fixture("EnumWithTrait.php") + "@badge");
       const code = load(id);
@@ -6507,8 +6510,8 @@ describe.skipIf(!hasPhp)("Integration: All Plan Patterns", () => {
 
     it("generates enumMethod module for icon (only on Severity)", () => {
       const plugin = storybookPhpPlugin();
-      const resolveId = (plugin as any).resolveId.bind(plugin);
-      const load = (plugin as any).load.bind(plugin);
+      const resolveId = getResolveId(plugin);
+      const load = getLoad(plugin);
 
       const id = resolveId(fixture("EnumWithTrait.php") + "@icon");
       const code = load(id);
@@ -6586,8 +6589,8 @@ describe.skipIf(!hasPhp)("Integration: All Plan Patterns", () => {
 
     it("generates classMethod module for PromotedReadonlyUnion", () => {
       const plugin = storybookPhpPlugin();
-      const resolveId = (plugin as any).resolveId.bind(plugin);
-      const load = (plugin as any).load.bind(plugin);
+      const resolveId = getResolveId(plugin);
+      const load = getLoad(plugin);
       const id = resolveId(fixture("PromotedReadonlyUnion.php") + "@render");
       const code = load(id);
       expect(code).toBeTruthy();
@@ -6669,8 +6672,8 @@ describe.skipIf(!hasPhp)("Integration: All Plan Patterns", () => {
 
     it("generates classMethod module for MethodConstantDefault", () => {
       const plugin = storybookPhpPlugin();
-      const resolveId = (plugin as any).resolveId.bind(plugin);
-      const load = (plugin as any).load.bind(plugin);
+      const resolveId = getResolveId(plugin);
+      const load = getLoad(plugin);
       const id = resolveId(fixture("MethodConstantDefault.php") + "@render");
       const code = load(id);
       expect(code).toBeTruthy();
@@ -6904,8 +6907,8 @@ describe.skipIf(!hasPhp)("Integration: All Plan Patterns", () => {
 
     it("generates virtual module for AttributeCard", () => {
       const plugin = storybookPhpPlugin({});
-      const resolveId = (plugin as any).resolveId.bind(plugin);
-      const load = (plugin as any).load.bind(plugin);
+      const resolveId = getResolveId(plugin);
+      const load = getLoad(plugin);
       const id = resolveId("./AttributeCard.php@render", php83("Button.stories.ts"));
       const code = load(id);
       expect(code).toContain("export const AttributeCard");
@@ -6994,8 +6997,8 @@ describe.skipIf(!hasPhp)("Integration: All Plan Patterns", () => {
 
     it("generates enumMethod module for Mood and classMethod for MoodCard", () => {
       const plugin = storybookPhpPlugin({});
-      const resolveId = (plugin as any).resolveId.bind(plugin);
-      const load = (plugin as any).load.bind(plugin);
+      const resolveId = getResolveId(plugin);
+      const load = getLoad(plugin);
       const id = resolveId("./EnumToString.php@render", php81("Button.stories.ts"));
       const code = load(id);
       expect(code).toContain("export const Mood");
@@ -7067,8 +7070,8 @@ describe.skipIf(!hasPhp)("Integration: All Plan Patterns", () => {
 
     it("generates staticMethod module for showcase (from trait)", () => {
       const plugin = storybookPhpPlugin({});
-      const resolveId = (plugin as any).resolveId.bind(plugin);
-      const load = (plugin as any).load.bind(plugin);
+      const resolveId = getResolveId(plugin);
+      const load = getLoad(plugin);
       const id = resolveId(
         "./TraitStaticEnum.php@showcase",
         advancedImporter("TraitStaticEnum.php"),
@@ -7196,8 +7199,8 @@ describe.skipIf(!hasPhp)("Integration: All Plan Patterns", () => {
 
     it("generates classMethod modules for concrete children (not trait or abstract)", () => {
       const plugin = storybookPhpPlugin({});
-      const resolveId = (plugin as any).resolveId.bind(plugin);
-      const load = (plugin as any).load.bind(plugin);
+      const resolveId = getResolveId(plugin);
+      const load = getLoad(plugin);
       const id = resolveId(
         "./AbstractTraitChild.php@render",
         advancedImporter("AbstractTraitChild.php"),
@@ -7238,10 +7241,10 @@ describe.skipIf(!hasPhp)("Integration: All Plan Patterns", () => {
 
     it("skips trait and interface in virtual module generation", () => {
       const plugin = storybookPhpPlugin({});
-      const resolveId = (plugin as any).resolveId.bind(plugin);
-      const load = (plugin as any).load.bind(plugin);
+      const resolveId = getResolveId(plugin);
+      const load = getLoad(plugin);
       const id = resolveId(fixture("TraitInterface.php") + "@render", undefined);
-      const code = load(id.replace(fixture("TraitInterface.php"), fixture("TraitInterface.php")));
+      const code = load(id);
 
       // Should NOT contain trait or interface exports
       expect(code).not.toContain("export const HasRender");
@@ -7336,8 +7339,8 @@ describe.skipIf(!hasPhp)("Integration: All Plan Patterns", () => {
 
     it("generates function module for echoGreet", () => {
       const plugin = storybookPhpPlugin({});
-      const resolveId = (plugin as any).resolveId.bind(plugin);
-      const load = (plugin as any).load.bind(plugin);
+      const resolveId = getResolveId(plugin);
+      const load = getLoad(plugin);
       const id = resolveId("./echoGreet.php@echoGreet", advancedImporter("echoGreet.php"));
       const code = load(id);
       expect(code).toContain("__type: 'function'");
@@ -7413,8 +7416,8 @@ describe.skipIf(!hasPhp)("Integration: All Plan Patterns", () => {
 
     it("generates classMethod module for VariadicCrumb", () => {
       const plugin = storybookPhpPlugin({});
-      const resolveId = (plugin as any).resolveId.bind(plugin);
-      const load = (plugin as any).load.bind(plugin);
+      const resolveId = getResolveId(plugin);
+      const load = getLoad(plugin);
       const id = resolveId("./VariadicCrumb.php@render", advancedImporter("VariadicCrumb.php"));
       const code = load(id);
       expect(code).toContain("__type: 'classMethod'");
@@ -7484,8 +7487,8 @@ describe.skipIf(!hasPhp)("Integration: All Plan Patterns", () => {
 
     it("generates enumMethod module for EnumArrayReturn", () => {
       const plugin = storybookPhpPlugin({});
-      const resolveId = (plugin as any).resolveId.bind(plugin);
-      const load = (plugin as any).load.bind(plugin);
+      const resolveId = getResolveId(plugin);
+      const load = getLoad(plugin);
       const id = resolveId("./EnumArrayReturn.php@card", php81("Button.stories.ts"));
       const code = load(id);
       expect(code).toContain("__type: 'enumMethod'");
@@ -7565,8 +7568,8 @@ describe.skipIf(!hasPhp)("Integration: All Plan Patterns", () => {
 
     it("generates classMethod module for MatchPanel", () => {
       const plugin = storybookPhpPlugin({});
-      const resolveId = (plugin as any).resolveId.bind(plugin);
-      const load = (plugin as any).load.bind(plugin);
+      const resolveId = getResolveId(plugin);
+      const load = getLoad(plugin);
       const id = resolveId("./MatchPanel.php@render", php80("Button.stories.ts"));
       const code = load(id);
       expect(code).toContain("__type: 'classMethod'");
@@ -7618,8 +7621,8 @@ describe.skipIf(!hasPhp)("Integration: All Plan Patterns", () => {
 
     it("generates function module for calcDiscount", () => {
       const plugin = storybookPhpPlugin({});
-      const resolveId = (plugin as any).resolveId.bind(plugin);
-      const load = (plugin as any).load.bind(plugin);
+      const resolveId = getResolveId(plugin);
+      const load = getLoad(plugin);
       const id = resolveId("./scalarFunc.php@calcDiscount", advancedImporter("scalarFunc.php"));
       const code = load(id);
       expect(code).toContain("__type: 'function'");
@@ -7683,8 +7686,8 @@ describe.skipIf(!hasPhp)("Integration: All Plan Patterns", () => {
 
     it("generates classMethod module for FluentElement", () => {
       const plugin = storybookPhpPlugin({});
-      const resolveId = (plugin as any).resolveId.bind(plugin);
-      const load = (plugin as any).load.bind(plugin);
+      const resolveId = getResolveId(plugin);
+      const load = getLoad(plugin);
       const id = resolveId("./FluentElement.php@render", advancedImporter("FluentElement.php"));
       const code = load(id);
       expect(code).toContain("__type: 'classMethod'");
@@ -7759,8 +7762,8 @@ describe.skipIf(!hasPhp)("Integration: All Plan Patterns", () => {
 
     it("generates classMethod module for CallableLabel", () => {
       const plugin = storybookPhpPlugin({});
-      const resolveId = (plugin as any).resolveId.bind(plugin);
-      const load = (plugin as any).load.bind(plugin);
+      const resolveId = getResolveId(plugin);
+      const load = getLoad(plugin);
       const id = resolveId("./CallableLabel.php@render", php81("Button.stories.ts"));
       const code = load(id);
       expect(code).toContain("__type: 'classMethod'");
@@ -7827,8 +7830,8 @@ describe.skipIf(!hasPhp)("Integration: All Plan Patterns", () => {
 
     it("generates classMethod module for renderIterable", () => {
       const plugin = storybookPhpPlugin({});
-      const resolveId = (plugin as any).resolveId.bind(plugin);
-      const load = (plugin as any).load.bind(plugin);
+      const resolveId = getResolveId(plugin);
+      const load = getLoad(plugin);
       const id = resolveId(
         "./ObjectInspector.php@renderIterable",
         advancedImporter("ObjectInspector.php"),
@@ -7840,8 +7843,8 @@ describe.skipIf(!hasPhp)("Integration: All Plan Patterns", () => {
 
     it("generates classMethod module for renderObject", () => {
       const plugin = storybookPhpPlugin({});
-      const resolveId = (plugin as any).resolveId.bind(plugin);
-      const load = (plugin as any).load.bind(plugin);
+      const resolveId = getResolveId(plugin);
+      const load = getLoad(plugin);
       const id = resolveId(
         "./ObjectInspector.php@renderObject",
         advancedImporter("ObjectInspector.php"),
@@ -7932,8 +7935,8 @@ describe.skipIf(!hasPhp)("Integration: All Plan Patterns", () => {
 
     it("generates function module for renderGrid", () => {
       const plugin = storybookPhpPlugin({});
-      const resolveId = (plugin as any).resolveId.bind(plugin);
-      const load = (plugin as any).load.bind(plugin);
+      const resolveId = getResolveId(plugin);
+      const load = getLoad(plugin);
       const id = resolveId("./nestedGrid.php@renderGrid", advancedImporter("nestedGrid.php"));
       const code = load(id);
       expect(code).toContain("__type: 'function'");
@@ -7942,8 +7945,8 @@ describe.skipIf(!hasPhp)("Integration: All Plan Patterns", () => {
 
     it("generates function module for renderMatrix", () => {
       const plugin = storybookPhpPlugin({});
-      const resolveId = (plugin as any).resolveId.bind(plugin);
-      const load = (plugin as any).load.bind(plugin);
+      const resolveId = getResolveId(plugin);
+      const load = getLoad(plugin);
       const id = resolveId("./nestedGrid.php@renderMatrix", advancedImporter("nestedGrid.php"));
       const code = load(id);
       expect(code).toContain("__type: 'function'");
@@ -8050,8 +8053,8 @@ describe.skipIf(!hasPhp)("Integration: All Plan Patterns", () => {
 
     it("generates enumMethod module for badge", () => {
       const plugin = storybookPhpPlugin({});
-      const resolveId = (plugin as any).resolveId.bind(plugin);
-      const load = (plugin as any).load.bind(plugin);
+      const resolveId = getResolveId(plugin);
+      const load = getLoad(plugin);
       const id = resolveId("./SeverityEnum.php@badge", php81("Button.stories.ts"));
       const code = load(id);
       expect(code).toContain("__type: 'enumMethod'");
@@ -8060,8 +8063,8 @@ describe.skipIf(!hasPhp)("Integration: All Plan Patterns", () => {
 
     it("generates staticMethod module for all", () => {
       const plugin = storybookPhpPlugin({});
-      const resolveId = (plugin as any).resolveId.bind(plugin);
-      const load = (plugin as any).load.bind(plugin);
+      const resolveId = getResolveId(plugin);
+      const load = getLoad(plugin);
       const id = resolveId("./SeverityEnum.php@all", php81("Button.stories.ts"));
       const code = load(id);
       expect(code).toContain("__type: 'staticMethod'");
@@ -8070,8 +8073,8 @@ describe.skipIf(!hasPhp)("Integration: All Plan Patterns", () => {
 
     it("generates staticMethod module for ofLevel", () => {
       const plugin = storybookPhpPlugin({});
-      const resolveId = (plugin as any).resolveId.bind(plugin);
-      const load = (plugin as any).load.bind(plugin);
+      const resolveId = getResolveId(plugin);
+      const load = getLoad(plugin);
       const id = resolveId("./SeverityEnum.php@ofLevel", php81("Button.stories.ts"));
       const code = load(id);
       expect(code).toContain("__type: 'staticMethod'");
@@ -8128,8 +8131,8 @@ describe.skipIf(!hasPhp)("Integration: All Plan Patterns", () => {
 
     it("generates classMethod module for SearchResult", () => {
       const plugin = storybookPhpPlugin({});
-      const resolveId = (plugin as any).resolveId.bind(plugin);
-      const load = (plugin as any).load.bind(plugin);
+      const resolveId = getResolveId(plugin);
+      const load = getLoad(plugin);
       const id = resolveId("./SearchResult.php@render", php80("Button.stories.ts"));
       const code = load(id);
       expect(code).toContain("__type: 'classMethod'");
@@ -8206,8 +8209,8 @@ describe.skipIf(!hasPhp)("Integration: All Plan Patterns", () => {
 
     it("generates classMethod module for ItemCollection", () => {
       const plugin = storybookPhpPlugin({});
-      const resolveId = (plugin as any).resolveId.bind(plugin);
-      const load = (plugin as any).load.bind(plugin);
+      const resolveId = getResolveId(plugin);
+      const load = getLoad(plugin);
       const id = resolveId("./ItemCollection.php@render", advancedImporter("ItemCollection.php"));
       const code = load(id);
       expect(code).toContain("__type: 'classMethod'");
@@ -10587,7 +10590,7 @@ describe.skipIf(!hasPhp)("Integration: All Plan Patterns", () => {
 
     it("generates classMethod module for Point@render", () => {
       const plugin = storybookPhpPlugin();
-      const load = (plugin as any).load as (id: string) => string | null;
+      const load = getLoad(plugin);
       const code = load(`\0storybook-php:${fixture("FinalReadonlyPoint.php")}?callable=render`);
       expect(code).toContain("export const Point");
       expect(code).toContain("__type: 'classMethod'");
@@ -10598,7 +10601,7 @@ describe.skipIf(!hasPhp)("Integration: All Plan Patterns", () => {
 
     it("generates staticMethod module for Point@origin", () => {
       const plugin = storybookPhpPlugin();
-      const load = (plugin as any).load as (id: string) => string | null;
+      const load = getLoad(plugin);
       const code = load(`\0storybook-php:${fixture("FinalReadonlyPoint.php")}?callable=origin`);
       expect(code).toContain("export const Point");
       expect(code).toContain("__type: 'staticMethod'");
@@ -10667,7 +10670,7 @@ describe.skipIf(!hasPhp)("Integration: All Plan Patterns", () => {
 
     it("generates enumMethod module for badge", () => {
       const plugin = storybookPhpPlugin();
-      const load = (plugin as any).load as (id: string) => string | null;
+      const load = getLoad(plugin);
       const code = load(`\0storybook-php:${fixture("HttpStatusCode.php")}?callable=badge`);
       expect(code).toContain("export const HttpStatusCode");
       expect(code).toContain("__type: 'enumMethod'");
@@ -10676,7 +10679,7 @@ describe.skipIf(!hasPhp)("Integration: All Plan Patterns", () => {
 
     it("generates staticMethod module for table", () => {
       const plugin = storybookPhpPlugin();
-      const load = (plugin as any).load as (id: string) => string | null;
+      const load = getLoad(plugin);
       const code = load(`\0storybook-php:${fixture("HttpStatusCode.php")}?callable=table`);
       expect(code).toContain("export const HttpStatusCode");
       expect(code).toContain("__type: 'staticMethod'");
@@ -10731,7 +10734,7 @@ describe.skipIf(!hasPhp)("Integration: All Plan Patterns", () => {
 
     it("generates enumMethod module for menuItem", () => {
       const plugin = storybookPhpPlugin();
-      const load = (plugin as any).load as (id: string) => string | null;
+      const load = getLoad(plugin);
       const code = load(`\0storybook-php:${fixture("MenuAction.php")}?callable=menuItem`);
       expect(code).toContain("export const MenuAction");
       expect(code).toContain("__type: 'enumMethod'");
@@ -10783,7 +10786,7 @@ describe.skipIf(!hasPhp)("Integration: All Plan Patterns", () => {
 
     it("generates classMethod module for circle", () => {
       const plugin = storybookPhpPlugin();
-      const load = (plugin as any).load as (id: string) => string | null;
+      const load = getLoad(plugin);
       const code = load(`\0storybook-php:${fixture("UserAvatar.php")}?callable=circle`);
       expect(code).toContain("export const UserAvatar");
       expect(code).toContain("__type: 'classMethod'");
@@ -10792,7 +10795,7 @@ describe.skipIf(!hasPhp)("Integration: All Plan Patterns", () => {
 
     it("generates classMethod module for card", () => {
       const plugin = storybookPhpPlugin();
-      const load = (plugin as any).load as (id: string) => string | null;
+      const load = getLoad(plugin);
       const code = load(`\0storybook-php:${fixture("UserAvatar.php")}?callable=card`);
       expect(code).toContain("export const UserAvatar");
       expect(code).toContain('__callable: "card"');
@@ -10800,7 +10803,7 @@ describe.skipIf(!hasPhp)("Integration: All Plan Patterns", () => {
 
     it("generates classMethod module for badge", () => {
       const plugin = storybookPhpPlugin();
-      const load = (plugin as any).load as (id: string) => string | null;
+      const load = getLoad(plugin);
       const code = load(`\0storybook-php:${fixture("UserAvatar.php")}?callable=badge`);
       expect(code).toContain("export const UserAvatar");
       expect(code).toContain('__callable: "badge"');
@@ -10853,7 +10856,7 @@ describe.skipIf(!hasPhp)("Integration: All Plan Patterns", () => {
 
     it("generates module for InteractiveButton with inherited params", () => {
       const plugin = storybookPhpPlugin();
-      const load = (plugin as any).load as (id: string) => string | null;
+      const load = getLoad(plugin);
       const code = load(`\0storybook-php:${fixture("ThreeLevel.php")}?callable=render`);
       expect(code).toContain("export const InteractiveButton");
       expect(code).toContain("export const StyledElement");
@@ -10897,7 +10900,7 @@ describe.skipIf(!hasPhp)("Integration: All Plan Patterns", () => {
 
     it("generates module with DNF type param", () => {
       const plugin = storybookPhpPlugin();
-      const load = (plugin as any).load as (id: string) => string | null;
+      const load = getLoad(plugin);
       const code = load(`\0storybook-php:${fixture("DnfConfig.php")}?callable=render`);
       expect(code).toContain("export const DnfConfig");
       expect(code).toContain("name:");
@@ -10945,7 +10948,7 @@ describe.skipIf(!hasPhp)("Integration: All Plan Patterns", () => {
 
     it("generates classMethod module for __invoke", () => {
       const plugin = storybookPhpPlugin();
-      const load = (plugin as any).load as (id: string) => string | null;
+      const load = getLoad(plugin);
       const code = load(`\0storybook-php:${fixture("RuleEngine.php")}?callable=__invoke`);
       expect(code).toContain("export const RuleEngine");
       expect(code).toContain("__type: 'classMethod'");
@@ -10989,7 +10992,7 @@ describe.skipIf(!hasPhp)("Integration: All Plan Patterns", () => {
 
     it("generates function module for definitionList", () => {
       const plugin = storybookPhpPlugin();
-      const load = (plugin as any).load as (id: string) => string | null;
+      const load = getLoad(plugin);
       const code = load(`\0storybook-php:${fixture("DefinitionList.php")}?callable=definitionList`);
       expect(code).toContain("export const definitionList");
       expect(code).toContain("__type: 'function'");
@@ -11041,7 +11044,7 @@ describe.skipIf(!hasPhp)("Integration: All Plan Patterns", () => {
 
     it("generates staticMethod module for badge", () => {
       const plugin = storybookPhpPlugin();
-      const load = (plugin as any).load as (id: string) => string | null;
+      const load = getLoad(plugin);
       const code = load(`\0storybook-php:${fixture("FileSize.php")}?callable=badge`);
       expect(code).toContain("export const FileSize");
       expect(code).toContain("__type: 'staticMethod'");
@@ -11050,7 +11053,7 @@ describe.skipIf(!hasPhp)("Integration: All Plan Patterns", () => {
 
     it("generates staticMethod module for bar", () => {
       const plugin = storybookPhpPlugin();
-      const load = (plugin as any).load as (id: string) => string | null;
+      const load = getLoad(plugin);
       const code = load(`\0storybook-php:${fixture("FileSize.php")}?callable=bar`);
       expect(code).toContain("export const FileSize");
       expect(code).toContain('__callable: "bar"');
@@ -11092,7 +11095,7 @@ describe.skipIf(!hasPhp)("Integration: All Plan Patterns", () => {
 
     it("generates both exports from one file", () => {
       const plugin = storybookPhpPlugin();
-      const load = (plugin as any).load as (id: string) => string | null;
+      const load = getLoad(plugin);
       const code = load(`\0storybook-php:${fixture("Sections.php")}?callable=render`);
       expect(code).toContain("export const SectionHeader");
       expect(code).toContain("export const SectionFooter");
@@ -11132,7 +11135,7 @@ describe.skipIf(!hasPhp)("Integration: All Plan Patterns", () => {
 
     it("generates both class exports from trait method", () => {
       const plugin = storybookPhpPlugin();
-      const load = (plugin as any).load as (id: string) => string | null;
+      const load = getLoad(plugin);
       const code = load(`\0storybook-php:${fixture("SocialShare.php")}?callable=shareLink`);
       expect(code).toContain("export const TwitterShare");
       expect(code).toContain("export const FacebookShare");
@@ -11162,10 +11165,10 @@ describe.skipIf(!hasPhp)("Integration: All Plan Patterns", () => {
       const cls = meta.classes.find((c) => c.name === "HttpStatusCode");
       expect(cls).toBeDefined();
       expect(cls!.isEnum).toBe(true);
-      expect((cls as any).enumBackingType).toBe("int");
-      expect((cls as any).enumCases).toContain("OK");
-      expect((cls as any).enumCases).toContain("NotFound");
-      expect((cls as any).enumCases).toContain("InternalServerError");
+      expect(cls!.enumBackingType).toBe("int");
+      expect(cls!.enumCases).toContain("OK");
+      expect(cls!.enumCases).toContain("NotFound");
+      expect(cls!.enumCases).toContain("InternalServerError");
       expect(cls!.methods.some((m) => m.name === "badge")).toBe(true);
       expect(cls!.methods.some((m) => m.name === "table" && m.isStatic)).toBe(true);
     });

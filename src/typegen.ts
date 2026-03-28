@@ -192,31 +192,9 @@ function generateDtsForInlineArgs(args: Record<string, string | ArgOverride>): s
   const parts: string[] = [];
   parts.push("import type { PhpComponent } from 'storybook-php';\n");
 
-  const params: PhpParamMeta[] = Object.entries(args).map(([name, def], position) => {
-    if (typeof def === "string") {
-      const nullable = def.startsWith("?");
-      const type = nullable ? def.slice(1) : def;
-      return {
-        name,
-        type,
-        nullable,
-        required: !nullable,
-        isVariadic: false,
-        isPromoted: false,
-        position,
-      };
-    }
-    return {
-      name,
-      type: def.type ?? "unknown",
-      nullable: def.nullable ?? false,
-      required: def.required ?? (def.default === undefined && !(def.nullable ?? false)),
-      default: stringifyInlineDefault(def.default),
-      isVariadic: false,
-      isPromoted: false,
-      position,
-    };
-  });
+  const params: PhpParamMeta[] = Object.entries(args).map(([name, def], position) =>
+    inlineArgToParamMeta(name, def, position),
+  );
 
   const interfaceName = "_default_Args";
   parts.push("");
@@ -235,4 +213,42 @@ function stringifyInlineDefault(value: unknown): string | undefined {
   }
   if (value === null) return "null";
   return JSON.stringify(value);
+}
+
+function inlineArgToParamMeta(
+  name: string,
+  def: string | ArgOverride,
+  position: number,
+): PhpParamMeta {
+  if (typeof def === "string") {
+    const nullable = def.startsWith("?");
+    const type = nullable ? def.slice(1) : def;
+
+    return {
+      name,
+      type,
+      nullable,
+      required: !nullable,
+      isVariadic: false,
+      isPromoted: false,
+      position,
+    };
+  }
+
+  const param: PhpParamMeta = {
+    name,
+    type: def.type ?? "unknown",
+    nullable: def.nullable ?? false,
+    required: def.required ?? (def.default === undefined && !(def.nullable ?? false)),
+    isVariadic: false,
+    isPromoted: false,
+    position,
+  };
+
+  const defaultValue = stringifyInlineDefault(def.default);
+  if (defaultValue !== undefined) {
+    param.default = defaultValue;
+  }
+
+  return param;
 }

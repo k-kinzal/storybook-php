@@ -160,11 +160,22 @@ function generateEnumMethodModule(
  */
 function mergeFileMapTargets(pattern: FileMapTarget, exact: FileMapTarget): FileMapTarget {
   const result: FileMapTarget = {};
-  if (exact.args ?? pattern.args) result.args = exact.args ?? pattern.args;
-  if (exact.phpFile ?? pattern.phpFile) result.phpFile = exact.phpFile ?? pattern.phpFile;
-  if (exact.callable ?? pattern.callable) result.callable = exact.callable ?? pattern.callable;
-  if (exact.includes ?? pattern.includes) result.includes = exact.includes ?? pattern.includes;
-  if (exact.adapter ?? pattern.adapter) result.adapter = exact.adapter ?? pattern.adapter;
+
+  const args = exact.args ?? pattern.args;
+  if (args !== undefined) result.args = args;
+
+  const phpFile = exact.phpFile ?? pattern.phpFile;
+  if (phpFile !== undefined) result.phpFile = phpFile;
+
+  const callable = exact.callable ?? pattern.callable;
+  if (callable !== undefined) result.callable = callable;
+
+  const includes = exact.includes ?? pattern.includes;
+  if (includes !== undefined) result.includes = includes;
+
+  const adapter = exact.adapter ?? pattern.adapter;
+  if (adapter !== undefined) result.adapter = adapter;
+
   return result;
 }
 
@@ -667,15 +678,21 @@ export function storybookPhpPlugin(options: FrameworkOptions = {}): Plugin {
 
     configureServer(server: ViteDevServer) {
       const configDir = options._configDir ?? process.cwd();
-      const middleware = createPhpMiddleware({
-        phpBinary: options.phpBinary,
-        timeout: options.timeout,
-        bootstrap: options.bootstrap,
-        adapter: options.adapter,
-        typeMap: options.typeMap,
-        adapterMap: resolveAdapterMap(options.typeMap?.files, configDir),
+      const middlewareOptions: FrameworkOptionsToExecutorOptions = {};
+
+      if (options.phpBinary !== undefined) middlewareOptions.phpBinary = options.phpBinary;
+      if (options.timeout !== undefined) middlewareOptions.timeout = options.timeout;
+      if (options.bootstrap !== undefined) middlewareOptions.bootstrap = options.bootstrap;
+      if (options.adapter !== undefined) middlewareOptions.adapter = options.adapter;
+      if (options.typeMap !== undefined) middlewareOptions.typeMap = options.typeMap;
+
+      const adapterMap = resolveAdapterMap(options.typeMap?.files, configDir);
+      if (adapterMap !== undefined) middlewareOptions.adapterMap = adapterMap;
+
+      const middleware = createPhpMiddleware(middlewareOptions);
+      server.middlewares.use((req, res, next) => {
+        void middleware(req, res, next);
       });
-      server.middlewares.use(middleware as any);
     },
 
     handleHotUpdate({ file, server }) {
@@ -723,8 +740,12 @@ export function storybookPhpPlugin(options: FrameworkOptions = {}): Plugin {
         server.ws.send({ type: "full-reload" });
         return [];
       }
+
+      return undefined;
     },
   };
 }
 
 export { VIRTUAL_PREFIX, resolveAdapterMap };
+
+type FrameworkOptionsToExecutorOptions = Parameters<typeof createPhpMiddleware>[0];

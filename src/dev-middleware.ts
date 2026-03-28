@@ -11,7 +11,9 @@ const VALID_TYPES: PhpCallableType[] = [
   "enumMethod",
 ];
 
-export function createPhpMiddleware(options: PhpExecutorOptions = {}) {
+type PhpMiddleware = (req: IncomingMessage, res: ServerResponse, next: () => void) => Promise<void>;
+
+export function createPhpMiddleware(options: PhpExecutorOptions = {}): PhpMiddleware {
   const executor = new PhpExecutor(options);
 
   return async (req: IncomingMessage, res: ServerResponse, next: () => void) => {

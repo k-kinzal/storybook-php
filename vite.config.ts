@@ -9,6 +9,9 @@ export default defineConfig({
       denyWarnings: true,
       reportUnusedDisableDirectives: "error",
     },
+    rules: {
+      "@typescript-eslint/no-explicit-any": "error",
+    },
   },
   fmt: {
     ignorePatterns: ["dist/**", ".takt/**"],

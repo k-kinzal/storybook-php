@@ -1,18 +1,9 @@
 import { describe, it, expect, vi } from "vite-plus/test";
 import { storybookPhpPlugin, VIRTUAL_PREFIX, resolveAdapterMap } from "../vite-plugin.js";
 import { resolve } from "node:path";
+import { getConfigureServer, getLoad, getResolveId } from "./plugin-test-helpers.js";
 
 const FIXTURES = resolve(__dirname, "fixtures");
-
-// Helper to call resolveId on the plugin
-function getResolveId(plugin: ReturnType<typeof storybookPhpPlugin>) {
-  return (plugin as any).resolveId as (source: string, importer?: string) => string | null;
-}
-
-// Helper to call load on the plugin
-function getLoad(plugin: ReturnType<typeof storybookPhpPlugin>) {
-  return (plugin as any).load as (id: string) => string | null;
-}
 
 describe("Vite Plugin", () => {
   // -----------------------------------------------------------------------
@@ -471,7 +462,7 @@ describe("Vite Plugin", () => {
   describe("configureServer", () => {
     it("adds middleware to server", () => {
       const plugin = storybookPhpPlugin();
-      const configureServer = (plugin as any).configureServer as (server: any) => void;
+      const configureServer = getConfigureServer(plugin);
 
       const mockUse = vi.fn();
       const mockServer = {

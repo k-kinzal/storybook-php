@@ -15,6 +15,7 @@ import { resolve } from "node:path";
 import { PhpExecutor } from "../php-executor.js";
 import { parsePhpFile } from "../php-parser.js";
 import { storybookPhpPlugin } from "../vite-plugin.js";
+import { getLoad, getResolveId } from "./plugin-test-helpers.js";
 
 let phpMajor = 0;
 let phpMinor = 0;
@@ -271,8 +272,8 @@ describe.skipIf(!hasPhp)("Phase 3: New advanced/ pattern examples", () => {
 
     it("should generate classMethod virtual module", () => {
       const plugin = storybookPhpPlugin();
-      const resolveId = (plugin as any).resolveId.bind(plugin);
-      const load = (plugin as any).load.bind(plugin);
+      const resolveId = getResolveId(plugin);
+      const load = getLoad(plugin);
 
       const id = resolveId(
         "./PhpDocGenericList.php@render",
@@ -332,8 +333,8 @@ describe.skipIf(!hasPhp)("Phase 3: New advanced/ pattern examples", () => {
 
     it("should generate classMethod virtual module", () => {
       const plugin = storybookPhpPlugin();
-      const resolveId = (plugin as any).resolveId.bind(plugin);
-      const load = (plugin as any).load.bind(plugin);
+      const resolveId = getResolveId(plugin);
+      const load = getLoad(plugin);
 
       const id = resolveId("./ArrayOfObjects.php@render", advanced("ArrayOfObjects.stories.ts"));
       const code = load(id);
@@ -381,8 +382,8 @@ describe.skipIf(!hasPhp)("Phase 3: New advanced/ pattern examples", () => {
 
     it("should generate separate virtual modules per class", () => {
       const plugin = storybookPhpPlugin();
-      const resolveId = (plugin as any).resolveId.bind(plugin);
-      const load = (plugin as any).load.bind(plugin);
+      const resolveId = getResolveId(plugin);
+      const load = getLoad(plugin);
 
       const idA = resolveId(
         "./MultiClassExport.php@render",
@@ -445,8 +446,8 @@ describe.skipIf(!hasPhp)("Phase 3: New advanced/ pattern examples", () => {
 
     it("should generate classMethod virtual module", () => {
       const plugin = storybookPhpPlugin();
-      const resolveId = (plugin as any).resolveId.bind(plugin);
-      const load = (plugin as any).load.bind(plugin);
+      const resolveId = getResolveId(plugin);
+      const load = getLoad(plugin);
 
       const id = resolveId("./SelfReturn.php@render", advanced("SelfReturn.stories.ts"));
       const code = load(id);
@@ -501,8 +502,8 @@ describe.skipIf(!hasPhp)("Phase 3: New advanced/ pattern examples", () => {
 
     it("should generate function virtual module", () => {
       const plugin = storybookPhpPlugin();
-      const resolveId = (plugin as any).resolveId.bind(plugin);
-      const load = (plugin as any).load.bind(plugin);
+      const resolveId = getResolveId(plugin);
+      const load = getLoad(plugin);
 
       const id = resolveId(
         "./NestedArrayDefault.php@renderNestedDefault",
@@ -614,8 +615,8 @@ describe.skipIf(!hasPhp)("Phase 3: New advanced/ pattern examples", () => {
 
     it("should generate classMethod virtual module", () => {
       const plugin = storybookPhpPlugin();
-      const resolveId = (plugin as any).resolveId.bind(plugin);
-      const load = (plugin as any).load.bind(plugin);
+      const resolveId = getResolveId(plugin);
+      const load = getLoad(plugin);
 
       const id = resolveId("./VariadicObject.php@render", advanced("VariadicObject.stories.ts"));
       const code = load(id);
@@ -671,8 +672,8 @@ describe.skipIf(!hasPhp81)("Phase 4: New php81/ pattern examples", () => {
 
     it("should generate classMethod virtual module", () => {
       const plugin = storybookPhpPlugin();
-      const resolveId = (plugin as any).resolveId.bind(plugin);
-      const load = (plugin as any).load.bind(plugin);
+      const resolveId = getResolveId(plugin);
+      const load = getLoad(plugin);
 
       const id = resolveId(
         "./FirstClassCallable.php@render",

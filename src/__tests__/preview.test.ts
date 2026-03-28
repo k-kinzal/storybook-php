@@ -8,12 +8,19 @@ const mockShowError = vi.fn();
 type RenderContext = Parameters<typeof renderToCanvas>[0];
 
 function makeContext(
-  component: any,
+  component: unknown,
   args: Record<string, unknown> = {},
   parameters?: Record<string, unknown>,
 ): RenderContext {
   return {
-    storyContext: { component, args, parameters, name: "Test", title: "Test", id: "test" },
+    storyContext: {
+      component: component as RenderContext["storyContext"]["component"],
+      args,
+      parameters,
+      name: "Test",
+      title: "Test",
+      id: "test",
+    },
     storyFn: () => "<p>fallback</p>",
     showMain: mockShowMain,
     showError: mockShowError,

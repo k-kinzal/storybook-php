@@ -6,7 +6,12 @@ interface PresetInterface {
 
 interface StorybookOptions {
   presets: PresetInterface;
+  configDir?: string;
   [key: string]: unknown;
+}
+
+interface ViteConfigLike extends Record<string, unknown> {
+  plugins?: unknown[];
 }
 
 export const core = {
@@ -16,9 +21,9 @@ export const core = {
 };
 
 export async function viteFinal(
-  config: Record<string, unknown>,
+  config: ViteConfigLike,
   options: StorybookOptions,
-): Promise<Record<string, unknown>> {
+): Promise<ViteConfigLike> {
   const { storybookPhpPlugin } = await import("./vite-plugin.js");
 
   // SB10: framework options are accessed via the presets API
@@ -28,10 +33,10 @@ export async function viteFinal(
 
   // Provide config directory for typeMap path resolution
   if (!frameworkOptions._configDir) {
-    frameworkOptions._configDir = (options.configDir as string | undefined) ?? process.cwd();
+    frameworkOptions._configDir = options.configDir ?? process.cwd();
   }
 
-  const existingPlugins = (config.plugins as unknown[] | undefined) ?? [];
+  const existingPlugins = config.plugins ?? [];
 
   return {
     ...config,
