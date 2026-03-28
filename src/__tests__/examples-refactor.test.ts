@@ -10,7 +10,7 @@
  */
 import { describe, it, expect } from "vitest";
 import { execSync } from "node:child_process";
-import { existsSync, readFileSync } from "node:fs";
+import { existsSync, readFileSync, readdirSync } from "node:fs";
 import { resolve } from "node:path";
 import { PhpExecutor } from "../php-executor.js";
 import { parsePhpFile } from "../php-parser.js";
@@ -32,15 +32,75 @@ const hasPhp = phpMajor > 8 || (phpMajor === 8 && phpMinor >= 0);
 const hasPhp81 = phpMajor > 8 || (phpMajor === 8 && phpMinor >= 1);
 const hasPhp82 = phpMajor > 8 || (phpMajor === 8 && phpMinor >= 2);
 
-const advancedDir = resolve(import.meta.dirname!, "../../examples/advanced/src");
+const advancedMonolithDir = resolve(import.meta.dirname!, "../../examples/advanced");
+const advancedPatternsDir = resolve(import.meta.dirname!, "../../examples/advanced-patterns/src");
+const advancedComponentsDir = resolve(
+  import.meta.dirname!,
+  "../../examples/advanced-components/src",
+);
+const advancedCallablesDir = resolve(import.meta.dirname!, "../../examples/advanced-callables/src");
+const advancedTemplatesDir = resolve(import.meta.dirname!, "../../examples/advanced-templates/src");
+const advancedDirs = [
+  advancedPatternsDir,
+  advancedComponentsDir,
+  advancedCallablesDir,
+  advancedTemplatesDir,
+];
 const php81Dir = resolve(import.meta.dirname!, "../../examples/php81/src");
-const advanced = (name: string) => resolve(advancedDir, name);
+const advanced = (name: string) => {
+  for (const dir of advancedDirs) {
+    const candidate = resolve(dir, name);
+    if (existsSync(candidate)) {
+      return candidate;
+    }
+  }
+
+  return resolve(advancedPatternsDir, name);
+};
 const php81 = (name: string) => resolve(php81Dir, name);
+const countStories = (dir: string): number => {
+  let count = 0;
+
+  for (const entry of readdirSync(dir, { withFileTypes: true })) {
+    const target = resolve(dir, entry.name);
+
+    if (entry.isDirectory()) {
+      count += countStories(target);
+      continue;
+    }
+
+    if (entry.name.endsWith(".stories.ts")) {
+      count += 1;
+    }
+  }
+
+  return count;
+};
 
 // ==========================================================================
 // Phase 1-2: Deletion verification
 // ==========================================================================
 describe("Phase 1-2: Redundant example deletion", () => {
+  describe("advanced-family layout should stay split", () => {
+    it("removes the monolithic advanced example", () => {
+      expect(existsSync(advancedMonolithDir)).toBe(false);
+    });
+
+    it("keeps representative files in separate example units", () => {
+      expect(existsSync(resolve(advancedPatternsDir, "TraitTemplate.php"))).toBe(true);
+      expect(existsSync(resolve(advancedComponentsDir, "Modal.php"))).toBe(true);
+      expect(existsSync(resolve(advancedCallablesDir, "renderHtml.php"))).toBe(true);
+      expect(existsSync(resolve(advancedTemplatesDir, "templates/form.php"))).toBe(true);
+    });
+
+    it("keeps the advanced-family story load distributed", () => {
+      const counts = advancedDirs.map((dir) => countStories(dir));
+
+      expect(counts.every((count) => count >= 15)).toBe(true);
+      expect(Math.max(...counts)).toBeLessThan(90);
+    });
+  });
+
   describe("advanced/ redundant PHP files should be deleted", () => {
     const deletedFiles = [
       // Generator group (7→1): keep GeneratorList.php
@@ -130,7 +190,7 @@ describe("Phase 1-2: Redundant example deletion", () => {
     ];
 
     it.each(deletedTemplates)("should not have templates/%s after refactoring", (file) => {
-      expect(existsSync(resolve(advancedDir, "templates", file))).toBe(false);
+      expect(existsSync(advanced(`templates/${file}`))).toBe(false);
     });
   });
 

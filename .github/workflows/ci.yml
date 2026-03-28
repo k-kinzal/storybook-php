@@ -83,7 +83,7 @@ jobs:
       - name: Install Nette example dependencies
         if: matrix.php >= '8.2'
         run: composer install --no-interaction --prefer-dist --working-dir=examples/nette
-      - name: Install Advanced example dependencies
+      - name: Install Advanced patterns example dependencies
         if: matrix.php >= '8.2'
-        run: composer install --no-interaction --prefer-dist --working-dir=examples/advanced
+        run: composer install --no-interaction --prefer-dist --working-dir=examples/advanced-patterns
       - run: npm test

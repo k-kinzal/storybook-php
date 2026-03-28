@@ -22,10 +22,22 @@ jobs:
             php: "8.4"
             pkg: npm-install
             composer: false
-          - example: advanced
+          - example: advanced-patterns
             php: "8.4"
-            pkg: pnpm
+            pkg: npm-install
             composer: true
+          - example: advanced-components
+            php: "8.4"
+            pkg: npm-install
+            composer: false
+          - example: advanced-callables
+            php: "8.4"
+            pkg: npm-install
+            composer: false
+          - example: advanced-templates
+            php: "8.4"
+            pkg: npm-install
+            composer: false
           - example: laravel
             php: "8.4"
             pkg: pnpm
