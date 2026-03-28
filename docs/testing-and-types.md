@@ -59,7 +59,8 @@ Output notes:
 
 - scalar PHP types map to regular TypeScript primitives
 - `array` becomes `unknown[]`
-- object and class-like types become `Record<string, unknown>`
+- `object` and `mixed` become `unknown`
+- class-like types become `Record<string, unknown>`
 - optional PHP parameters become optional TS properties
 
 ## Storybook Tests
