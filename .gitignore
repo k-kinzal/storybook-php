@@ -5,6 +5,7 @@ dist/
 .DS_Store
 *.php.d.ts
 .phpstan/
+.phpunit.cache/
 .storybook-out/
 storybook-static/
 coverage/

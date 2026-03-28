@@ -303,6 +303,20 @@ function castArrayElements(array $value, string $docType, ReflectionParameter $p
         $resolved = resolveTypeMapBinding($resolved, $typeMap);
     }
 
+    // Try to resolve as an enum
+    if (function_exists('enum_exists') && $resolved !== null && enum_exists($resolved)) {
+        $result = [];
+        foreach ($value as $key => $item) {
+            /** @var class-string $resolved */
+            try {
+                $result[$key] = resolveEnumCase($resolved, $item);
+            } catch (\RuntimeException) {
+                $result[$key] = $item;
+            }
+        }
+        return $result;
+    }
+
     if ($resolved !== null && class_exists($resolved)) {
         /** @var class-string $resolved */
         $ref = new ReflectionClass($resolved);
@@ -317,20 +331,6 @@ function castArrayElements(array $value, string $docType, ReflectionParameter $p
                 $result[$key] = $ref->newInstanceArgs(matchArgs($constructor, (array) $item, $typeMap));
             } else {
                 $result[$key] = $ref->newInstance();
-            }
-        }
-        return $result;
-    }
-
-    // Try to resolve as an enum
-    if (function_exists('enum_exists') && $resolved !== null && enum_exists($resolved)) {
-        $result = [];
-        foreach ($value as $key => $item) {
-            /** @var class-string $resolved */
-            try {
-                $result[$key] = resolveEnumCase($resolved, $item);
-            } catch (\RuntimeException) {
-                $result[$key] = $item;
             }
         }
         return $result;
@@ -494,8 +494,10 @@ function castWithNamedType(ReflectionNamedType $type, mixed $value, ReflectionPa
             return false;
         case 'null':
             return null;
+        // @codeCoverageIgnoreStart
         case 'never':
             throw new \RuntimeException("Cannot provide a value for 'never' type parameter");
+        // @codeCoverageIgnoreEnd
     }
 
     // Check for enum types (enum_exists() requires PHP 8.1+)
@@ -531,7 +533,9 @@ function castWithNamedType(ReflectionNamedType $type, mixed $value, ReflectionPa
         return $ref->newInstance();
     }
 
+    // @codeCoverageIgnoreStart
     return $value;
+    // @codeCoverageIgnoreEnd
 }
 
 /**
@@ -689,9 +693,11 @@ function stringifyScalarForError(mixed $value): string
 function getOutputBuffer(): string
 {
     $buffered = ob_get_clean();
+    // @codeCoverageIgnoreStart
     if ($buffered === false) {
         throw new \RuntimeException('Failed to collect output buffer.');
     }
+    // @codeCoverageIgnoreEnd
 
     return $buffered;
 }
@@ -727,13 +733,8 @@ function normalizeStringKeyArray(array $value, string $fieldName): array
  *   typeMap: array<string, mixed>|null
  * }
  */
-function readRunnerRequest(): array
+function readRunnerRequest(string $input): array
 {
-    $input = file_get_contents('php://stdin');
-    if ($input === false) {
-        throw new \RuntimeException('Failed to read request from stdin.');
-    }
-
     $decoded = json_decode($input, true, 512, JSON_THROW_ON_ERROR);
     if (!is_array($decoded)) {
         throw new \RuntimeException('Invalid request payload.');
@@ -791,6 +792,19 @@ function readRunnerRequest(): array
         'adapter' => $adapter,
         'typeMap' => $typeMap === null ? null : normalizeStringKeyArray($typeMap, 'typeMap'),
     ];
+}
+
+/**
+ * @codeCoverageIgnore
+ */
+function readRunnerStdin(): string
+{
+    $input = file_get_contents('php://stdin');
+    if ($input === false) {
+        throw new \RuntimeException('Failed to read request from stdin.');
+    }
+
+    return $input;
 }
 
 /**
@@ -859,12 +873,21 @@ function resolveOutput(mixed $result, string $buffered): string
     return '';
 }
 
-// ---------------------------------------------------------------------------
-// Main execution
-// ---------------------------------------------------------------------------
-
-try {
-    $__sb_request = readRunnerRequest();
+/**
+ * @param array{
+ *   type: 'classMethod'|'staticMethod'|'function'|'template'|'enumMethod',
+ *   file: string,
+ *   class: string|null,
+ *   callable: string|null,
+ *   args: array<string, mixed>,
+ *   bootstrap: string|null,
+ *   adapter: string|null,
+ *   typeMap: array<string, mixed>|null
+ * } $__sb_request
+ * @return array{html: string}
+ */
+function executeRunnerRequest(array $__sb_request): array
+{
     $__sb_type        = $__sb_request['type'];
     $__sb_file        = $__sb_request['file'];
     $__sb_class       = $__sb_request['class'];
@@ -874,26 +897,17 @@ try {
     $__sb_adapterPath = $__sb_request['adapter'];
     $__sb_typeMap     = $__sb_request['typeMap'];
 
-    // Bootstrap file (autoloader, config, etc.)
     if ($__sb_bootstrap !== null && $__sb_bootstrap !== '') {
         require_once $__sb_bootstrap;
     }
 
-    // Load adapter if specified.
-    // Adapter file must return a callable: fn(mixed $result, string $buffered, ?object $instance): string
     $__sb_adapter = loadAdapter($__sb_adapterPath);
 
-    // Require the target file
     if ($__sb_type !== 'template') {
         require_once $__sb_file;
     }
 
     $__sb_html = '';
-
-    // Context passed as 4th argument to adapter calls.
-    // Backward-compatible: PHP silently ignores extra positional arguments
-    // for user-defined functions and closures (only internal/C-level functions
-    // can raise "too many arguments" errors).
     $__sb_context = ['type' => $__sb_type, 'file' => $__sb_file, 'args' => $__sb_args];
 
     switch ($__sb_type) {
@@ -952,15 +966,8 @@ try {
 
         case 'template':
             if ($__sb_adapter !== null) {
-                // Delegate template rendering entirely to the adapter.
-                // This enables template engines (Blade, Twig, etc.) that cannot
-                // be rendered via simple include + extract.
                 $__sb_html = applyAdapter($__sb_adapter, null, '', null, $__sb_context);
             } else {
-                // Default: extract args as local variables and include the file.
-                // Uses prefixed variable for args to avoid collisions with
-                // template variables — extract() with EXTR_SKIP won't overwrite
-                // runner's $__sb_ prefixed vars.
                 extract($__sb_args, EXTR_SKIP);
                 ob_start();
                 include $__sb_file;
@@ -995,12 +1002,52 @@ try {
             throw new \RuntimeException("Unknown type: {$__sb_type}");
     }
 
-    echo json_encode(['html' => $__sb_html], JSON_THROW_ON_ERROR);
+    return ['html' => $__sb_html];
+}
 
-} catch (\Throwable $e) {
-    echo json_encode([
-        'html'  => '',
+/**
+ * @return array{html: string, error: string, trace: string}
+ */
+function buildRunnerErrorResponse(\Throwable $e): array
+{
+    return [
+        'html' => '',
         'error' => $e->getMessage(),
         'trace' => $e->getTraceAsString(),
-    ], JSON_THROW_ON_ERROR);
+    ];
 }
+
+/**
+ * @param array{html: string, error?: string, trace?: string} $response
+ */
+function encodeRunnerResponse(array $response): string
+{
+    return json_encode($response, JSON_THROW_ON_ERROR);
+}
+
+function storybookPhpRun(?string $input = null, bool $writeOutput = true): string
+{
+    try {
+        $response = executeRunnerRequest(readRunnerRequest($input ?? readRunnerStdin()));
+    } catch (\Throwable $e) {
+        $response = buildRunnerErrorResponse($e);
+    }
+
+    $encoded = encodeRunnerResponse($response);
+    if ($writeOutput) {
+        echo $encoded;
+    }
+
+    return $encoded;
+}
+
+// ---------------------------------------------------------------------------
+// Main execution
+// ---------------------------------------------------------------------------
+
+// @codeCoverageIgnoreStart
+$__sb_scriptFilename = $_SERVER['SCRIPT_FILENAME'] ?? null;
+if (PHP_SAPI === 'cli' && is_string($__sb_scriptFilename) && realpath($__sb_scriptFilename) === __FILE__) {
+    storybookPhpRun();
+}
+// @codeCoverageIgnoreEnd

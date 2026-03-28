@@ -26,6 +26,18 @@ jobs:
       - run: composer install --no-interaction --prefer-dist
       - run: composer lint
 
+  phpunit:
+    name: PHPUnit Coverage
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: "8.5"
+          coverage: xdebug
+      - run: composer install --no-interaction --prefer-dist
+      - run: composer test:coverage
+
   lint:
     name: Lint
     runs-on: ubuntu-latest

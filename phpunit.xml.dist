@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<phpunit
+    bootstrap="tests/php/bootstrap.php"
+    cacheResult="false"
+    colors="true"
+>
+    <testsuites>
+        <testsuite name="php-runtime">
+            <directory>tests/php</directory>
+        </testsuite>
+    </testsuites>
+    <coverage
+        cacheDirectory=".phpunit.cache/code-coverage"
+        includeUncoveredFiles="true"
+        processUncoveredFiles="true"
+    >
+        <include>
+            <directory suffix=".php">src/php</directory>
+        </include>
+    </coverage>
+</phpunit>

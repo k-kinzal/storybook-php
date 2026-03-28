@@ -10,7 +10,8 @@
     "php-parallel-lint/php-parallel-lint": "^1.4",
     "phpstan/extension-installer": "^1.4",
     "phpstan/phpstan": "^2.1.44",
-    "phpstan/phpstan-strict-rules": "^2.0.10"
+    "phpstan/phpstan-strict-rules": "^2.0.10",
+    "phpunit/phpunit": "^9.6.34"
   },
   "config": {
     "allow-plugins": {
@@ -25,6 +26,12 @@
       "@phpstan"
     ],
     "lint:syntax": "parallel-lint --colors src/php",
-    "phpstan": "phpstan analyse --ansi"
+    "phpstan": "phpstan analyse --ansi",
+    "test": "phpunit --colors=always --configuration phpunit.xml.dist",
+    "test:coverage": [
+      "@php -r \"is_dir('build/coverage') || mkdir('build/coverage', 0777, true);\"",
+      "@php -d xdebug.mode=coverage ./vendor/bin/phpunit --colors=always --configuration phpunit.xml.dist --coverage-clover build/coverage/clover.xml --coverage-text",
+      "@php tools/php/assert-coverage.php build/coverage/clover.xml src/php/runner.php 100"
+    ]
   }
 }
