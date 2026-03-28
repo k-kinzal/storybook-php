@@ -147,6 +147,13 @@ function isArrayLikeType(string $type): bool
     return str_ends_with($t, '[]') || (bool) preg_match('/^.+<.+>$/', $t);
 }
 
+function typeExists(string $name): bool
+{
+    return class_exists($name)
+        || interface_exists($name)
+        || (function_exists('enum_exists') && enum_exists($name));
+}
+
 /**
  * Resolve a short class name to a FQN using the declaring namespace.
  * Falls back to null when the class cannot be found.
@@ -156,7 +163,7 @@ function resolveClassName(string $className, ReflectionParameter $param): ?strin
     // Leading backslash → already absolute
     $candidate = ltrim($className, '\\');
 
-    if (class_exists($candidate) || interface_exists($candidate) || (function_exists('enum_exists') && enum_exists($candidate))) {
+    if (typeExists($candidate)) {
         return $candidate;
     }
 
@@ -171,7 +178,7 @@ function resolveClassName(string $className, ReflectionParameter $param): ?strin
 
     if ($namespace !== null && $namespace !== '') {
         $fqn = $namespace . '\\' . $candidate;
-        if (class_exists($fqn) || interface_exists($fqn) || (function_exists('enum_exists') && enum_exists($fqn))) {
+        if (typeExists($fqn)) {
             return $fqn;
         }
     }
@@ -209,7 +216,6 @@ function castArrayElements(array $value, string $docType, ReflectionParameter $p
     // Try to resolve as a class
     $resolved = resolveClassName($innerType, $param);
 
-    // Apply typeMap.bindings: resolve interface/abstract → concrete class
     if ($resolved !== null && $typeMap !== null && isset($typeMap['bindings'][$resolved])) {
         $resolved = $typeMap['bindings'][$resolved];
     }
@@ -474,9 +480,20 @@ function matchArgs(?ReflectionFunctionAbstract $ref, array $args, ?array $typeMa
         if ($param->isVariadic()) {
             if (array_key_exists($name, $args)) {
                 $val = $args[$name];
+                $paramType = $param->getType();
                 if (is_array($val)) {
                     foreach ($val as $item) {
-                        $ordered[] = $item;
+                        if ($paramType instanceof \ReflectionNamedType
+                            && class_exists($paramType->getName())
+                            && is_array($item)) {
+                            $classRef = new \ReflectionClass($paramType->getName());
+                            $ctor = $classRef->getConstructor();
+                            $ordered[] = $ctor
+                                ? $classRef->newInstanceArgs(matchArgs($ctor, $item, $typeMap))
+                                : $classRef->newInstance();
+                        } else {
+                            $ordered[] = $item;
+                        }
                     }
                 } else {
                     $ordered[] = $val;
