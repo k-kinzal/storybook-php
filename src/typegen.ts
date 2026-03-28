@@ -1,28 +1,22 @@
 import { resolve, isAbsolute } from "node:path";
 import { parsePhpFile } from "./php-parser.js";
-import type {
-  PhpFileMeta,
-  PhpParamMeta,
-  PhpClassMeta,
-  TypeMapConfig,
-  ArgOverride,
-} from "./types.js";
+import type { PhpFileMeta, PhpParamMeta, TypeMapConfig, ArgOverride } from "./types.js";
 
 /**
  * Map a PHP type string to a TypeScript type string.
  */
-function phpTypeToTs(phpType: string | null, cls?: PhpClassMeta): string {
+function phpTypeToTs(phpType: string | null): string {
   if (!phpType) return "unknown";
 
   // Handle nullable ?Type
   if (phpType.startsWith("?")) {
-    return `${phpTypeToTs(phpType.slice(1), cls)} | null`;
+    return `${phpTypeToTs(phpType.slice(1))} | null`;
   }
 
   // Handle union types A|B
   if (phpType.includes("|")) {
     const parts = phpType.split("|").map((p) => p.trim());
-    return parts.map((p) => phpTypeToTs(p, cls)).join(" | ");
+    return parts.map((p) => phpTypeToTs(p)).join(" | ");
   }
 
   // Primitive mapping
@@ -55,26 +49,22 @@ function phpTypeToTs(phpType: string | null, cls?: PhpClassMeta): string {
   }
 }
 
-function paramToTsType(param: PhpParamMeta, cls?: PhpClassMeta): string {
-  const baseType = phpTypeToTs(param.type, cls);
+function paramToTsType(param: PhpParamMeta): string {
+  const baseType = phpTypeToTs(param.type);
   if (param.nullable && !param.type?.includes("|") && !param.type?.startsWith("?")) {
     return `${baseType} | null`;
   }
   return baseType;
 }
 
-function generateInterfaceForParams(
-  interfaceName: string,
-  params: PhpParamMeta[],
-  cls?: PhpClassMeta,
-): string {
+function generateInterfaceForParams(interfaceName: string, params: PhpParamMeta[]): string {
   if (params.length === 0) {
     return `interface ${interfaceName} {\n}\n`;
   }
 
   const lines = params.map((p) => {
     const optional = !p.required ? "?" : "";
-    const tsType = paramToTsType(p, cls);
+    const tsType = paramToTsType(p);
     return `  ${p.name}${optional}: ${tsType};`;
   });
 
@@ -124,7 +114,7 @@ export function generateDts(meta: PhpFileMeta): string {
         // Merge _case param with method params
         const allParams = [caseParam, ...method.params];
         parts.push("");
-        parts.push(generateInterfaceForParams(interfaceName, allParams, cls));
+        parts.push(generateInterfaceForParams(interfaceName, allParams));
         parts.push(`export declare const ${cls.name}: PhpComponent<${interfaceName}>;\n`);
       }
       continue;
@@ -135,7 +125,7 @@ export function generateDts(meta: PhpFileMeta): string {
       const interfaceName = `${cls.name}_${method.name}_Args`;
       const allParams = [...cls.constructorParams, ...method.params];
       parts.push("");
-      parts.push(generateInterfaceForParams(interfaceName, allParams, cls));
+      parts.push(generateInterfaceForParams(interfaceName, allParams));
       parts.push(`export declare const ${cls.name}: PhpComponent<${interfaceName}>;\n`);
     }
   }
@@ -221,7 +211,7 @@ function generateDtsForInlineArgs(args: Record<string, string | ArgOverride>): s
       type: def.type ?? "unknown",
       nullable: def.nullable ?? false,
       required: def.required ?? (def.default === undefined && !(def.nullable ?? false)),
-      default: def.default !== undefined ? String(def.default) : undefined,
+      default: stringifyInlineDefault(def.default),
       isVariadic: false,
       isPromoted: false,
       position,
@@ -235,4 +225,14 @@ function generateDtsForInlineArgs(args: Record<string, string | ArgOverride>): s
   parts.push("export default _default;\n");
 
   return parts.join("\n");
+}
+
+function stringifyInlineDefault(value: unknown): string | undefined {
+  if (value === undefined) return undefined;
+  if (typeof value === "string") return value;
+  if (typeof value === "number" || typeof value === "boolean" || typeof value === "bigint") {
+    return String(value);
+  }
+  if (value === null) return "null";
+  return JSON.stringify(value);
 }

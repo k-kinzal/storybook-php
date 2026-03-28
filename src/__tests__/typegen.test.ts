@@ -1,4 +1,4 @@
-import { describe, it, expect } from "vitest";
+import { describe, it, expect } from "vite-plus/test";
 import { generateDts } from "../typegen.js";
 import { parsePhpSource } from "../php-parser.js";
 import { readFileSync } from "node:fs";

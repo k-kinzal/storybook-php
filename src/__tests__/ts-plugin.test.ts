@@ -1,4 +1,4 @@
-import { describe, it, expect } from "vitest";
+import { describe, it, expect } from "vite-plus/test";
 import { createPhpResolver } from "../ts-plugin/resolver.js";
 import { resolve } from "node:path";
 import type ts from "typescript";

@@ -2,7 +2,7 @@
  * Integration tests: verify every plan pattern runs through the PHP executor.
  * These require PHP 8.0+ installed on the system.
  */
-import { describe, it, expect } from "vitest";
+import { describe, it, expect } from "vite-plus/test";
 import { execSync } from "node:child_process";
 import { existsSync } from "node:fs";
 import { dirname, resolve } from "node:path";

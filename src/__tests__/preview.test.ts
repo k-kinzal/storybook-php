@@ -1,15 +1,17 @@
 // @vitest-environment jsdom
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { describe, it, expect, vi, beforeEach } from "vite-plus/test";
 import { renderToCanvas, render } from "../preview.js";
+import type { PhpComponent } from "../types.js";
 
 const mockShowMain = vi.fn();
 const mockShowError = vi.fn();
+type RenderContext = Parameters<typeof renderToCanvas>[0];
 
 function makeContext(
   component: any,
   args: Record<string, unknown> = {},
   parameters?: Record<string, unknown>,
-) {
+): RenderContext {
   return {
     storyContext: { component, args, parameters, name: "Test", title: "Test", id: "test" },
     storyFn: () => "<p>fallback</p>",
@@ -18,7 +20,7 @@ function makeContext(
   };
 }
 
-const phpComponent = {
+const phpComponent: PhpComponent = {
   __php: true,
   __type: "classMethod" as const,
   __file: "/path/Component.php",
@@ -164,23 +166,14 @@ describe("renderToCanvas", () => {
     const canvas = document.createElement("div");
     const ctx = makeContext(phpComponent);
 
-    let fetchResolve: (value: any) => void;
-    const firstFetchPromise = new Promise((resolve) => {
-      fetchResolve = resolve;
-    });
-
     const mockFetch = vi
       .fn()
       .mockImplementationOnce((_url: string, options: RequestInit) => {
         // First call: wait until aborted, then reject
-        return new Promise((resolve, reject) => {
+        return new Promise((_resolve, reject) => {
           options.signal?.addEventListener("abort", () => {
             reject(new DOMException("The operation was aborted.", "AbortError"));
           });
-          // Also allow resolve from outside
-          firstFetchPromise.then(() =>
-            resolve({ json: () => Promise.resolve({ html: "<div>first</div>" }) }),
-          );
         });
       })
       .mockImplementationOnce(() => {
@@ -251,7 +244,7 @@ describe("render", () => {
 describe("decorator support", () => {
   it("injects PHP HTML into decorator wrapper via placeholder", async () => {
     const canvas = document.createElement("div");
-    const ctx = {
+    const ctx: RenderContext = {
       storyContext: { component: phpComponent, args: {}, name: "Test", title: "Test", id: "test" },
       storyFn: () => `<div class="wrapper">${render({})}</div>`,
       showMain: mockShowMain,
@@ -276,7 +269,7 @@ describe("decorator support", () => {
 
   it("falls back to raw PHP HTML when no placeholder in storyFn output", async () => {
     const canvas = document.createElement("div");
-    const ctx = {
+    const ctx: RenderContext = {
       storyContext: { component: phpComponent, args: {}, name: "Test", title: "Test", id: "test" },
       storyFn: () => "<p>no placeholder here</p>",
       showMain: mockShowMain,

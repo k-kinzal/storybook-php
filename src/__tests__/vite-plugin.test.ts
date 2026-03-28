@@ -1,4 +1,4 @@
-import { describe, it, expect, vi } from "vitest";
+import { describe, it, expect, vi } from "vite-plus/test";
 import { storybookPhpPlugin, VIRTUAL_PREFIX, resolveAdapterMap } from "../vite-plugin.js";
 import { resolve } from "node:path";
 

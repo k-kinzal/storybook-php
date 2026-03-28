@@ -8,7 +8,7 @@
  * 3. Vite plugin generates correct virtual modules for new/consolidated stories
  * 4. Deleted examples no longer exist while kept representatives still work
  */
-import { describe, it, expect } from "vitest";
+import { describe, it, expect } from "vite-plus/test";
 import { execSync } from "node:child_process";
 import { existsSync, readFileSync, readdirSync } from "node:fs";
 import { resolve } from "node:path";
@@ -138,7 +138,7 @@ describe("Phase 1-2: Redundant example deletion", () => {
       "ValueCard.php",
     ];
 
-    it.each(deletedFiles)("should not have %s after refactoring", (file) => {
+    it.each(deletedFiles)("should not have %s after refactoring", (file: string) => {
       // Given: a file that was identified as redundant
       // When: checking for its existence after deletion
       // Then: it should no longer exist
@@ -160,7 +160,7 @@ describe("Phase 1-2: Redundant example deletion", () => {
       "NullableAlert.php",
     ];
 
-    it.each(keptFiles)("should still have %s after refactoring", (file) => {
+    it.each(keptFiles)("should still have %s after refactoring", (file: string) => {
       expect(existsSync(advanced(file))).toBe(true);
     });
   });
@@ -189,7 +189,7 @@ describe("Phase 1-2: Redundant example deletion", () => {
       "metrics.php",
     ];
 
-    it.each(deletedTemplates)("should not have templates/%s after refactoring", (file) => {
+    it.each(deletedTemplates)("should not have templates/%s after refactoring", (file: string) => {
       expect(existsSync(advanced(`templates/${file}`))).toBe(false);
     });
   });
@@ -207,7 +207,7 @@ describe("Phase 1-2: Redundant example deletion", () => {
       "MenuAction.php",
     ];
 
-    it.each(deletedFiles)("should not have %s after refactoring", (file) => {
+    it.each(deletedFiles)("should not have %s after refactoring", (file: string) => {
       expect(existsSync(php81(file))).toBe(false);
     });
   });
@@ -464,6 +464,7 @@ describe.skipIf(!hasPhp)("Phase 3: New advanced/ pattern examples", () => {
       const result = await executor.execute({
         type: "function",
         file: advanced("NestedArrayDefault.php"),
+        class: null,
         callable: "App\\Helpers\\renderNestedDefault",
         args: {},
       });
@@ -477,6 +478,7 @@ describe.skipIf(!hasPhp)("Phase 3: New advanced/ pattern examples", () => {
       const result = await executor.execute({
         type: "function",
         file: advanced("NestedArrayDefault.php"),
+        class: null,
         callable: "App\\Helpers\\renderNestedDefault",
         args: {
           title: "Custom Grid",
@@ -696,7 +698,7 @@ describe("Phase 5: Story file cleanup", () => {
       "Rating.stories.ts",
     ];
 
-    it.each(primaryStories)("should keep primary %s", (file) => {
+    it.each(primaryStories)("should keep primary %s", (file: string) => {
       expect(existsSync(advanced(file))).toBe(true);
     });
   });
@@ -732,7 +734,15 @@ describe("Phase 5: Story file cleanup", () => {
 
     it.each(splitStories)(
       "should keep %s pointing at its distinct callable/class",
-      ({ file, expectedImport, expectedExport }) => {
+      ({
+        file,
+        expectedImport,
+        expectedExport,
+      }: {
+        file: string;
+        expectedImport: string;
+        expectedExport: string;
+      }) => {
         const storyPath = advanced(file);
         expect(existsSync(storyPath)).toBe(true);
 
@@ -766,7 +776,7 @@ describe("Phase 5: Story file cleanup", () => {
       "MultiClassExportB.stories.ts",
     ];
 
-    it.each(splitStories)("should keep split %s", (file) => {
+    it.each(splitStories)("should keep split %s", (file: string) => {
       expect(existsSync(advanced(file))).toBe(true);
     });
   });
@@ -781,7 +791,7 @@ describe("Phase 5: Story file cleanup", () => {
       "TraitTooltip.stories.ts",
     ];
 
-    it.each(removedStories)("should remove %s", (file) => {
+    it.each(removedStories)("should remove %s", (file: string) => {
       expect(existsSync(advanced(file))).toBe(false);
     });
   });
@@ -794,7 +804,7 @@ describe("Phase 5: Story file cleanup", () => {
       "MenuActionPalette.stories.ts",
     ];
 
-    it.each(removedStories)("should remove %s", (file) => {
+    it.each(removedStories)("should remove %s", (file: string) => {
       expect(existsSync(php81(file))).toBe(false);
     });
   });

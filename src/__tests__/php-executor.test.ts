@@ -1,4 +1,4 @@
-import { describe, it, expect } from "vitest";
+import { describe, it, expect } from "vite-plus/test";
 import { execSync } from "node:child_process";
 import { resolve } from "node:path";
 import { PhpExecutor } from "../php-executor.js";

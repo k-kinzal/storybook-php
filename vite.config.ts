@@ -1,6 +1,18 @@
-import { defineConfig } from "vite-plus/test/config";
+import { defineConfig } from "vite-plus";
 
 export default defineConfig({
+  lint: {
+    ignorePatterns: ["dist/**", ".takt/**", "examples/**", "client.d.ts"],
+    options: {
+      typeAware: true,
+      typeCheck: true,
+      denyWarnings: true,
+      reportUnusedDisableDirectives: "error",
+    },
+  },
+  fmt: {
+    ignorePatterns: ["dist/**", ".takt/**"],
+  },
   pack: {
     entry: [
       "src/index.ts",
@@ -16,12 +28,14 @@ export default defineConfig({
     clean: true,
     target: "node20",
     deps: { neverBundle: ["storybook", "vite", "typescript", "@storybook/builder-vite"] },
-    splitting: true,
   },
   test: {
     include: ["src/__tests__/**/*.test.ts"],
     environment: "node",
     globals: true,
     testTimeout: 15000,
+  },
+  staged: {
+    "*.{js,cjs,mjs,ts,cts,mts,json,md}": "vp check --fix",
   },
 });
