@@ -1,6 +1,6 @@
 {
-  "name": "storybook-php/example-advanced",
-  "description": "Advanced PHP component examples for storybook-php",
+  "name": "storybook-php/example-advanced-patterns",
+  "description": "Advanced PHP pattern examples for storybook-php",
   "type": "project",
   "require": {
     "php": ">=8.2"

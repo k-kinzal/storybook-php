@@ -5,7 +5,7 @@
 import { describe, it, expect } from "vitest";
 import { execSync } from "node:child_process";
 import { existsSync } from "node:fs";
-import { resolve } from "node:path";
+import { dirname, resolve } from "node:path";
 import { PhpExecutor } from "../php-executor.js";
 import { parsePhpFile } from "../php-parser.js";
 import { storybookPhpPlugin } from "../vite-plugin.js";
@@ -29,21 +29,57 @@ const hasPhp83 = phpMajor > 8 || (phpMajor === 8 && phpMinor >= 3);
 
 const fixturesDir = resolve(import.meta.dirname!, "fixtures");
 const examplesDir = resolve(import.meta.dirname!, "../../examples/basic/src");
-const advancedDir = resolve(import.meta.dirname!, "../../examples/advanced/src");
+const advancedPatternsDir = resolve(
+  import.meta.dirname!,
+  "../../examples/advanced-patterns/src",
+);
+const advancedComponentsDir = resolve(
+  import.meta.dirname!,
+  "../../examples/advanced-components/src",
+);
+const advancedCallablesDir = resolve(
+  import.meta.dirname!,
+  "../../examples/advanced-callables/src",
+);
+const advancedTemplatesDir = resolve(
+  import.meta.dirname!,
+  "../../examples/advanced-templates/src",
+);
 const php80Dir = resolve(import.meta.dirname!, "../../examples/php80/src");
 const php81Dir = resolve(import.meta.dirname!, "../../examples/php81/src");
 const php82Dir = resolve(import.meta.dirname!, "../../examples/php82/src");
 const php83Dir = resolve(import.meta.dirname!, "../../examples/php83/src");
 const laravelDir = resolve(import.meta.dirname!, "../../examples/laravel/src");
-const advancedBootstrap = resolve(import.meta.dirname!, "../../examples/advanced/bootstrap.php");
+const advancedDirs = [
+  advancedPatternsDir,
+  advancedComponentsDir,
+  advancedCallablesDir,
+  advancedTemplatesDir,
+];
+const resolveAdvancedFile = (name: string) => {
+  for (const dir of advancedDirs) {
+    const candidate = resolve(dir, name);
+    if (existsSync(candidate)) {
+      return candidate;
+    }
+  }
+
+  return resolve(advancedPatternsDir, name);
+};
+const advancedBootstrap = resolve(
+  import.meta.dirname!,
+  "../../examples/advanced-patterns/bootstrap.php",
+);
 const hasAdvancedVendor = existsSync(
-  resolve(import.meta.dirname!, "../../examples/advanced/vendor/autoload.php"),
+  resolve(import.meta.dirname!, "../../examples/advanced-patterns/vendor/autoload.php"),
 );
 const laravelBootstrap = resolve(import.meta.dirname!, "../../examples/laravel/bootstrap.php");
 const laravelAdapter = resolve(import.meta.dirname!, "../../examples/laravel/adapter.php");
 const fixture = (name: string) => resolve(fixturesDir, name);
 const basic = (name: string) => resolve(examplesDir, name);
-const advanced = (name: string) => resolve(advancedDir, name);
+const advanced = (name: string) => resolveAdvancedFile(name);
+const advancedImporter = (source: string, importer = "Button.stories.ts") =>
+  resolve(dirname(advanced(source)), importer);
 const php80 = (name: string) => resolve(php80Dir, name);
 const php81 = (name: string) => resolve(php81Dir, name);
 const php82 = (name: string) => resolve(php82Dir, name);
@@ -4446,7 +4482,7 @@ describe.skipIf(!hasPhp)("Integration: All Plan Patterns", () => {
     const plugin = storybookPhpPlugin() as any;
 
     it("UC112: FloatGauge@render generates classMethod with float params", () => {
-      const id = plugin.resolveId("./FloatGauge.php@render", advanced("Button.stories.ts"));
+      const id = plugin.resolveId("./FloatGauge.php@render", advancedImporter("FloatGauge.php"));
       const code = plugin.load(id);
       expect(code).toContain("__type: 'classMethod'");
       expect(code).toContain('__callable: "render"');
@@ -4797,7 +4833,7 @@ describe.skipIf(!hasPhp)("Integration: All Plan Patterns", () => {
 
       const tableId = resolveId(
         "./generatorFunc.php@generateTable",
-        advanced("generatorTable.stories.ts"),
+        advancedImporter("generatorFunc.php", "generatorTable.stories.ts"),
       );
       const tableCode = load(tableId);
       expect(tableCode).toContain("__type: 'function'");
@@ -4979,7 +5015,7 @@ describe.skipIf(!hasPhp)("Integration: All Plan Patterns", () => {
     it("renders modal with all options", async () => {
       const result = await executor.execute({
         type: "template",
-        file: resolve(advancedDir, "templates/modal.php"),
+        file: advanced("templates/modal.php"),
         class: null,
         callable: null,
         args: {
@@ -5003,7 +5039,7 @@ describe.skipIf(!hasPhp)("Integration: All Plan Patterns", () => {
     it("renders small modal without footer", async () => {
       const result = await executor.execute({
         type: "template",
-        file: resolve(advancedDir, "templates/modal.php"),
+        file: advanced("templates/modal.php"),
         class: null,
         callable: null,
         args: {
@@ -5024,7 +5060,7 @@ describe.skipIf(!hasPhp)("Integration: All Plan Patterns", () => {
     it("renders large modal without close button", async () => {
       const result = await executor.execute({
         type: "template",
-        file: resolve(advancedDir, "templates/modal.php"),
+        file: advanced("templates/modal.php"),
         class: null,
         callable: null,
         args: {
@@ -5053,7 +5089,7 @@ describe.skipIf(!hasPhp)("Integration: All Plan Patterns", () => {
     it("generates template module for modal template", () => {
       const id = resolveId(
         "../templates/modal.php",
-        resolve(advancedDir, "templates/modal.stories.ts"),
+        advanced("templates/modal.stories.ts"),
       );
       const code = load(id);
       expect(code).toContain("__type: 'template'");
@@ -7045,7 +7081,7 @@ describe.skipIf(!hasPhp)("Integration: All Plan Patterns", () => {
       const plugin = storybookPhpPlugin({});
       const resolveId = (plugin as any).resolveId.bind(plugin);
       const load = (plugin as any).load.bind(plugin);
-      const id = resolveId("./TraitStaticEnum.php@showcase", advanced("Button.stories.ts"));
+      const id = resolveId("./TraitStaticEnum.php@showcase", advancedImporter("TraitStaticEnum.php"));
       const code = load(id);
       expect(code).toContain("export const Palette");
       expect(code).toContain("__type: 'staticMethod'");
@@ -7171,7 +7207,7 @@ describe.skipIf(!hasPhp)("Integration: All Plan Patterns", () => {
       const plugin = storybookPhpPlugin({});
       const resolveId = (plugin as any).resolveId.bind(plugin);
       const load = (plugin as any).load.bind(plugin);
-      const id = resolveId("./AbstractTraitChild.php@render", advanced("Button.stories.ts"));
+      const id = resolveId("./AbstractTraitChild.php@render", advancedImporter("AbstractTraitChild.php"));
       const code = load(id);
 
       // Concrete children should be exported
@@ -7308,7 +7344,7 @@ describe.skipIf(!hasPhp)("Integration: All Plan Patterns", () => {
       const plugin = storybookPhpPlugin({});
       const resolveId = (plugin as any).resolveId.bind(plugin);
       const load = (plugin as any).load.bind(plugin);
-      const id = resolveId("./echoGreet.php@echoGreet", advanced("Button.stories.ts"));
+      const id = resolveId("./echoGreet.php@echoGreet", advancedImporter("echoGreet.php"));
       const code = load(id);
       expect(code).toContain("__type: 'function'");
       expect(code).toContain("echoGreet");
@@ -7385,7 +7421,7 @@ describe.skipIf(!hasPhp)("Integration: All Plan Patterns", () => {
       const plugin = storybookPhpPlugin({});
       const resolveId = (plugin as any).resolveId.bind(plugin);
       const load = (plugin as any).load.bind(plugin);
-      const id = resolveId("./VariadicCrumb.php@render", advanced("Button.stories.ts"));
+      const id = resolveId("./VariadicCrumb.php@render", advancedImporter("VariadicCrumb.php"));
       const code = load(id);
       expect(code).toContain("__type: 'classMethod'");
       expect(code).toContain("VariadicCrumb");
@@ -7590,7 +7626,7 @@ describe.skipIf(!hasPhp)("Integration: All Plan Patterns", () => {
       const plugin = storybookPhpPlugin({});
       const resolveId = (plugin as any).resolveId.bind(plugin);
       const load = (plugin as any).load.bind(plugin);
-      const id = resolveId("./scalarFunc.php@calcDiscount", advanced("Button.stories.ts"));
+      const id = resolveId("./scalarFunc.php@calcDiscount", advancedImporter("scalarFunc.php"));
       const code = load(id);
       expect(code).toContain("__type: 'function'");
       expect(code).toContain("calcDiscount");
@@ -7655,7 +7691,7 @@ describe.skipIf(!hasPhp)("Integration: All Plan Patterns", () => {
       const plugin = storybookPhpPlugin({});
       const resolveId = (plugin as any).resolveId.bind(plugin);
       const load = (plugin as any).load.bind(plugin);
-      const id = resolveId("./FluentElement.php@render", advanced("Button.stories.ts"));
+      const id = resolveId("./FluentElement.php@render", advancedImporter("FluentElement.php"));
       const code = load(id);
       expect(code).toContain("__type: 'classMethod'");
       expect(code).toContain("FluentElement");
@@ -7799,7 +7835,10 @@ describe.skipIf(!hasPhp)("Integration: All Plan Patterns", () => {
       const plugin = storybookPhpPlugin({});
       const resolveId = (plugin as any).resolveId.bind(plugin);
       const load = (plugin as any).load.bind(plugin);
-      const id = resolveId("./ObjectInspector.php@renderIterable", advanced("Button.stories.ts"));
+      const id = resolveId(
+        "./ObjectInspector.php@renderIterable",
+        advancedImporter("ObjectInspector.php"),
+      );
       const code = load(id);
       expect(code).toContain("__type: 'classMethod'");
       expect(code).toContain("ObjectInspector");
@@ -7809,7 +7848,10 @@ describe.skipIf(!hasPhp)("Integration: All Plan Patterns", () => {
       const plugin = storybookPhpPlugin({});
       const resolveId = (plugin as any).resolveId.bind(plugin);
       const load = (plugin as any).load.bind(plugin);
-      const id = resolveId("./ObjectInspector.php@renderObject", advanced("Button.stories.ts"));
+      const id = resolveId(
+        "./ObjectInspector.php@renderObject",
+        advancedImporter("ObjectInspector.php"),
+      );
       const code = load(id);
       expect(code).toContain("__type: 'classMethod'");
       expect(code).toContain("object");
@@ -7898,7 +7940,7 @@ describe.skipIf(!hasPhp)("Integration: All Plan Patterns", () => {
       const plugin = storybookPhpPlugin({});
       const resolveId = (plugin as any).resolveId.bind(plugin);
       const load = (plugin as any).load.bind(plugin);
-      const id = resolveId("./nestedGrid.php@renderGrid", advanced("Button.stories.ts"));
+      const id = resolveId("./nestedGrid.php@renderGrid", advancedImporter("nestedGrid.php"));
       const code = load(id);
       expect(code).toContain("__type: 'function'");
       expect(code).toContain("renderGrid");
@@ -7908,7 +7950,7 @@ describe.skipIf(!hasPhp)("Integration: All Plan Patterns", () => {
       const plugin = storybookPhpPlugin({});
       const resolveId = (plugin as any).resolveId.bind(plugin);
       const load = (plugin as any).load.bind(plugin);
-      const id = resolveId("./nestedGrid.php@renderMatrix", advanced("Button.stories.ts"));
+      const id = resolveId("./nestedGrid.php@renderMatrix", advancedImporter("nestedGrid.php"));
       const code = load(id);
       expect(code).toContain("__type: 'function'");
       expect(code).toContain("renderMatrix");
@@ -8172,7 +8214,7 @@ describe.skipIf(!hasPhp)("Integration: All Plan Patterns", () => {
       const plugin = storybookPhpPlugin({});
       const resolveId = (plugin as any).resolveId.bind(plugin);
       const load = (plugin as any).load.bind(plugin);
-      const id = resolveId("./ItemCollection.php@render", advanced("Button.stories.ts"));
+      const id = resolveId("./ItemCollection.php@render", advancedImporter("ItemCollection.php"));
       const code = load(id);
       expect(code).toContain("__type: 'classMethod'");
       expect(code).toContain("ItemCollection");
@@ -8186,7 +8228,7 @@ describe.skipIf(!hasPhp)("Integration: All Plan Patterns", () => {
     it("renders kanban with default columns", async () => {
       const result = await executor.execute({
         type: "template",
-        file: resolve(advancedDir, "templates/kanban.php"),
+        file: advanced("templates/kanban.php"),
         class: null,
         callable: null,
         args: { boardTitle: "Sprint Board" },
@@ -8202,7 +8244,7 @@ describe.skipIf(!hasPhp)("Integration: All Plan Patterns", () => {
     it("renders kanban with custom columns", async () => {
       const result = await executor.execute({
         type: "template",
-        file: resolve(advancedDir, "templates/kanban.php"),
+        file: advanced("templates/kanban.php"),
         class: null,
         callable: null,
         args: {
@@ -8223,7 +8265,7 @@ describe.skipIf(!hasPhp)("Integration: All Plan Patterns", () => {
     it("renders kanban without counts", async () => {
       const result = await executor.execute({
         type: "template",
-        file: resolve(advancedDir, "templates/kanban.php"),
+        file: advanced("templates/kanban.php"),
         class: null,
         callable: null,
         args: { boardTitle: "Minimal", showCounts: false, compact: true },
@@ -8241,7 +8283,7 @@ describe.skipIf(!hasPhp)("Integration: All Plan Patterns", () => {
     it("renders settings with defaults", async () => {
       const result = await executor.execute({
         type: "template",
-        file: resolve(advancedDir, "templates/settings.php"),
+        file: advanced("templates/settings.php"),
         class: null,
         callable: null,
         args: { title: "App Settings" },
@@ -8257,7 +8299,7 @@ describe.skipIf(!hasPhp)("Integration: All Plan Patterns", () => {
     it("renders custom settings sections", async () => {
       const result = await executor.execute({
         type: "template",
-        file: resolve(advancedDir, "templates/settings.php"),
+        file: advanced("templates/settings.php"),
         class: null,
         callable: null,
         args: {
@@ -8274,7 +8316,7 @@ describe.skipIf(!hasPhp)("Integration: All Plan Patterns", () => {
     it("renders readonly settings", async () => {
       const result = await executor.execute({
         type: "template",
-        file: resolve(advancedDir, "templates/settings.php"),
+        file: advanced("templates/settings.php"),
         class: null,
         callable: null,
         args: { title: "Read Only", readonly: true },
@@ -9994,7 +10036,7 @@ describe.skipIf(!hasPhp)("Integration: All Plan Patterns", () => {
     it("renders team grid in card variant", async () => {
       const result = await executor.execute({
         type: "template",
-        file: resolve(advancedDir, "templates/team.php"),
+        file: advanced("templates/team.php"),
         class: null,
         callable: null,
         args: {
@@ -10020,7 +10062,7 @@ describe.skipIf(!hasPhp)("Integration: All Plan Patterns", () => {
     it("renders team grid in list variant", async () => {
       const result = await executor.execute({
         type: "template",
-        file: resolve(advancedDir, "templates/team.php"),
+        file: advanced("templates/team.php"),
         class: null,
         callable: null,
         args: {
@@ -10038,7 +10080,7 @@ describe.skipIf(!hasPhp)("Integration: All Plan Patterns", () => {
     it("renders team grid with status hidden", async () => {
       const result = await executor.execute({
         type: "template",
-        file: resolve(advancedDir, "templates/team.php"),
+        file: advanced("templates/team.php"),
         class: null,
         callable: null,
         args: {
