@@ -33,22 +33,13 @@ const hasPhp81 = phpMajor > 8 || (phpMajor === 8 && phpMinor >= 1);
 const hasPhp82 = phpMajor > 8 || (phpMajor === 8 && phpMinor >= 2);
 
 const advancedMonolithDir = resolve(import.meta.dirname!, "../../examples/advanced");
-const advancedPatternsDir = resolve(
-  import.meta.dirname!,
-  "../../examples/advanced-patterns/src",
-);
+const advancedPatternsDir = resolve(import.meta.dirname!, "../../examples/advanced-patterns/src");
 const advancedComponentsDir = resolve(
   import.meta.dirname!,
   "../../examples/advanced-components/src",
 );
-const advancedCallablesDir = resolve(
-  import.meta.dirname!,
-  "../../examples/advanced-callables/src",
-);
-const advancedTemplatesDir = resolve(
-  import.meta.dirname!,
-  "../../examples/advanced-templates/src",
-);
+const advancedCallablesDir = resolve(import.meta.dirname!, "../../examples/advanced-callables/src");
+const advancedTemplatesDir = resolve(import.meta.dirname!, "../../examples/advanced-templates/src");
 const advancedDirs = [
   advancedPatternsDir,
   advancedComponentsDir,

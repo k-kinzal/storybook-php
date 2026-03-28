@@ -29,22 +29,13 @@ const hasPhp83 = phpMajor > 8 || (phpMajor === 8 && phpMinor >= 3);
 
 const fixturesDir = resolve(import.meta.dirname!, "fixtures");
 const examplesDir = resolve(import.meta.dirname!, "../../examples/basic/src");
-const advancedPatternsDir = resolve(
-  import.meta.dirname!,
-  "../../examples/advanced-patterns/src",
-);
+const advancedPatternsDir = resolve(import.meta.dirname!, "../../examples/advanced-patterns/src");
 const advancedComponentsDir = resolve(
   import.meta.dirname!,
   "../../examples/advanced-components/src",
 );
-const advancedCallablesDir = resolve(
-  import.meta.dirname!,
-  "../../examples/advanced-callables/src",
-);
-const advancedTemplatesDir = resolve(
-  import.meta.dirname!,
-  "../../examples/advanced-templates/src",
-);
+const advancedCallablesDir = resolve(import.meta.dirname!, "../../examples/advanced-callables/src");
+const advancedTemplatesDir = resolve(import.meta.dirname!, "../../examples/advanced-templates/src");
 const php80Dir = resolve(import.meta.dirname!, "../../examples/php80/src");
 const php81Dir = resolve(import.meta.dirname!, "../../examples/php81/src");
 const php82Dir = resolve(import.meta.dirname!, "../../examples/php82/src");
@@ -5087,10 +5078,7 @@ describe.skipIf(!hasPhp)("Integration: All Plan Patterns", () => {
     const load = (plugin as any).load.bind(plugin);
 
     it("generates template module for modal template", () => {
-      const id = resolveId(
-        "../templates/modal.php",
-        advanced("templates/modal.stories.ts"),
-      );
+      const id = resolveId("../templates/modal.php", advanced("templates/modal.stories.ts"));
       const code = load(id);
       expect(code).toContain("__type: 'template'");
     });
@@ -7081,7 +7069,10 @@ describe.skipIf(!hasPhp)("Integration: All Plan Patterns", () => {
       const plugin = storybookPhpPlugin({});
       const resolveId = (plugin as any).resolveId.bind(plugin);
       const load = (plugin as any).load.bind(plugin);
-      const id = resolveId("./TraitStaticEnum.php@showcase", advancedImporter("TraitStaticEnum.php"));
+      const id = resolveId(
+        "./TraitStaticEnum.php@showcase",
+        advancedImporter("TraitStaticEnum.php"),
+      );
       const code = load(id);
       expect(code).toContain("export const Palette");
       expect(code).toContain("__type: 'staticMethod'");
@@ -7207,7 +7198,10 @@ describe.skipIf(!hasPhp)("Integration: All Plan Patterns", () => {
       const plugin = storybookPhpPlugin({});
       const resolveId = (plugin as any).resolveId.bind(plugin);
       const load = (plugin as any).load.bind(plugin);
-      const id = resolveId("./AbstractTraitChild.php@render", advancedImporter("AbstractTraitChild.php"));
+      const id = resolveId(
+        "./AbstractTraitChild.php@render",
+        advancedImporter("AbstractTraitChild.php"),
+      );
       const code = load(id);
 
       // Concrete children should be exported
