@@ -5,7 +5,7 @@ namespace App\Components;
  * Demonstrates list<T> auto-casting: plain associative arrays from Storybook
  * are automatically instantiated as typed class objects by the runner.
  */
-readonly class ArrayOfObjectsItem {
+class ArrayOfObjectsItem {
     public function __construct(
         public string $label,
         public int $value = 0,

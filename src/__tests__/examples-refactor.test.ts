@@ -78,15 +78,12 @@ describe("Phase 1-2: Redundant example deletion", () => {
       "ValueCard.php",
     ];
 
-    it.each(deletedFiles)(
-      "should not have %s after refactoring",
-      (file) => {
-        // Given: a file that was identified as redundant
-        // When: checking for its existence after deletion
-        // Then: it should no longer exist
-        expect(existsSync(advanced(file))).toBe(false);
-      },
-    );
+    it.each(deletedFiles)("should not have %s after refactoring", (file) => {
+      // Given: a file that was identified as redundant
+      // When: checking for its existence after deletion
+      // Then: it should no longer exist
+      expect(existsSync(advanced(file))).toBe(false);
+    });
   });
 
   describe("advanced/ representative PHP files should be kept", () => {
@@ -103,12 +100,9 @@ describe("Phase 1-2: Redundant example deletion", () => {
       "NullableAlert.php",
     ];
 
-    it.each(keptFiles)(
-      "should still have %s after refactoring",
-      (file) => {
-        expect(existsSync(advanced(file))).toBe(true);
-      },
-    );
+    it.each(keptFiles)("should still have %s after refactoring", (file) => {
+      expect(existsSync(advanced(file))).toBe(true);
+    });
   });
 
   describe("advanced/src/templates/ redundant templates should be deleted", () => {
@@ -135,12 +129,9 @@ describe("Phase 1-2: Redundant example deletion", () => {
       "metrics.php",
     ];
 
-    it.each(deletedTemplates)(
-      "should not have templates/%s after refactoring",
-      (file) => {
-        expect(existsSync(resolve(advancedDir, "templates", file))).toBe(false);
-      },
-    );
+    it.each(deletedTemplates)("should not have templates/%s after refactoring", (file) => {
+      expect(existsSync(resolve(advancedDir, "templates", file))).toBe(false);
+    });
   });
 
   describe("php81/ redundant files should be deleted", () => {
@@ -156,12 +147,9 @@ describe("Phase 1-2: Redundant example deletion", () => {
       "MenuAction.php",
     ];
 
-    it.each(deletedFiles)(
-      "should not have %s after refactoring",
-      (file) => {
-        expect(existsSync(php81(file))).toBe(false);
-      },
-    );
+    it.each(deletedFiles)("should not have %s after refactoring", (file) => {
+      expect(existsSync(php81(file))).toBe(false);
+    });
   });
 });
 
@@ -287,10 +275,7 @@ describe.skipIf(!hasPhp)("Phase 3: New advanced/ pattern examples", () => {
       const resolveId = (plugin as any).resolveId.bind(plugin);
       const load = (plugin as any).load.bind(plugin);
 
-      const id = resolveId(
-        "./ArrayOfObjects.php@render",
-        advanced("ArrayOfObjects.stories.ts"),
-      );
+      const id = resolveId("./ArrayOfObjects.php@render", advanced("ArrayOfObjects.stories.ts"));
       const code = load(id);
       expect(code).toContain("__type: 'classMethod'");
       expect(code).toContain("ArrayOfObjects");
@@ -403,10 +388,7 @@ describe.skipIf(!hasPhp)("Phase 3: New advanced/ pattern examples", () => {
       const resolveId = (plugin as any).resolveId.bind(plugin);
       const load = (plugin as any).load.bind(plugin);
 
-      const id = resolveId(
-        "./SelfReturn.php@render",
-        advanced("SelfReturn.stories.ts"),
-      );
+      const id = resolveId("./SelfReturn.php@render", advanced("SelfReturn.stories.ts"));
       const code = load(id);
       expect(code).toContain("__type: 'classMethod'");
       expect(code).toContain("SelfReturn");
@@ -547,10 +529,7 @@ describe.skipIf(!hasPhp)("Phase 3: New advanced/ pattern examples", () => {
         class: "App\\Components\\VariadicObject",
         callable: "render",
         args: {
-          items: [
-            { label: "WithUrl", url: "/page" },
-            { label: "WithoutUrl" },
-          ],
+          items: [{ label: "WithUrl", url: "/page" }, { label: "WithoutUrl" }],
         },
       });
 
@@ -576,10 +555,7 @@ describe.skipIf(!hasPhp)("Phase 3: New advanced/ pattern examples", () => {
       const resolveId = (plugin as any).resolveId.bind(plugin);
       const load = (plugin as any).load.bind(plugin);
 
-      const id = resolveId(
-        "./VariadicObject.php@render",
-        advanced("VariadicObject.stories.ts"),
-      );
+      const id = resolveId("./VariadicObject.php@render", advanced("VariadicObject.stories.ts"));
       const code = load(id);
       expect(code).toContain("__type: 'classMethod'");
       expect(code).toContain("VariadicObject");
@@ -660,39 +636,36 @@ describe("Phase 5: Story file cleanup", () => {
       "Rating.stories.ts",
     ];
 
-    it.each(primaryStories)(
-      "should keep primary %s",
-      (file) => {
-        expect(existsSync(advanced(file))).toBe(true);
-      },
-    );
+    it.each(primaryStories)("should keep primary %s", (file) => {
+      expect(existsSync(advanced(file))).toBe(true);
+    });
   });
 
   describe("distinct callable/class stories should stay split", () => {
     const splitStories = [
       {
         file: "CodeBlockInline.stories.ts",
-        expectedImport: './CodeBlock.php@inline',
+        expectedImport: "./CodeBlock.php@inline",
         expectedExport: "FunctionCall",
       },
       {
         file: "DeepInheritanceInfo.stories.ts",
-        expectedImport: './DeepInheritance.php@render',
+        expectedImport: "./DeepInheritance.php@render",
         expectedExport: "InfoWidget",
       },
       {
         file: "DropdownSearch.stories.ts",
-        expectedImport: './Dropdown.php@search',
+        expectedImport: "./Dropdown.php@search",
         expectedExport: "Filtered",
       },
       {
         file: "PaginationSimple.stories.ts",
-        expectedImport: './Pagination.php@simple',
+        expectedImport: "./Pagination.php@simple",
         expectedExport: "FirstPage",
       },
       {
         file: "RatingPercent.stories.ts",
-        expectedImport: './Rating.php@fromPercent',
+        expectedImport: "./Rating.php@fromPercent",
         expectedExport: "Fifty",
       },
     ];
@@ -733,12 +706,9 @@ describe("Phase 5: Story file cleanup", () => {
       "MultiClassExportB.stories.ts",
     ];
 
-    it.each(splitStories)(
-      "should keep split %s",
-      (file) => {
-        expect(existsSync(advanced(file))).toBe(true);
-      },
-    );
+    it.each(splitStories)("should keep split %s", (file) => {
+      expect(existsSync(advanced(file))).toBe(true);
+    });
   });
 
   describe("dangling stories tied to removed PHP sources should be deleted", () => {
@@ -751,12 +721,9 @@ describe("Phase 5: Story file cleanup", () => {
       "TraitTooltip.stories.ts",
     ];
 
-    it.each(removedStories)(
-      "should remove %s",
-      (file) => {
-        expect(existsSync(advanced(file))).toBe(false);
-      },
-    );
+    it.each(removedStories)("should remove %s", (file) => {
+      expect(existsSync(advanced(file))).toBe(false);
+    });
   });
 
   describe("dangling php81 stories tied to removed PHP sources should be deleted", () => {
@@ -767,12 +734,9 @@ describe("Phase 5: Story file cleanup", () => {
       "MenuActionPalette.stories.ts",
     ];
 
-    it.each(removedStories)(
-      "should remove %s",
-      (file) => {
-        expect(existsSync(php81(file))).toBe(false);
-      },
-    );
+    it.each(removedStories)("should remove %s", (file) => {
+      expect(existsSync(php81(file))).toBe(false);
+    });
   });
 });
 

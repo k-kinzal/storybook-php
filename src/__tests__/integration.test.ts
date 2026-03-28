@@ -9,7 +9,6 @@ import { resolve } from "node:path";
 import { PhpExecutor } from "../php-executor.js";
 import { parsePhpFile } from "../php-parser.js";
 import { storybookPhpPlugin } from "../vite-plugin.js";
-import type { PhpRenderRequest } from "../types.js";
 
 let phpMajor = 0;
 let phpMinor = 0;
@@ -27,8 +26,6 @@ const hasPhp = phpMajor > 8 || (phpMajor === 8 && phpMinor >= 0);
 const hasPhp81 = phpMajor > 8 || (phpMajor === 8 && phpMinor >= 1);
 const hasPhp82 = phpMajor > 8 || (phpMajor === 8 && phpMinor >= 2);
 const hasPhp83 = phpMajor > 8 || (phpMajor === 8 && phpMinor >= 3);
-const hasPhp84 = phpMajor > 8 || (phpMajor === 8 && phpMinor >= 4);
-const hasPhp85 = phpMajor > 8 || (phpMajor === 8 && phpMinor >= 5);
 
 const fixturesDir = resolve(import.meta.dirname!, "fixtures");
 const examplesDir = resolve(import.meta.dirname!, "../../examples/basic/src");
@@ -37,8 +34,6 @@ const php80Dir = resolve(import.meta.dirname!, "../../examples/php80/src");
 const php81Dir = resolve(import.meta.dirname!, "../../examples/php81/src");
 const php82Dir = resolve(import.meta.dirname!, "../../examples/php82/src");
 const php83Dir = resolve(import.meta.dirname!, "../../examples/php83/src");
-const php84Dir = resolve(import.meta.dirname!, "../../examples/php84/src");
-const php85Dir = resolve(import.meta.dirname!, "../../examples/php85/src");
 const laravelDir = resolve(import.meta.dirname!, "../../examples/laravel/src");
 const advancedBootstrap = resolve(import.meta.dirname!, "../../examples/advanced/bootstrap.php");
 const hasAdvancedVendor = existsSync(
@@ -53,8 +48,6 @@ const php80 = (name: string) => resolve(php80Dir, name);
 const php81 = (name: string) => resolve(php81Dir, name);
 const php82 = (name: string) => resolve(php82Dir, name);
 const php83 = (name: string) => resolve(php83Dir, name);
-const php84 = (name: string) => resolve(php84Dir, name);
-const php85 = (name: string) => resolve(php85Dir, name);
 const laravel = (name: string) => resolve(laravelDir, name);
 
 describe.skipIf(!hasPhp)("Integration: All Plan Patterns", () => {
@@ -522,7 +515,6 @@ describe.skipIf(!hasPhp)("Integration: All Plan Patterns", () => {
       expect(result.html).toContain("Bob");
       expect(result.html).toContain("<table");
     });
-
   });
 
   // -------------------------------------------------------------------------
@@ -559,7 +551,6 @@ describe.skipIf(!hasPhp)("Integration: All Plan Patterns", () => {
       expect(result.html).toContain("75%");
       expect(result.html).toContain("progress-bar");
     });
-
   });
   // -------------------------------------------------------------------------
   // Vite plugin: verify virtual modules generate correctly for all patterns
@@ -613,7 +604,6 @@ describe.skipIf(!hasPhp)("Integration: All Plan Patterns", () => {
       expect(code).toContain("label:");
       expect(code).toContain("color:");
     });
-
   });
 
   // -------------------------------------------------------------------------
@@ -1547,7 +1537,6 @@ describe.skipIf(!hasPhp)("Integration: All Plan Patterns", () => {
       expect(result.html).toContain("Popular");
       expect(result.html).toContain("New");
     });
-
   });
   // -------------------------------------------------------------------------
   // Vite plugin: new pattern virtual modules (UC36-UC40)
@@ -1660,7 +1649,6 @@ describe.skipIf(!hasPhp)("Integration: All Plan Patterns", () => {
       const render = cls.methods.find((m) => m.name === "render")!;
       expect(render.isStatic).toBe(false);
     });
-
   });
 
   // -------------------------------------------------------------------------
@@ -1858,7 +1846,6 @@ describe.skipIf(!hasPhp)("Integration: All Plan Patterns", () => {
       expect(code).toContain("wrapper:");
       expect(code).toContain("transform:");
     });
-
   });
 
   // -------------------------------------------------------------------------
@@ -1872,7 +1859,6 @@ describe.skipIf(!hasPhp)("Integration: All Plan Patterns", () => {
       const render = cls.methods[0]!;
       expect(render.params[0]!.type).toBe("mixed");
     });
-
   });
 
   // -------------------------------------------------------------------------
@@ -1957,7 +1943,6 @@ describe.skipIf(!hasPhp)("Integration: All Plan Patterns", () => {
       expect(result.html).toContain("12,345");
       expect(result.html).toContain("$89K");
     });
-
   });
   // -------------------------------------------------------------------------
   // UC54: Global function with array param (KeyValue)
@@ -2033,7 +2018,6 @@ describe.skipIf(!hasPhp)("Integration: All Plan Patterns", () => {
       expect(result.error).toBeUndefined();
       expect(result.html).toContain("flex-grid-empty");
     });
-
   });
   // -------------------------------------------------------------------------
   // Parser: metadata extraction for UC46-UC55
@@ -2786,7 +2770,6 @@ describe.skipIf(!hasPhp)("Integration: All Plan Patterns", () => {
       expect(result.html).toContain("noopener");
       expect(result.html).toContain("GitHub");
     });
-
   });
   // -------------------------------------------------------------------------
   // Vite plugin: UC61-UC66 virtual modules
@@ -2902,7 +2885,6 @@ describe.skipIf(!hasPhp)("Integration: All Plan Patterns", () => {
       expect(result.html).toContain('target="_blank"');
       expect(result.html).toContain("text-decoration: none");
     });
-
   });
 
   // -------------------------------------------------------------------------
@@ -2936,7 +2918,6 @@ describe.skipIf(!hasPhp)("Integration: All Plan Patterns", () => {
       expect(result.html).toContain("disabled");
       expect(result.html).toContain("not-allowed");
     });
-
   });
   // -------------------------------------------------------------------------
   // Parser: new fixtures
@@ -2967,7 +2948,6 @@ describe.skipIf(!hasPhp)("Integration: All Plan Patterns", () => {
       expect(level.implements).toContain("Renderable");
       expect(level.enumCases).toEqual(["Low", "Medium", "High"]);
     });
-
   });
 
   // -------------------------------------------------------------------------
@@ -3082,7 +3062,6 @@ describe.skipIf(!hasPhp)("Integration: All Plan Patterns", () => {
       expect(result.html).toContain('type="email"');
       expect(result.html).toContain("required");
     });
-
   });
   // -------------------------------------------------------------------------
   // UC82: Class constants (StatusBanner)
@@ -3176,7 +3155,6 @@ describe.skipIf(!hasPhp)("Integration: All Plan Patterns", () => {
       expect(result.html).toContain("jane@example.com");
       expect(result.html).toContain("JD");
     });
-
   });
 
   // -------------------------------------------------------------------------
@@ -3228,7 +3206,6 @@ describe.skipIf(!hasPhp)("Integration: All Plan Patterns", () => {
       expect(result.html).toContain("30m");
       expect(result.html).toContain("15s");
     });
-
   });
   // -------------------------------------------------------------------------
   // UC91: Multiple classes in one file (PageHeader)
@@ -3310,7 +3287,6 @@ describe.skipIf(!hasPhp)("Integration: All Plan Patterns", () => {
       expect(result.html).toContain("Hello Box");
       expect(result.html).toContain("simple-box");
     });
-
   });
   // -------------------------------------------------------------------------
   // Vite plugin: UC81-UC90 virtual modules
@@ -3333,7 +3309,6 @@ describe.skipIf(!hasPhp)("Integration: All Plan Patterns", () => {
       const code = await load(id);
       expect(code).toContain("Duration");
     });
-
   });
 
   // -------------------------------------------------------------------------
@@ -3410,7 +3385,6 @@ describe.skipIf(!hasPhp)("Integration: All Plan Patterns", () => {
       expect(result.html).toContain("Tweet");
       expect(result.html).toContain("https://example.com");
     });
-
   });
 
   // -------------------------------------------------------------------------
@@ -3840,7 +3814,6 @@ describe.skipIf(!hasPhp)("Integration: All Plan Patterns", () => {
       expect(result.error).toBeUndefined();
       expect(result.html).toContain("&#8596;");
     });
-
   });
   // -------------------------------------------------------------------------
   // UC108: Void/echo standalone functions
@@ -4026,7 +3999,6 @@ describe.skipIf(!hasPhp)("Integration: All Plan Patterns", () => {
       expect(result.html).toContain("required");
       expect(result.html).toContain("Max 280 characters");
     });
-
   });
   // -------------------------------------------------------------------------
   // UC112: Float type parameters (FloatGauge)
@@ -4496,7 +4468,6 @@ describe.skipIf(!hasPhp)("Integration: All Plan Patterns", () => {
       expect(code).toContain("title:");
       expect(code).toContain("options:");
     });
-
   });
 
   // -------------------------------------------------------------------------
@@ -5000,7 +4971,6 @@ describe.skipIf(!hasPhp)("Integration: All Plan Patterns", () => {
       expect(fontWeight.enumBackingType).toBe("string");
       expect(fontWeight.enumCases).toEqual(["Light", "Normal", "Bold", "Black"]);
     });
-
   });
   // -------------------------------------------------------------------------
   // UC128: Modal template (boolean flags, match expression)
@@ -5357,7 +5327,6 @@ describe.skipIf(!hasPhp)("Integration: All Plan Patterns", () => {
       expect(result.html).toContain("clock");
       expect(result.html).toContain("Asia/Tokyo");
     });
-
   });
   // -------------------------------------------------------------------------
   // UC133: Enum implementing multiple interfaces
@@ -6106,7 +6075,6 @@ describe.skipIf(!hasPhp)("Integration: All Plan Patterns", () => {
       expect(alertMethod.params).toHaveLength(2);
       expect(alertMethod.returnType).toBe("void");
     });
-
   });
 
   // -------------------------------------------------------------------------
@@ -6745,7 +6713,6 @@ describe.skipIf(!hasPhp)("Integration: All Plan Patterns", () => {
       expect(renderStatus.returnType).toBe("string|bool");
       expect(renderStatus.params).toHaveLength(2);
     });
-
   });
   describe("UC151: Pricing template", () => {
     it("renders pricing plans", async () => {
@@ -7282,7 +7249,6 @@ describe.skipIf(!hasPhp)("Integration: All Plan Patterns", () => {
       expect(result.error).toBeUndefined();
       expect(result.html).toContain("default");
     });
-
   });
   // -------------------------------------------------------------------------
   // UC158: Standalone function with nullable parameters
@@ -7629,7 +7595,6 @@ describe.skipIf(!hasPhp)("Integration: All Plan Patterns", () => {
       expect(code).toContain("__type: 'function'");
       expect(code).toContain("calcDiscount");
     });
-
   });
   // -------------------------------------------------------------------------
   // UC165: `static` return type (FluentElement)
@@ -9244,7 +9209,6 @@ describe.skipIf(!hasPhp)("Integration: All Plan Patterns", () => {
       // Should NOT export the trait
       expect(renderCode).not.toContain("export const HasDefaultRender");
     });
-
   });
   // -------------------------------------------------------------------------
   // UC185: Backed enum implementing Stringable
@@ -9345,7 +9309,6 @@ describe.skipIf(!hasPhp)("Integration: All Plan Patterns", () => {
       expect(result.html).toContain("text-align: right");
       expect(result.html).toContain("#dbeafe");
     });
-
   });
   // -------------------------------------------------------------------------
   // UC188: Class with echo (void) and return methods
@@ -10397,7 +10360,6 @@ describe.skipIf(!hasPhp)("Integration: All Plan Patterns", () => {
       expect(code).toContain("export const renderIntersectionTag");
       expect(code).toContain("type: 'string'");
     });
-
   });
   // -------------------------------------------------------------------------
   // UC205: Iterable type param

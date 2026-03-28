@@ -5,7 +5,7 @@ namespace App\Components;
  * Demonstrates typed object variadic parameters.
  * The runner auto-instantiates each array element as a MenuItem object.
  */
-readonly class MenuItem {
+class MenuItem {
     public function __construct(
         public string $label,
         public string $url = '#',
