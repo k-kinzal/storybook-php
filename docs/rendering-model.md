@@ -23,14 +23,14 @@ The PHP process runs server-side. Storybook only receives HTML.
 
 ## Supported Import Patterns
 
-| Pattern | Import syntax | Args source |
-| --- | --- | --- |
-| Instance method | `./File.php@render` | Constructor params + method params |
-| Static method | `./File.php@danger` | Method params |
-| Standalone function | `./file.php@renderBadge` | Function params |
-| Invocable class | `./File.php@__invoke` | Constructor params + `__invoke` params |
-| Enum instance method | `./File.php@badge` | `_case` + method params |
-| Template file | `./file.php` | Story args become template variables |
+| Pattern              | Import syntax            | Args source                            |
+| -------------------- | ------------------------ | -------------------------------------- |
+| Instance method      | `./File.php@render`      | Constructor params + method params     |
+| Static method        | `./File.php@danger`      | Method params                          |
+| Standalone function  | `./file.php@renderBadge` | Function params                        |
+| Invocable class      | `./File.php@__invoke`    | Constructor params + `__invoke` params |
+| Enum instance method | `./File.php@badge`       | `_case` + method params                |
+| Template file        | `./file.php`             | Story args become template variables   |
 
 If `framework.options.defaultMethod` is set, you can omit `@render` and import `./File.php` directly.
 Bare `.php` imports only mean template mode when `defaultMethod` is not set.

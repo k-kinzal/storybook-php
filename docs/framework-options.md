@@ -22,14 +22,14 @@ export default config;
 
 ## Available Options
 
-| Option | Type | Default | Description |
-| --- | --- | --- | --- |
-| `bootstrap` | `string` | `undefined` | PHP file loaded before each render |
-| `phpBinary` | `string` | `"php"` | PHP executable path |
-| `timeout` | `number` | `5000` | Render timeout in milliseconds |
-| `defaultMethod` | `string` | `undefined` | Method name used when `@method` is omitted |
-| `adapter` | `string` | `undefined` | Global adapter file used to convert results into HTML |
-| `typeMap` | `TypeMapConfig` | `undefined` | Advanced mapping for files, bindings, and arg metadata |
+| Option          | Type            | Default     | Description                                            |
+| --------------- | --------------- | ----------- | ------------------------------------------------------ |
+| `bootstrap`     | `string`        | `undefined` | PHP file loaded before each render                     |
+| `phpBinary`     | `string`        | `"php"`     | PHP executable path                                    |
+| `timeout`       | `number`        | `5000`      | Render timeout in milliseconds                         |
+| `defaultMethod` | `string`        | `undefined` | Method name used when `@method` is omitted             |
+| `adapter`       | `string`        | `undefined` | Global adapter file used to convert results into HTML  |
+| `typeMap`       | `TypeMapConfig` | `undefined` | Advanced mapping for files, bindings, and arg metadata |
 
 ## `bootstrap`
 
