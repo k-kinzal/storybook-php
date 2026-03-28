@@ -19,9 +19,7 @@ function makeContext(
     name: "Test",
     title: "Test",
     id: "test",
-    ...(component === undefined
-      ? {}
-      : { component: component as StoryComponent }),
+    ...(component === undefined ? {} : { component: component as StoryComponent }),
     ...(parameters === undefined ? {} : { parameters }),
   };
 
