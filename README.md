@@ -72,6 +72,8 @@ npx storybook-php start
 
 `typegen` defaults to the `src` directory when no directories are specified.
 
+For PHP-first repositories that do not want to add a local `package.json`, see [PHP Project Setup](docs/php-project-setup.md) for the `npx`-based setup.
+
 ## Testing
 
 ```bash
@@ -143,6 +145,7 @@ npx storybook-php typegen
 ## Documentation
 
 - [Getting Started](docs/getting-started.md)
+- [PHP Project Setup](docs/php-project-setup.md)
 - [Rendering Model](docs/rendering-model.md)
 - [Framework Options](docs/framework-options.md)
 - [Type Mapping](docs/type-mapping.md)

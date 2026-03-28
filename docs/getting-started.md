@@ -100,9 +100,11 @@ Other supported commands:
 
 `start` and `build` accept the same options as the regular Storybook CLI.
 
+If you want to use `storybook-php` from a PHP-first repository without a local `package.json`, see [PHP Project Setup](php-project-setup.md).
+
 ## TypeScript Support
 
-Add the client types and TS plugin to `tsconfig.json`:
+If you want richer TypeScript editor support, add the client types and TS plugin to `tsconfig.json`:
 
 ```json
 {
@@ -113,11 +115,12 @@ Add the client types and TS plugin to `tsconfig.json`:
 }
 ```
 
-This improves IDE support for `.php` imports and gives your stories typed `args` based on parsed PHP signatures.
+This is optional. It improves IDE support for `.php` imports and gives your stories typed `args` based on parsed PHP signatures.
 
 ## Next Steps
 
 - [Rendering Model](rendering-model.md): import patterns, args, and runtime behavior
+- [PHP Project Setup](php-project-setup.md): running from a PHP project via `npx` without a local `package.json`
 - [Framework Options](framework-options.md): bootstrap, adapters, default methods, and runtime configuration
 - [Type Mapping](type-mapping.md): advanced metadata for templates, interfaces, and controls
 - [Testing and Types](testing-and-types.md): `typegen`, Vitest integration, and editor support

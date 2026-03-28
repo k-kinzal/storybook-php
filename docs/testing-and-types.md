@@ -97,11 +97,15 @@ npx --package=storybook-php --package=vitest \
     storybook-php test
 ```
 
+If npm reports a peer-resolution error in a pure `npx` setup, pin `vitest` and `@vitest/browser-playwright` to the same version.
+
 ## Custom Vitest Config
 
 When you provide your own `vitest.config.*` or pass `--config`, `storybook-php` uses that instead of the bundled template.
 
 This is the right choice when you need custom browser settings, aliases, reporters, or workspace-level Vitest configuration.
+
+It can also be used as a fallback in package-less `npx` environments to add `server.fs.allow` entries for packages resolved from npm's cache.
 
 ## Related Guides
 
