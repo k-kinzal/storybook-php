@@ -10,12 +10,17 @@
     "php-parallel-lint/php-parallel-lint": "^1.4",
     "phpstan/extension-installer": "^1.4",
     "phpstan/phpstan": "^2.1.44",
+    "phpstan/phpstan-deprecation-rules": "^2.0",
     "phpstan/phpstan-strict-rules": "^2.0.10",
-    "phpunit/phpunit": "^9.6.34"
+    "phpunit/phpunit": "^9.6.34",
+    "rector/rector": "^2.3.9"
   },
   "config": {
     "allow-plugins": {
       "phpstan/extension-installer": true
+    },
+    "audit": {
+      "abandoned": "fail"
     },
     "sort-packages": true
   },
@@ -23,10 +28,14 @@
     "lint": [
       "composer validate --strict",
       "@lint:syntax",
-      "@phpstan"
+      "@phpstan",
+      "@audit:security",
+      "@rector"
     ],
     "lint:syntax": "parallel-lint --colors src/php",
+    "audit:security": "composer audit --no-interaction",
     "phpstan": "phpstan analyse --ansi",
+    "rector": "rector process --dry-run --ansi",
     "test": "phpunit --colors=always --configuration phpunit.xml.dist",
     "test:coverage": [
       "@php -r \"is_dir('build/coverage') || mkdir('build/coverage', 0777, true);\"",

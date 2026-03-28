@@ -473,7 +473,7 @@ describe("Vite Plugin", () => {
 
       configureServer(mockServer);
       expect(mockUse).toHaveBeenCalledTimes(1);
-      expect(typeof mockUse.mock.calls[0][0]).toBe("function");
+      expect(typeof mockUse.mock.calls[0]?.[0]).toBe("function");
     });
   });
 

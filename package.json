@@ -57,7 +57,7 @@
     "test": "vp test run",
     "test:watch": "vp test",
     "lint": "vp check",
-    "typecheck": "tsc --noEmit",
+    "typecheck": "tsc --noEmit -p tsconfig.json && tsc -p tsconfig.test.json",
     "typegen": "node dist/cli.mjs typegen",
     "prepare": "npm run build"
   },

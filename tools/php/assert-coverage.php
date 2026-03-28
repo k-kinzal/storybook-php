@@ -18,14 +18,14 @@ if ($targetPath === false) {
 }
 
 $xml = simplexml_load_file($coverageFile);
-if ($xml === false || !isset($xml->project)) {
+if ($xml === false || (!property_exists($xml, 'project') || $xml->project === null)) {
     fwrite(STDERR, "Failed to parse Clover report: {$coverageFile}\n");
     exit(1);
 }
 
 foreach ($xml->project->file as $file) {
     $filePath = realpath((string) $file['name']);
-    if ($filePath !== $targetPath || !isset($file->metrics)) {
+    if ($filePath !== $targetPath || (!property_exists($file, 'metrics') || $file->metrics === null)) {
         continue;
     }
 

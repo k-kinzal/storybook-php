@@ -38,7 +38,7 @@ describe("preset", () => {
       const plugins = getPlugins(result);
       expect(Array.isArray(plugins)).toBe(true);
       expect(plugins.length).toBe(1);
-      expect(plugins[0].name).toBe("storybook-php");
+      expect(plugins[0]?.name).toBe("storybook-php");
     });
 
     it("preserves existing plugins", async () => {
@@ -49,7 +49,7 @@ describe("preset", () => {
       const plugins = getPlugins(result);
       expect(plugins.length).toBe(2);
       expect(plugins[0]).toBe(existingPlugin);
-      expect(plugins[1].name).toBe("storybook-php");
+      expect(plugins[1]?.name).toBe("storybook-php");
     });
 
     it("works with empty config", async () => {
@@ -67,7 +67,7 @@ describe("preset", () => {
 
       expect(opts.presets.apply).toHaveBeenCalledWith("frameworkOptions", {});
       const plugins = getPlugins(result);
-      expect(plugins[0].name).toBe("storybook-php");
+      expect(plugins[0]?.name).toBe("storybook-php");
     });
   });
 });

@@ -6,21 +6,27 @@ import type { PhpComponent } from "../types.js";
 const mockShowMain = vi.fn();
 const mockShowError = vi.fn();
 type RenderContext = Parameters<typeof renderToCanvas>[0];
+type StoryContext = RenderContext["storyContext"];
+type StoryComponent = NonNullable<StoryContext["component"]>;
 
 function makeContext(
   component: unknown,
   args: Record<string, unknown> = {},
   parameters?: Record<string, unknown>,
 ): RenderContext {
+  const storyContext: StoryContext = {
+    args,
+    name: "Test",
+    title: "Test",
+    id: "test",
+    ...(component === undefined
+      ? {}
+      : { component: component as StoryComponent }),
+    ...(parameters === undefined ? {} : { parameters }),
+  };
+
   return {
-    storyContext: {
-      component: component as RenderContext["storyContext"]["component"],
-      args,
-      parameters,
-      name: "Test",
-      title: "Test",
-      id: "test",
-    },
+    storyContext,
     storyFn: () => "<p>fallback</p>",
     showMain: mockShowMain,
     showError: mockShowError,
@@ -68,7 +74,13 @@ describe("renderToCanvas", () => {
     await renderToCanvas(ctx, canvas);
 
     expect(mockFetch).toHaveBeenCalledTimes(1);
-    const [url, options] = mockFetch.mock.calls[0];
+    const call = mockFetch.mock.calls[0];
+    expect(call).toBeDefined();
+    if (call === undefined) {
+      throw new Error("fetch was not called");
+    }
+
+    const [url, options] = call;
     expect(url).toBe("/__storybook_php/render");
     expect(options.method).toBe("POST");
     expect(options.headers).toEqual({ "Content-Type": "application/json" });
@@ -98,7 +110,19 @@ describe("renderToCanvas", () => {
 
     await renderToCanvas(ctx, canvas);
 
-    const body = JSON.parse(mockFetch.mock.calls[0][1].body);
+    const call = mockFetch.mock.calls[0];
+    expect(call).toBeDefined();
+    if (call === undefined) {
+      throw new Error("fetch was not called");
+    }
+
+    const options = call[1];
+    expect(options).toBeDefined();
+    if (options === undefined) {
+      throw new Error("fetch options were not provided");
+    }
+
+    const body = JSON.parse(String(options.body));
     expect(body.typeMap).toEqual(typeMap);
   });
 
@@ -113,7 +137,19 @@ describe("renderToCanvas", () => {
 
     await renderToCanvas(ctx, canvas);
 
-    const body = JSON.parse(mockFetch.mock.calls[0][1].body);
+    const call = mockFetch.mock.calls[0];
+    expect(call).toBeDefined();
+    if (call === undefined) {
+      throw new Error("fetch was not called");
+    }
+
+    const options = call[1];
+    expect(options).toBeDefined();
+    if (options === undefined) {
+      throw new Error("fetch options were not provided");
+    }
+
+    const body = JSON.parse(String(options.body));
     expect(body.typeMap).toBeUndefined();
   });
 

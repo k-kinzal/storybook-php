@@ -23,7 +23,7 @@ declare(strict_types=1);
  */
 function parseDocBlockParamTypes(?ReflectionFunctionAbstract $ref): array
 {
-    if ($ref === null) {
+    if (!$ref instanceof \ReflectionFunctionAbstract) {
         return [];
     }
 
@@ -462,12 +462,7 @@ function castWithNamedType(ReflectionNamedType $type, mixed $value, ReflectionPa
             if (is_bool($value)) {
                 return $value;
             }
-            return !($value === null
-                || $value === 0
-                || $value === 0.0
-                || $value === ''
-                || $value === '0'
-                || $value === []);
+            return !in_array($value, [null, 0, 0.0, '', '0', []], true);
         case 'array':
         case 'iterable':
             $arr = is_array($value) ? $value : (array) $value;
@@ -484,7 +479,6 @@ function castWithNamedType(ReflectionNamedType $type, mixed $value, ReflectionPa
             }
             return (object) [];
         case 'callable':
-            return $value;
         case 'mixed':
             return $value;
         // PHP 8.2 standalone types
@@ -546,7 +540,7 @@ function castWithNamedType(ReflectionNamedType $type, mixed $value, ReflectionPa
 function isListArray(array $value): bool
 {
     $expectedKey = 0;
-    foreach ($value as $key => $_) {
+    foreach (array_keys($value) as $key) {
         if ($key !== $expectedKey) {
             return false;
         }
@@ -617,7 +611,7 @@ function resolveParamDocType(
  */
 function matchArgs(?ReflectionFunctionAbstract $ref, array $args, ?array $typeMap = null): array
 {
-    if ($ref === null) {
+    if (!$ref instanceof \ReflectionFunctionAbstract) {
         return [];
     }
 
@@ -807,9 +801,6 @@ function readRunnerStdin(): string
     return $input;
 }
 
-/**
- * @return callable|null
- */
 function loadAdapter(?string $adapterPath): ?callable
 {
     if ($adapterPath === null || $adapterPath === '') {
