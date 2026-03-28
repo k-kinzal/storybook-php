@@ -18,6 +18,8 @@ declare(strict_types=1);
  * function or method docblock.  Returns a map of parameter name → doc type.
  *
  * Priority per param: @phpstan-param > @psalm-param > @param.
+ *
+ * @return array<string, string>
  */
 function parseDocBlockParamTypes(?ReflectionFunctionAbstract $ref): array
 {
@@ -33,14 +35,16 @@ function parseDocBlockParamTypes(?ReflectionFunctionAbstract $ref): array
     $types = [];
 
     // Highest priority: @phpstan-param
-    if (preg_match_all('/@phpstan-param\s+(.+?)\s+\$(\w+)/m', $doc, $matches, PREG_SET_ORDER)) {
+    if (preg_match_all('/@phpstan-param\s+(.+?)\s+\$(\w+)/m', $doc, $matches, PREG_SET_ORDER) !== false) {
+        /** @var list<array{0: string, 1: string, 2: string}> $matches */
         foreach ($matches as $match) {
             $types[$match[2]] = trim($match[1]);
         }
     }
 
     // Next priority: @psalm-param (only if not already set by @phpstan-param)
-    if (preg_match_all('/@psalm-param\s+(.+?)\s+\$(\w+)/m', $doc, $matches, PREG_SET_ORDER)) {
+    if (preg_match_all('/@psalm-param\s+(.+?)\s+\$(\w+)/m', $doc, $matches, PREG_SET_ORDER) !== false) {
+        /** @var list<array{0: string, 1: string, 2: string}> $matches */
         foreach ($matches as $match) {
             if (!isset($types[$match[2]])) {
                 $types[$match[2]] = trim($match[1]);
@@ -49,7 +53,8 @@ function parseDocBlockParamTypes(?ReflectionFunctionAbstract $ref): array
     }
 
     // Fall back to @param for params not already covered
-    if (preg_match_all('/@param\s+(.+?)\s+\$(\w+)/m', $doc, $matches, PREG_SET_ORDER)) {
+    if (preg_match_all('/@param\s+(.+?)\s+\$(\w+)/m', $doc, $matches, PREG_SET_ORDER) !== false) {
+        /** @var list<array{0: string, 1: string, 2: string}> $matches */
         foreach ($matches as $match) {
             if (!isset($types[$match[2]])) {
                 $types[$match[2]] = trim($match[1]);
@@ -63,6 +68,8 @@ function parseDocBlockParamTypes(?ReflectionFunctionAbstract $ref): array
 /**
  * Split generic type arguments on commas at <> depth 0.
  * e.g. "string, list<Foo>" → ["string", "list<Foo>"]
+ *
+ * @return list<string>
  */
 function splitGenericArgs(string $inner): array
 {
@@ -98,18 +105,23 @@ function splitGenericArgs(string $inner): array
 /** Native array-like type names recognised by PHPStan / Psalm. */
 const NATIVE_ARRAY_TYPES = ['list', 'array', 'iterable', 'non-empty-list', 'non-empty-array'];
 
+/** Render types supported by the PHP runner. */
+const RENDER_TYPES = ['classMethod', 'staticMethod', 'function', 'template', 'enumMethod'];
+
 /**
  * Extract the inner value type from a generic / array doc type.
  *
  * Returns ['valueType' => string, 'wrapperClass' => string|null] or null.
  *   - wrapperClass is null  for native array types (list, array, iterable …)
  *   - wrapperClass is a class name for collection-like types (Collection …)
+ *
+ * @return array{valueType: string, wrapperClass: string|null}|null
  */
 function extractGenericValueType(string $docType): ?array
 {
     // Strip nullable suffix/prefix: list<Foo>|null  →  list<Foo>
-    $type = preg_replace('/\|null$/i', '', $docType);
-    $type = preg_replace('/^null\|/i', '', $type);
+    $type = preg_replace('/\|null$/i', '', $docType) ?? $docType;
+    $type = preg_replace('/^null\|/i', '', $type) ?? $type;
     $type = trim($type);
 
     // ClassName[][] → ClassName[]  /  ClassName[] → ClassName
@@ -118,9 +130,9 @@ function extractGenericValueType(string $docType): ?array
     }
 
     // Generic syntax: Something<…>
-    if (preg_match('/^(.+?)<(.+)>$/', $type, $m)) {
-        $outer = trim($m[1]);
-        $inner = trim($m[2]);
+    if (preg_match('/^(.+?)<(.+)>$/', $type, $matches) === 1) {
+        $outer = trim($matches[1]);
+        $inner = trim($matches[2]);
         $args  = splitGenericArgs($inner);
         // For two-arg generics (array<K,V>, Collection<K,V>), take the last arg as value type
         $valueType = count($args) >= 2 ? trim($args[count($args) - 1]) : $inner;
@@ -140,11 +152,16 @@ function extractGenericValueType(string $docType): ?array
  */
 function isArrayLikeType(string $type): bool
 {
-    $t = preg_replace('/\|null$/i', '', $type);
-    $t = preg_replace('/^null\|/i', '', $t);
+    $t = preg_replace('/\|null$/i', '', $type) ?? $type;
+    $t = preg_replace('/^null\|/i', '', $t) ?? $t;
     $t = trim($t);
 
-    return str_ends_with($t, '[]') || (bool) preg_match('/^.+<.+>$/', $t);
+    return str_ends_with($t, '[]') || preg_match('/^.+<.+>$/', $t) === 1;
+}
+
+function isRenderType(string $type): bool
+{
+    return in_array($type, RENDER_TYPES, true);
 }
 
 function typeExists(string $name): bool
@@ -152,6 +169,68 @@ function typeExists(string $name): bool
     return class_exists($name)
         || interface_exists($name)
         || (function_exists('enum_exists') && enum_exists($name));
+}
+
+/**
+ * @param array<string, mixed>|null $typeMap
+ */
+function resolveTypeMapBinding(string $typeName, ?array $typeMap): string
+{
+    if ($typeMap === null) {
+        return $typeName;
+    }
+
+    $bindings = $typeMap['bindings'] ?? null;
+    if (!is_array($bindings)) {
+        return $typeName;
+    }
+
+    $binding = $bindings[$typeName] ?? null;
+    return is_string($binding) ? $binding : $typeName;
+}
+
+/**
+ * @param class-string $enumClass
+ */
+function isBackedEnumClass(string $enumClass): bool
+{
+    return interface_exists('BackedEnum') && is_subclass_of($enumClass, 'BackedEnum');
+}
+
+/**
+ * @param class-string $enumClass
+ */
+function resolveEnumCase(string $enumClass, mixed $value): object
+{
+    if (!function_exists('enum_exists') || !enum_exists($enumClass)) {
+        throw new \RuntimeException("Enum '{$enumClass}' is not available.");
+    }
+
+    if ($value instanceof $enumClass) {
+        return $value;
+    }
+
+    if (isBackedEnumClass($enumClass) && method_exists($enumClass, 'from')) {
+        try {
+            /** @var callable(mixed): object $from */
+            $from = [$enumClass, 'from'];
+            return $from($value);
+        } catch (\Throwable) {
+            // Fall through to name matching.
+        }
+    }
+
+    /** @var callable(): array<int, object> $cases */
+    $cases = [$enumClass, 'cases'];
+    foreach ($cases() as $case) {
+        if (property_exists($case, 'name') && is_string($case->name) && $case->name === $value) {
+            return $case;
+        }
+    }
+
+    throw new \RuntimeException(
+        "Cannot resolve enum case '" . stringifyScalarForError($value) . "' for {$enumClass}",
+    );
 }
 
 /**
@@ -189,6 +268,10 @@ function resolveClassName(string $className, ReflectionParameter $param): ?strin
 /**
  * Cast each element of an array using PHPDoc generic type information.
  * Handles recursive nesting (e.g. list<list<Foo>>).
+ *
+ * @param array<array-key, mixed> $value
+ * @param array<string, mixed>|null $typeMap
+ * @return array<array-key, mixed>
  */
 function castArrayElements(array $value, string $docType, ReflectionParameter $param, ?array $typeMap = null): array
 {
@@ -216,11 +299,12 @@ function castArrayElements(array $value, string $docType, ReflectionParameter $p
     // Try to resolve as a class
     $resolved = resolveClassName($innerType, $param);
 
-    if ($resolved !== null && $typeMap !== null && isset($typeMap['bindings'][$resolved])) {
-        $resolved = $typeMap['bindings'][$resolved];
+    if ($resolved !== null) {
+        $resolved = resolveTypeMapBinding($resolved, $typeMap);
     }
 
     if ($resolved !== null && class_exists($resolved)) {
+        /** @var class-string $resolved */
         $ref = new ReflectionClass($resolved);
         $constructor = $ref->getConstructor();
         $result = [];
@@ -240,29 +324,14 @@ function castArrayElements(array $value, string $docType, ReflectionParameter $p
 
     // Try to resolve as an enum
     if (function_exists('enum_exists') && $resolved !== null && enum_exists($resolved)) {
-        $isBacked = is_subclass_of($resolved, \BackedEnum::class);
-        $cases = $resolved::cases();
         $result = [];
         foreach ($value as $key => $item) {
-            if ($item instanceof $resolved) {
+            /** @var class-string $resolved */
+            try {
+                $result[$key] = resolveEnumCase($resolved, $item);
+            } catch (\RuntimeException) {
                 $result[$key] = $item;
-                continue;
             }
-            if ($isBacked) {
-                try {
-                    $result[$key] = $resolved::from($item);
-                    continue;
-                } catch (\Throwable) {
-                    // fall through to name matching
-                }
-            }
-            foreach ($cases as $case) {
-                if ($case->name === $item) {
-                    $result[$key] = $case;
-                    continue 2;
-                }
-            }
-            $result[$key] = $item;
         }
         return $result;
     }
@@ -287,7 +356,14 @@ function scoreTypeMatch(ReflectionNamedType $type, mixed $value): int
     }
 
     return match ($name) {
-        'int' => is_int($value) ? 2 : (is_numeric($value) && (int) $value == $value ? 1 : 0),
+        'int' => is_int($value)
+            ? 2
+            : (
+                (is_float($value) && floor($value) === $value)
+                || (is_string($value) && preg_match('/^-?\d+$/', $value) === 1)
+                    ? 1
+                    : 0
+            ),
         'float' => is_float($value) ? 2 : (is_numeric($value) ? 1 : 0),
         'string' => is_string($value) ? 2 : 1,
         'bool' => is_bool($value) ? 2 : 1,
@@ -295,21 +371,23 @@ function scoreTypeMatch(ReflectionNamedType $type, mixed $value): int
         'mixed' => 1,
         'true' => $value === true ? 2 : (is_bool($value) ? 1 : 0),
         'false' => $value === false ? 2 : (is_bool($value) ? 1 : 0),
-        'null' => $value === null ? 2 : 0,
+        'null' => 0,
         default => 0,
     };
 }
 
 /**
  * Cast a value to match the expected type of a reflection parameter.
+ *
+ * @param array<string, mixed>|null $typeMap
  */
 function castArg(ReflectionParameter $param, mixed $value, ?string $docType = null, ?array $typeMap = null): mixed
 {
-    if ($value === null && $param->getType()?->allowsNull()) {
+    $type = $param->getType();
+
+    if ($value === null && $type !== null && $type->allowsNull()) {
         return null;
     }
-
-    $type = $param->getType();
 
     if ($type === null) {
         return $value;
@@ -353,6 +431,8 @@ function castArg(ReflectionParameter $param, mixed $value, ?string $docType = nu
 
 /**
  * Cast a value using a specific ReflectionNamedType.
+ *
+ * @param array<string, mixed>|null $typeMap
  */
 function castWithNamedType(ReflectionNamedType $type, mixed $value, ReflectionParameter $param, ?string $docType = null, ?array $typeMap = null): mixed
 {
@@ -363,19 +443,31 @@ function castWithNamedType(ReflectionNamedType $type, mixed $value, ReflectionPa
     $typeName = $type->getName();
 
     // Apply typeMap.bindings: resolve interface/abstract → concrete class
-    if ($typeMap !== null && isset($typeMap['bindings'][$typeName])) {
-        $typeName = $typeMap['bindings'][$typeName];
-    }
+    $typeName = resolveTypeMapBinding($typeName, $typeMap);
 
     switch ($typeName) {
         case 'string':
-            return (string) $value;
+            return stringifyOutputValue($value);
         case 'int':
-            return (int) $value;
+            if (is_int($value)) {
+                return $value;
+            }
+            return is_numeric($value) ? (int) $value : 0;
         case 'float':
-            return (float) $value;
+            if (is_float($value)) {
+                return $value;
+            }
+            return is_numeric($value) ? (float) $value : 0.0;
         case 'bool':
-            return (bool) $value;
+            if (is_bool($value)) {
+                return $value;
+            }
+            return !($value === null
+                || $value === 0
+                || $value === 0.0
+                || $value === ''
+                || $value === '0'
+                || $value === []);
         case 'array':
         case 'iterable':
             $arr = is_array($value) ? $value : (array) $value;
@@ -384,7 +476,13 @@ function castWithNamedType(ReflectionNamedType $type, mixed $value, ReflectionPa
             }
             return $arr;
         case 'object':
-            return is_object($value) ? $value : (object) $value;
+            if (is_object($value)) {
+                return $value;
+            }
+            if (is_array($value) || is_scalar($value) || $value === null) {
+                return (object) $value;
+            }
+            return (object) [];
         case 'callable':
             return $value;
         case 'mixed':
@@ -402,28 +500,13 @@ function castWithNamedType(ReflectionNamedType $type, mixed $value, ReflectionPa
 
     // Check for enum types (enum_exists() requires PHP 8.1+)
     if (function_exists('enum_exists') && enum_exists($typeName)) {
-        if ($value instanceof $typeName) {
-            return $value;
-        }
-        // Try backed enum ::from()
-        if (is_subclass_of($typeName, \BackedEnum::class)) {
-            try {
-                return $typeName::from($value);
-            } catch (\Throwable) {
-                // fallback: try matching by name for unit-like access
-            }
-        }
-        // Try matching by case name (unit enums)
-        foreach ($typeName::cases() as $case) {
-            if ($case->name === $value) {
-                return $case;
-            }
-        }
-        throw new \RuntimeException("Cannot resolve enum case '{$value}' for {$typeName}");
+        /** @var class-string $typeName */
+        return resolveEnumCase($typeName, $value);
     }
 
     // Check for class types — recursive instantiation
     if (class_exists($typeName)) {
+        /** @var class-string $typeName */
         if ($value instanceof $typeName) {
             return $value;
         }
@@ -453,6 +536,8 @@ function castWithNamedType(ReflectionNamedType $type, mixed $value, ReflectionPa
 
 /**
  * Detect whether an array uses consecutive integer keys starting at 0.
+ *
+ * @param array<array-key, mixed> $value
  */
 function isListArray(array $value): bool
 {
@@ -469,6 +554,9 @@ function isListArray(array $value): bool
 
 /**
  * Resolve the effective doc type for a parameter, including typeMap.args overrides.
+ *
+ * @param array<string, string> $docTypes
+ * @param array<string, mixed>|null $typeMap
  */
 function resolveParamDocType(
     ReflectionParameter $param,
@@ -480,9 +568,10 @@ function resolveParamDocType(
     $name = $param->getName();
     $docType = $docTypes[$name] ?? null;
 
-    if ($typeMap !== null && isset($typeMap['args'])) {
-        $override = $typeMap['args']["{$classFqn}::{$methodName}::\${$name}"]
-            ?? $typeMap['args']["{$classFqn}::\${$name}"]
+    $argOverrides = $typeMap['args'] ?? null;
+    if (is_array($argOverrides)) {
+        $override = $argOverrides["{$classFqn}::{$methodName}::\${$name}"]
+            ?? $argOverrides["{$classFqn}::\${$name}"]
             ?? null;
 
         if ($override !== null) {
@@ -517,6 +606,10 @@ function resolveParamDocType(
 /**
  * Match arguments from an associative array to the parameter order
  * expected by a ReflectionFunctionAbstract (method or function).
+ *
+ * @param array<array-key, mixed> $args
+ * @param array<string, mixed>|null $typeMap
+ * @return list<mixed>
  */
 function matchArgs(?ReflectionFunctionAbstract $ref, array $args, ?array $typeMap = null): array
 {
@@ -568,19 +661,186 @@ function matchArgs(?ReflectionFunctionAbstract $ref, array $args, ?array $typeMa
 }
 
 /**
+ * Convert a render value into a string without relying on mixed casts.
+ */
+function stringifyOutputValue(mixed $value): string
+{
+    if (is_string($value)) {
+        return $value;
+    }
+
+    if (is_int($value) || is_float($value) || is_bool($value)) {
+        return (string) $value;
+    }
+
+    if (is_object($value) && method_exists($value, '__toString')) {
+        return (string) $value;
+    }
+
+    return '';
+}
+
+function stringifyScalarForError(mixed $value): string
+{
+    $stringValue = stringifyOutputValue($value);
+    return $stringValue !== '' ? $stringValue : get_debug_type($value);
+}
+
+function getOutputBuffer(): string
+{
+    $buffered = ob_get_clean();
+    if ($buffered === false) {
+        throw new \RuntimeException('Failed to collect output buffer.');
+    }
+
+    return $buffered;
+}
+
+/**
+ * @param array<array-key, mixed> $value
+ * @return array<string, mixed>
+ */
+function normalizeStringKeyArray(array $value, string $fieldName): array
+{
+    $normalized = [];
+
+    foreach ($value as $key => $item) {
+        if (!is_string($key)) {
+            throw new \RuntimeException("Field '{$fieldName}' must use string keys.");
+        }
+
+        $normalized[$key] = $item;
+    }
+
+    return $normalized;
+}
+
+/**
+ * @return array{
+ *   type: 'classMethod'|'staticMethod'|'function'|'template'|'enumMethod',
+ *   file: string,
+ *   class: string|null,
+ *   callable: string|null,
+ *   args: array<string, mixed>,
+ *   bootstrap: string|null,
+ *   adapter: string|null,
+ *   typeMap: array<string, mixed>|null
+ * }
+ */
+function readRunnerRequest(): array
+{
+    $input = file_get_contents('php://stdin');
+    if ($input === false) {
+        throw new \RuntimeException('Failed to read request from stdin.');
+    }
+
+    $decoded = json_decode($input, true, 512, JSON_THROW_ON_ERROR);
+    if (!is_array($decoded)) {
+        throw new \RuntimeException('Invalid request payload.');
+    }
+
+    /** @var array<string, mixed> $decoded */
+    $type = $decoded['type'] ?? null;
+    if (!is_string($type) || !isRenderType($type)) {
+        throw new \RuntimeException('Request field "type" is invalid.');
+    }
+    /** @var 'classMethod'|'staticMethod'|'function'|'template'|'enumMethod' $type */
+
+    $file = $decoded['file'] ?? null;
+    if (!is_string($file) || $file === '') {
+        throw new \RuntimeException('Request field "file" is required.');
+    }
+
+    $class = $decoded['class'] ?? null;
+    if ($class !== null && !is_string($class)) {
+        throw new \RuntimeException('Request field "class" must be a string or null.');
+    }
+
+    $callable = $decoded['callable'] ?? null;
+    if ($callable !== null && !is_string($callable)) {
+        throw new \RuntimeException('Request field "callable" must be a string or null.');
+    }
+
+    $args = $decoded['args'] ?? [];
+    if (!is_array($args)) {
+        throw new \RuntimeException('Request field "args" must be an object.');
+    }
+
+    $bootstrap = $decoded['bootstrap'] ?? null;
+    if ($bootstrap !== null && !is_string($bootstrap)) {
+        throw new \RuntimeException('Request field "bootstrap" must be a string or null.');
+    }
+
+    $adapter = $decoded['adapter'] ?? null;
+    if ($adapter !== null && !is_string($adapter)) {
+        throw new \RuntimeException('Request field "adapter" must be a string or null.');
+    }
+
+    $typeMap = $decoded['typeMap'] ?? null;
+    if ($typeMap !== null && !is_array($typeMap)) {
+        throw new \RuntimeException('Request field "typeMap" must be an object or null.');
+    }
+
+    return [
+        'type' => $type,
+        'file' => $file,
+        'class' => $class,
+        'callable' => $callable,
+        'args' => normalizeStringKeyArray($args, 'args'),
+        'bootstrap' => $bootstrap,
+        'adapter' => $adapter,
+        'typeMap' => $typeMap === null ? null : normalizeStringKeyArray($typeMap, 'typeMap'),
+    ];
+}
+
+/**
+ * @return callable|null
+ */
+function loadAdapter(?string $adapterPath): ?callable
+{
+    if ($adapterPath === null || $adapterPath === '') {
+        return null;
+    }
+
+    $adapter = require $adapterPath;
+    if (!is_callable($adapter)) {
+        throw new \RuntimeException("Adapter file must return a callable: {$adapterPath}");
+    }
+
+    return $adapter;
+}
+
+/**
+ * @param array{type: string, file: string, args: array<string, mixed>} $context
+ */
+function applyAdapter(callable $adapter, mixed $result, string $buffered, ?object $instance, array $context): string
+{
+    $html = call_user_func($adapter, $result, $buffered, $instance, $context);
+    if (!is_string($html)) {
+        throw new \RuntimeException('Adapter must return a string.');
+    }
+
+    return $html;
+}
+
+/**
  * Resolve the final HTML output from a method result and output buffer.
  */
 function resolveOutput(mixed $result, string $buffered): string
 {
     if ($result instanceof \Generator) {
-        $result = implode('', iterator_to_array($result));
+        $chunks = [];
+        foreach (iterator_to_array($result, false) as $chunk) {
+            $chunks[] = stringifyOutputValue($chunk);
+        }
+        $result = implode('', $chunks);
     }
 
     if (is_object($result) && method_exists($result, '__toString')) {
         $result = (string) $result;
     }
 
-    if (is_array($result) && isset($result['html'])) {
+    if (is_array($result) && array_key_exists('html', $result) && is_string($result['html'])) {
         $result = $result['html'];
     }
 
@@ -592,7 +852,7 @@ function resolveOutput(mixed $result, string $buffered): string
         return $buffered;
     }
 
-    if (is_scalar($result) && $result !== null && $result !== '') {
+    if (is_scalar($result) && $result !== '') {
         return (string) $result;
     }
 
@@ -604,17 +864,15 @@ function resolveOutput(mixed $result, string $buffered): string
 // ---------------------------------------------------------------------------
 
 try {
-    $__sb_input = file_get_contents('php://stdin');
-    $__sb_data = json_decode($__sb_input, true, 512, JSON_THROW_ON_ERROR);
-
-    $__sb_type        = $__sb_data['type'] ?? null;
-    $__sb_file        = $__sb_data['file'] ?? null;
-    $__sb_class       = $__sb_data['class'] ?? null;
-    $__sb_callable    = $__sb_data['callable'] ?? null;
-    $__sb_args        = $__sb_data['args'] ?? [];
-    $__sb_bootstrap   = $__sb_data['bootstrap'] ?? null;
-    $__sb_adapterPath = $__sb_data['adapter'] ?? null;
-    $__sb_typeMap     = $__sb_data['typeMap'] ?? null;
+    $__sb_request = readRunnerRequest();
+    $__sb_type        = $__sb_request['type'];
+    $__sb_file        = $__sb_request['file'];
+    $__sb_class       = $__sb_request['class'];
+    $__sb_callable    = $__sb_request['callable'];
+    $__sb_args        = $__sb_request['args'];
+    $__sb_bootstrap   = $__sb_request['bootstrap'];
+    $__sb_adapterPath = $__sb_request['adapter'];
+    $__sb_typeMap     = $__sb_request['typeMap'];
 
     // Bootstrap file (autoloader, config, etc.)
     if ($__sb_bootstrap !== null && $__sb_bootstrap !== '') {
@@ -623,13 +881,7 @@ try {
 
     // Load adapter if specified.
     // Adapter file must return a callable: fn(mixed $result, string $buffered, ?object $instance): string
-    $__sb_adapter = null;
-    if ($__sb_adapterPath !== null && $__sb_adapterPath !== '') {
-        $__sb_adapter = require $__sb_adapterPath;
-        if (! is_callable($__sb_adapter)) {
-            throw new \RuntimeException("Adapter file must return a callable: {$__sb_adapterPath}");
-        }
-    }
+    $__sb_adapter = loadAdapter($__sb_adapterPath);
 
     // Require the target file
     if ($__sb_type !== 'template') {
@@ -646,6 +898,10 @@ try {
 
     switch ($__sb_type) {
         case 'classMethod':
+            if ($__sb_class === null || $__sb_callable === null) {
+                throw new \RuntimeException('classMethod requires class and callable.');
+            }
+            /** @var class-string $__sb_class */
             $__sb_ref = new ReflectionClass($__sb_class);
             $__sb_constructor = $__sb_ref->getConstructor();
             $__sb_instance = $__sb_constructor !== null
@@ -654,25 +910,44 @@ try {
             $__sb_method = $__sb_ref->getMethod($__sb_callable);
             ob_start();
             $__sb_result = $__sb_method->invokeArgs($__sb_instance, matchArgs($__sb_method, $__sb_args, $__sb_typeMap));
-            $__sb_buffered = ob_get_clean();
-            $__sb_html = $__sb_adapter ? $__sb_adapter($__sb_result, $__sb_buffered, $__sb_instance, $__sb_context) : resolveOutput($__sb_result, $__sb_buffered);
+            $__sb_buffered = getOutputBuffer();
+            if ($__sb_adapter !== null) {
+                $__sb_html = applyAdapter($__sb_adapter, $__sb_result, $__sb_buffered, $__sb_instance, $__sb_context);
+            } else {
+                $__sb_html = resolveOutput($__sb_result, $__sb_buffered);
+            }
             break;
 
         case 'staticMethod':
+            if ($__sb_class === null || $__sb_callable === null) {
+                throw new \RuntimeException('staticMethod requires class and callable.');
+            }
+            /** @var class-string $__sb_class */
             $__sb_ref = new ReflectionClass($__sb_class);
             $__sb_method = $__sb_ref->getMethod($__sb_callable);
             ob_start();
             $__sb_result = $__sb_method->invokeArgs(null, matchArgs($__sb_method, $__sb_args, $__sb_typeMap));
-            $__sb_buffered = ob_get_clean();
-            $__sb_html = $__sb_adapter ? $__sb_adapter($__sb_result, $__sb_buffered, null, $__sb_context) : resolveOutput($__sb_result, $__sb_buffered);
+            $__sb_buffered = getOutputBuffer();
+            if ($__sb_adapter !== null) {
+                $__sb_html = applyAdapter($__sb_adapter, $__sb_result, $__sb_buffered, null, $__sb_context);
+            } else {
+                $__sb_html = resolveOutput($__sb_result, $__sb_buffered);
+            }
             break;
 
         case 'function':
+            if ($__sb_callable === null) {
+                throw new \RuntimeException('function render requires callable.');
+            }
             $__sb_ref = new ReflectionFunction($__sb_callable);
             ob_start();
             $__sb_result = $__sb_ref->invokeArgs(matchArgs($__sb_ref, $__sb_args, $__sb_typeMap));
-            $__sb_buffered = ob_get_clean();
-            $__sb_html = $__sb_adapter ? $__sb_adapter($__sb_result, $__sb_buffered, null, $__sb_context) : resolveOutput($__sb_result, $__sb_buffered);
+            $__sb_buffered = getOutputBuffer();
+            if ($__sb_adapter !== null) {
+                $__sb_html = applyAdapter($__sb_adapter, $__sb_result, $__sb_buffered, null, $__sb_context);
+            } else {
+                $__sb_html = resolveOutput($__sb_result, $__sb_buffered);
+            }
             break;
 
         case 'template':
@@ -680,7 +955,7 @@ try {
                 // Delegate template rendering entirely to the adapter.
                 // This enables template engines (Blade, Twig, etc.) that cannot
                 // be rendered via simple include + extract.
-                $__sb_html = $__sb_adapter(null, '', null, $__sb_context);
+                $__sb_html = applyAdapter($__sb_adapter, null, '', null, $__sb_context);
             } else {
                 // Default: extract args as local variables and include the file.
                 // Uses prefixed variable for args to avoid collisions with
@@ -689,38 +964,31 @@ try {
                 extract($__sb_args, EXTR_SKIP);
                 ob_start();
                 include $__sb_file;
-                $__sb_html = ob_get_clean();
+                $__sb_html = getOutputBuffer();
             }
             break;
 
         case 'enumMethod':
-            if (!class_exists('ReflectionEnum')) {
+            if (!function_exists('enum_exists') || $__sb_class === null || $__sb_callable === null) {
+                throw new \RuntimeException('enumMethod requires enum class and callable.');
+            }
+            if (!enum_exists($__sb_class)) {
                 throw new \RuntimeException("Enum methods require PHP 8.1+. Current PHP: " . PHP_VERSION);
             }
-            $__sb_ref = new ReflectionEnum($__sb_class);
+            /** @var class-string $__sb_class */
+            $__sb_ref = new ReflectionClass($__sb_class);
             $__sb_caseValue = $__sb_args['_case'] ?? null;
-            // Try backed enum ::from(), then fall back to name matching
-            try {
-                $__sb_enumInstance = $__sb_class::from($__sb_caseValue);
-            } catch (\Throwable) {
-                // Unit enum — match by name
-                $__sb_enumInstance = null;
-                foreach ($__sb_class::cases() as $__sb_case) {
-                    if ($__sb_case->name === $__sb_caseValue) {
-                        $__sb_enumInstance = $__sb_case;
-                        break;
-                    }
-                }
-                if ($__sb_enumInstance === null) {
-                    throw new \RuntimeException("Cannot resolve enum case '{$__sb_caseValue}' for {$__sb_class}");
-                }
-            }
+            $__sb_enumInstance = resolveEnumCase($__sb_class, $__sb_caseValue);
             $__sb_method = $__sb_ref->getMethod($__sb_callable);
             $__sb_methodArgs = array_diff_key($__sb_args, ['_case' => true]);
             ob_start();
             $__sb_result = $__sb_method->invokeArgs($__sb_enumInstance, matchArgs($__sb_method, $__sb_methodArgs, $__sb_typeMap));
-            $__sb_buffered = ob_get_clean();
-            $__sb_html = $__sb_adapter ? $__sb_adapter($__sb_result, $__sb_buffered, $__sb_enumInstance, $__sb_context) : resolveOutput($__sb_result, $__sb_buffered);
+            $__sb_buffered = getOutputBuffer();
+            if ($__sb_adapter !== null) {
+                $__sb_html = applyAdapter($__sb_adapter, $__sb_result, $__sb_buffered, $__sb_enumInstance, $__sb_context);
+            } else {
+                $__sb_html = resolveOutput($__sb_result, $__sb_buffered);
+            }
             break;
 
         default:

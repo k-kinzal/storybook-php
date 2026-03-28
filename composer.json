@@ -1,0 +1,30 @@
+{
+  "name": "storybook-php/dev-tools",
+  "description": "Development quality tooling for the storybook-php PHP runtime",
+  "type": "project",
+  "license": "MIT",
+  "require": {
+    "php": "^8.0"
+  },
+  "require-dev": {
+    "php-parallel-lint/php-parallel-lint": "^1.4",
+    "phpstan/extension-installer": "^1.4",
+    "phpstan/phpstan": "^2.1.44",
+    "phpstan/phpstan-strict-rules": "^2.0.10"
+  },
+  "config": {
+    "allow-plugins": {
+      "phpstan/extension-installer": true
+    },
+    "sort-packages": true
+  },
+  "scripts": {
+    "lint": [
+      "composer validate --strict",
+      "@lint:syntax",
+      "@phpstan"
+    ],
+    "lint:syntax": "parallel-lint --colors src/php",
+    "phpstan": "phpstan analyse --ansi"
+  }
+}

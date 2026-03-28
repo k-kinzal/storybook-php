@@ -1,8 +1,10 @@
 node_modules/
+vendor/
 dist/
 *.tsbuildinfo
 .DS_Store
 *.php.d.ts
+.phpstan/
 .storybook-out/
 storybook-static/
 coverage/
