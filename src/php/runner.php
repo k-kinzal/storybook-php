@@ -452,6 +452,69 @@ function castWithNamedType(ReflectionNamedType $type, mixed $value, ReflectionPa
 }
 
 /**
+ * Detect whether an array uses consecutive integer keys starting at 0.
+ */
+function isListArray(array $value): bool
+{
+    $expectedKey = 0;
+    foreach ($value as $key => $_) {
+        if ($key !== $expectedKey) {
+            return false;
+        }
+        $expectedKey++;
+    }
+
+    return true;
+}
+
+/**
+ * Resolve the effective doc type for a parameter, including typeMap.args overrides.
+ */
+function resolveParamDocType(
+    ReflectionParameter $param,
+    array $docTypes,
+    string $classFqn,
+    string $methodName,
+    ?array $typeMap = null,
+): ?string {
+    $name = $param->getName();
+    $docType = $docTypes[$name] ?? null;
+
+    if ($typeMap !== null && isset($typeMap['args'])) {
+        $override = $typeMap['args']["{$classFqn}::{$methodName}::\${$name}"]
+            ?? $typeMap['args']["{$classFqn}::\${$name}"]
+            ?? null;
+
+        if ($override !== null) {
+            if (is_string($override)) {
+                return $override;
+            }
+
+            if (is_array($override)) {
+                if (array_key_exists('type', $override) && is_string($override['type'])) {
+                    return $override['type'];
+                }
+
+                if (array_key_exists('elementType', $override) && $override['elementType'] !== null) {
+                    $paramType = $param->getType();
+                    $isArrayLike = $paramType instanceof \ReflectionNamedType
+                        && in_array($paramType->getName(), ['array', 'iterable'], true);
+                    $elementType = $override['elementType'];
+                    if ($isArrayLike && is_string($elementType) && $elementType !== '') {
+                        return $elementType . '[]';
+                    }
+                    if (is_string($elementType)) {
+                        return $elementType;
+                    }
+                }
+            }
+        }
+    }
+
+    return $docType;
+}
+
+/**
  * Match arguments from an associative array to the parameter order
  * expected by a ReflectionFunctionAbstract (method or function).
  */
@@ -479,61 +542,18 @@ function matchArgs(?ReflectionFunctionAbstract $ref, array $args, ?array $typeMa
 
         if ($param->isVariadic()) {
             if (array_key_exists($name, $args)) {
-                $val = $args[$name];
-                $paramType = $param->getType();
-                if (is_array($val)) {
-                    foreach ($val as $item) {
-                        if ($paramType instanceof \ReflectionNamedType
-                            && class_exists($paramType->getName())
-                            && is_array($item)) {
-                            $classRef = new \ReflectionClass($paramType->getName());
-                            $ctor = $classRef->getConstructor();
-                            $ordered[] = $ctor
-                                ? $classRef->newInstanceArgs(matchArgs($ctor, $item, $typeMap))
-                                : $classRef->newInstance();
-                        } else {
-                            $ordered[] = $item;
-                        }
-                    }
-                } else {
-                    $ordered[] = $val;
+                $docType = resolveParamDocType($param, $docTypes, $classFqn, $methodName, $typeMap);
+                $value = $args[$name];
+                $values = is_array($value) && isListArray($value) ? $value : [$value];
+                foreach ($values as $item) {
+                    $ordered[] = castArg($param, $item, $docType, $typeMap);
                 }
             }
             continue;
         }
 
         if (array_key_exists($name, $args)) {
-            // Resolve typeMap.args override for this parameter
-            $docType = $docTypes[$name] ?? null;
-            if ($typeMap !== null && isset($typeMap['args'])) {
-                // Try "FQCN::method::$name" first, then "FQCN::$name"
-                $override = $typeMap['args']["{$classFqn}::{$methodName}::\${$name}"]
-                    ?? $typeMap['args']["{$classFqn}::\${$name}"]
-                    ?? null;
-                if ($override !== null) {
-                    if (is_string($override)) {
-                        // String shorthand: use as docType directly
-                        $docType = $override;
-                    } elseif (is_array($override)) {
-                        if (array_key_exists('type', $override) && is_string($override['type'])) {
-                            // Explicit type override takes precedence
-                            $docType = $override['type'];
-                        } elseif (array_key_exists('elementType', $override) && $override['elementType'] !== null) {
-                            // Convert elementType into array docType (e.g. "string[]")
-                            // so that castArrayElements() can apply element-wise casting
-                            $paramType = $param->getType();
-                            $isArrayLike = $paramType instanceof \ReflectionNamedType
-                                && in_array($paramType->getName(), ['array', 'iterable'], true);
-                            $elementType = $override['elementType'];
-                            if ($isArrayLike && is_string($elementType) && $elementType !== '') {
-                                $docType = $elementType . '[]';
-                            } elseif (is_string($elementType)) {
-                                $docType = $elementType;
-                            }
-                        }
-                    }
-                }
-            }
+            $docType = resolveParamDocType($param, $docTypes, $classFqn, $methodName, $typeMap);
             $ordered[] = castArg($param, $args[$name], $docType, $typeMap);
         } elseif ($param->isDefaultValueAvailable()) {
             $ordered[] = $param->getDefaultValue();

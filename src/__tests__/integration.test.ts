@@ -11524,6 +11524,21 @@ describe.skipIf(!hasPhp)("Integration: All Plan Patterns", () => {
   // typeMap: runtime bindings and args overrides
   // -------------------------------------------------------------------------
   describe("typeMap runtime", () => {
+    it("casts variadic scalar params through the shared pipeline", async () => {
+      const result = await executor.execute({
+        type: "classMethod",
+        file: fixture("VariadicCrumb.php"),
+        class: "App\\Components\\VariadicCrumb",
+        callable: "render",
+        args: {
+          separator: " > ",
+          segments: [1, 2, 3],
+        },
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain("1 > 2 > 3");
+    });
+
     it("resolves interface to concrete class via typeMap.bindings", async () => {
       const executor = new PhpExecutor({
         timeout: 10000,
@@ -11546,6 +11561,32 @@ describe.skipIf(!hasPhp)("Integration: All Plan Patterns", () => {
       expect(result.error).toBeUndefined();
       expect(result.html).toContain("Test Page");
       expect(result.html).toContain("<p>Hello from binding</p>");
+    });
+
+    it("resolves interface variadics via typeMap.bindings", async () => {
+      const executor = new PhpExecutor({
+        timeout: 10000,
+        typeMap: {
+          bindings: {
+            "App\\Components\\VariadicRenderable": "App\\Components\\VariadicHtmlBlock",
+          },
+        },
+      });
+      const result = await executor.execute({
+        type: "classMethod",
+        file: fixture("TypeMapVariadicBinding.php"),
+        class: "App\\Components\\VariadicPage",
+        callable: "render",
+        args: {
+          items: [
+            { content: "First", tag: "p" },
+            { content: "Second", tag: "span" },
+          ],
+        },
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain("<p>First</p>");
+      expect(result.html).toContain("<span>Second</span>");
     });
 
     it("applies typeMap.args elementType for array casting", async () => {

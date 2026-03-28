@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from "storybook-php";
-import renderNestedDefault from "./NestedArrayDefault.php@renderNestedDefault";
+import { renderNestedDefault } from "./NestedArrayDefault.php@renderNestedDefault";
 
 const meta: Meta<typeof renderNestedDefault> = {
   component: renderNestedDefault,
