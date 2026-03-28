@@ -140,6 +140,14 @@ To generate `.d.ts` declarations from PHP source files:
 npx storybook-php typegen
 ```
 
+## Documentation
+
+- [Getting Started](docs/getting-started.md)
+- [Rendering Model](docs/rendering-model.md)
+- [Framework Options](docs/framework-options.md)
+- [Type Mapping](docs/type-mapping.md)
+- [Testing and Types](docs/testing-and-types.md)
+
 ## License
 
 [MIT](LICENSE)
