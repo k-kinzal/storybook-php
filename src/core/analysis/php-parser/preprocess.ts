@@ -126,7 +126,7 @@ function stripComments(source: string): string {
       const end = source.indexOf("*/", i + 2);
       if (end !== -1) {
         const comment = source.slice(i, end + 2);
-        result += comment.replace(/[^\n]/g, " ");
+        result += maskNonNewlines(comment);
         i = end + 2;
         continue;
       }
@@ -134,12 +134,14 @@ function stripComments(source: string): string {
 
     if (source[i] === "/" && source[i + 1] === "/") {
       const end = source.indexOf("\n", i);
+      result += maskNonNewlines(source.slice(i, end !== -1 ? end : len));
       i = end !== -1 ? end : len;
       continue;
     }
 
     if (source[i] === "#" && source[i + 1] !== "[") {
       const end = source.indexOf("\n", i);
+      result += maskNonNewlines(source.slice(i, end !== -1 ? end : len));
       i = end !== -1 ? end : len;
       continue;
     }
@@ -158,6 +160,7 @@ function stripAttributes(source: string): string {
 
   while (i < len) {
     if (source[i] === "#" && source[i + 1] === "[") {
+      const start = i;
       let depth = 0;
       i++;
       while (i < len) {
@@ -171,6 +174,7 @@ function stripAttributes(source: string): string {
         }
         i++;
       }
+      result += maskNonNewlines(source.slice(start, i));
       continue;
     }
 
@@ -179,4 +183,8 @@ function stripAttributes(source: string): string {
   }
 
   return result;
+}
+
+function maskNonNewlines(value: string): string {
+  return value.replace(/[^\n]/g, " ");
 }

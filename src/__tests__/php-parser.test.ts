@@ -3344,6 +3344,69 @@ class Builder {
         expect(cls!.constructorParams[0]!.name).toBe("name");
       });
     });
+
+    // -----------------------------------------------------------------------
+    // 15. Local named functions stay scoped to their body
+    // -----------------------------------------------------------------------
+    describe("local named functions remain scoped", () => {
+      it("does not treat a local function inside a method body as a class method", () => {
+        const source = `<?php
+class Widget {
+    public function render(): string {
+        function helper_local(string $label): string {
+            return strtoupper($label);
+        }
+
+        return helper_local('ok');
+    }
+}`;
+        const meta = parsePhpSource(source, "test.php");
+        const cls = meta.classes.find((c) => c.name === "Widget");
+        expect(cls).toBeTruthy();
+        expect(cls!.methods.map((m) => m.name)).toEqual(["render"]);
+      });
+
+      it("does not export a local function declared inside a standalone function body", () => {
+        const source = `<?php
+function outer(): string {
+    function inner_helper(): string {
+        return 'inner';
+    }
+
+    return inner_helper();
+}
+`;
+        const meta = parsePhpSource(source, "test.php");
+        expect(meta.functions.map((f) => f.name)).toEqual(["outer"]);
+      });
+    });
+
+    // -----------------------------------------------------------------------
+    // 16. Anonymous class trait use stays isolated
+    // -----------------------------------------------------------------------
+    describe("anonymous class trait use stays isolated", () => {
+      it("does not merge nested anonymous-class traits into the parent class", () => {
+        const source = `<?php
+trait HasBadge {
+    public function badge(): string {
+        return 'badge';
+    }
+}
+
+class ParentCard {
+    public function create(): object {
+        return new class {
+            use HasBadge;
+        };
+    }
+}
+`;
+        const meta = parsePhpSource(source, "test.php");
+        const cls = meta.classes.find((c) => c.name === "ParentCard");
+        expect(cls).toBeTruthy();
+        expect(cls!.traits).toEqual([]);
+      });
+    });
   });
 
   // -----------------------------------------------------------------------

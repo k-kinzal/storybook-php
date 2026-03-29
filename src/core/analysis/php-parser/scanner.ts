@@ -1,67 +1,76 @@
+export interface SignatureTail {
+  returnType: string | null;
+  terminator: "{" | ";" | null;
+  terminatorIndex: number;
+}
+
 export function extractBraceBody(source: string, startIdx: number): string {
-  let depth = 1;
-  let i = startIdx;
-
-  while (i < source.length && depth > 0) {
-    if (source[i] === "{") depth++;
-    else if (source[i] === "}") depth--;
-    if (depth > 0) i++;
-  }
-
-  return source.slice(startIdx, i);
+  return extractDelimitedContent(source, startIdx, "{", "}");
 }
 
 export function extractParenContent(source: string, startIdx: number): string {
-  let depth = 1;
+  return extractDelimitedContent(source, startIdx, "(", ")");
+}
+
+export function skipWhitespace(source: string, startIdx: number): number {
   let i = startIdx;
-
-  while (i < source.length && depth > 0) {
-    if (source[i] === "(") depth++;
-    else if (source[i] === ")") depth--;
-    if (depth > 0) i++;
+  while (i < source.length && /\s/.test(source[i]!)) {
+    i++;
   }
-
-  return source.slice(startIdx, i);
+  return i;
 }
 
-export function extractTopLevelContent(body: string): string {
-  let result = "";
-  let depth = 0;
+export function scanTopLevel(
+  source: string,
+  visitor: (index: number) => number | null | undefined,
+): void {
+  let parenDepth = 0;
+  let bracketDepth = 0;
+  let braceDepth = 0;
+  let i = 0;
 
-  for (let i = 0; i < body.length; i++) {
-    const ch = body[i]!;
-    if (ch === "{") {
-      depth++;
-    } else if (ch === "}") {
-      depth--;
-    } else if (depth === 0) {
-      result += ch;
+  while (i < source.length) {
+    if (parenDepth === 0 && bracketDepth === 0 && braceDepth === 0) {
+      const next = visitor(i);
+      if (typeof next === "number" && next > i) {
+        i = next;
+        continue;
+      }
     }
-  }
 
-  return result;
+    const ch = source[i]!;
+    if (ch === "(") parenDepth++;
+    else if (ch === ")" && parenDepth > 0) parenDepth--;
+    else if (ch === "[") bracketDepth++;
+    else if (ch === "]" && bracketDepth > 0) bracketDepth--;
+    else if (ch === "{") braceDepth++;
+    else if (ch === "}" && braceDepth > 0) braceDepth--;
+
+    i++;
+  }
 }
 
-export function stripAnonymousClassBodies(body: string): string {
-  const anonRe = /\bnew\s+class\b/g;
-  let result = body;
-  const matchPositions: number[] = [];
-  let match: RegExpExecArray | null;
+export function readSignatureTail(source: string, startIdx: number): SignatureTail {
+  let i = skipWhitespace(source, startIdx);
 
-  while ((match = anonRe.exec(body)) !== null) {
-    matchPositions.push(match.index);
+  if (source[i] !== ":") {
+    const terminator = source[i] === "{" || source[i] === ";" ? (source[i] as "{" | ";") : null;
+    return {
+      returnType: null,
+      terminator,
+      terminatorIndex: i,
+    };
   }
 
-  for (let i = matchPositions.length - 1; i >= 0; i--) {
-    const start = matchPositions[i]!;
-    const braceIdx = result.indexOf("{", start);
-    if (braceIdx === -1) continue;
+  i = skipWhitespace(source, i + 1);
+  const { index, terminator } = findTopLevelTerminator(source, i, ["{", ";"]);
+  const rawType = source.slice(i, index).trim();
 
-    const inner = extractBraceBody(result, braceIdx + 1);
-    result = result.slice(0, braceIdx) + "{}" + result.slice(braceIdx + 1 + inner.length + 1);
-  }
-
-  return result;
+  return {
+    returnType: rawType ? rawType.replace(/\s+/g, "") : null,
+    terminator: terminator as "{" | ";" | null,
+    terminatorIndex: index,
+  };
 }
 
 export function findTopLevelEquals(source: string): number {
@@ -77,4 +86,58 @@ export function findTopLevelEquals(source: string): number {
   }
 
   return -1;
+}
+
+function extractDelimitedContent(
+  source: string,
+  startIdx: number,
+  openChar: string,
+  closeChar: string,
+): string {
+  let depth = 1;
+  let i = startIdx;
+
+  while (i < source.length && depth > 0) {
+    if (source[i] === openChar) depth++;
+    else if (source[i] === closeChar) depth--;
+    if (depth > 0) i++;
+  }
+
+  return source.slice(startIdx, i);
+}
+
+function findTopLevelTerminator(
+  source: string,
+  startIdx: number,
+  terminators: string[],
+): { index: number; terminator: string | null } {
+  let parenDepth = 0;
+  let bracketDepth = 0;
+  let braceDepth = 0;
+
+  for (let i = startIdx; i < source.length; i++) {
+    const ch = source[i]!;
+
+    if (ch === "(") parenDepth++;
+    else if (ch === ")" && parenDepth > 0) parenDepth--;
+    else if (ch === "[") bracketDepth++;
+    else if (ch === "]" && bracketDepth > 0) bracketDepth--;
+    else if (ch === "{") {
+      if (parenDepth === 0 && bracketDepth === 0 && braceDepth === 0 && terminators.includes(ch)) {
+        return { index: i, terminator: ch };
+      }
+      braceDepth++;
+    } else if (ch === "}" && braceDepth > 0) {
+      braceDepth--;
+    } else if (
+      parenDepth === 0 &&
+      bracketDepth === 0 &&
+      braceDepth === 0 &&
+      terminators.includes(ch)
+    ) {
+      return { index: i, terminator: ch };
+    }
+  }
+
+  return { index: source.length, terminator: null };
 }

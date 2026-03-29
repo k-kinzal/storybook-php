@@ -2,82 +2,39 @@ import type { PhpClassMeta, PhpFunctionMeta, PhpMethodMeta, PhpParamMeta } from 
 import {
   extractBraceBody,
   extractParenContent,
-  extractTopLevelContent,
+  readSignatureTail,
+  scanTopLevel,
   findTopLevelEquals,
-  stripAnonymousClassBodies,
 } from "./scanner.js";
 
 const CLASS_LIKE_RE =
-  /\b((?:(?:abstract|final|readonly)\s+)*)(class|enum|interface|trait)\s+(\w+)([^{]*)\{/g;
+  /^((?:(?:abstract|final|readonly)\s+)*)(class|enum|interface|trait)\s+(\w+)([^{]*)\{/;
+const FUNCTION_HEADER_RE = /^function\s+(\w+)\s*\(/;
+const METHOD_HEADER_RE =
+  /^((?:(?:public|protected|private|static|abstract|final)\s+)*)function\s+(\w+)\s*\(/;
+const TRAIT_USE_RE = /^use\s+([\w\\]+(?:\s*,\s*[\w\\]+)*)\s*[;{]/;
+const ENUM_CASE_RE = /^case\s+(\w+)\b/;
 
 export function extractClasses(source: string, namespace: string | null): PhpClassMeta[] {
   const classes: PhpClassMeta[] = [];
-  let match: RegExpExecArray | null;
 
-  CLASS_LIKE_RE.lastIndex = 0;
-  while ((match = CLASS_LIKE_RE.exec(source)) !== null) {
+  scanTopLevel(source, (index) => {
+    const match = CLASS_LIKE_RE.exec(source.slice(index));
+    if (!match) return null;
+
     const modifiers = match[1] || "";
-    const keyword = match[2]!;
+    const keyword = match[2]! as "class" | "enum" | "interface" | "trait";
     const name = match[3]!;
     const afterName = match[4]!;
-    const before = source.slice(Math.max(0, match.index - 20), match.index);
-
-    if (/\bnew\s*$/.test(before)) continue;
-
-    const bodyStart = match.index + match[0].length;
+    const bodyStart = index + match[0].length;
     const body = extractBraceBody(source, bodyStart);
     const isEnum = keyword === "enum";
     const fqn = namespace ? `${namespace}\\${name}` : name;
 
-    let extendsClass: string | null = null;
-    const implementsList: string[] = [];
-    let enumBackingType: "string" | "int" | null = null;
-
-    if (isEnum) {
-      const backingMatch = /:\s*(string|int)/.exec(afterName);
-      if (backingMatch) {
-        enumBackingType = backingMatch[1] as "string" | "int";
-      }
-    }
-
-    const extendsMatch = /extends\s+([\w\\]+(?:\s*,\s*[\w\\]+)*)/.exec(afterName);
-    if (extendsMatch) {
-      extendsClass = extendsMatch[1]!.split(",")[0]!.trim();
-    }
-
-    const implementsMatch = /implements\s+([\w\\,\s]+)/.exec(afterName);
-    if (implementsMatch) {
-      implementsList.push(
-        ...implementsMatch[1]!
-          .split(",")
-          .map((value) => value.trim())
-          .filter(Boolean),
-      );
-    }
-
-    const enumCases: string[] = [];
-    if (isEnum) {
-      const topLevel = extractTopLevelContent(body);
-      const caseRe = /\bcase\s+(\w+)/g;
-      let caseMatch: RegExpExecArray | null;
-      while ((caseMatch = caseRe.exec(topLevel)) !== null) {
-        enumCases.push(caseMatch[1]!);
-      }
-    }
-
-    const traits: string[] = [];
-    if (keyword === "class" || keyword === "enum" || keyword === "trait") {
-      const traitRe = /\buse\s+([\w\\]+(?:\s*,\s*[\w\\]+)*)\s*[;{]/g;
-      let traitMatch: RegExpExecArray | null;
-      while ((traitMatch = traitRe.exec(body)) !== null) {
-        traits.push(
-          ...traitMatch[1]!
-            .split(",")
-            .map((value) => value.trim())
-            .filter(Boolean),
-        );
-      }
-    }
+    const { extendsClass, implementsList, enumBackingType } = parseClassRelationships(
+      afterName,
+      keyword,
+    );
 
     classes.push({
       name,
@@ -89,13 +46,14 @@ export function extractClasses(source: string, namespace: string | null): PhpCla
       isInterface: keyword === "interface",
       extends: extendsClass,
       implements: implementsList,
-      traits,
+      traits: keyword === "interface" ? [] : extractTraits(body),
       constructorParams: extractConstructorParams(body),
       methods: extractMethods(body),
       isEnum,
-      ...(isEnum ? { enumBackingType, enumCases } : {}),
+      ...(isEnum ? { enumBackingType, enumCases: extractEnumCases(body) } : {}),
     });
-  }
+    return bodyStart + body.length + 1;
+  });
 
   return classes;
 }
@@ -105,94 +63,71 @@ export function extractStandaloneFunctions(
   namespace: string | null,
 ): PhpFunctionMeta[] {
   const functions: PhpFunctionMeta[] = [];
-  const classRanges: Array<{ start: number; end: number }> = [];
-  let classMatch: RegExpExecArray | null;
 
-  CLASS_LIKE_RE.lastIndex = 0;
-  while ((classMatch = CLASS_LIKE_RE.exec(source)) !== null) {
-    const bodyStart = classMatch.index + classMatch[0].length;
-    const body = extractBraceBody(source, bodyStart);
-    classRanges.push({ start: classMatch.index, end: bodyStart + body.length + 1 });
-  }
+  scanTopLevel(source, (index) => {
+    const match = FUNCTION_HEADER_RE.exec(source.slice(index));
+    if (!match) return null;
 
-  const funcStartRe = /\bfunction\s+(\w+)\s*\(/g;
-  let funcMatch: RegExpExecArray | null;
-
-  while ((funcMatch = funcStartRe.exec(source)) !== null) {
-    const funcPos = funcMatch.index;
-    const funcName = funcMatch[1]!;
-
-    if (funcName === "__construct") continue;
-    if (classRanges.some((range) => funcPos > range.start && funcPos < range.end)) continue;
-
-    const parenStart = funcPos + funcMatch[0].length - 1;
+    const funcName = match[1]!;
+    const parenStart = index + match[0].length - 1;
     const rawParams = extractParenContent(source, parenStart + 1);
-    const afterCloseParen = parenStart + 1 + rawParams.length;
-    const afterSlice = source.slice(afterCloseParen + 1, afterCloseParen + 256);
-    const retBraceMatch = /^\s*(?::\s*([\w\\|&?()\s]+?))?\s*\{/.exec(afterSlice);
-
-    if (!retBraceMatch) continue;
+    const afterParen = parenStart + rawParams.length + 2;
+    const tail = readSignatureTail(source, afterParen);
+    if (!tail.terminator) return null;
 
     functions.push({
       name: funcName,
       fqn: namespace ? `${namespace}\\${funcName}` : funcName,
       params: parseParams(rawParams),
-      returnType: retBraceMatch[1]?.replace(/\s+/g, "") ?? null,
+      returnType: tail.returnType,
     });
-  }
+
+    if (tail.terminator === "{") {
+      const body = extractBraceBody(source, tail.terminatorIndex + 1);
+      return tail.terminatorIndex + body.length + 2;
+    }
+
+    return tail.terminatorIndex + 1;
+  });
 
   return functions;
 }
 
 function extractConstructorParams(classBody: string): PhpParamMeta[] {
-  const cleaned = stripAnonymousClassBodies(classBody);
-  const ctorMatch = /\bfunction\s+__construct\s*\(/.exec(cleaned);
-  if (!ctorMatch) return [];
+  let constructorParams: PhpParamMeta[] = [];
 
-  const parenOpen = cleaned.indexOf("(", ctorMatch.index);
-  if (parenOpen === -1) return [];
+  scanTopLevel(classBody, (index) => {
+    const declaration = parseMethodDeclaration(classBody, index);
+    if (!declaration) return null;
 
-  return parseParams(extractParenContent(cleaned, parenOpen + 1));
+    if (declaration.name === "__construct") {
+      constructorParams = declaration.params;
+    }
+
+    return declaration.nextIndex;
+  });
+
+  return constructorParams;
 }
 
 function extractMethods(classBody: string): PhpMethodMeta[] {
   const methods: PhpMethodMeta[] = [];
-  const cleaned = stripAnonymousClassBodies(classBody);
-  const methodRe =
-    /\b((?:(?:public|protected|private|static|abstract|final)\s+)*)function\s+(\w+)\s*\(/g;
 
-  let match: RegExpExecArray | null;
-  while ((match = methodRe.exec(cleaned)) !== null) {
-    const modifiers = match[1] || "";
-    const name = match[2]!;
-    if (name === "__construct") continue;
-
-    const parenStart = cleaned.indexOf("(", match.index + match[0].length - 1);
-    const rawParams = extractParenContent(cleaned, parenStart + 1);
-    const afterParen = cleaned.indexOf(")", parenStart + 1 + rawParams.length);
-    let returnType: string | null = null;
-
-    if (afterParen !== -1) {
-      const afterParenSlice = cleaned.slice(afterParen + 1, afterParen + 256);
-      const retMatch = /^\s*:\s*([\w\\|&?()\s]+?)(?=\s*[{;])/.exec(afterParenSlice);
-      if (retMatch) {
-        returnType = retMatch[1]!.replace(/\s+/g, "");
-      }
+  scanTopLevel(classBody, (index) => {
+    const declaration = parseMethodDeclaration(classBody, index);
+    if (!declaration) return null;
+    if (declaration.name !== "__construct") {
+      methods.push({
+        name: declaration.name,
+        isStatic: declaration.isStatic,
+        visibility: declaration.visibility,
+        params: declaration.params,
+        returnType: declaration.returnType,
+      });
     }
 
-    methods.push({
-      name,
-      isStatic: /\bstatic\b/.test(modifiers),
-      visibility:
-        (/\b(public|protected|private)\b/.exec(modifiers)?.[1] as
-          | "public"
-          | "protected"
-          | "private"
-          | undefined) ?? "public",
-      params: parseParams(rawParams),
-      returnType,
-    });
-  }
+    return declaration.nextIndex;
+  });
 
   return methods;
 }
@@ -311,4 +246,127 @@ function parseOneParam(raw: string, position: number): PhpParamMeta | null {
     ...(visibility ? { visibility } : {}),
     position,
   };
+}
+
+function extractTraits(classBody: string): string[] {
+  const traits: string[] = [];
+
+  scanTopLevel(classBody, (index) => {
+    const match = TRAIT_USE_RE.exec(classBody.slice(index));
+    if (!match) return null;
+
+    traits.push(
+      ...match[1]!
+        .split(",")
+        .map((value) => value.trim())
+        .filter(Boolean),
+    );
+
+    const terminator = match[0].trimEnd().at(-1);
+    if (terminator === "{") {
+      const braceIndex = index + match[0].lastIndexOf("{");
+      const body = extractBraceBody(classBody, braceIndex + 1);
+      return braceIndex + body.length + 2;
+    }
+
+    return index + match[0].length;
+  });
+
+  return traits;
+}
+
+function extractEnumCases(classBody: string): string[] {
+  const enumCases: string[] = [];
+
+  scanTopLevel(classBody, (index) => {
+    const match = ENUM_CASE_RE.exec(classBody.slice(index));
+    if (!match) return null;
+
+    enumCases.push(match[1]!);
+    const semicolonIndex = classBody.indexOf(";", index);
+    return semicolonIndex === -1 ? classBody.length : semicolonIndex + 1;
+  });
+
+  return enumCases;
+}
+
+function parseMethodDeclaration(
+  classBody: string,
+  index: number,
+): {
+  name: string;
+  isStatic: boolean;
+  visibility: "public" | "protected" | "private";
+  params: PhpParamMeta[];
+  returnType: string | null;
+  nextIndex: number;
+} | null {
+  const match = METHOD_HEADER_RE.exec(classBody.slice(index));
+  if (!match) return null;
+
+  const modifiers = match[1] || "";
+  const name = match[2]!;
+  const parenStart = index + match[0].length - 1;
+  const rawParams = extractParenContent(classBody, parenStart + 1);
+  const afterParen = parenStart + rawParams.length + 2;
+  const tail = readSignatureTail(classBody, afterParen);
+
+  let nextIndex = tail.terminatorIndex;
+  if (tail.terminator === "{") {
+    const body = extractBraceBody(classBody, tail.terminatorIndex + 1);
+    nextIndex = tail.terminatorIndex + body.length + 2;
+  } else if (tail.terminator === ";") {
+    nextIndex = tail.terminatorIndex + 1;
+  }
+
+  return {
+    name,
+    isStatic: /\bstatic\b/.test(modifiers),
+    visibility:
+      (/\b(public|protected|private)\b/.exec(modifiers)?.[1] as
+        | "public"
+        | "protected"
+        | "private"
+        | undefined) ?? "public",
+    params: parseParams(rawParams),
+    returnType: tail.returnType,
+    nextIndex,
+  };
+}
+
+function parseClassRelationships(
+  afterName: string,
+  keyword: "class" | "enum" | "interface" | "trait",
+): {
+  extendsClass: string | null;
+  implementsList: string[];
+  enumBackingType: "string" | "int" | null;
+} {
+  let extendsClass: string | null = null;
+  let enumBackingType: "string" | "int" | null = null;
+  const implementsList: string[] = [];
+
+  if (keyword === "enum") {
+    const backingMatch = /:\s*(string|int)/.exec(afterName);
+    if (backingMatch) {
+      enumBackingType = backingMatch[1] as "string" | "int";
+    }
+  }
+
+  const extendsMatch = /extends\s+([\w\\]+(?:\s*,\s*[\w\\]+)*)/.exec(afterName);
+  if (extendsMatch) {
+    extendsClass = extendsMatch[1]!.split(",")[0]!.trim();
+  }
+
+  const implementsMatch = /implements\s+([\w\\,\s]+)/.exec(afterName);
+  if (implementsMatch) {
+    implementsList.push(
+      ...implementsMatch[1]!
+        .split(",")
+        .map((value) => value.trim())
+        .filter(Boolean),
+    );
+  }
+
+  return { extendsClass, implementsList, enumBackingType };
 }
