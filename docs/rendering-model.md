@@ -21,6 +21,17 @@ Storybook canvas
 
 The PHP process runs server-side. Storybook only receives HTML.
 
+## Internal Layering
+
+The codebase is split into four responsibilities:
+
+- `src/config/`: normalize `FrameworkOptions`, resolve file mappings, and turn imports into absolute PHP sources.
+- `src/component/`: parse PHP sources, apply type-map enrichments, and build shared component schemas plus declaration/module output.
+- `src/render/`: validate render requests, manage registered render plans, and merge runtime type-map overrides.
+- top-level `src/*.ts`: Storybook, Vite, preview, CLI, and executor entrypoints that compose the lower layers.
+
+The dependency rule is one-way: composition entrypoints may depend on internal layers, but the lower layers should not reach back up into Storybook/Vite adapters. In particular, the PHP execution path should not depend on framework option resolution.
+
 ## Supported Import Patterns
 
 | Pattern              | Import syntax            | Args source                            |

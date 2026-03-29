@@ -2,7 +2,7 @@ import { spawn } from "node:child_process";
 import { resolve, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 import { existsSync } from "node:fs";
-import { mergeStoryTypeMaps } from "./framework-config.js";
+import { mergeStoryTypeMaps } from "./render/story-type-map.js";
 import type { PhpRenderRequest, PhpRenderResponse, TypeMapConfig, AdapterMap } from "./types.js";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));

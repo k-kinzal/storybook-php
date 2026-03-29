@@ -1,15 +1,18 @@
 import type ts from "typescript";
 import { existsSync, readFileSync, statSync } from "node:fs";
-import { generateDeclarationModule } from "../declaration-emitter.js";
-import { resolveSchemasForSource } from "../component-schema.js";
-import { resolveComponentSource, type ResolvedComponentSource } from "../component-source.js";
+import { generateDeclarationModule } from "../component/declaration-emitter.js";
+import { resolveSchemasForSource } from "../component/component-schema.js";
+import {
+  resolveComponentSource,
+  type ResolvedComponentSource,
+} from "../component/component-source.js";
 import {
   PHP_IMPORT_RE,
   resolveFrameworkOptions,
   resolveImportSource,
   extractCallableName,
   stripCallableSuffix,
-} from "../framework-config.js";
+} from "../config/framework-config.js";
 import { parsePhpSource } from "../php-parser.js";
 import type { FrameworkOptions, PhpFileMeta } from "../types.js";
 

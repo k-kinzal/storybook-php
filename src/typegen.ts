@@ -1,8 +1,11 @@
-import { resolveSchemasForSource } from "./component-schema.js";
-import { listCallableNamesFromResolvedSource, resolveComponentSource } from "./component-source.js";
-import { generateDeclarationModule } from "./declaration-emitter.js";
-import { resolveFrameworkOptions } from "./framework-config.js";
-import { buildSchemasFromMeta, buildTemplateSchema } from "./schema-builder.js";
+import { resolveFrameworkOptions } from "./config/framework-config.js";
+import { generateDeclarationModule } from "./component/declaration-emitter.js";
+import { resolveSchemasForSource } from "./component/component-schema.js";
+import {
+  listCallableNamesFromResolvedSource,
+  resolveComponentSource,
+} from "./component/component-source.js";
+import { buildSchemasFromMeta, buildTemplateSchema } from "./component/schema-builder.js";
 import type { FrameworkOptions, PhpFileMeta, TypeMapConfig } from "./types.js";
 
 export interface DeclarationOutput {

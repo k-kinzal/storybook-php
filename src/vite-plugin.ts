@@ -1,14 +1,14 @@
 import type { Plugin, ViteDevServer } from "vite";
-import { createPhpMiddleware } from "./dev-middleware.js";
-import { loadComponentSchemas } from "./component-schema.js";
+import { loadComponentSchemas } from "./component/component-schema.js";
+import { generateVirtualModule } from "./component/module-emitter.js";
 import {
   resolveFrameworkOptions,
   resolveImportSource,
   VIRTUAL_PREFIX,
   type ResolvedFrameworkOptions,
-} from "./framework-config.js";
-import { generateVirtualModule } from "./module-emitter.js";
-import { RenderRegistry } from "./render-registry.js";
+} from "./config/framework-config.js";
+import { createPhpMiddleware } from "./dev-middleware.js";
+import { RenderRegistry } from "./render/render-registry.js";
 import type { AdapterMap, FileMapTarget, FrameworkOptions } from "./types.js";
 
 export function storybookPhpPlugin(options: FrameworkOptions = {}): Plugin {
