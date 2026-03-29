@@ -1,7 +1,7 @@
 import { readFileSync } from "node:fs";
 import { extname, isAbsolute, resolve } from "node:path";
 import { pathToFileURL } from "node:url";
-import type { FrameworkOptions } from "./types.js";
+import type { FrameworkOptions } from "../types.js";
 
 export async function loadFrameworkOptionsFile(
   optionsFile: string | undefined,

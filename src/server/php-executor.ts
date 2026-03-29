@@ -2,8 +2,8 @@ import { spawn } from "node:child_process";
 import { resolve, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 import { existsSync } from "node:fs";
-import { mergeStoryTypeMaps } from "./render/story-type-map.js";
-import type { PhpRenderRequest, PhpRenderResponse, TypeMapConfig, AdapterMap } from "./types.js";
+import { mergeStoryTypeMaps } from "../render/story-type-map.js";
+import type { PhpRenderRequest, PhpRenderResponse, TypeMapConfig, AdapterMap } from "../types.js";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
@@ -48,13 +48,13 @@ export class PhpExecutor {
 
   /**
    * Try to find runner.php in multiple locations depending on whether
-   * we're running from dist/ (compiled) or src/ (dev/test).
+   * we're running from dist/ (compiled) or src/server/ (dev/test).
    */
   private resolveRunnerPath(): string {
     const candidates = [
       resolve(__dirname, "..", "src", "php", "runner.php"), // from dist/
-      resolve(__dirname, "php", "runner.php"), // from src/
-      resolve(__dirname, "..", "php", "runner.php"), // fallback
+      resolve(__dirname, "..", "php", "runner.php"), // from src/server/
+      resolve(__dirname, "php", "runner.php"), // fallback for legacy layouts
     ];
     for (const p of candidates) {
       if (existsSync(p)) return p;

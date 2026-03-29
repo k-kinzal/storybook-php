@@ -1,4 +1,4 @@
-import { parsePhpFile } from "../php-parser.js";
+import { parsePhpFile } from "../analysis/php-parser.js";
 import {
   findResolvedFileMapping,
   resolveAdapterForSourceFile,

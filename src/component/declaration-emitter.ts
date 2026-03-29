@@ -1,4 +1,4 @@
-import { phpTypeToTs } from "../php-type-to-ts.js";
+import { phpTypeToTs } from "../typescript/php-type-to-ts.js";
 import type { PhpArgMap, PhpComponentSchema } from "../types.js";
 
 export function generateDeclarationModule(schemas: PhpComponentSchema[]): string {

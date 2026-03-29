@@ -7,7 +7,7 @@ import {
   VIRTUAL_PREFIX,
   type ResolvedFrameworkOptions,
 } from "./config/framework-config.js";
-import { createPhpMiddleware } from "./dev-middleware.js";
+import { createPhpMiddleware } from "./server/dev-middleware.js";
 import { RenderRegistry } from "./render/render-registry.js";
 import type { AdapterMap, FileMapTarget, FrameworkOptions } from "./types.js";
 

@@ -6,8 +6,8 @@ import { describe, it, expect } from "vite-plus/test";
 import { execSync } from "node:child_process";
 import { existsSync } from "node:fs";
 import { dirname, resolve } from "node:path";
-import { PhpExecutor } from "../php-executor.js";
-import { parsePhpFile } from "../php-parser.js";
+import { parsePhpFile } from "../analysis/php-parser.js";
+import { PhpExecutor } from "../server/php-executor.js";
 import { storybookPhpPlugin } from "../vite-plugin.js";
 import { getLoad, getResolveId } from "./plugin-test-helpers.js";
 

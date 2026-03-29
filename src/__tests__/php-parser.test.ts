@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vite-plus/test";
-import { parsePhpSource } from "../php-parser.js";
+import { parsePhpSource } from "../analysis/php-parser.js";
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 

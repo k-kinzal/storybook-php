@@ -4,9 +4,9 @@ import { fileURLToPath, pathToFileURL } from "node:url";
 import { spawn } from "node:child_process";
 import { createRequire } from "node:module";
 import { existsSync, writeFileSync, readdirSync, statSync } from "node:fs";
-import { generateDtsOutputsForFile } from "./typegen.js";
-import { loadFrameworkOptionsFile } from "./framework-options-loader.js";
-import { ensureLink } from "./node-modules-link.js";
+import { ensureLink } from "./cli/node-modules-link.js";
+import { loadFrameworkOptionsFile } from "./config/framework-options-loader.js";
+import { generateDtsOutputsForFile } from "./typescript/typegen.js";
 
 const [, , command, ...args] = process.argv;
 

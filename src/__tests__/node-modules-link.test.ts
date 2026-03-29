@@ -12,7 +12,7 @@ import {
 } from "node:fs";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
-import { detectNodeModulesState, ensureLink } from "../node-modules-link.js";
+import { detectNodeModulesState, ensureLink } from "../cli/node-modules-link.js";
 
 let tmpDir: string;
 

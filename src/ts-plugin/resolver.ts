@@ -13,7 +13,7 @@ import {
   extractCallableName,
   stripCallableSuffix,
 } from "../config/framework-config.js";
-import { parsePhpSource } from "../php-parser.js";
+import { parsePhpSource } from "../analysis/php-parser.js";
 import type { FrameworkOptions, PhpFileMeta } from "../types.js";
 
 export interface PhpResolver {

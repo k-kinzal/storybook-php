@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vite-plus/test";
-import { generateDts, generateDtsOutputsForFile } from "../typegen.js";
-import { parsePhpSource } from "../php-parser.js";
+import { parsePhpSource } from "../analysis/php-parser.js";
+import { generateDts, generateDtsOutputsForFile } from "../typescript/typegen.js";
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 
