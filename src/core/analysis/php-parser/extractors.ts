@@ -30,6 +30,7 @@ export function extractClasses(source: string, namespace: string | null): PhpCla
     const body = extractBraceBody(source, bodyStart);
     const isEnum = keyword === "enum";
     const fqn = namespace ? `${namespace}\\${name}` : name;
+    const constructor = extractConstructor(body);
 
     const { extendsClass, implementsList, enumBackingType } = parseClassRelationships(
       afterName,
@@ -47,7 +48,8 @@ export function extractClasses(source: string, namespace: string | null): PhpCla
       extends: extendsClass,
       implements: implementsList,
       traits: keyword === "interface" ? [] : extractTraits(body),
-      constructorParams: extractConstructorParams(body),
+      hasConstructor: constructor.hasConstructor,
+      constructorParams: constructor.params,
       methods: extractMethods(body),
       isEnum,
       ...(isEnum ? { enumBackingType, enumCases: extractEnumCases(body) } : {}),
@@ -93,21 +95,26 @@ export function extractStandaloneFunctions(
   return functions;
 }
 
-function extractConstructorParams(classBody: string): PhpParamMeta[] {
-  let constructorParams: PhpParamMeta[] = [];
+function extractConstructor(classBody: string): {
+  hasConstructor: boolean;
+  params: PhpParamMeta[];
+} {
+  let hasConstructor = false;
+  let params: PhpParamMeta[] = [];
 
   scanTopLevel(classBody, (index) => {
     const declaration = parseMethodDeclaration(classBody, index);
     if (!declaration) return null;
 
     if (declaration.name === "__construct") {
-      constructorParams = declaration.params;
+      hasConstructor = true;
+      params = declaration.params;
     }
 
     return declaration.nextIndex;
   });
 
-  return constructorParams;
+  return { hasConstructor, params };
 }
 
 function extractMethods(classBody: string): PhpMethodMeta[] {

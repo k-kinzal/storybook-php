@@ -77,6 +77,7 @@ export interface PhpClassMeta {
   extends: string | null;
   implements: string[];
   traits: string[];
+  hasConstructor: boolean;
   constructorParams: PhpParamMeta[];
   methods: PhpMethodMeta[];
   isEnum: boolean;

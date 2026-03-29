@@ -3345,6 +3345,26 @@ class Builder {
       });
     });
 
+    describe("zero-arg constructor overrides", () => {
+      it("tracks an explicit zero-arg constructor separately from no constructor", () => {
+        const meta = parsePhpSource(
+          fixture("ZeroArgConstructorOverride.php"),
+          "ZeroArgConstructorOverride.php",
+        );
+
+        const base = meta.classes.find((c) => c.name === "ConstructorBase");
+        expect(base).toBeTruthy();
+        expect(base!.hasConstructor).toBe(true);
+        expect(base!.constructorParams).toHaveLength(1);
+        expect(base!.constructorParams[0]!.name).toBe("label");
+
+        const child = meta.classes.find((c) => c.name === "ConstructorOverride");
+        expect(child).toBeTruthy();
+        expect(child!.hasConstructor).toBe(true);
+        expect(child!.constructorParams).toHaveLength(0);
+      });
+    });
+
     // -----------------------------------------------------------------------
     // 15. Local named functions stay scoped to their body
     // -----------------------------------------------------------------------

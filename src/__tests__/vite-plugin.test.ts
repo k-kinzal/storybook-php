@@ -1178,6 +1178,22 @@ describe("Vite Plugin", () => {
         expect(code).toContain("export const TypeMapChild");
         expect(code).toContain('__callable: "render"');
       });
+
+      it("does not inherit parent constructor args when the child overrides with zero params", () => {
+        const plugin = storybookPhpPlugin();
+        const load = getLoad(plugin);
+        const filePath = resolve(FIXTURES, "ZeroArgConstructorOverride.php");
+        const code = load(`${VIRTUAL_PREFIX}${filePath}?callable=render`);
+
+        expect(code).toBeTruthy();
+        expect(code).toContain("__type: 'classMethod'");
+        expect(code).toContain("export const ConstructorOverride");
+        expect(code).toContain(`export const ConstructorOverride = {
+  __php: true,`);
+        expect(code).toContain(`__class: "App\\\\Components\\\\ConstructorOverride"`);
+        expect(code).toContain("__constructorArgs: {}");
+        expect(code).toContain("__allArgs: {}");
+      });
     });
 
     describe("typeMap.args overrides", () => {

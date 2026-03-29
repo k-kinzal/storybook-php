@@ -109,7 +109,7 @@ export function buildSchemasFromMeta(
   };
 
   const resolveConstructorParams = (cls: PhpClassMeta): PhpParamMeta[] => {
-    if (cls.constructorParams.length > 0) return cls.constructorParams;
+    if (cls.hasConstructor) return cls.constructorParams;
     if (!cls.extends) return [];
 
     const parent = meta.classes.find(
