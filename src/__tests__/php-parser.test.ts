@@ -3013,6 +3013,66 @@ class User {
         const cls = meta.classes.find((c) => c.name === "User");
         expect(cls!.fqn).toBe("App\\Models\\User");
       });
+
+      it("keeps classes and functions scoped to each namespace block", () => {
+        const source = `<?php
+namespace App\\Models;
+
+class User {
+    public function render(): string { return 'user'; }
+}
+
+namespace App\\Admin {
+    class Dashboard {
+        public function render(): string { return 'admin'; }
+    }
+
+    function badge(): string {
+        return 'badge';
+    }
+}`;
+        const meta = parsePhpSource(source, "test.php");
+        expect(meta.namespace).toBe("App\\Models");
+
+        const user = meta.classes.find((c) => c.name === "User");
+        expect(user).toBeTruthy();
+        expect(user!.fqn).toBe("App\\Models\\User");
+
+        const dashboard = meta.classes.find((c) => c.name === "Dashboard");
+        expect(dashboard).toBeTruthy();
+        expect(dashboard!.fqn).toBe("App\\Admin\\Dashboard");
+
+        const badge = meta.functions.find((f) => f.name === "badge");
+        expect(badge).toBeTruthy();
+        expect(badge!.fqn).toBe("App\\Admin\\badge");
+      });
+
+      it("supports explicit global namespace blocks alongside named namespaces", () => {
+        const source = `<?php
+namespace {
+    function helper(): string {
+        return 'helper';
+    }
+}
+
+namespace App\\Widgets {
+    class Banner {
+        public function render(): string {
+            return 'banner';
+        }
+    }
+}`;
+        const meta = parsePhpSource(source, "test.php");
+        expect(meta.namespace).toBe("App\\Widgets");
+
+        const helper = meta.functions.find((f) => f.name === "helper");
+        expect(helper).toBeTruthy();
+        expect(helper!.fqn).toBe("helper");
+
+        const banner = meta.classes.find((c) => c.name === "Banner");
+        expect(banner).toBeTruthy();
+        expect(banner!.fqn).toBe("App\\Widgets\\Banner");
+      });
     });
 
     // -----------------------------------------------------------------------
