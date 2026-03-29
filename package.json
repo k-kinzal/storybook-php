@@ -64,11 +64,13 @@
   "devDependencies": {
     "@storybook/builder-vite": "^10.3.0",
     "@types/node": "^25.5.0",
+    "@vitest/coverage-v8": "^4.1.2",
     "jsdom": "^29.0.0",
     "storybook": "^10.3.0",
     "typescript": "^6.0.2",
     "vite": "^8.0.0",
-    "vite-plus": "^0.1.12"
+    "vite-plus": "^0.1.12",
+    "vitest": "^4.1.2"
   },
   "peerDependencies": {
     "@storybook/addon-vitest": "^10.0.0",

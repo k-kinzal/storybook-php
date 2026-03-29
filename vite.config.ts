@@ -37,6 +37,25 @@ export default defineConfig({
     environment: "node",
     globals: true,
     testTimeout: 15000,
+    coverage: {
+      provider: "v8",
+      all: true,
+      include: ["src/**/*.ts"],
+      exclude: [
+        "src/**/__tests__/**",
+        "src/cli.ts",
+        "src/index.ts",
+        "src/public-types.ts",
+        "src/types.ts",
+      ],
+      reporter: ["text", "json-summary", "clover"],
+      thresholds: {
+        statements: 100,
+        branches: 100,
+        functions: 100,
+        lines: 100,
+      },
+    },
   },
   staged: {
     "*.{js,cjs,mjs,ts,cts,mts,json,md}": "vp check --fix",
