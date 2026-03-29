@@ -40,6 +40,46 @@ export function createPhpResolver(
   const metaCache = new Map<string, { mtime: number; meta: PhpFileMeta }>();
   const declarationCache = new Map<string, { version: string; content: string }>();
 
+  function resolveImportTarget(
+    specifier: string,
+    containingFile: string,
+  ): {
+    explicitCallable: string | null;
+    sourceFile: string;
+  } | null {
+    const explicitCallable = extractCallableName(specifier);
+    const resolvedImport = resolveImportSource(specifier, containingFile, resolvedOptions);
+    if (!resolvedImport) {
+      return null;
+    }
+
+    return {
+      explicitCallable,
+      sourceFile: resolvedImport.sourceFile,
+    };
+  }
+
+  function resolveVirtualDeclarationTarget(fileName: string): {
+    explicitCallable: string | null;
+    importPath: string;
+  } | null {
+    const sourcePath = stripVirtualDeclarationSuffix(fileName);
+    if (!sourcePath) {
+      return null;
+    }
+
+    const explicitCallable = extractCallableName(sourcePath);
+    const importPath = stripCallableSuffix(sourcePath);
+    if (!existsSync(importPath)) {
+      return null;
+    }
+
+    return {
+      explicitCallable,
+      importPath,
+    };
+  }
+
   function isPhpImport(specifier: string): boolean {
     return PHP_IMPORT_RE.test(specifier);
   }
@@ -62,15 +102,14 @@ export function createPhpResolver(
   }
 
   function resolvePhpImport(specifier: string, containingFile: string): string | null {
-    const explicitCallable = extractCallableName(specifier);
-    const resolvedImport = resolveImportSource(specifier, containingFile, resolvedOptions);
-    if (!resolvedImport) return null;
+    const resolvedTarget = resolveImportTarget(specifier, containingFile);
+    if (!resolvedTarget) return null;
 
     try {
-      const resolvedSource = resolveComponentSource(resolvedImport.sourceFile, resolvedOptions);
+      const resolvedSource = resolveComponentSource(resolvedTarget.sourceFile, resolvedOptions);
       return generateDeclarationContentForImport(
         resolvedSource,
-        explicitCallable,
+        resolvedTarget.explicitCallable,
         resolvedOptions.defaultMethod,
       );
     } catch {
@@ -79,24 +118,18 @@ export function createPhpResolver(
   }
 
   function getVirtualDeclarationPath(specifier: string, containingFile: string): string | null {
-    const explicitCallable = extractCallableName(specifier);
-    const resolvedImport = resolveImportSource(specifier, containingFile, resolvedOptions);
-    if (!resolvedImport) return null;
+    const resolvedTarget = resolveImportTarget(specifier, containingFile);
+    if (!resolvedTarget) return null;
 
-    return declarationPathForImport(resolvedImport.sourceFile, explicitCallable);
+    return declarationPathForImport(resolvedTarget.sourceFile, resolvedTarget.explicitCallable);
   }
 
   function getVirtualDeclaration(fileName: string): string | null {
-    const sourcePath = stripVirtualDeclarationSuffix(fileName);
-    if (!sourcePath) return null;
-
-    const explicitCallable = extractCallableName(sourcePath);
-    const importPath = stripCallableSuffix(sourcePath);
-
-    if (!existsSync(importPath)) return null;
+    const resolvedTarget = resolveVirtualDeclarationTarget(fileName);
+    if (!resolvedTarget) return null;
 
     try {
-      const resolvedSource = resolveComponentSource(importPath, resolvedOptions);
+      const resolvedSource = resolveComponentSource(resolvedTarget.importPath, resolvedOptions);
       const version = versionForResolvedSource(resolvedSource);
       const cached = declarationCache.get(fileName);
       if (cached && cached.version === version) {
@@ -105,7 +138,7 @@ export function createPhpResolver(
 
       const content = generateDeclarationContentForImport(
         resolvedSource,
-        explicitCallable,
+        resolvedTarget.explicitCallable,
         resolvedOptions.defaultMethod,
       );
       if (content === "") {
@@ -120,14 +153,13 @@ export function createPhpResolver(
   }
 
   function getVirtualDeclarationVersion(fileName: string): string | null {
-    const sourcePath = stripVirtualDeclarationSuffix(fileName);
-    if (!sourcePath) return null;
-
-    const importPath = stripCallableSuffix(sourcePath);
-    if (!existsSync(importPath)) return null;
+    const resolvedTarget = resolveVirtualDeclarationTarget(fileName);
+    if (!resolvedTarget) return null;
 
     try {
-      return versionForResolvedSource(resolveComponentSource(importPath, resolvedOptions));
+      return versionForResolvedSource(
+        resolveComponentSource(resolvedTarget.importPath, resolvedOptions),
+      );
     } catch {
       return null;
     }

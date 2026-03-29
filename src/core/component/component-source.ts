@@ -1,7 +1,6 @@
 import { parsePhpFile } from "../analysis/php-parser.js";
 import {
-  findResolvedFileMapping,
-  resolveAdapterForSourceFile,
+  resolveSourceFileMapping,
   type ResolvedFrameworkOptions,
 } from "../config/framework-config.js";
 import type { ArgOverride, PhpArgMap, PhpFileMeta, PhpParamMeta } from "../../types.js";
@@ -25,10 +24,8 @@ export function resolveComponentSource(
   sourceFile: string,
   options: ResolvedFrameworkOptions,
 ): ResolvedComponentSource {
-  const mapping = options.typeMap?.files
-    ? findResolvedFileMapping(sourceFile, options.typeMap.files)
-    : null;
-  const adapter = resolveAdapterForSourceFile(sourceFile, options);
+  const mapping = resolveSourceFileMapping(sourceFile, options);
+  const adapter = mapping?.adapter ?? options.adapter;
 
   if (mapping?.args) {
     return {

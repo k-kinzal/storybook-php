@@ -228,6 +228,13 @@ describe("PhpResolver", () => {
         resolver.getVirtualDeclarationVersion(fileName),
       );
     });
+
+    it("does not expose a bare-path declaration when defaultMethod is missing", () => {
+      const resolver = createPhpResolver(mockTs, "missingMethod");
+      const result = resolver.getVirtualDeclaration(`${fixturePath("SimpleComponent.php")}.d.ts`);
+
+      expect(result).toBeNull();
+    });
   });
 
   describe("full resolver config", () => {

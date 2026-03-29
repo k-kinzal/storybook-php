@@ -9,6 +9,9 @@ import type { ResolvedFrameworkOptions } from "../config/framework-config.js";
 import type { PhpComponentSchema } from "../../types.js";
 
 export interface LoadComponentSchemasResult {
+  resolvedSource: ResolvedComponentSource;
+  requestedCallableName: string | null;
+  effectiveCallableName: string | null;
   schemas: PhpComponentSchema[];
   dependencies: string[];
   error?: string;
@@ -16,53 +19,43 @@ export interface LoadComponentSchemasResult {
 
 export function loadComponentSchemas(
   sourceFile: string,
-  callableName: string | null,
+  requestedCallableName: string | null,
   options: ResolvedFrameworkOptions,
 ): LoadComponentSchemasResult {
   const resolvedSource = resolveComponentSource(sourceFile, options);
-  return resolveSchemasForSource(resolvedSource, callableName);
+  return resolveSchemasForSource(resolvedSource, requestedCallableName);
 }
 
 export function resolveSchemasForSource(
   resolvedSource: ResolvedComponentSource,
   requestedCallable: string | null,
 ): LoadComponentSchemasResult {
-  if (resolvedSource.inlineArgs) {
-    return {
-      schemas: [
-        buildTemplateSchema({
-          sourceFile: resolvedSource.sourceFile,
-          executionFile: resolvedSource.executionFile,
-          allArgs: resolvedSource.inlineArgs,
-          adapter: resolvedSource.adapter,
-        }),
-      ],
-      dependencies: resolvedSource.dependencies,
-    };
-  }
-
   const effectiveCallableName = resolveComponentCallable(resolvedSource, requestedCallable);
 
+  if (resolvedSource.inlineArgs) {
+    return buildResult(resolvedSource, requestedCallable, effectiveCallableName, [
+      buildTemplateSchema({
+        sourceFile: resolvedSource.sourceFile,
+        executionFile: resolvedSource.executionFile,
+        allArgs: resolvedSource.inlineArgs,
+        adapter: resolvedSource.adapter,
+      }),
+    ]);
+  }
+
   if (effectiveCallableName === null) {
-    return {
-      schemas: [
-        buildTemplateSchema({
-          sourceFile: resolvedSource.sourceFile,
-          executionFile: resolvedSource.executionFile,
-          allArgs: {},
-          adapter: resolvedSource.adapter,
-        }),
-      ],
-      dependencies: resolvedSource.dependencies,
-    };
+    return buildResult(resolvedSource, requestedCallable, effectiveCallableName, [
+      buildTemplateSchema({
+        sourceFile: resolvedSource.sourceFile,
+        executionFile: resolvedSource.executionFile,
+        allArgs: {},
+        adapter: resolvedSource.adapter,
+      }),
+    ]);
   }
 
   if (!resolvedSource.meta) {
-    return {
-      schemas: [],
-      dependencies: resolvedSource.dependencies,
-      error: `PHP callable "${effectiveCallableName}" not found in ${resolvedSource.executionFile}`,
-    };
+    return buildMissingCallableResult(resolvedSource, requestedCallable, effectiveCallableName);
   }
 
   const schemas = buildSchemasFromMeta(resolvedSource.meta, effectiveCallableName, {
@@ -72,16 +65,42 @@ export function resolveSchemasForSource(
   });
 
   if (schemas.length === 0) {
-    return {
-      schemas: [],
-      dependencies: resolvedSource.dependencies,
-      error: `PHP callable "${effectiveCallableName}" not found in ${resolvedSource.executionFile}`,
-    };
+    return buildMissingCallableResult(resolvedSource, requestedCallable, effectiveCallableName);
   }
 
-  return { schemas, dependencies: resolvedSource.dependencies };
+  return buildResult(resolvedSource, requestedCallable, effectiveCallableName, schemas);
 }
 
 export function listCallableNames(sourceFile: string, options: ResolvedFrameworkOptions): string[] {
   return listCallableNamesFromResolvedSource(resolveComponentSource(sourceFile, options));
+}
+
+export function isMissingRequestedCallable(result: LoadComponentSchemasResult): boolean {
+  return result.effectiveCallableName !== null && result.schemas.length === 0;
+}
+
+function buildResult(
+  resolvedSource: ResolvedComponentSource,
+  requestedCallableName: string | null,
+  effectiveCallableName: string | null,
+  schemas: PhpComponentSchema[],
+): LoadComponentSchemasResult {
+  return {
+    resolvedSource,
+    requestedCallableName,
+    effectiveCallableName,
+    schemas,
+    dependencies: resolvedSource.dependencies,
+  };
+}
+
+function buildMissingCallableResult(
+  resolvedSource: ResolvedComponentSource,
+  requestedCallableName: string | null,
+  effectiveCallableName: string,
+): LoadComponentSchemasResult {
+  return {
+    ...buildResult(resolvedSource, requestedCallableName, effectiveCallableName, []),
+    error: `PHP callable "${effectiveCallableName}" not found in ${resolvedSource.executionFile}`,
+  };
 }

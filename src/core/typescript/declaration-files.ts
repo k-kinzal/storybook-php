@@ -1,6 +1,9 @@
 import { existsSync, statSync } from "node:fs";
 import { generateDeclarationModule } from "../component/declaration-emitter.js";
-import { resolveSchemasForSource } from "../component/component-schema.js";
+import {
+  isMissingRequestedCallable,
+  resolveSchemasForSource,
+} from "../component/component-schema.js";
 import {
   listCallableNamesFromResolvedSource,
   type ResolvedComponentSource,
@@ -27,7 +30,7 @@ export function generateDeclarationContentForImport(
   const requestedCallable = explicitCallableName ?? defaultCallable;
   const result = resolveSchemasForSource(resolvedSource, requestedCallable);
 
-  if (result.schemas.length === 0 && requestedCallable !== null) {
+  if (isMissingRequestedCallable(result)) {
     return "";
   }
 
@@ -41,15 +44,17 @@ export function generateDeclarationOutputsForResolvedSource(
   const outputs: DeclarationOutput[] = [];
   const bareSchemas = resolveSchemasForSource(resolvedSource, defaultCallable);
 
-  outputs.push({
-    path: declarationPathForImport(resolvedSource.sourceFile, null),
-    content: generateDeclarationModule(bareSchemas.schemas),
-    callableName: bareSchemas.schemas[0]?.renderPlan.callable ?? defaultCallable,
-  });
+  if (!isMissingRequestedCallable(bareSchemas)) {
+    outputs.push({
+      path: declarationPathForImport(resolvedSource.sourceFile, null),
+      content: generateDeclarationModule(bareSchemas.schemas),
+      callableName: bareSchemas.schemas[0]?.renderPlan.callable ?? defaultCallable,
+    });
+  }
 
   for (const callableName of listCallableNamesFromResolvedSource(resolvedSource)) {
     const schemas = resolveSchemasForSource(resolvedSource, callableName);
-    if (schemas.schemas.length === 0) continue;
+    if (isMissingRequestedCallable(schemas)) continue;
 
     outputs.push({
       path: declarationPathForImport(resolvedSource.sourceFile, callableName),

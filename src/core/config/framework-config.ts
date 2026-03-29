@@ -135,13 +135,18 @@ export function findResolvedFileMapping(
   return mergeFileMapTargets(patternMatch, exactMatch);
 }
 
+export function resolveSourceFileMapping(
+  sourceFile: string,
+  options: Pick<ResolvedFrameworkOptions, "typeMap">,
+): ResolvedFileMapTarget | null {
+  return options.typeMap?.files ? findResolvedFileMapping(sourceFile, options.typeMap.files) : null;
+}
+
 export function resolveAdapterForSourceFile(
   sourceFile: string,
   options: ResolvedFrameworkOptions,
 ): string | null {
-  const mapping = options.typeMap?.files
-    ? findResolvedFileMapping(sourceFile, options.typeMap.files)
-    : null;
+  const mapping = resolveSourceFileMapping(sourceFile, options);
   if (mapping?.adapter) {
     return mapping.adapter;
   }

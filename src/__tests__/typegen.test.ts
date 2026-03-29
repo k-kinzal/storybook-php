@@ -238,4 +238,15 @@ function loose($anything): void {}
     expect(outputs[0]!.content).toContain("title: string;");
     expect(outputs[0]!.content).toContain("featured?: boolean;");
   });
+
+  it("skips bare declaration outputs when defaultMethod does not resolve", () => {
+    const outputs = generateDtsOutputsForFile(fixturePath("SimpleComponent.php"), {
+      defaultMethod: "missingMethod",
+    });
+
+    expect(outputs.map((output) => output.path)).toEqual([
+      `${fixturePath("SimpleComponent.php")}@render.d.ts`,
+    ]);
+    expect(outputs[0]!.content).toContain("interface SimpleComponent_render_Args");
+  });
 });
