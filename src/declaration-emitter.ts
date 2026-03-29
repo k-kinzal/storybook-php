@@ -1,4 +1,5 @@
 import type { PhpArgMap, PhpComponentSchema } from "./types.js";
+import { phpTypeToTs } from "./php-type-to-ts.js";
 
 export function generateDeclarationModule(schemas: PhpComponentSchema[]): string {
   const parts: string[] = ["import type { PhpComponent } from 'storybook-php';", ""];
@@ -20,33 +21,6 @@ export function generateDeclarationModule(schemas: PhpComponentSchema[]): string
   }
 
   return parts.join("\n").trimEnd() + "\n";
-}
-
-export function phpTypeToTs(
-  phpType: string | null,
-  nullable = false,
-  elementType?: string,
-): string {
-  if (elementType) {
-    return `${phpTypeToTs(elementType)}[]${nullable ? " | null" : ""}`;
-  }
-
-  if (!phpType) return nullable ? "unknown | null" : "unknown";
-
-  if (phpType.startsWith("?")) {
-    return `${phpTypeToTs(phpType.slice(1))} | null`;
-  }
-
-  if (phpType.includes("|")) {
-    const union = phpType
-      .split("|")
-      .map((part) => mapSingleType(part.trim()))
-      .join(" | ");
-    return nullable && !union.includes("null") ? `${union} | null` : union;
-  }
-
-  const mapped = mapSingleType(phpType);
-  return nullable && !mapped.includes("null") ? `${mapped} | null` : mapped;
 }
 
 function generateInterfaceForArgMap(interfaceName: string, argMap: PhpArgMap): string {
@@ -100,38 +74,4 @@ function interfaceNameForSchema(schema: PhpComponentSchema): string {
     .replace(/^_+|_+$/g, "");
 
   return `${safeBase}_${safeCallable || "template"}_Args`;
-}
-
-function mapSingleType(type: string): string {
-  switch (type.toLowerCase()) {
-    case "string":
-      return "string";
-    case "int":
-    case "integer":
-    case "float":
-    case "double":
-      return "number";
-    case "bool":
-    case "boolean":
-      return "boolean";
-    case "array":
-      return "unknown[]";
-    case "object":
-    case "mixed":
-      return "unknown";
-    case "void":
-      return "void";
-    case "null":
-      return "null";
-    case "true":
-      return "true";
-    case "false":
-      return "false";
-    case "self":
-    case "static":
-    case "parent":
-      return "Record<string, unknown>";
-    default:
-      return "Record<string, unknown>";
-  }
 }

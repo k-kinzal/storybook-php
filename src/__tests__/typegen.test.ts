@@ -1,10 +1,11 @@
 import { describe, it, expect } from "vite-plus/test";
-import { generateDts } from "../typegen.js";
+import { generateDts, generateDtsOutputsForFile } from "../typegen.js";
 import { parsePhpSource } from "../php-parser.js";
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 
 const fixture = (name: string) => readFileSync(resolve(__dirname, "fixtures", name), "utf-8");
+const fixturePath = (name: string) => resolve(__dirname, "fixtures", name);
 
 const fixtureSource = (name: string) =>
   parsePhpSource(fixture(name), resolve(__dirname, "fixtures", name));
@@ -202,5 +203,39 @@ function loose($anything): void {}
     const dts = generateDts(meta);
 
     expect(dts).toContain("anything: unknown;");
+  });
+
+  it("generates exact-import outputs for the primary typegen path", () => {
+    const outputs = generateDtsOutputsForFile(fixturePath("SimpleComponent.php"), {
+      defaultMethod: "render",
+    });
+
+    expect(outputs.map((output) => output.path)).toEqual([
+      `${fixturePath("SimpleComponent.php")}.d.ts`,
+      `${fixturePath("SimpleComponent.php")}@render.d.ts`,
+    ]);
+
+    expect(outputs[0]!.content).toContain("interface SimpleComponent_render_Args");
+    expect(outputs[0]!.content).toContain("name: string;");
+  });
+
+  it("applies typeMap inline args in exact-import outputs", () => {
+    const outputs = generateDtsOutputsForFile(fixturePath("TypeMapInlineTarget.blade.php"), {
+      _configDir: resolve(__dirname, "fixtures"),
+      typeMap: {
+        files: {
+          "TypeMapInlineTarget.blade.php": {
+            args: {
+              title: "string",
+              featured: { type: "bool", default: false },
+            },
+          },
+        },
+      },
+    });
+
+    expect(outputs).toHaveLength(1);
+    expect(outputs[0]!.content).toContain("title: string;");
+    expect(outputs[0]!.content).toContain("featured?: boolean;");
   });
 });

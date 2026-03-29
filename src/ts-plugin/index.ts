@@ -1,9 +1,10 @@
 import type ts from "typescript";
 import { readFileSync } from "node:fs";
 import { createPhpResolver } from "./resolver.js";
+import type { FrameworkOptions } from "../types.js";
 
-interface PluginConfig {
-  defaultMethod?: string;
+interface PluginConfig extends Pick<FrameworkOptions, "defaultMethod" | "typeMap" | "_configDir"> {
+  configDir?: string;
 }
 
 function init(modules: { typescript: typeof ts }): ts.server.PluginModule {
@@ -11,7 +12,7 @@ function init(modules: { typescript: typeof ts }): ts.server.PluginModule {
 
   function create(info: ts.server.PluginCreateInfo): ts.LanguageService {
     const config: PluginConfig = info.config ?? {};
-    const resolver = createPhpResolver(tsModule, config.defaultMethod);
+    const resolver = createPhpResolver(tsModule, config);
     const host = info.languageServiceHost;
     patchHost(host, resolver, tsModule);
 

@@ -40,7 +40,7 @@
     "test:coverage": [
       "@php -r \"is_dir('build/coverage') || mkdir('build/coverage', 0777, true);\"",
       "@php -d xdebug.mode=coverage ./vendor/bin/phpunit --colors=always --configuration phpunit.xml.dist --coverage-clover build/coverage/clover.xml --coverage-text",
-      "@php tools/php/assert-coverage.php build/coverage/clover.xml src/php/runner.php 100"
+      "@php tools/php/assert-coverage.php build/coverage/clover.xml src/php 100"
     ]
   }
 }

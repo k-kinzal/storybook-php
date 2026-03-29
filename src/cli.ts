@@ -5,6 +5,7 @@ import { spawn } from "node:child_process";
 import { createRequire } from "node:module";
 import { existsSync, writeFileSync, readdirSync, statSync } from "node:fs";
 import { generateDtsOutputsForFile } from "./typegen.js";
+import { loadFrameworkOptionsFile } from "./framework-options-loader.js";
 import { ensureLink } from "./node-modules-link.js";
 
 const [, , command, ...args] = process.argv;
@@ -20,7 +21,7 @@ switch (command) {
     runTest(args);
     break;
   case "typegen":
-    runTypegen(args);
+    await runTypegen(args);
     break;
   default:
     printUsage();
@@ -150,14 +151,16 @@ function hasUserConfig(): boolean {
   return bases.some((base) => exts.some((ext) => existsSync(resolve(base + ext))));
 }
 
-function runTypegen(dirs: string[]): void {
+async function runTypegen(rawArgs: string[]): Promise<void> {
+  const { dirs, optionsFile } = parseTypegenArgs(rawArgs);
+  const frameworkOptions = await loadFrameworkOptionsFile(optionsFile);
   const targetDirs = dirs.length > 0 ? dirs : ["src"];
   let count = 0;
 
   for (const dir of targetDirs) {
     const absDir = resolve(dir);
     walkPhpFiles(absDir, (phpPath) => {
-      const outputs = generateDtsOutputsForFile(phpPath);
+      const outputs = generateDtsOutputsForFile(phpPath, frameworkOptions);
       for (const output of outputs) {
         if (!output.content.trim()) continue;
         writeFileSync(output.path, output.content);
@@ -180,6 +183,9 @@ function printUsage(): void {
       "  build [opts]      Build static Storybook",
       "  test [opts]       Run Storybook tests",
       "  typegen [dirs...] Generate .d.ts files for PHP sources",
+      "",
+      "Typegen options:",
+      "  --options-file <path>  Load FrameworkOptions from a JSON/JS module",
     ].join("\n"),
   );
 }
@@ -194,4 +200,27 @@ function walkPhpFiles(dir: string, cb: (path: string) => void): void {
       cb(full);
     }
   }
+}
+
+function parseTypegenArgs(rawArgs: string[]): { dirs: string[]; optionsFile?: string } {
+  const dirs: string[] = [];
+  let optionsFile: string | undefined;
+
+  for (let index = 0; index < rawArgs.length; index++) {
+    const arg = rawArgs[index]!;
+    if (arg === "--options-file") {
+      optionsFile = rawArgs[index + 1];
+      index++;
+      continue;
+    }
+
+    if (arg.startsWith("--options-file=")) {
+      optionsFile = arg.slice("--options-file=".length);
+      continue;
+    }
+
+    dirs.push(arg);
+  }
+
+  return optionsFile === undefined ? { dirs } : { dirs, optionsFile };
 }

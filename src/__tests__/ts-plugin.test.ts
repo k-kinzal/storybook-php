@@ -193,4 +193,28 @@ describe("PhpResolver", () => {
       expect(result).toContain("message: string;");
     });
   });
+
+  describe("full resolver config", () => {
+    it("supports typeMap-backed inline args with configDir", () => {
+      const resolver = createPhpResolver(mockTs, {
+        configDir: fixturesDir,
+        typeMap: {
+          files: {
+            "TypeMapInlineTarget.blade.php": {
+              args: {
+                title: "string",
+                featured: { type: "bool", default: false },
+              },
+            },
+          },
+        },
+      });
+
+      const result = resolver.resolvePhpImport("./TypeMapInlineTarget.blade.php", containingFile);
+
+      expect(result).not.toBeNull();
+      expect(result).toContain("title: string;");
+      expect(result).toContain("featured?: boolean;");
+    });
+  });
 });

@@ -161,7 +161,6 @@ export interface PhpComponentSchema {
   constructorArgs: PhpArgMap;
   callableArgs: PhpArgMap;
   allArgs: PhpArgMap;
-  dependencies: string[];
 }
 
 // ---------------------------------------------------------------------------

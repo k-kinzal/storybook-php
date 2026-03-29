@@ -1,7 +1,9 @@
-import { loadComponentSchemas, listCallableNames } from "./component-schema.js";
+import { resolveSchemasForSource } from "./component-schema.js";
+import { listCallableNamesFromResolvedSource, resolveComponentSource } from "./component-source.js";
 import { generateDeclarationModule } from "./declaration-emitter.js";
 import { resolveFrameworkOptions } from "./framework-config.js";
-import type { FrameworkOptions, PhpFileMeta, PhpParamMeta, TypeMapConfig } from "./types.js";
+import { buildSchemasFromMeta, buildTemplateSchema } from "./schema-builder.js";
+import type { FrameworkOptions, PhpFileMeta, TypeMapConfig } from "./types.js";
 
 export interface DeclarationOutput {
   path: string;
@@ -14,66 +16,29 @@ export interface DeclarationOutput {
  * Prefer `generateDtsOutputsForFile()` when you need exact-import declarations.
  */
 export function generateDts(meta: PhpFileMeta): string {
-  const parts: string[] = [];
+  const callableNames = collectCallableNames(meta);
+  const schemas =
+    callableNames.length > 0
+      ? callableNames.flatMap((callableName) =>
+          buildSchemasFromMeta(meta, callableName, {
+            sourceFile: meta.filePath,
+            executionFile: meta.filePath,
+            adapter: null,
+          }),
+        )
+      : [
+          buildTemplateSchema({
+            sourceFile: meta.filePath,
+            executionFile: meta.filePath,
+            allArgs: {},
+            adapter: null,
+          }),
+        ];
 
-  const hasClassExports = meta.classes.some(
-    (cls) => !cls.isTrait && !cls.isInterface && cls.methods.length > 0,
-  );
-  const hasFunctionExports = meta.functions.length > 0;
-
-  if (hasClassExports || hasFunctionExports || (!hasClassExports && !hasFunctionExports)) {
-    parts.push("import type { PhpComponent } from 'storybook-php';\n");
-  }
-
-  for (const cls of meta.classes) {
-    if (cls.isTrait || cls.isInterface) continue;
-
-    if (cls.isEnum) {
-      for (const method of cls.methods) {
-        const interfaceName = `${cls.name}_${method.name}_Args`;
-        parts.push("");
-        parts.push(
-          generateInterfaceForParams(interfaceName, [
-            {
-              name: "_case",
-              type: "string",
-              nullable: false,
-              required: true,
-              isVariadic: false,
-              isPromoted: false,
-              position: 0,
-            },
-            ...method.params,
-          ]),
-        );
-        parts.push(`export declare const ${cls.name}: PhpComponent<${interfaceName}>;\n`);
-      }
-      continue;
-    }
-
-    for (const method of cls.methods) {
-      const interfaceName = `${cls.name}_${method.name}_Args`;
-      const params = method.isStatic ? method.params : [...cls.constructorParams, ...method.params];
-      parts.push("");
-      parts.push(generateInterfaceForParams(interfaceName, params));
-      parts.push(`export declare const ${cls.name}: PhpComponent<${interfaceName}>;\n`);
-    }
-  }
-
-  for (const fn of meta.functions) {
-    const interfaceName = `${fn.name}_Args`;
-    parts.push("");
-    parts.push(generateInterfaceForParams(interfaceName, fn.params));
-    parts.push(`export declare const ${fn.name}: PhpComponent<${interfaceName}>;\n`);
-  }
-
-  if (!hasClassExports && !hasFunctionExports) {
-    parts.push("");
-    parts.push("declare const _default: PhpComponent<Record<string, unknown>>;");
-    parts.push("export default _default;\n");
-  }
-
-  return parts.join("\n");
+  // `generateDts()` predates exact-import declaration outputs.
+  // Keep it as a compatibility shim, but funnel the final text through the
+  // same declaration emitter used by the real typegen path.
+  return generateDeclarationModule(dedupeSchemas(schemas));
 }
 
 export function generateDtsForFile(
@@ -98,21 +63,17 @@ export function generateDtsOutputsForFile(
   options: Pick<FrameworkOptions, "typeMap" | "_configDir" | "defaultMethod"> = {},
 ): DeclarationOutput[] {
   const resolvedOptions = resolveFrameworkOptions(options);
+  const resolvedSource = resolveComponentSource(filePath, resolvedOptions);
   const outputs: DeclarationOutput[] = [];
-
-  const bareSchemas = loadComponentSchemas(
-    filePath,
-    resolvedOptions.defaultMethod,
-    resolvedOptions,
-  );
+  const bareSchemas = resolveSchemasForSource(resolvedSource, resolvedOptions.defaultMethod);
   outputs.push({
     path: `${filePath}.d.ts`,
     content: generateDeclarationModule(bareSchemas.schemas),
-    callableName: resolvedOptions.defaultMethod,
+    callableName: bareSchemas.schemas[0]?.renderPlan.callable ?? resolvedOptions.defaultMethod,
   });
 
-  for (const callableName of listCallableNames(filePath, resolvedOptions)) {
-    const schemas = loadComponentSchemas(filePath, callableName, resolvedOptions);
+  for (const callableName of listCallableNamesFromResolvedSource(resolvedSource)) {
+    const schemas = resolveSchemasForSource(resolvedSource, callableName);
     if (schemas.schemas.length === 0) continue;
     outputs.push({
       path: `${filePath}@${callableName}.d.ts`,
@@ -132,72 +93,38 @@ function dedupeOutputs(outputs: DeclarationOutput[]): DeclarationOutput[] {
   return [...seen.values()].sort((left, right) => left.path.localeCompare(right.path));
 }
 
-function generateInterfaceForParams(interfaceName: string, params: PhpParamMeta[]): string {
-  if (params.length === 0) {
-    return `interface ${interfaceName} {\n}\n`;
+function collectCallableNames(meta: PhpFileMeta): string[] {
+  const callableNames = new Set<string>();
+
+  for (const fn of meta.functions) {
+    callableNames.add(fn.name);
   }
 
-  const lines = params.map((param) => {
-    const optional = param.required ? "" : "?";
-    return `  ${param.name}${optional}: ${paramToTsType(param)};`;
+  for (const cls of meta.classes) {
+    if (cls.isTrait || cls.isInterface) continue;
+    for (const method of cls.methods) {
+      callableNames.add(method.name);
+    }
+  }
+
+  return [...callableNames].sort();
+}
+
+function dedupeSchemas(
+  schemas: ReturnType<typeof buildSchemasFromMeta>,
+): ReturnType<typeof buildSchemasFromMeta> {
+  const seen = new Set<string>();
+  return schemas.filter((schema) => {
+    const key = [
+      schema.exportName,
+      schema.renderPlan.type,
+      schema.renderPlan.class ?? "",
+      schema.renderPlan.callable ?? "",
+    ].join(":");
+    if (seen.has(key)) {
+      return false;
+    }
+    seen.add(key);
+    return true;
   });
-
-  return `interface ${interfaceName} {\n${lines.join("\n")}\n}\n`;
-}
-
-function paramToTsType(param: PhpParamMeta): string {
-  if (!param.type) {
-    return param.nullable ? "unknown | null" : "unknown";
-  }
-
-  if (param.type.startsWith("?")) {
-    return `${phpTypeToTs(param.type.slice(1))} | null`;
-  }
-
-  const mapped = phpTypeToTs(param.type);
-  if (param.nullable && !mapped.includes("null")) {
-    return `${mapped} | null`;
-  }
-  return mapped;
-}
-
-function phpTypeToTs(phpType: string): string {
-  if (phpType.includes("|")) {
-    return phpType
-      .split("|")
-      .map((part) => phpTypeToTs(part.trim()))
-      .join(" | ");
-  }
-
-  switch (phpType.toLowerCase()) {
-    case "string":
-      return "string";
-    case "int":
-    case "integer":
-    case "float":
-    case "double":
-      return "number";
-    case "bool":
-    case "boolean":
-      return "boolean";
-    case "array":
-      return "unknown[]";
-    case "object":
-    case "mixed":
-      return "unknown";
-    case "void":
-      return "void";
-    case "null":
-      return "null";
-    case "true":
-      return "true";
-    case "false":
-      return "false";
-    case "self":
-    case "static":
-    case "parent":
-      return "Record<string, unknown>";
-    default:
-      return "Record<string, unknown>";
-  }
 }

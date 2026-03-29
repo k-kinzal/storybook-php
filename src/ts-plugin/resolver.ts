@@ -1,6 +1,8 @@
 import type ts from "typescript";
 import { existsSync, readFileSync, statSync } from "node:fs";
 import { generateDeclarationModule } from "../declaration-emitter.js";
+import { resolveSchemasForSource } from "../component-schema.js";
+import { resolveComponentSource, type ResolvedComponentSource } from "../component-source.js";
 import {
   PHP_IMPORT_RE,
   resolveFrameworkOptions,
@@ -8,9 +10,8 @@ import {
   extractCallableName,
   stripCallableSuffix,
 } from "../framework-config.js";
-import { loadComponentSchemas } from "../component-schema.js";
 import { parsePhpSource } from "../php-parser.js";
-import type { PhpFileMeta } from "../types.js";
+import type { FrameworkOptions, PhpFileMeta } from "../types.js";
 
 export interface PhpResolver {
   resolvePhpImport(specifier: string, containingFile: string): string | null;
@@ -21,8 +22,18 @@ export interface PhpResolver {
   getVirtualDeclarationVersion(fileName: string): string | null;
 }
 
-export function createPhpResolver(_tsModule: typeof ts, defaultMethod?: string): PhpResolver {
-  const resolvedOptions = resolveFrameworkOptions(defaultMethod ? { defaultMethod } : {});
+export interface PhpResolverConfig extends Pick<
+  FrameworkOptions,
+  "defaultMethod" | "typeMap" | "_configDir"
+> {
+  configDir?: string;
+}
+
+export function createPhpResolver(
+  _tsModule: typeof ts,
+  config: string | PhpResolverConfig = {},
+): PhpResolver {
+  const resolvedOptions = resolveFrameworkOptions(normalizeResolverConfig(config));
   const metaCache = new Map<string, { mtime: number; meta: PhpFileMeta }>();
   const declarationCache = new Map<string, { version: string; content: string }>();
 
@@ -52,11 +63,8 @@ export function createPhpResolver(_tsModule: typeof ts, defaultMethod?: string):
     if (!resolvedImport) return null;
 
     try {
-      const schemas = loadComponentSchemas(
-        resolvedImport.sourceFile,
-        resolvedImport.callableName,
-        resolvedOptions,
-      );
+      const resolvedSource = resolveComponentSource(resolvedImport.sourceFile, resolvedOptions);
+      const schemas = resolveSchemasForSource(resolvedSource, resolvedImport.callableName);
       return schemas.schemas.length > 0 ? generateDeclarationModule(schemas.schemas) : "";
     } catch {
       return null;
@@ -81,14 +89,15 @@ export function createPhpResolver(_tsModule: typeof ts, defaultMethod?: string):
 
     if (!existsSync(importPath)) return null;
 
-    const version = String(statSync(importPath).mtimeMs);
-    const cached = declarationCache.get(fileName);
-    if (cached && cached.version === version) {
-      return cached.content;
-    }
-
     try {
-      const schemas = loadComponentSchemas(importPath, callableName, resolvedOptions);
+      const resolvedSource = resolveComponentSource(importPath, resolvedOptions);
+      const version = versionForResolvedSource(resolvedSource);
+      const cached = declarationCache.get(fileName);
+      if (cached && cached.version === version) {
+        return cached.content;
+      }
+
+      const schemas = resolveSchemasForSource(resolvedSource, callableName);
       if (schemas.schemas.length === 0) {
         return null;
       }
@@ -108,7 +117,11 @@ export function createPhpResolver(_tsModule: typeof ts, defaultMethod?: string):
     const importPath = stripCallableSuffix(sourcePath);
     if (!existsSync(importPath)) return null;
 
-    return String(statSync(importPath).mtimeMs);
+    try {
+      return versionForResolvedSource(resolveComponentSource(importPath, resolvedOptions));
+    } catch {
+      return null;
+    }
   }
 
   return {
@@ -124,4 +137,29 @@ export function createPhpResolver(_tsModule: typeof ts, defaultMethod?: string):
 function stripVirtualDeclarationSuffix(fileName: string): string | null {
   if (!fileName.endsWith(".d.ts")) return null;
   return fileName.slice(0, -".d.ts".length);
+}
+
+function normalizeResolverConfig(config: string | PhpResolverConfig): PhpResolverConfig {
+  if (typeof config === "string") {
+    return { defaultMethod: config };
+  }
+
+  const normalized: PhpResolverConfig = {
+    ...config,
+  };
+
+  const configDir = config._configDir ?? config.configDir;
+  if (configDir !== undefined) {
+    normalized._configDir = configDir;
+  }
+
+  return normalized;
+}
+
+function versionForResolvedSource(resolvedSource: ResolvedComponentSource): string {
+  return resolvedSource.dependencies
+    .map(
+      (dependency) => `${dependency}:${existsSync(dependency) ? statSync(dependency).mtimeMs : -1}`,
+    )
+    .join("|");
 }
