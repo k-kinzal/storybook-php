@@ -7252,6 +7252,20 @@ describe.skipIf(!hasPhp)("Integration: All Plan Patterns", () => {
       // Should contain concrete class
       expect(code).toContain("export const ConcreteWidget");
     });
+
+    it("exports trait-provided static methods from the concrete class", () => {
+      const plugin = storybookPhpPlugin({});
+      const resolveId = getResolveId(plugin);
+      const load = getLoad(plugin);
+      const id = resolveId(fixture("TraitInterface.php") + "@factory", undefined);
+      const code = load(id);
+
+      expect(code).toContain("export const ConcreteWidget");
+      expect(code).toContain("__type: 'staticMethod'");
+      expect(code).toContain('__callable: "factory"');
+      expect(code).not.toContain("export const HasRender");
+      expect(code).not.toContain("export const AbstractWidget");
+    });
   });
 
   // -------------------------------------------------------------------------

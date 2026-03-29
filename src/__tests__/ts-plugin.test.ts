@@ -79,6 +79,18 @@ describe("PhpResolver", () => {
       expect(result).not.toContain("__construct");
     });
 
+    it("generates static method declaration for trait-provided factory methods", () => {
+      const resolver = createPhpResolver(mockTs);
+      const result = resolver.resolvePhpImport("./TraitInterface.php@factory", containingFile);
+
+      expect(result).not.toBeNull();
+      expect(result).toContain("interface ConcreteWidget_factory_Args");
+      expect(result).toContain("label: string;");
+      expect(result).toContain(
+        "export declare const ConcreteWidget: PhpComponent<ConcreteWidget_factory_Args>;",
+      );
+    });
+
     it("generates function declaration for StandaloneFunctions.php@badge", () => {
       const resolver = createPhpResolver(mockTs);
       const result = resolver.resolvePhpImport("./StandaloneFunctions.php@badge", containingFile);

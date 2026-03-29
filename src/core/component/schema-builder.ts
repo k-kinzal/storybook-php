@@ -12,6 +12,19 @@ interface EnrichedParamMeta extends PhpParamMeta {
   elementType?: string;
 }
 
+type MethodOrigin = "direct" | "trait" | "inheritedDirect" | "inheritedTrait";
+
+interface HierarchyMethodMatch {
+  hostClass: PhpClassMeta;
+  declaringClass: PhpClassMeta;
+  method: PhpMethodMeta;
+  origin: MethodOrigin;
+}
+
+interface MetaClassIndex {
+  classesByRef: Map<string, PhpClassMeta>;
+}
+
 export interface SchemaBuildContext {
   sourceFile: string;
   executionFile: string;
@@ -51,88 +64,7 @@ export function buildSchemasFromMeta(
   { sourceFile, executionFile, adapter }: SchemaBuildContext,
 ): PhpComponentSchema[] {
   const schemas: PhpComponentSchema[] = [];
-
-  const findMethodInTraitChain = (
-    traitCls: PhpClassMeta,
-    methodName: string,
-    visited: Set<string> = new Set(),
-  ): PhpMethodMeta | null => {
-    if (visited.has(traitCls.fqn)) return null;
-    visited.add(traitCls.fqn);
-
-    const method = traitCls.methods.find((candidate) => candidate.name === methodName);
-    if (method) return method;
-
-    for (const innerTraitName of traitCls.traits) {
-      const innerTrait = meta.classes.find(
-        (candidate) => candidate.name === innerTraitName || candidate.fqn === innerTraitName,
-      );
-      if (!innerTrait) continue;
-      const found = findMethodInTraitChain(innerTrait, methodName, visited);
-      if (found) return found;
-    }
-
-    return null;
-  };
-
-  const findMethodInHierarchy = (
-    cls: PhpClassMeta,
-    methodName: string,
-  ): { cls: PhpClassMeta; method: PhpMethodMeta } | null => {
-    const method = cls.methods.find((candidate) => candidate.name === methodName);
-    if (method) return { cls, method };
-
-    for (const traitName of cls.traits) {
-      const trait = meta.classes.find(
-        (candidate) => candidate.name === traitName || candidate.fqn === traitName,
-      );
-      if (!trait) continue;
-      const traitMethod = findMethodInTraitChain(trait, methodName);
-      if (traitMethod) {
-        return { cls, method: traitMethod };
-      }
-    }
-
-    if (cls.extends) {
-      const parent = meta.classes.find(
-        (candidate) => candidate.name === cls.extends || candidate.fqn === cls.extends,
-      );
-      if (parent) {
-        const found = findMethodInHierarchy(parent, methodName);
-        if (found) {
-          return { cls, method: found.method };
-        }
-      }
-    }
-
-    return null;
-  };
-
-  const resolveConstructorParams = (cls: PhpClassMeta): PhpParamMeta[] => {
-    if (cls.hasConstructor) return cls.constructorParams;
-    if (!cls.extends) return [];
-
-    const parent = meta.classes.find(
-      (candidate) => candidate.name === cls.extends || candidate.fqn === cls.extends,
-    );
-    return parent ? resolveConstructorParams(parent) : [];
-  };
-
-  const findEnumMethod = (cls: PhpClassMeta, methodName: string): PhpMethodMeta | null => {
-    const method = cls.methods.find((candidate) => candidate.name === methodName);
-    if (method) return method;
-
-    for (const traitName of cls.traits) {
-      const trait = meta.classes.find(
-        (candidate) => candidate.name === traitName || candidate.fqn === traitName,
-      );
-      if (!trait) continue;
-      const traitMethod = findMethodInTraitChain(trait, methodName);
-      if (traitMethod) return traitMethod;
-    }
-
-    return null;
-  };
+  const classIndex = createMetaClassIndex(meta);
 
   for (const cls of meta.classes) {
     if (cls.isTrait || cls.isInterface) {
@@ -140,7 +72,7 @@ export function buildSchemasFromMeta(
     }
 
     if (cls.isEnum) {
-      const method = findEnumMethod(cls, callableName);
+      const method = findEnumMethod(classIndex, cls, callableName);
       if (!method) continue;
 
       schemas.push({
@@ -186,23 +118,22 @@ export function buildSchemasFromMeta(
       continue;
     }
 
-    const found = findMethodInHierarchy(cls, callableName);
+    const found = findMethodInHierarchy(classIndex, cls, callableName);
     if (!found) continue;
 
     if (found.method.isStatic) {
-      const definedDirectly = cls.methods.some((candidate) => candidate.name === callableName);
-      if (!definedDirectly) {
+      if (shouldSkipStaticMatch(found)) {
         continue;
       }
 
       const callableArgs = paramsToArgMap(found.method.params);
       schemas.push({
-        exportName: found.cls.name,
+        exportName: found.hostClass.name,
         renderPlan: {
           type: "staticMethod",
           sourceFile,
           file: executionFile,
-          class: found.cls.fqn,
+          class: found.hostClass.fqn,
           callable: callableName,
           ...(adapter ? { adapter } : {}),
         },
@@ -213,16 +144,16 @@ export function buildSchemasFromMeta(
       continue;
     }
 
-    const constructorArgs = paramsToArgMap(resolveConstructorParams(found.cls));
+    const constructorArgs = paramsToArgMap(resolveConstructorParams(classIndex, found.hostClass));
     const callableArgs = paramsToArgMap(found.method.params);
 
     schemas.push({
-      exportName: found.cls.name,
+      exportName: found.hostClass.name,
       renderPlan: {
         type: "classMethod",
         sourceFile,
         file: executionFile,
-        class: found.cls.fqn,
+        class: found.hostClass.fqn,
         callable: callableName,
         ...(adapter ? { adapter } : {}),
       },
@@ -294,4 +225,150 @@ function enumCaseArgMap(): PhpArgMap {
       nullable: false,
     },
   };
+}
+
+function createMetaClassIndex(meta: PhpFileMeta): MetaClassIndex {
+  const classesByRef = new Map<string, PhpClassMeta>();
+
+  for (const cls of meta.classes) {
+    if (!classesByRef.has(cls.name)) {
+      classesByRef.set(cls.name, cls);
+    }
+    if (!classesByRef.has(cls.fqn)) {
+      classesByRef.set(cls.fqn, cls);
+    }
+  }
+
+  return { classesByRef };
+}
+
+function findClass(index: MetaClassIndex, ref: string): PhpClassMeta | null {
+  return index.classesByRef.get(ref) ?? null;
+}
+
+function findMethodInTraitChain(
+  index: MetaClassIndex,
+  traitCls: PhpClassMeta,
+  methodName: string,
+  visited: Set<string> = new Set(),
+): PhpMethodMeta | null {
+  if (visited.has(traitCls.fqn)) {
+    return null;
+  }
+  visited.add(traitCls.fqn);
+
+  const method = traitCls.methods.find((candidate) => candidate.name === methodName);
+  if (method) {
+    return method;
+  }
+
+  for (const innerTraitName of traitCls.traits) {
+    const innerTrait = findClass(index, innerTraitName);
+    if (!innerTrait) continue;
+
+    const found = findMethodInTraitChain(index, innerTrait, methodName, visited);
+    if (found) {
+      return found;
+    }
+  }
+
+  return null;
+}
+
+function findMethodInTraits(
+  index: MetaClassIndex,
+  traitNames: string[],
+  methodName: string,
+): PhpMethodMeta | null {
+  for (const traitName of traitNames) {
+    const trait = findClass(index, traitName);
+    if (!trait) {
+      continue;
+    }
+
+    const traitMethod = findMethodInTraitChain(index, trait, methodName);
+    if (traitMethod) {
+      return traitMethod;
+    }
+  }
+
+  return null;
+}
+
+function findMethodInHierarchy(
+  index: MetaClassIndex,
+  cls: PhpClassMeta,
+  methodName: string,
+): HierarchyMethodMatch | null {
+  const directMethod = cls.methods.find((candidate) => candidate.name === methodName);
+  if (directMethod) {
+    return { hostClass: cls, declaringClass: cls, method: directMethod, origin: "direct" };
+  }
+
+  const traitMethod = findMethodInTraits(index, cls.traits, methodName);
+  if (traitMethod) {
+    return { hostClass: cls, declaringClass: cls, method: traitMethod, origin: "trait" };
+  }
+
+  if (!cls.extends) {
+    return null;
+  }
+
+  const parent = findClass(index, cls.extends);
+  if (!parent) {
+    return null;
+  }
+
+  const inheritedMethod = findMethodInHierarchy(index, parent, methodName);
+  if (!inheritedMethod) {
+    return null;
+  }
+
+  return {
+    hostClass: cls,
+    declaringClass: inheritedMethod.declaringClass,
+    method: inheritedMethod.method,
+    origin:
+      inheritedMethod.origin === "trait" || inheritedMethod.origin === "inheritedTrait"
+        ? "inheritedTrait"
+        : "inheritedDirect",
+  };
+}
+
+function resolveConstructorParams(index: MetaClassIndex, cls: PhpClassMeta): PhpParamMeta[] {
+  if (cls.hasConstructor) {
+    return cls.constructorParams;
+  }
+
+  if (!cls.extends) {
+    return [];
+  }
+
+  const parent = findClass(index, cls.extends);
+  return parent ? resolveConstructorParams(index, parent) : [];
+}
+
+function findEnumMethod(
+  index: MetaClassIndex,
+  cls: PhpClassMeta,
+  methodName: string,
+): PhpMethodMeta | null {
+  const directMethod = cls.methods.find((candidate) => candidate.name === methodName);
+  if (directMethod) {
+    return directMethod;
+  }
+
+  return findMethodInTraits(index, cls.traits, methodName);
+}
+
+function shouldSkipStaticMatch(match: HierarchyMethodMatch): boolean {
+  if (match.origin === "direct" || match.origin === "trait") {
+    return false;
+  }
+
+  if (match.origin === "inheritedDirect") {
+    return true;
+  }
+
+  return !match.declaringClass.isAbstract;
 }
