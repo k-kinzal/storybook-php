@@ -4,7 +4,7 @@ import { fileURLToPath, pathToFileURL } from "node:url";
 import { spawn } from "node:child_process";
 import { createRequire } from "node:module";
 import { existsSync, writeFileSync, readdirSync, statSync } from "node:fs";
-import { generateDtsForFile } from "./typegen.js";
+import { generateDtsOutputsForFile } from "./typegen.js";
 import { ensureLink } from "./node-modules-link.js";
 
 const [, , command, ...args] = process.argv;
@@ -157,11 +157,11 @@ function runTypegen(dirs: string[]): void {
   for (const dir of targetDirs) {
     const absDir = resolve(dir);
     walkPhpFiles(absDir, (phpPath) => {
-      const dts = generateDtsForFile(phpPath);
-      if (dts.trim()) {
-        const dtsPath = phpPath + ".d.ts";
-        writeFileSync(dtsPath, dts);
-        console.log(`  ${relative(process.cwd(), dtsPath)}`);
+      const outputs = generateDtsOutputsForFile(phpPath);
+      for (const output of outputs) {
+        if (!output.content.trim()) continue;
+        writeFileSync(output.path, output.content);
+        console.log(`  ${relative(process.cwd(), output.path)}`);
         count++;
       }
     });

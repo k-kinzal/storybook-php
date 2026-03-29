@@ -719,6 +719,7 @@ function normalizeStringKeyArray(array $value, string $fieldName): array
  * @return array{
  *   type: 'classMethod'|'staticMethod'|'function'|'template'|'enumMethod',
  *   file: string,
+ *   sourceFile: string|null,
  *   class: string|null,
  *   callable: string|null,
  *   args: array<string, mixed>,
@@ -744,6 +745,11 @@ function readRunnerRequest(string $input): array
     $file = $decoded['file'] ?? null;
     if (!is_string($file) || $file === '') {
         throw new \RuntimeException('Request field "file" is required.');
+    }
+
+    $sourceFile = $decoded['sourceFile'] ?? null;
+    if ($sourceFile !== null && !is_string($sourceFile)) {
+        throw new \RuntimeException('Request field "sourceFile" must be a string or null.');
     }
 
     $class = $decoded['class'] ?? null;
@@ -779,6 +785,7 @@ function readRunnerRequest(string $input): array
     return [
         'type' => $type,
         'file' => $file,
+        'sourceFile' => $sourceFile,
         'class' => $class,
         'callable' => $callable,
         'args' => normalizeStringKeyArray($args, 'args'),
@@ -816,7 +823,7 @@ function loadAdapter(?string $adapterPath): ?callable
 }
 
 /**
- * @param array{type: string, file: string, args: array<string, mixed>} $context
+ * @param array{type: string, file: string, executionFile: string, args: array<string, mixed>} $context
  */
 function applyAdapter(callable $adapter, mixed $result, string $buffered, ?object $instance, array $context): string
 {
@@ -868,6 +875,7 @@ function resolveOutput(mixed $result, string $buffered): string
  * @param array{
  *   type: 'classMethod'|'staticMethod'|'function'|'template'|'enumMethod',
  *   file: string,
+ *   sourceFile: string|null,
  *   class: string|null,
  *   callable: string|null,
  *   args: array<string, mixed>,
@@ -881,6 +889,7 @@ function executeRunnerRequest(array $__sb_request): array
 {
     $__sb_type        = $__sb_request['type'];
     $__sb_file        = $__sb_request['file'];
+    $__sb_sourceFile  = $__sb_request['sourceFile'] ?? $__sb_file;
     $__sb_class       = $__sb_request['class'];
     $__sb_callable    = $__sb_request['callable'];
     $__sb_args        = $__sb_request['args'];
@@ -899,7 +908,12 @@ function executeRunnerRequest(array $__sb_request): array
     }
 
     $__sb_html = '';
-    $__sb_context = ['type' => $__sb_type, 'file' => $__sb_file, 'args' => $__sb_args];
+    $__sb_context = [
+        'type' => $__sb_type,
+        'file' => $__sb_sourceFile,
+        'executionFile' => $__sb_file,
+        'args' => $__sb_args,
+    ];
 
     switch ($__sb_type) {
         case 'classMethod':

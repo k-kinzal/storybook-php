@@ -1,9 +1,9 @@
-import type { PhpComponent, PhpRenderRequest, StoryTypeMap } from "./types.js";
+import type { PhpComponent, PhpRenderInvokeRequest, StoryTypeMap } from "./types.js";
 
 const RENDER_ENDPOINT = "/__storybook_php/render";
 const PHP_PLACEHOLDER = "<!-- storybook-php-content -->";
 
-let currentAbortController: AbortController | null = null;
+const abortControllers = new WeakMap<HTMLElement, AbortController>();
 
 interface RenderContext {
   storyContext: {
@@ -35,20 +35,17 @@ export async function renderToCanvas(
   // Get the decorated story output (includes placeholder wrapped by decorators)
   const decoratedOutput = storyFn();
 
-  // Cancel any in-flight request
-  if (currentAbortController) {
-    currentAbortController.abort();
-  }
-  currentAbortController = new AbortController();
-  const { signal } = currentAbortController;
+  const previousAbortController = abortControllers.get(canvasElement);
+  previousAbortController?.abort();
+
+  const abortController = new AbortController();
+  abortControllers.set(canvasElement, abortController);
+  const { signal } = abortController;
 
   const storyTypeMap = parameters?.["typeMap"];
 
-  const request: PhpRenderRequest = {
-    type: component.__type,
-    file: component.__file,
-    class: component.__class,
-    callable: component.__callable,
+  const request: PhpRenderInvokeRequest = {
+    componentId: component.__id,
     args: args ?? {},
     ...(storyTypeMap ? { typeMap: storyTypeMap } : {}),
   };

@@ -1,6 +1,12 @@
 import type { IncomingMessage, ServerResponse } from "node:http";
 import { PhpExecutor, type PhpExecutorOptions } from "./php-executor.js";
-import type { PhpRenderRequest, PhpCallableType, StoryTypeMap } from "./types.js";
+import { RenderRegistry } from "./render-registry.js";
+import type {
+  PhpCallableType,
+  PhpRenderInvokeRequest,
+  PhpRenderRequest,
+  StoryTypeMap,
+} from "./types.js";
 
 const RENDER_PATH = "/__storybook_php/render";
 const VALID_TYPES: PhpCallableType[] = [
@@ -13,7 +19,17 @@ const VALID_TYPES: PhpCallableType[] = [
 
 type PhpMiddleware = (req: IncomingMessage, res: ServerResponse, next: () => void) => Promise<void>;
 
-export function createPhpMiddleware(options: PhpExecutorOptions = {}): PhpMiddleware {
+class RequestValidationError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "RequestValidationError";
+  }
+}
+
+export function createPhpMiddleware(
+  options: PhpExecutorOptions = {},
+  registry?: RenderRegistry,
+): PhpMiddleware {
   const executor = new PhpExecutor(options);
 
   return async (req: IncomingMessage, res: ServerResponse, next: () => void) => {
@@ -24,42 +40,74 @@ export function createPhpMiddleware(options: PhpExecutorOptions = {}): PhpMiddle
 
     try {
       const body = await readBody(req);
-      const data = JSON.parse(body) as Record<string, unknown>;
-
-      // Validate type
-      if (!data["type"] || !VALID_TYPES.includes(data["type"] as PhpCallableType)) {
-        sendJson(res, 400, {
-          html: "",
-          error: `Invalid type: ${String(data["type"])}`,
-        });
-        return;
-      }
-
-      // Validate file
-      if (!data["file"]) {
-        sendJson(res, 400, { html: "", error: "Missing required field: file" });
-        return;
-      }
-
-      const request: PhpRenderRequest = {
-        type: data["type"] as PhpCallableType,
-        file: data["file"] as string,
-        class: (data["class"] as string) ?? null,
-        callable: (data["callable"] as string) ?? null,
-        args: (data["args"] as Record<string, unknown>) ?? {},
-        bootstrap: (data["bootstrap"] as string) ?? null,
-        typeMap: (data["typeMap"] as StoryTypeMap) ?? null,
-      };
+      const data = JSON.parse(body) as PhpRenderInvokeRequest;
+      const request = resolveExecutionRequest(data, registry);
 
       const result = await executor.execute(request);
       sendJson(res, result.error ? 500 : 200, result);
     } catch (err) {
-      sendJson(res, 500, {
+      sendJson(res, err instanceof RequestValidationError ? 400 : 500, {
         html: "",
         error: err instanceof Error ? err.message : String(err),
       });
     }
   };
+}
+
+function resolveExecutionRequest(
+  data: PhpRenderInvokeRequest,
+  registry: RenderRegistry | undefined,
+): PhpRenderRequest {
+  if (typeof data.componentId === "string" && data.componentId !== "") {
+    if (!registry) {
+      throw new RequestValidationError("Component registry is not available.");
+    }
+
+    const renderPlan = registry.get(data.componentId);
+    if (!renderPlan) {
+      throw new RequestValidationError(`Unknown componentId: ${data.componentId}`);
+    }
+
+    return {
+      type: renderPlan.type,
+      file: renderPlan.file,
+      sourceFile: renderPlan.sourceFile,
+      class: renderPlan.class,
+      callable: renderPlan.callable,
+      args: isRecord(data.args) ? data.args : {},
+      bootstrap: data.bootstrap ?? null,
+      adapter: data.adapter ?? renderPlan.adapter ?? null,
+      typeMap: (data.typeMap as StoryTypeMap) ?? null,
+    };
+  }
+
+  return validateLegacyRequest(data);
+}
+
+function validateLegacyRequest(data: PhpRenderInvokeRequest): PhpRenderRequest {
+  if (!data.type || !VALID_TYPES.includes(data.type)) {
+    throw new RequestValidationError(`Invalid type: ${String(data.type)}`);
+  }
+
+  if (!data.file) {
+    throw new RequestValidationError("Missing required field: file");
+  }
+
+  return {
+    type: data.type,
+    file: data.file,
+    sourceFile: data.sourceFile ?? null,
+    class: data.class ?? null,
+    callable: data.callable ?? null,
+    args: isRecord(data.args) ? data.args : {},
+    bootstrap: data.bootstrap ?? null,
+    adapter: data.adapter ?? null,
+    typeMap: (data.typeMap as StoryTypeMap) ?? null,
+  };
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
 function readBody(req: IncomingMessage): Promise<string> {

@@ -33,6 +33,7 @@ function makeContext(
 
 const phpComponent: PhpComponent = {
   __php: true,
+  __id: "cmp_test",
   __type: "classMethod" as const,
   __file: "/path/Component.php",
   __class: "App\\Component",
@@ -85,10 +86,7 @@ describe("renderToCanvas", () => {
 
     const body = JSON.parse(options.body);
     expect(body).toEqual({
-      type: "classMethod",
-      file: "/path/Component.php",
-      class: "App\\Component",
-      callable: "render",
+      componentId: "cmp_test",
       args: { name: "Alice", age: 30 },
     });
   });
@@ -236,6 +234,47 @@ describe("renderToCanvas", () => {
     expect(canvas.innerHTML).toBe("<div>second</div>");
     expect(mockShowMain).toHaveBeenCalled();
     // showError should NOT be called for abort
+    expect(mockShowError).not.toHaveBeenCalled();
+  });
+
+  it("does not abort requests for a different canvas element", async () => {
+    const firstCanvas = document.createElement("div");
+    const secondCanvas = document.createElement("div");
+    const firstCtx = makeContext(phpComponent, { name: "First" });
+    const secondCtx = makeContext(phpComponent, { name: "Second" });
+
+    let resolveFirst: ((value: { json: () => Promise<{ html: string }> }) => void) | undefined;
+    let firstSignal: AbortSignal | undefined;
+
+    const mockFetch = vi
+      .fn()
+      .mockImplementationOnce((_url: string, options: RequestInit) => {
+        firstSignal = options.signal as AbortSignal;
+        return new Promise((resolve) => {
+          resolveFirst = resolve as (value: { json: () => Promise<{ html: string }> }) => void;
+        });
+      })
+      .mockImplementationOnce(() =>
+        Promise.resolve({
+          json: () => Promise.resolve({ html: "<div>second-canvas</div>" }),
+        }),
+      );
+
+    vi.stubGlobal("fetch", mockFetch);
+
+    const firstRender = renderToCanvas(firstCtx, firstCanvas);
+    const secondRender = renderToCanvas(secondCtx, secondCanvas);
+
+    expect(firstSignal?.aborted).toBe(false);
+
+    resolveFirst?.({
+      json: () => Promise.resolve({ html: "<div>first-canvas</div>" }),
+    });
+
+    await Promise.all([firstRender, secondRender]);
+
+    expect(firstCanvas.innerHTML).toBe("<div>first-canvas</div>");
+    expect(secondCanvas.innerHTML).toBe("<div>second-canvas</div>");
     expect(mockShowError).not.toHaveBeenCalled();
   });
 

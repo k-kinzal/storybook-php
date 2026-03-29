@@ -205,7 +205,7 @@ describe("Vite Plugin", () => {
       expect(code).toContain('default: "25"');
       // The name param should be required, no default
       expect(code).toContain(
-        "name: { type: 'string', required: true, position: 0, nullable: false }",
+        "name: { type: 'string', required: true, position: 0, nullable: false",
       );
     });
 

@@ -31,15 +31,16 @@ export async function viteFinal(
     (await options.presets.apply<FrameworkOptions>("frameworkOptions", {} as FrameworkOptions)) ??
     {};
 
-  // Provide config directory for typeMap path resolution
-  if (!frameworkOptions._configDir) {
-    frameworkOptions._configDir = options.configDir ?? process.cwd();
-  }
+  // Resolve config directory without mutating the preset payload object.
+  const resolvedFrameworkOptions: FrameworkOptions = {
+    ...frameworkOptions,
+    _configDir: frameworkOptions._configDir ?? options.configDir ?? process.cwd(),
+  };
 
   const existingPlugins = config.plugins ?? [];
 
   return {
     ...config,
-    plugins: [...existingPlugins, storybookPhpPlugin(frameworkOptions)],
+    plugins: [...existingPlugins, storybookPhpPlugin(resolvedFrameworkOptions)],
   };
 }

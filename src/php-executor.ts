@@ -2,13 +2,8 @@ import { spawn } from "node:child_process";
 import { resolve, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 import { existsSync } from "node:fs";
-import type {
-  PhpRenderRequest,
-  PhpRenderResponse,
-  TypeMapConfig,
-  StoryTypeMap,
-  AdapterMap,
-} from "./types.js";
+import { mergeStoryTypeMaps } from "./framework-config.js";
+import type { PhpRenderRequest, PhpRenderResponse, TypeMapConfig, AdapterMap } from "./types.js";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
@@ -87,27 +82,11 @@ export class PhpExecutor {
     return best;
   }
 
-  private mergeTypeMap(
-    storyTypeMap: StoryTypeMap | null | undefined,
-  ): { bindings?: Record<string, string>; args?: Record<string, unknown> } | null {
-    if (!this.runtimeTypeMap && !storyTypeMap) return null;
-    if (!storyTypeMap) return this.runtimeTypeMap;
-    if (!this.runtimeTypeMap) return storyTypeMap;
-    return {
-      ...(this.runtimeTypeMap.bindings || storyTypeMap.bindings
-        ? { bindings: { ...this.runtimeTypeMap.bindings, ...storyTypeMap.bindings } }
-        : {}),
-      ...(this.runtimeTypeMap.args || storyTypeMap.args
-        ? { args: { ...this.runtimeTypeMap.args, ...storyTypeMap.args } }
-        : {}),
-    };
-  }
-
   async execute(request: PhpRenderRequest): Promise<PhpRenderResponse> {
     const { typeMap: storyTypeMap, ...rest } = request;
-    const mergedTypeMap = this.mergeTypeMap(storyTypeMap);
+    const mergedTypeMap = mergeStoryTypeMaps(this.runtimeTypeMap, storyTypeMap);
 
-    const fileAdapter = this.resolveFileAdapter(rest.file);
+    const fileAdapter = this.resolveFileAdapter(rest.sourceFile ?? rest.file);
 
     const input = JSON.stringify({
       ...rest,

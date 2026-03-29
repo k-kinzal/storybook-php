@@ -2,6 +2,7 @@ import { describe, it, expect, vi, beforeEach } from "vite-plus/test";
 import type { IncomingMessage, ServerResponse } from "node:http";
 import { EventEmitter } from "node:events";
 import { createPhpMiddleware, RENDER_PATH } from "../dev-middleware.js";
+import { RenderRegistry } from "../render-registry.js";
 
 // ---------------------------------------------------------------------------
 // Mock PhpExecutor
@@ -189,10 +190,12 @@ describe("createPhpMiddleware", () => {
     expect(mockExecute).toHaveBeenCalledWith({
       type: "classMethod",
       file: "/some/file.php",
+      sourceFile: null,
       class: "App\\MyClass",
       callable: "render",
       args: { name: "World" },
       bootstrap: null,
+      adapter: null,
       typeMap: null,
     });
   });
@@ -276,6 +279,45 @@ describe("createPhpMiddleware", () => {
     await middleware(req, res, next);
 
     expect(res._status).toBe(200);
+  });
+
+  it("resolves componentId through the registry", async () => {
+    mockExecute.mockResolvedValueOnce({ html: "<div>registry</div>" });
+
+    const registry = new RenderRegistry();
+    const componentId = registry.register({
+      type: "classMethod",
+      file: "/some/runtime.php",
+      sourceFile: "/some/source.php",
+      class: "App\\RegistryComponent",
+      callable: "render",
+      adapter: "/some/adapter.php",
+    });
+
+    const middlewareWithRegistry = createPhpMiddleware({}, registry);
+    const body = JSON.stringify({
+      componentId,
+      args: { title: "Hello" },
+    });
+    const req = createMockReq("POST", RENDER_PATH, body);
+    const res = createMockRes();
+    const next = vi.fn();
+
+    await middlewareWithRegistry(req, res, next);
+
+    expect(next).not.toHaveBeenCalled();
+    expect(res._status).toBe(200);
+    expect(mockExecute).toHaveBeenCalledWith({
+      type: "classMethod",
+      file: "/some/runtime.php",
+      sourceFile: "/some/source.php",
+      class: "App\\RegistryComponent",
+      callable: "render",
+      args: { title: "Hello" },
+      bootstrap: null,
+      adapter: "/some/adapter.php",
+      typeMap: null,
+    });
   });
 
   // -------------------------------------------------------------------------
@@ -371,10 +413,12 @@ describe("createPhpMiddleware", () => {
     expect(mockExecute).toHaveBeenCalledWith({
       type: "template",
       file: "/some/template.php",
+      sourceFile: null,
       class: null,
       callable: null,
       args: {},
       bootstrap: null,
+      adapter: null,
       typeMap: null,
     });
   });

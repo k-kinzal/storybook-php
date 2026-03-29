@@ -469,6 +469,7 @@ final class RunnerTest extends TestCase
         $request = readRunnerRequest(json_encode([
             'type' => 'function',
             'file' => self::FIXTURE_FILE,
+            'sourceFile' => '/stories/FixtureAlias.php',
             'class' => null,
             'callable' => 'StorybookPhp\\TestFixture\\renderFixture',
             'args' => ['title' => 'Hello', 'items' => []],
@@ -479,6 +480,7 @@ final class RunnerTest extends TestCase
 
         self::assertSame('function', $request['type']);
         self::assertSame(self::FIXTURE_FILE, $request['file']);
+        self::assertSame('/stories/FixtureAlias.php', $request['sourceFile']);
         self::assertSame(['title' => 'Hello', 'items' => []], $request['args']);
         self::assertSame(['bindings' => []], $request['typeMap']);
 
@@ -486,6 +488,7 @@ final class RunnerTest extends TestCase
             ['123', 'Invalid request payload.'],
             [json_encode(['type' => 'bad', 'file' => self::FIXTURE_FILE], JSON_THROW_ON_ERROR), 'Request field "type" is invalid.'],
             [json_encode(['type' => 'function', 'file' => ''], JSON_THROW_ON_ERROR), 'Request field "file" is required.'],
+            [json_encode(['type' => 'function', 'file' => self::FIXTURE_FILE, 'sourceFile' => 1], JSON_THROW_ON_ERROR), 'Request field "sourceFile" must be a string or null.'],
             [json_encode(['type' => 'function', 'file' => self::FIXTURE_FILE, 'class' => 1], JSON_THROW_ON_ERROR), 'Request field "class" must be a string or null.'],
             [json_encode(['type' => 'function', 'file' => self::FIXTURE_FILE, 'callable' => 1], JSON_THROW_ON_ERROR), 'Request field "callable" must be a string or null.'],
             [json_encode(['type' => 'function', 'file' => self::FIXTURE_FILE, 'args' => 'bad'], JSON_THROW_ON_ERROR), 'Request field "args" must be an object.'],
@@ -643,6 +646,22 @@ final class RunnerTest extends TestCase
             'typeMap' => null,
         ]);
         self::assertSame('function|RunnerFixtures.php|func:|none|hello:first:', $functionAdapterResult['html']);
+
+        $functionSourceAdapterResult = executeRunnerRequest([
+            'type' => 'function',
+            'file' => self::FIXTURE_FILE,
+            'sourceFile' => '/stories/AliasFixture.php',
+            'class' => null,
+            'callable' => 'StorybookPhp\\TestFixture\\renderFixture',
+            'args' => [
+                'title' => 'hello',
+                'items' => [['label' => 'first']],
+            ],
+            'bootstrap' => null,
+            'adapter' => self::ADAPTER_FILE,
+            'typeMap' => null,
+        ]);
+        self::assertSame('function|AliasFixture.php|func:|none|hello:first:', $functionSourceAdapterResult['html']);
 
         $templateResult = executeRunnerRequest([
             'type' => 'template',
