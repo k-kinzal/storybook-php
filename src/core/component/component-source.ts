@@ -81,21 +81,27 @@ export function listCallableNamesFromResolvedSource(
     return [];
   }
 
+  const callableNames = new Set(listCallableNamesFromMeta(resolvedSource.meta));
+
+  if (resolvedSource.mappedCallable) {
+    callableNames.add(resolvedSource.mappedCallable);
+  }
+
+  return [...callableNames].sort();
+}
+
+export function listCallableNamesFromMeta(meta: PhpFileMeta): string[] {
   const callableNames = new Set<string>();
 
-  for (const fn of resolvedSource.meta.functions) {
+  for (const fn of meta.functions) {
     callableNames.add(fn.name);
   }
 
-  for (const cls of resolvedSource.meta.classes) {
+  for (const cls of meta.classes) {
     if (cls.isTrait || cls.isInterface) continue;
     for (const method of cls.methods) {
       callableNames.add(method.name);
     }
-  }
-
-  if (resolvedSource.mappedCallable) {
-    callableNames.add(resolvedSource.mappedCallable);
   }
 
   return [...callableNames].sort();

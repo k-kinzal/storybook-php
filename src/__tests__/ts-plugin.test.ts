@@ -192,6 +192,42 @@ describe("PhpResolver", () => {
       expect(result).toContain("interface Alert_danger_Args");
       expect(result).toContain("message: string;");
     });
+
+    it("keeps bare imports on the bare virtual declaration path", () => {
+      const resolver = createPhpResolver(mockTs, "render");
+      const result = resolver.getVirtualDeclarationPath("./SimpleComponent.php", containingFile);
+
+      expect(result).toBe(`${fixturePath("SimpleComponent.php")}.d.ts`);
+    });
+
+    it("keeps explicit callables on the suffixed virtual declaration path", () => {
+      const resolver = createPhpResolver(mockTs, "render");
+      const result = resolver.getVirtualDeclarationPath(
+        "./SimpleComponent.php@render",
+        containingFile,
+      );
+
+      expect(result).toBe(`${fixturePath("SimpleComponent.php")}@render.d.ts`);
+    });
+
+    it("serves bare-path virtual declarations with defaultMethod content", () => {
+      const resolver = createPhpResolver(mockTs, "render");
+      const result = resolver.getVirtualDeclaration(`${fixturePath("SimpleComponent.php")}.d.ts`);
+
+      expect(result).not.toBeNull();
+      expect(result).toContain("interface SimpleComponent_render_Args");
+      expect(result).toContain("name: string;");
+    });
+
+    it("returns a stable version string for bare-path virtual declarations", () => {
+      const resolver = createPhpResolver(mockTs, "render");
+      const fileName = `${fixturePath("SimpleComponent.php")}.d.ts`;
+
+      expect(resolver.getVirtualDeclarationVersion(fileName)).toBeTruthy();
+      expect(resolver.getVirtualDeclarationVersion(fileName)).toBe(
+        resolver.getVirtualDeclarationVersion(fileName),
+      );
+    });
   });
 
   describe("full resolver config", () => {

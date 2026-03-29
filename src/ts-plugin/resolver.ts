@@ -1,11 +1,6 @@
 import type ts from "typescript";
 import { existsSync, readFileSync, statSync } from "node:fs";
-import { generateDeclarationModule } from "../core/component/declaration-emitter.js";
-import { resolveSchemasForSource } from "../core/component/component-schema.js";
-import {
-  resolveComponentSource,
-  type ResolvedComponentSource,
-} from "../core/component/component-source.js";
+import { resolveComponentSource } from "../core/component/component-source.js";
 import {
   PHP_IMPORT_RE,
   resolveFrameworkOptions,
@@ -13,6 +8,11 @@ import {
   extractCallableName,
   stripCallableSuffix,
 } from "../core/config/framework-config.js";
+import {
+  declarationPathForImport,
+  generateDeclarationContentForImport,
+  versionForResolvedSource,
+} from "../core/typescript/declaration-files.js";
 import { parsePhpSource } from "../core/analysis/php-parser.js";
 import type { FrameworkOptions, PhpFileMeta } from "../types.js";
 
@@ -62,24 +62,28 @@ export function createPhpResolver(
   }
 
   function resolvePhpImport(specifier: string, containingFile: string): string | null {
+    const explicitCallable = extractCallableName(specifier);
     const resolvedImport = resolveImportSource(specifier, containingFile, resolvedOptions);
     if (!resolvedImport) return null;
 
     try {
       const resolvedSource = resolveComponentSource(resolvedImport.sourceFile, resolvedOptions);
-      const schemas = resolveSchemasForSource(resolvedSource, resolvedImport.callableName);
-      return schemas.schemas.length > 0 ? generateDeclarationModule(schemas.schemas) : "";
+      return generateDeclarationContentForImport(
+        resolvedSource,
+        explicitCallable,
+        resolvedOptions.defaultMethod,
+      );
     } catch {
       return null;
     }
   }
 
   function getVirtualDeclarationPath(specifier: string, containingFile: string): string | null {
+    const explicitCallable = extractCallableName(specifier);
     const resolvedImport = resolveImportSource(specifier, containingFile, resolvedOptions);
     if (!resolvedImport) return null;
 
-    const suffix = resolvedImport.callableName ? `@${resolvedImport.callableName}` : "";
-    return `${resolvedImport.sourceFile}${suffix}.d.ts`;
+    return declarationPathForImport(resolvedImport.sourceFile, explicitCallable);
   }
 
   function getVirtualDeclaration(fileName: string): string | null {
@@ -88,7 +92,6 @@ export function createPhpResolver(
 
     const explicitCallable = extractCallableName(sourcePath);
     const importPath = stripCallableSuffix(sourcePath);
-    const callableName = explicitCallable ?? resolvedOptions.defaultMethod;
 
     if (!existsSync(importPath)) return null;
 
@@ -100,12 +103,15 @@ export function createPhpResolver(
         return cached.content;
       }
 
-      const schemas = resolveSchemasForSource(resolvedSource, callableName);
-      if (schemas.schemas.length === 0) {
+      const content = generateDeclarationContentForImport(
+        resolvedSource,
+        explicitCallable,
+        resolvedOptions.defaultMethod,
+      );
+      if (content === "") {
         return null;
       }
 
-      const content = generateDeclarationModule(schemas.schemas);
       declarationCache.set(fileName, { version, content });
       return content;
     } catch {
@@ -157,12 +163,4 @@ function normalizeResolverConfig(config: string | PhpResolverConfig): PhpResolve
   }
 
   return normalized;
-}
-
-function versionForResolvedSource(resolvedSource: ResolvedComponentSource): string {
-  return resolvedSource.dependencies
-    .map(
-      (dependency) => `${dependency}:${existsSync(dependency) ? statSync(dependency).mtimeMs : -1}`,
-    )
-    .join("|");
 }
