@@ -33,21 +33,32 @@ export default defineConfig({
     deps: { neverBundle: ["storybook", "vite", "typescript", "@storybook/builder-vite"] },
   },
   test: {
-    include: ["src/__tests__/**/*.test.ts"],
     environment: "node",
     globals: true,
     testTimeout: 15000,
+    projects: [
+      {
+        extends: true,
+        test: {
+          name: "unit",
+          include: ["test/unit/**/*.unit.test.ts"],
+        },
+      },
+      {
+        extends: true,
+        test: {
+          name: "integration",
+          include: ["test/integration/**/*.integration.test.ts"],
+        },
+      },
+    ],
     coverage: {
       provider: "v8",
+      // Supported by Vitest at runtime; vite-plus' config typing does not expose it yet.
+      // @ts-expect-error coverage.all is valid in the underlying Vitest config
       all: true,
       include: ["src/**/*.ts"],
-      exclude: [
-        "src/**/__tests__/**",
-        "src/cli.ts",
-        "src/index.ts",
-        "src/public-types.ts",
-        "src/types.ts",
-      ],
+      exclude: ["src/cli.ts", "src/index.ts", "src/public-types.ts", "src/types.ts"],
       reporter: ["text", "json-summary", "clover"],
       thresholds: {
         statements: 100,

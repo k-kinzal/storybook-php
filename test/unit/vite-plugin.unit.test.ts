@@ -1,9 +1,9 @@
-import { describe, it, expect, vi } from "vite-plus/test";
-import { storybookPhpPlugin, VIRTUAL_PREFIX, resolveAdapterMap } from "../vite-plugin.js";
+import { beforeEach, describe, it, expect, vi } from "vite-plus/test";
+import { storybookPhpPlugin, VIRTUAL_PREFIX, resolveAdapterMap } from "../../src/vite-plugin.js";
 import { resolve } from "node:path";
-import { getConfigureServer, getLoad, getResolveId } from "./plugin-test-helpers.js";
+import { getConfigureServer, getLoad, getResolveId } from "../helpers/plugin-test-helpers.js";
 
-const FIXTURES = resolve(__dirname, "fixtures");
+const FIXTURES = resolve(import.meta.dirname!, "../fixtures");
 
 describe("Vite Plugin", () => {
   // -----------------------------------------------------------------------
@@ -1415,5 +1415,256 @@ describe("Vite Plugin", () => {
         expect(map).toBeUndefined();
       });
     });
+  });
+});
+
+describe("vite-plugin runtime hooks", () => {
+  beforeEach(() => {
+    vi.restoreAllMocks();
+    vi.resetModules();
+  });
+
+  it("invokes the registered PHP middleware wrapper", async () => {
+    const middleware = vi.fn(async () => undefined);
+    vi.doMock("../../src/runtime/server/dev-middleware.js", () => ({
+      createPhpMiddleware: vi.fn(() => middleware),
+    }));
+
+    const { storybookPhpPlugin: loadPlugin } = await import("../../src/vite-plugin.js");
+    const plugin = loadPlugin();
+    const configureServer = (
+      plugin as unknown as {
+        configureServer(server: { middlewares: { use(fn: unknown): void } }): void;
+      }
+    ).configureServer.bind(plugin);
+
+    let registered:
+      | ((req: unknown, res: unknown, next: () => void) => Promise<void> | void)
+      | undefined;
+    configureServer({
+      middlewares: {
+        use(fn) {
+          registered = fn as typeof registered;
+        },
+      },
+    });
+
+    const next = vi.fn();
+    await registered?.({ url: "/__storybook_php/render", method: "POST" }, {}, next);
+
+    expect(middleware).toHaveBeenCalledWith(
+      { url: "/__storybook_php/render", method: "POST" },
+      {},
+      next,
+    );
+  });
+
+  it("passes bootstrap, adapter, typeMap, and adapterMap into the middleware options", async () => {
+    const createPhpMiddleware = vi.fn(() => vi.fn(async () => undefined));
+    vi.doMock("../../src/runtime/server/dev-middleware.js", () => ({
+      createPhpMiddleware,
+    }));
+
+    const { storybookPhpPlugin: loadPlugin } = await import("../../src/vite-plugin.js");
+    const plugin = loadPlugin({
+      _configDir: FIXTURES,
+      bootstrap: "Bootstrap.php",
+      adapter: "fixture-adapter.php",
+      typeMap: {
+        args: { "App\\Components\\SimpleComponent::$name": "string" },
+        files: {
+          "TemplateFile.php": { adapter: "fixture-adapter.php" },
+        },
+      },
+    });
+
+    (
+      plugin as unknown as {
+        configureServer(server: { middlewares: { use(fn: unknown): void } }): void;
+      }
+    ).configureServer({
+      middlewares: {
+        use() {},
+      },
+    });
+
+    expect(createPhpMiddleware).toHaveBeenCalledWith(
+      expect.objectContaining({
+        bootstrap: "Bootstrap.php",
+        adapter: "fixture-adapter.php",
+        phpBinary: "php",
+        timeout: 5000,
+        typeMap: {
+          args: { "App\\Components\\SimpleComponent::$name": "string" },
+          files: {
+            "TemplateFile.php": { adapter: "fixture-adapter.php" },
+          },
+        },
+        adapterMap: {
+          files: {
+            [resolve(FIXTURES, "TemplateFile.php")]: resolve(FIXTURES, "fixture-adapter.php"),
+          },
+          patterns: [],
+        },
+      }),
+      expect.anything(),
+    );
+  });
+
+  it("returns undefined when no virtual modules depend on the changed file", async () => {
+    const { storybookPhpPlugin: loadPlugin } = await import("../../src/vite-plugin.js");
+    const plugin = loadPlugin();
+    const handleHotUpdate = (
+      plugin as unknown as {
+        handleHotUpdate(payload: {
+          file: string;
+          server: {
+            moduleGraph: {
+              idToModuleMap: Map<string, unknown>;
+              invalidateModule(mod: unknown): void;
+            };
+            ws: { send(payload: unknown): void };
+          };
+        }): unknown;
+      }
+    ).handleHotUpdate.bind(plugin);
+    const server = {
+      moduleGraph: {
+        idToModuleMap: new Map<string, unknown>(),
+        invalidateModule: vi.fn(),
+      },
+      ws: { send: vi.fn() },
+    };
+
+    expect(
+      handleHotUpdate({ file: resolve(FIXTURES, "SimpleComponent.php"), server }),
+    ).toBeUndefined();
+    expect(server.ws.send).not.toHaveBeenCalled();
+  });
+
+  it("returns undefined when the virtual ids are known but not present in the module graph", async () => {
+    const { storybookPhpPlugin: loadPlugin, VIRTUAL_PREFIX: prefix } =
+      await import("../../src/vite-plugin.js");
+    const plugin = loadPlugin();
+    const load = (
+      plugin as unknown as {
+        load(id: string): string | null;
+        handleHotUpdate(payload: {
+          file: string;
+          server: {
+            moduleGraph: {
+              idToModuleMap: Map<string, unknown>;
+              invalidateModule(mod: unknown): void;
+            };
+            ws: { send(payload: unknown): void };
+          };
+        }): unknown;
+      }
+    ).load.bind(plugin);
+    const handleHotUpdate = (
+      plugin as unknown as { handleHotUpdate: (payload: unknown) => unknown }
+    ).handleHotUpdate.bind(plugin);
+    const file = resolve(FIXTURES, "SimpleComponent.php");
+    load(`${prefix}${file}?callable=render`);
+
+    const server = {
+      moduleGraph: {
+        idToModuleMap: new Map([["/unrelated.js", { id: "/unrelated.js" }]]),
+        invalidateModule: vi.fn(),
+      },
+      ws: { send: vi.fn() },
+    };
+
+    expect(handleHotUpdate({ file, server })).toBeUndefined();
+    expect(server.moduleGraph.invalidateModule).not.toHaveBeenCalled();
+  });
+
+  it("invalidates affected virtual modules and triggers a full reload", async () => {
+    const { storybookPhpPlugin: loadPlugin, VIRTUAL_PREFIX: prefix } =
+      await import("../../src/vite-plugin.js");
+    const plugin = loadPlugin();
+    const typedPlugin = plugin as unknown as {
+      load(id: string): string | null;
+      handleHotUpdate(payload: {
+        file: string;
+        server: {
+          moduleGraph: {
+            idToModuleMap: Map<string, { id: string }>;
+            invalidateModule(mod: { id: string }): void;
+          };
+          ws: { send(payload: unknown): void };
+        };
+      }): unknown;
+    };
+    const file = resolve(FIXTURES, "SimpleComponent.php");
+    const virtualId = `${prefix}${file}?callable=render`;
+    typedPlugin.load(virtualId);
+
+    const affectedModule = { id: virtualId };
+    const server = {
+      moduleGraph: {
+        idToModuleMap: new Map([[virtualId, affectedModule]]),
+        invalidateModule: vi.fn(),
+      },
+      ws: { send: vi.fn() },
+    };
+
+    expect(typedPlugin.handleHotUpdate({ file, server })).toEqual([]);
+    expect(server.moduleGraph.invalidateModule).toHaveBeenCalledWith(affectedModule);
+    expect(server.ws.send).toHaveBeenCalledWith({ type: "full-reload" });
+  });
+
+  it("ignores module-graph entries without ids and resolves queryless virtual ids", async () => {
+    const {
+      VIRTUAL_PREFIX: prefix,
+      resolveAdapterMap: resolveMap,
+      storybookPhpPlugin: loadPlugin,
+    } = await import("../../src/vite-plugin.js");
+    const plugin = loadPlugin();
+    const typedPlugin = plugin as unknown as {
+      load(id: string): string | null;
+      handleHotUpdate(payload: {
+        file: string;
+        server: {
+          moduleGraph: {
+            idToModuleMap: Map<string, { id?: string }>;
+            invalidateModule(mod: { id?: string }): void;
+          };
+          ws: { send(payload: unknown): void };
+        };
+      }): unknown;
+    };
+    const file = resolve(FIXTURES, "TemplateFile.php");
+
+    expect(typedPlugin.load(`${prefix}${file}`)).toContain("__type: 'template'");
+    expect(
+      resolveMap(
+        {
+          "TemplateFile.php": { adapter: "fixture-adapter.php" },
+        },
+        FIXTURES,
+      ),
+    ).toEqual({
+      files: {
+        [resolve(FIXTURES, "TemplateFile.php")]: resolve(FIXTURES, "fixture-adapter.php"),
+      },
+      patterns: [],
+    });
+
+    const server = {
+      moduleGraph: {
+        idToModuleMap: new Map([["missing-id", {}]]),
+        invalidateModule: vi.fn(),
+      },
+      ws: { send: vi.fn() },
+    };
+
+    expect(typedPlugin.handleHotUpdate({ file, server })).toBeUndefined();
+  });
+
+  it("returns undefined when adapter maps are resolved without a config dir", async () => {
+    const { resolveAdapterMap: resolveMap } = await import("../../src/vite-plugin.js");
+
+    expect(resolveMap(undefined, undefined)).toBeUndefined();
   });
 });

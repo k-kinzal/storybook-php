@@ -1,4 +1,5 @@
-import { describe, it, expect, beforeEach, afterEach } from "vite-plus/test";
+import { describe, it, expect, beforeEach, afterEach, vi } from "vite-plus/test";
+import * as fs from "node:fs";
 import {
   mkdtempSync,
   mkdirSync,
@@ -12,7 +13,7 @@ import {
 } from "node:fs";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
-import { detectNodeModulesState, ensureLink } from "../cli/node-modules-link.js";
+import { detectNodeModulesState, ensureLink } from "../../src/cli/node-modules-link.js";
 
 let tmpDir: string;
 
@@ -258,6 +259,64 @@ describe("ensureLink", () => {
 
       expect(existsSync(join(nm(), ".cache"))).toBe(true);
       expect(existsSync(join(nm(), ".old-cache"))).toBe(false);
+    });
+  });
+
+  describe("cleanup edge cases", () => {
+    it("restores the backup when symlink creation fails after a rename", async () => {
+      const localPath = join(tmpDir, "node_modules_failure");
+      fs.mkdirSync(localPath);
+      fs.mkdirSync(join(localPath, ".cache"));
+
+      vi.resetModules();
+      vi.doMock("node:fs", async () => {
+        const actual = await vi.importActual<typeof import("node:fs")>("node:fs");
+        return {
+          ...actual,
+          symlinkSync: vi.fn(() => {
+            throw new Error("symlink failed");
+          }),
+        };
+      });
+
+      const { detectNodeModulesState: detectState, ensureLink: ensureMockedLink } =
+        await import("../../src/cli/node-modules-link.js");
+
+      expect(ensureMockedLink(localPath, "/tmp/target")).toBeNull();
+      expect(detectState(localPath)).toBe("real-empty-or-cache");
+      expect(fs.existsSync(localPath + ".__sbphp_bak__")).toBe(false);
+    });
+
+    it("removes created symlinks during cleanup", async () => {
+      const target = join(tmpDir, "target_node_modules_cleanup");
+      fs.mkdirSync(join(target, "storybook-php"), { recursive: true });
+
+      vi.resetModules();
+      vi.doUnmock("node:fs");
+      const { ensureLink: ensureMockedLink } = await import("../../src/cli/node-modules-link.js");
+      const localPath = join(tmpDir, "linked_node_modules");
+      const cleanup = ensureMockedLink(localPath, target);
+
+      cleanup?.();
+
+      expect(fs.existsSync(localPath)).toBe(false);
+    });
+
+    it("skips unlink when the symlink is already gone before cleanup", async () => {
+      const target = join(tmpDir, "target_node_modules_2");
+      fs.mkdirSync(join(target, "storybook-php"), { recursive: true });
+
+      vi.resetModules();
+      vi.doUnmock("node:fs");
+      const { ensureLink: ensureMockedLink } = await import("../../src/cli/node-modules-link.js");
+      const localPath = join(tmpDir, "linked_node_modules_2");
+      const cleanup = ensureMockedLink(localPath, target);
+      expect(cleanup).toBeTypeOf("function");
+      fs.unlinkSync(localPath);
+
+      cleanup?.();
+
+      expect(fs.existsSync(localPath)).toBe(false);
     });
   });
 });

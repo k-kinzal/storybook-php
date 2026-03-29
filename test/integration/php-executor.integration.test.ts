@@ -1,8 +1,8 @@
 import { describe, it, expect } from "vite-plus/test";
 import { execSync } from "node:child_process";
 import { resolve } from "node:path";
-import { PhpExecutor } from "../runtime/server/php-executor.js";
-import type { PhpRenderRequest } from "../types.js";
+import { PhpExecutor } from "../../src/runtime/server/php-executor.js";
+import type { PhpRenderRequest } from "../../src/types.js";
 
 // Check PHP version
 let phpMajor = 0;
@@ -20,7 +20,7 @@ try {
 const hasPhp = phpMajor > 8 || (phpMajor === 8 && phpMinor >= 0);
 const hasPhp81 = phpMajor > 8 || (phpMajor === 8 && phpMinor >= 1);
 
-const fixturesDir = resolve(__dirname, "fixtures");
+const fixturesDir = resolve(import.meta.dirname!, "../fixtures");
 const fixture = (name: string) => resolve(fixturesDir, name);
 
 describe.skipIf(!hasPhp)("PhpExecutor", () => {

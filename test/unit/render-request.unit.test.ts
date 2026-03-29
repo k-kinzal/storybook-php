@@ -1,11 +1,11 @@
 import { describe, expect, it } from "vite-plus/test";
-import { RenderRegistry } from "../runtime/render/render-registry.js";
+import { RenderRegistry } from "../../src/runtime/render/render-registry.js";
 import {
   parseRenderInvokeRequest,
   RequestValidationError,
   resolveExecutionRequest,
-} from "../runtime/render/render-request.js";
-import type { PhpRenderInvokeRequest } from "../types.js";
+} from "../../src/runtime/render/render-request.js";
+import type { PhpRenderInvokeRequest } from "../../src/types.js";
 
 describe("render-request", () => {
   describe("parseRenderInvokeRequest", () => {
@@ -88,6 +88,33 @@ describe("render-request", () => {
         adapter: null,
         typeMap: null,
       });
+    });
+
+    it("throws when component ids are used without a registry", () => {
+      expect(() =>
+        resolveExecutionRequest({ componentId: "missing", args: {} }, undefined),
+      ).toThrowError(new RequestValidationError("Component registry is not available."));
+    });
+
+    it("throws for unknown component ids", () => {
+      const registry = new RenderRegistry();
+
+      expect(() =>
+        resolveExecutionRequest({ componentId: "missing", args: {} }, registry),
+      ).toThrowError(new RequestValidationError("Unknown componentId: missing"));
+    });
+
+    it("normalizes missing adapters from registry plans to null", () => {
+      const registry = new RenderRegistry();
+      const componentId = registry.register({
+        type: "template",
+        file: "/tmp/view.php",
+        sourceFile: "/tmp/view.php",
+        class: null,
+        callable: null,
+      });
+
+      expect(resolveExecutionRequest({ componentId, args: {} }, registry).adapter).toBeNull();
     });
   });
 });

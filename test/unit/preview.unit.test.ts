@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import { describe, it, expect, vi, beforeEach } from "vite-plus/test";
-import { renderToCanvas, render } from "../preview.js";
-import type { PhpComponent } from "../types.js";
+import { parameters as previewParameters, renderToCanvas, render } from "../../src/preview.js";
+import type { PhpComponent } from "../../src/types.js";
 
 const mockShowMain = vi.fn();
 const mockShowError = vi.fn();
@@ -367,5 +367,149 @@ describe("decorator support", () => {
 
     expect(canvas.innerHTML).toBe("<p>PHP output</p>");
     expect(mockShowMain).toHaveBeenCalled();
+  });
+});
+
+describe("preview request lifecycle", () => {
+  it("falls back to an empty args object for malformed story args", async () => {
+    const canvas = document.createElement("div");
+    const ctx = makeContext(phpComponent);
+    ctx.storyContext.args = undefined as unknown as Record<string, unknown>;
+    const fetchMock = vi.fn().mockResolvedValue({
+      json: () => Promise.resolve({ html: "<div>ok</div>" }),
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    await renderToCanvas(ctx, canvas);
+
+    expect(JSON.parse(String(fetchMock.mock.calls[0]?.[1]?.body))).toEqual({
+      componentId: "cmp_test",
+      args: {},
+    });
+  });
+
+  it("returns early when a request is aborted before reading JSON", async () => {
+    const canvas = document.createElement("div");
+    const first = makeContext(phpComponent);
+    const second = makeContext(phpComponent);
+
+    vi.stubGlobal(
+      "fetch",
+      vi
+        .fn()
+        .mockImplementationOnce((_url: string, options: RequestInit) => {
+          const signal = options.signal as AbortSignal;
+          return new Promise((resolvePromise) => {
+            signal.addEventListener("abort", () => {
+              resolvePromise({
+                json: () => Promise.resolve({ html: "<div>stale</div>" }),
+              });
+            });
+          });
+        })
+        .mockResolvedValueOnce({
+          json: () => Promise.resolve({ html: "<div>fresh</div>" }),
+        }),
+    );
+
+    const firstRender = renderToCanvas(first, canvas);
+    const secondRender = renderToCanvas(second, canvas);
+
+    await Promise.all([firstRender, secondRender]);
+
+    expect(canvas.innerHTML).toBe("<div>fresh</div>");
+    expect(mockShowError).not.toHaveBeenCalled();
+  });
+
+  it("returns early when a request is aborted after JSON resolves", async () => {
+    const canvas = document.createElement("div");
+    const first = makeContext(phpComponent);
+    const second = makeContext(phpComponent);
+    let resolveJson: ((value: { html: string }) => void) | undefined;
+
+    vi.stubGlobal(
+      "fetch",
+      vi
+        .fn()
+        .mockResolvedValueOnce({
+          json: () =>
+            new Promise((innerResolve) => {
+              resolveJson = innerResolve;
+            }),
+        })
+        .mockResolvedValueOnce({
+          json: () => Promise.resolve({ html: "<div>fresher</div>" }),
+        }),
+    );
+
+    const firstRender = renderToCanvas(first, canvas);
+    await Promise.resolve();
+    const secondRender = renderToCanvas(second, canvas);
+    resolveJson?.({ html: "<div>stale</div>" });
+
+    await Promise.all([firstRender, secondRender]);
+
+    expect(canvas.innerHTML).toBe("<div>fresher</div>");
+    expect(mockShowError).not.toHaveBeenCalled();
+  });
+
+  it("returns early when the response object arrives after abort", async () => {
+    const canvas = document.createElement("div");
+    const first = makeContext(phpComponent);
+    const second = makeContext(phpComponent);
+
+    vi.stubGlobal(
+      "fetch",
+      vi
+        .fn()
+        .mockImplementationOnce((_url: string, _options: RequestInit) =>
+          Promise.resolve({
+            json: () => Promise.resolve({ html: "<div>stale</div>" }),
+          }),
+        )
+        .mockResolvedValueOnce({
+          json: () => Promise.resolve({ html: "<div>freshest</div>" }),
+        }),
+    );
+
+    const firstRender = renderToCanvas(first, canvas);
+    const secondRender = renderToCanvas(second, canvas);
+
+    await Promise.all([firstRender, secondRender]);
+
+    expect(canvas.innerHTML).toBe("<div>freshest</div>");
+    expect(mockShowError).not.toHaveBeenCalled();
+  });
+
+  it("shows trace-less PHP errors and string-thrown failures", async () => {
+    const errorCanvas = document.createElement("div");
+    const errorCtx = makeContext(phpComponent);
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue({
+        json: () => Promise.resolve({ html: "", error: "Broken render" }),
+      }),
+    );
+
+    await renderToCanvas(errorCtx, errorCanvas);
+
+    expect(mockShowError).toHaveBeenCalledWith({
+      title: "PHP Render Error",
+      description: "Broken render",
+    });
+
+    mockShowError.mockReset();
+
+    const thrownCanvas = document.createElement("div");
+    const thrownCtx = makeContext(phpComponent);
+    vi.stubGlobal("fetch", vi.fn().mockRejectedValue("Network down"));
+
+    await renderToCanvas(thrownCtx, thrownCanvas);
+
+    expect(mockShowError).toHaveBeenCalledWith({
+      title: "PHP Render Error",
+      description: "Network down",
+    });
+    expect(previewParameters.renderer).toBe("storybook-php");
   });
 });

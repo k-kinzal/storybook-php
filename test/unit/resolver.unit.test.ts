@@ -1,14 +1,25 @@
-import { describe, it, expect } from "vite-plus/test";
-import { createPhpResolver } from "../ts-plugin/resolver.js";
-import { resolve } from "node:path";
-import type ts from "typescript";
+import { afterEach, beforeEach, describe, it, expect } from "vite-plus/test";
+import { mkdtempSync, mkdirSync, rmSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { createPhpResolver } from "../../src/ts-plugin/resolver.js";
+import { join, resolve } from "node:path";
+import ts from "typescript";
 
 const mockTs = {} as typeof ts;
-const fixturesDir = resolve(__dirname, "fixtures");
+const fixturesDir = resolve(import.meta.dirname!, "../fixtures");
 const fixturePath = (name: string) => resolve(fixturesDir, name);
+let tempDir = "";
 
 // A fake "containing file" in the fixtures directory so relative resolution works
 const containingFile = resolve(fixturesDir, "story.ts");
+
+beforeEach(() => {
+  tempDir = mkdtempSync(join(tmpdir(), "sbphp-resolver-"));
+});
+
+afterEach(() => {
+  rmSync(tempDir, { recursive: true, force: true });
+});
 
 describe("PhpResolver", () => {
   // -------------------------------------------------------------------------
@@ -175,6 +186,14 @@ describe("PhpResolver", () => {
 
       expect(meta).toBeNull();
     });
+
+    it("returns null when metadata cannot be read from disk", () => {
+      const resolver = createPhpResolver(ts);
+      const brokenPath = join(tempDir, "directory.php");
+      mkdirSync(brokenPath);
+
+      expect(resolver.getPhpMeta(brokenPath)).toBeNull();
+    });
   });
 
   // -------------------------------------------------------------------------
@@ -239,6 +258,32 @@ describe("PhpResolver", () => {
       expect(resolver.getVirtualDeclarationVersion(fileName)).toBe(
         resolver.getVirtualDeclarationVersion(fileName),
       );
+    });
+
+    it("reuses cached virtual declarations and handles broken declaration targets", () => {
+      const resolver = createPhpResolver(ts, "render");
+      const virtualPath = `${fixturePath("SimpleComponent.php")}@render.d.ts`;
+
+      const first = resolver.getVirtualDeclaration(virtualPath);
+      const second = resolver.getVirtualDeclaration(virtualPath);
+
+      expect(second).toBe(first);
+
+      const brokenImport = join(tempDir, "broken.php");
+      mkdirSync(brokenImport);
+      const brokenVirtualPath = `${brokenImport}.d.ts`;
+
+      expect(resolver.getVirtualDeclaration(brokenVirtualPath)).toBeNull();
+      expect(resolver.getVirtualDeclarationVersion(brokenVirtualPath)).toBeNull();
+    });
+
+    it("returns null for virtual declarations whose source file does not exist", () => {
+      const resolver = createPhpResolver(ts, "render");
+
+      expect(resolver.getVirtualDeclaration(join(tempDir, "missing.php.d.ts"))).toBeNull();
+      expect(
+        resolver.getVirtualDeclarationPath("./missing.ts", fixturePath("SimpleComponent.php")),
+      ).toBeNull();
     });
 
     it("does not expose a bare-path declaration when defaultMethod is missing", () => {

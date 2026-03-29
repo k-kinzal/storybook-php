@@ -1,14 +1,24 @@
-import { describe, it, expect } from "vite-plus/test";
-import { parsePhpSource } from "../core/analysis/php-parser.js";
-import { generateDts, generateDtsOutputsForFile } from "../core/typescript/typegen.js";
+import { describe, it, expect, vi, beforeEach } from "vite-plus/test";
+import { parsePhpSource } from "../../src/core/analysis/php-parser.js";
+import {
+  generateDts,
+  generateDtsForFile,
+  generateDtsOutputsForFile,
+} from "../../src/core/typescript/typegen.js";
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 
-const fixture = (name: string) => readFileSync(resolve(__dirname, "fixtures", name), "utf-8");
-const fixturePath = (name: string) => resolve(__dirname, "fixtures", name);
+const fixture = (name: string) =>
+  readFileSync(resolve(import.meta.dirname!, "../fixtures", name), "utf-8");
+const fixturePath = (name: string) => resolve(import.meta.dirname!, "../fixtures", name);
 
 const fixtureSource = (name: string) =>
-  parsePhpSource(fixture(name), resolve(__dirname, "fixtures", name));
+  parsePhpSource(fixture(name), resolve(import.meta.dirname!, "../fixtures", name));
+
+beforeEach(() => {
+  vi.restoreAllMocks();
+  vi.resetModules();
+});
 
 describe("Type Generation", () => {
   // -----------------------------------------------------------------------
@@ -221,7 +231,7 @@ function loose($anything): void {}
 
   it("applies typeMap inline args in exact-import outputs", () => {
     const outputs = generateDtsOutputsForFile(fixturePath("TypeMapInlineTarget.blade.php"), {
-      _configDir: resolve(__dirname, "fixtures"),
+      _configDir: resolve(import.meta.dirname!, "../fixtures"),
       typeMap: {
         files: {
           "TypeMapInlineTarget.blade.php": {
@@ -248,5 +258,82 @@ function loose($anything): void {}
       `${fixturePath("SimpleComponent.php")}@render.d.ts`,
     ]);
     expect(outputs[0]!.content).toContain("interface SimpleComponent_render_Args");
+  });
+
+  it("deduplicates schemas before emitting declarations", async () => {
+    const duplicatedSchema = {
+      exportName: "Card",
+      renderPlan: {
+        type: "classMethod" as const,
+        file: "/tmp/Card.php",
+        sourceFile: "/tmp/Card.php",
+        class: "App\\Card",
+        callable: "render",
+      },
+      constructorArgs: {},
+      callableArgs: {},
+      allArgs: {},
+    };
+
+    vi.doMock("../../src/core/component/component-source.js", () => ({
+      listCallableNamesFromMeta: () => ["render"],
+      resolveComponentSource: vi.fn(),
+    }));
+    vi.doMock("../../src/core/component/schema-builder.js", () => ({
+      buildSchemasFromMeta: () => [duplicatedSchema, duplicatedSchema],
+      buildTemplateSchema: vi.fn(),
+    }));
+
+    const { generateDts: mockedGenerateDts } = await import("../../src/core/typescript/typegen.js");
+    const output = mockedGenerateDts({
+      filePath: "/tmp/Card.php",
+      namespace: null,
+      classes: [],
+      functions: [],
+    });
+
+    expect(output.match(/export declare const Card/g)).toHaveLength(1);
+  });
+
+  it("returns the bare declaration module when the default callable resolves", () => {
+    const dts = generateDtsForFile(
+      fixturePath("SimpleComponent.php"),
+      undefined,
+      undefined,
+      "render",
+    );
+
+    expect(dts).toContain("interface SimpleComponent_render_Args");
+  });
+
+  it("returns an empty string when the default callable is missing", () => {
+    expect(
+      generateDtsForFile(fixturePath("SimpleComponent.php"), undefined, undefined, "missingMethod"),
+    ).toBe("");
+  });
+
+  it("passes through type-map and config-dir options", () => {
+    const dts = generateDtsForFile(
+      fixturePath("TypeMapInlineTarget.blade.php"),
+      {
+        files: {
+          "TypeMapInlineTarget.blade.php": {
+            args: {
+              title: "string",
+            },
+          },
+        },
+      },
+      resolve(import.meta.dirname!, "../fixtures"),
+      "render",
+    );
+
+    expect(dts).toContain("title: string;");
+  });
+
+  it("works when no default method is provided", () => {
+    const dts = generateDtsForFile(fixturePath("SimpleComponent.php"));
+
+    expect(dts).toContain("declare const _default: PhpComponent<Record<string, unknown>>;");
   });
 });

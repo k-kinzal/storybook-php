@@ -1,15 +1,15 @@
 import { describe, it, expect, vi, beforeEach } from "vite-plus/test";
 import type { IncomingMessage, ServerResponse } from "node:http";
 import { EventEmitter } from "node:events";
-import { RenderRegistry } from "../runtime/render/render-registry.js";
-import { createPhpMiddleware, RENDER_PATH } from "../runtime/server/dev-middleware.js";
+import { RenderRegistry } from "../../src/runtime/render/render-registry.js";
+import { createPhpMiddleware, RENDER_PATH } from "../../src/runtime/server/dev-middleware.js";
 
 // ---------------------------------------------------------------------------
 // Mock PhpExecutor
 // ---------------------------------------------------------------------------
 const mockExecute = vi.fn();
 
-vi.mock("../runtime/server/php-executor.js", () => ({
+vi.mock("../../src/runtime/server/php-executor.js", () => ({
   PhpExecutor: vi.fn().mockImplementation(function () {
     return { execute: mockExecute };
   }),
@@ -35,6 +35,19 @@ function createMockReq(method: string, url: string, body?: string): IncomingMess
       emitter.emit("end");
     });
   }
+
+  return req;
+}
+
+function createErrorReq(): IncomingMessage {
+  const emitter = new EventEmitter();
+  const req = emitter as unknown as IncomingMessage;
+  req.method = "POST";
+  req.url = RENDER_PATH;
+
+  process.nextTick(() => {
+    emitter.emit("error", "socket failed");
+  });
 
   return req;
 }
@@ -433,6 +446,20 @@ describe("createPhpMiddleware", () => {
       bootstrap: null,
       adapter: null,
       typeMap: null,
+    });
+  });
+
+  it("serializes non-Error request failures", async () => {
+    const middleware = createPhpMiddleware();
+    const req = createErrorReq();
+    const res = createMockRes();
+
+    await middleware(req, res, () => undefined);
+
+    expect(res._status).toBe(500);
+    expect(JSON.parse(res._body)).toEqual({
+      html: "",
+      error: "socket failed",
     });
   });
 });

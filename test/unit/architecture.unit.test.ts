@@ -14,7 +14,7 @@ const allowedImports: Record<Exclude<SourceLayer, "ignored">, SourceLayer[]> = {
 
 describe("source layering", () => {
   it("keeps only package entrypoints and shared contracts at the src root", () => {
-    const srcRoot = resolve(__dirname, "..");
+    const srcRoot = resolve(import.meta.dirname!, "../../src");
     const rootFiles = readdirSync(srcRoot, { withFileTypes: true })
       .filter((entry) => entry.isFile() && entry.name.endsWith(".ts"))
       .map((entry) => entry.name)
@@ -32,17 +32,17 @@ describe("source layering", () => {
   });
 
   it("keeps only the expected internal layers directly under src", () => {
-    const srcRoot = resolve(__dirname, "..");
+    const srcRoot = resolve(import.meta.dirname!, "../../src");
     const rootDirs = readdirSync(srcRoot, { withFileTypes: true })
       .filter((entry) => entry.isDirectory())
       .map((entry) => entry.name)
       .sort();
 
-    expect(rootDirs).toEqual(["__tests__", "cli", "core", "php", "runtime", "shared", "ts-plugin"]);
+    expect(rootDirs).toEqual(["cli", "core", "php", "runtime", "shared", "ts-plugin"]);
   });
 
   it("enforces one-way imports between contracts, shared, core, runtime, and entrypoints", () => {
-    const srcRoot = resolve(__dirname, "..");
+    const srcRoot = resolve(import.meta.dirname!, "../../src");
 
     for (const filePath of listSourceFiles(srcRoot)) {
       const sourceLayer = getSourceLayer(filePath, srcRoot);
@@ -103,7 +103,7 @@ function getSourceLayer(filePath: string, srcRoot: string): SourceLayer {
   const relPath = relative(srcRoot, filePath);
   const [firstSegment] = relPath.split("/");
 
-  if (firstSegment === "__tests__" || firstSegment === "php") {
+  if (firstSegment === "php") {
     return "ignored";
   }
 

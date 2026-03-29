@@ -4,18 +4,16 @@
  *
  * These tests verify:
  * 1. New PHP pattern examples execute correctly through PhpExecutor
- * 2. New PHP files parse correctly via parsePhpFile
- * 3. Vite plugin generates correct virtual modules for new/consolidated stories
- * 4. Deleted examples no longer exist while kept representatives still work
+ * 2. Vite plugin generates correct virtual modules for new/consolidated stories
+ * 3. Deleted examples no longer exist while kept representatives still work
  */
 import { describe, it, expect } from "vite-plus/test";
 import { execSync } from "node:child_process";
 import { existsSync, readFileSync, readdirSync } from "node:fs";
 import { resolve } from "node:path";
-import { parsePhpFile } from "../core/analysis/php-parser.js";
-import { PhpExecutor } from "../runtime/server/php-executor.js";
-import { storybookPhpPlugin } from "../vite-plugin.js";
-import { getLoad, getResolveId } from "./plugin-test-helpers.js";
+import { PhpExecutor } from "../../src/runtime/server/php-executor.js";
+import { storybookPhpPlugin } from "../../src/vite-plugin.js";
+import { getLoad, getResolveId } from "../helpers/plugin-test-helpers.js";
 
 let phpMajor = 0;
 let phpMinor = 0;
@@ -257,19 +255,6 @@ describe.skipIf(!hasPhp)("Phase 3: New advanced/ pattern examples", () => {
       expect(result.error).toBeUndefined();
     });
 
-    it("should parse PHPDoc generic annotations", () => {
-      // Given: a PHP file with @param list<string> annotation
-      // When: parsing the file
-      const meta = parsePhpFile(advanced("PhpDocGenericList.php"));
-
-      // Then: class and constructor params should be detected
-      const cls = meta.classes.find((c) => c.name === "PhpDocGenericList");
-      expect(cls).toBeDefined();
-      const itemsParam = cls!.constructorParams.find((p) => p.name === "items");
-      expect(itemsParam).toBeDefined();
-      expect(itemsParam!.type).toBe("array");
-    });
-
     it("should generate classMethod virtual module", () => {
       const plugin = storybookPhpPlugin();
       const resolveId = getResolveId(plugin);
@@ -322,15 +307,6 @@ describe.skipIf(!hasPhp)("Phase 3: New advanced/ pattern examples", () => {
       expect(result.error).toBeUndefined();
     });
 
-    it("should parse array-of-objects class", () => {
-      const meta = parsePhpFile(advanced("ArrayOfObjects.php"));
-      const cls = meta.classes.find((c) => c.name === "ArrayOfObjects");
-      expect(cls).toBeDefined();
-      const itemsParam = cls!.constructorParams.find((p) => p.name === "items");
-      expect(itemsParam).toBeDefined();
-      expect(itemsParam!.type).toBe("array");
-    });
-
     it("should generate classMethod virtual module", () => {
       const plugin = storybookPhpPlugin();
       const resolveId = getResolveId(plugin);
@@ -371,13 +347,6 @@ describe.skipIf(!hasPhp)("Phase 3: New advanced/ pattern examples", () => {
 
       expect(result.error).toBeUndefined();
       expect(result.html).toContain("Component B");
-    });
-
-    it("should parse multiple classes from single file", () => {
-      const meta = parsePhpFile(advanced("MultiClassExport.php"));
-      const classNames = meta.classes.map((c) => c.name);
-      expect(classNames).toContain("MultiClassExportA");
-      expect(classNames).toContain("MultiClassExportB");
     });
 
     it("should generate separate virtual modules per class", () => {
@@ -434,16 +403,6 @@ describe.skipIf(!hasPhp)("Phase 3: New advanced/ pattern examples", () => {
       expect(result.error).toBeUndefined();
     });
 
-    it("should parse self/static return type methods", () => {
-      const meta = parsePhpFile(advanced("SelfReturn.php"));
-      const cls = meta.classes.find((c) => c.name === "SelfReturn");
-      expect(cls).toBeDefined();
-
-      // Should have methods with self or static return types
-      const methods = cls!.methods;
-      expect(methods.length).toBeGreaterThanOrEqual(1);
-    });
-
     it("should generate classMethod virtual module", () => {
       const plugin = storybookPhpPlugin();
       const resolveId = getResolveId(plugin);
@@ -489,15 +448,6 @@ describe.skipIf(!hasPhp)("Phase 3: New advanced/ pattern examples", () => {
 
       expect(result.error).toBeUndefined();
       expect(result.html).toContain("Custom Grid");
-    });
-
-    it("should parse nested array default parameters", () => {
-      const meta = parsePhpFile(advanced("NestedArrayDefault.php"));
-      expect(meta.functions.length).toBeGreaterThanOrEqual(1);
-      const fn = meta.functions[0]!;
-      const configParam = fn.params.find((p) => p.name === "config");
-      expect(configParam).toBeDefined();
-      expect(configParam!.default).toBeDefined();
     });
 
     it("should generate function virtual module", () => {
@@ -604,15 +554,6 @@ describe.skipIf(!hasPhp)("Phase 3: New advanced/ pattern examples", () => {
       expect(result.html).toContain('href="#"');
     });
 
-    it("should parse variadic object constructor param", () => {
-      const meta = parsePhpFile(advanced("VariadicObject.php"));
-      const cls = meta.classes.find((c) => c.name === "VariadicObject");
-      expect(cls).toBeDefined();
-      // Should detect variadic parameter
-      const variadicParam = cls!.constructorParams.find((p) => p.isVariadic);
-      expect(variadicParam).toBeDefined();
-    });
-
     it("should generate classMethod virtual module", () => {
       const plugin = storybookPhpPlugin();
       const resolveId = getResolveId(plugin);
@@ -661,13 +602,6 @@ describe.skipIf(!hasPhp81)("Phase 4: New php81/ pattern examples", () => {
       });
 
       expect(result.error).toBeUndefined();
-    });
-
-    it("should parse first-class callable class", () => {
-      const meta = parsePhpFile(php81("FirstClassCallable.php"));
-      const cls = meta.classes.find((c) => c.name === "FirstClassCallable");
-      expect(cls).toBeDefined();
-      expect(cls!.methods.some((m) => m.name === "render")).toBe(true);
     });
 
     it("should generate classMethod virtual module", () => {
@@ -814,39 +748,6 @@ describe("Phase 5: Story file cleanup", () => {
 // ==========================================================================
 // Phase 3 parser: representative kept files still parse correctly
 // ==========================================================================
-describe("Representative files still parse correctly after deletion", () => {
-  it("should parse GeneratorList.php (kept from generator group)", () => {
-    const meta = parsePhpFile(advanced("GeneratorList.php"));
-    const cls = meta.classes.find((c) => c.name === "GeneratorList");
-    expect(cls).toBeDefined();
-    expect(cls!.methods.some((m) => m.name === "render")).toBe(true);
-  });
-
-  it("should parse InvocableGreeting.php (kept from invocable group)", () => {
-    const meta = parsePhpFile(advanced("InvocableGreeting.php"));
-    const cls = meta.classes.find((c) => c.name === "InvocableGreeting");
-    expect(cls).toBeDefined();
-  });
-
-  it("should parse AbstractShape.php (kept from abstract group)", () => {
-    const meta = parsePhpFile(advanced("AbstractShape.php"));
-    const cls = meta.classes.find((c) => c.name === "AbstractShape");
-    expect(cls).toBeDefined();
-    expect(cls!.isAbstract).toBe(true);
-  });
-
-  it("should parse TraitTemplate.php (kept from trait group)", () => {
-    const meta = parsePhpFile(advanced("TraitTemplate.php"));
-    expect(meta.classes.length).toBeGreaterThanOrEqual(1);
-  });
-
-  it("should parse PrivateConstruct.php (kept from static factory group)", () => {
-    const meta = parsePhpFile(advanced("PrivateConstruct.php"));
-    const cls = meta.classes.find((c) => c.name === "PrivateConstruct");
-    expect(cls).toBeDefined();
-  });
-});
-
 // ==========================================================================
 // Phase 3 executor: representative kept files still execute correctly
 // ==========================================================================

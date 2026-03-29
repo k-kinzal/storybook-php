@@ -1,5 +1,5 @@
 import type { Plugin } from "vite";
-import { storybookPhpPlugin } from "../vite-plugin.js";
+import { storybookPhpPlugin } from "../../src/vite-plugin.js";
 
 type StorybookPhpPluginInstance = ReturnType<typeof storybookPhpPlugin>;
 type ResolveIdHook = (source: string, importer?: string) => string | null;

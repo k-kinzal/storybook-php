@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from "vite-plus/test";
-import { core, viteFinal } from "../preset.js";
+import { core, viteFinal } from "../../src/preset.js";
 
 type NamedPlugin = {
   name: string;
@@ -68,6 +68,21 @@ describe("preset", () => {
       expect(opts.presets.apply).toHaveBeenCalledWith("frameworkOptions", {});
       const plugins = getPlugins(result);
       expect(plugins[0]?.name).toBe("storybook-php");
+    });
+
+    it("falls back to empty framework options when presets.apply returns undefined", async () => {
+      const config = await viteFinal(
+        { plugins: [] },
+        {
+          configDir: import.meta.dirname!,
+          presets: {
+            apply: vi.fn().mockResolvedValue(undefined),
+          },
+        },
+      );
+
+      expect(core.renderer).toBe("storybook-php");
+      expect(config.plugins).toHaveLength(1);
     });
   });
 });

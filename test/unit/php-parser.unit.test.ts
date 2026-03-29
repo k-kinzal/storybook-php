@@ -1,9 +1,46 @@
 import { describe, it, expect } from "vite-plus/test";
-import { parsePhpSource } from "../core/analysis/php-parser.js";
-import { readFileSync } from "node:fs";
+import { parsePhpFile, parsePhpSource } from "../../src/core/analysis/php-parser.js";
+import { existsSync, readFileSync } from "node:fs";
 import { resolve } from "node:path";
 
-const fixture = (name: string) => readFileSync(resolve(__dirname, "fixtures", name), "utf-8");
+const fixture = (name: string) =>
+  readFileSync(resolve(import.meta.dirname!, "../fixtures", name), "utf-8");
+const fixturesDir = resolve(import.meta.dirname!, "../fixtures");
+const basicDir = resolve(import.meta.dirname!, "../../examples/basic/src");
+const advancedPatternsDir = resolve(import.meta.dirname!, "../../examples/advanced-patterns/src");
+const advancedComponentsDir = resolve(
+  import.meta.dirname!,
+  "../../examples/advanced-components/src",
+);
+const advancedCallablesDir = resolve(import.meta.dirname!, "../../examples/advanced-callables/src");
+const advancedTemplatesDir = resolve(import.meta.dirname!, "../../examples/advanced-templates/src");
+const php80Dir = resolve(import.meta.dirname!, "../../examples/php80/src");
+const php81Dir = resolve(import.meta.dirname!, "../../examples/php81/src");
+const php82Dir = resolve(import.meta.dirname!, "../../examples/php82/src");
+const php83Dir = resolve(import.meta.dirname!, "../../examples/php83/src");
+const advancedDirs = [
+  advancedPatternsDir,
+  advancedComponentsDir,
+  advancedCallablesDir,
+  advancedTemplatesDir,
+];
+const resolveAdvancedFile = (name: string) => {
+  for (const dir of advancedDirs) {
+    const candidate = resolve(dir, name);
+    if (existsSync(candidate)) {
+      return candidate;
+    }
+  }
+
+  return resolve(advancedPatternsDir, name);
+};
+const fixturePath = (name: string) => resolve(fixturesDir, name);
+const basic = (name: string) => resolve(basicDir, name);
+const advanced = (name: string) => resolveAdvancedFile(name);
+const php80 = (name: string) => resolve(php80Dir, name);
+const php81 = (name: string) => resolve(php81Dir, name);
+const php82 = (name: string) => resolve(php82Dir, name);
+const php83 = (name: string) => resolve(php83Dir, name);
 
 describe("PHP Parser", () => {
   // -----------------------------------------------------------------------
@@ -3505,4 +3542,2292 @@ class ParentCard {
       expect(cls.methods[0]!.returnType).toBe("string");
     });
   });
+
+  // BEGIN moved parser cases from integration
+  describe("Moved from advanced-scenarios.integration.test.ts", () => {
+    describe("Parser: metadata extraction for all patterns", () => {
+      it("parses inherited class structure", () => {
+        const meta = parsePhpFile(advanced("CardWithBase.php"));
+        const card = meta.classes.find((c) => c.name === "CardWithBase");
+        expect(card).toBeDefined();
+        expect(card!.extends).toBe("BaseComponent");
+        // Card itself has no methods (render is inherited)
+        expect(card!.methods).toHaveLength(0);
+        // BaseComponent has render
+        const base = meta.classes.find((c) => c.name === "BaseComponent");
+        expect(base).toBeDefined();
+        expect(base!.methods.some((m) => m.name === "render")).toBe(true);
+      });
+
+      it("parses __invoke as a method", () => {
+        const meta = parsePhpFile(advanced("InvocableGreeting.php"));
+        const cls = meta.classes[0]!;
+        expect(cls.methods.some((m) => m.name === "__invoke")).toBe(true);
+      });
+
+      it("parses Nav with nullable constructor and method params", () => {
+        const meta = parsePhpFile(advanced("Nav.php"));
+        const nav = meta.classes.find((c) => c.name === "Nav");
+        expect(nav).toBeDefined();
+        const subtitle = nav!.constructorParams.find((p) => p.name === "subtitle");
+        expect(subtitle).toBeDefined();
+        expect(subtitle!.nullable).toBe(true);
+        const render = nav!.methods.find((m) => m.name === "render");
+        expect(render).toBeDefined();
+        const activeItem = render!.params.find((p) => p.name === "activeItem");
+        expect(activeItem).toBeDefined();
+        expect(activeItem!.nullable).toBe(true);
+      });
+
+      it("parses multiple functions from helpers.php", () => {
+        const meta = parsePhpFile(basic("helpers.php"));
+        expect(meta.functions).toHaveLength(2);
+        const tag = meta.functions.find((f) => f.name === "tag");
+        expect(tag).toBeDefined();
+        expect(tag!.fqn).toBe("App\\Helpers\\tag");
+        expect(tag!.params).toHaveLength(2);
+        expect(tag!.params[0]!.name).toBe("label");
+        expect(tag!.params[1]!.name).toBe("color");
+      });
+
+      it("parses Accordion with trait usage", () => {
+        const meta = parsePhpFile(advanced("Accordion.php"));
+        const accordion = meta.classes.find((c) => c.name === "Accordion");
+        expect(accordion).toBeDefined();
+        expect(accordion!.traits).toContain("HasToggle");
+        expect(accordion!.constructorParams).toHaveLength(1);
+        expect(accordion!.constructorParams[0]!.name).toBe("label");
+        // Trait itself is parsed
+        const hasToggle = meta.classes.find((c) => c.name === "HasToggle");
+        expect(hasToggle).toBeDefined();
+        expect(hasToggle!.methods).toHaveLength(1);
+        expect(hasToggle!.methods[0]!.name).toBe("toggle");
+      });
+
+      it("parses Sections file with two classes", () => {
+        const meta = parsePhpFile(advanced("Sections.php"));
+        expect(meta.classes).toHaveLength(2);
+        const header = meta.classes.find((c) => c.name === "SectionHeader");
+        expect(header).toBeDefined();
+        expect(header!.constructorParams).toHaveLength(2);
+        const footer = meta.classes.find((c) => c.name === "SectionFooter");
+        expect(footer).toBeDefined();
+        expect(footer!.constructorParams).toHaveLength(2);
+      });
+
+      it("parses Tooltip with Stringable return type", () => {
+        const meta = parsePhpFile(advanced("Tooltip.php"));
+        const tooltip = meta.classes.find((c) => c.name === "Tooltip");
+        expect(tooltip).toBeDefined();
+        expect(tooltip!.methods).toHaveLength(1);
+        expect(tooltip!.methods[0]!.name).toBe("render");
+        expect(tooltip!.methods[0]!.returnType).toBe("HtmlFragment");
+      });
+    });
+
+    it("parser detects final class", () => {
+      const meta = parsePhpFile(advanced("Avatar.php"));
+      expect(meta.classes).toHaveLength(1);
+      expect(meta.classes[0]!.isFinal).toBe(true);
+      expect(meta.classes[0]!.name).toBe("Avatar");
+    });
+
+    it("parser detects abstract class and subclasses", () => {
+      const meta = parsePhpFile(advanced("Chip.php"));
+      const base = meta.classes.find((c) => c.name === "BaseChip")!;
+      expect(base.isAbstract).toBe(true);
+
+      const info = meta.classes.find((c) => c.name === "InfoChip")!;
+      expect(info.extends).toBe("BaseChip");
+
+      const danger = meta.classes.find((c) => c.name === "DangerChip")!;
+      expect(danger.extends).toBe("BaseChip");
+    });
+
+    it("parser detects int-backed enum", () => {
+      const meta = parsePhpFile(php81("Priority.php"));
+      const cls = meta.classes[0]!;
+      expect(cls.isEnum).toBe(true);
+      expect(cls.enumBackingType).toBe("int");
+      expect(cls.enumCases).toEqual(["Low", "Medium", "High", "Critical"]);
+      expect(cls.methods).toHaveLength(2);
+    });
+
+    it("parser detects implements", () => {
+      const meta = parsePhpFile(advanced("Stepper.php"));
+      const stepper = meta.classes.find((c) => c.name === "Stepper")!;
+      expect(stepper.implements).toContain("StepRenderer");
+    });
+
+    it("parser detects multiple traits", () => {
+      const meta = parsePhpFile(advanced("Modal.php"));
+      const modal = meta.classes.find((c) => c.name === "Modal")!;
+      expect(modal.traits).toEqual(["HasAnimation", "HasOverlay"]);
+    });
+
+    it("parser handles self::CONSTANT defaults", () => {
+      const meta = parsePhpFile(php82("Notification.php"));
+      const cls = meta.classes[0]!;
+      expect(cls.name).toBe("Notification");
+      const typeParam = cls.constructorParams.find((p) => p.name === "type")!;
+      expect(typeParam.default).toBe("self::TYPE_INFO");
+      const metaParam = cls.constructorParams.find((p) => p.name === "metadata")!;
+      expect(metaParam.type).toBe("mixed");
+    });
+
+    describe("Parser: new pattern metadata", () => {
+      it("parses Modal with multiple traits", () => {
+        const meta = parsePhpFile(advanced("Modal.php"));
+        const modal = meta.classes.find((c) => c.name === "Modal")!;
+        expect(modal).toBeDefined();
+        expect(modal.traits).toEqual(["HasAnimation", "HasOverlay"]);
+        // Two traits also parsed
+        const anim = meta.classes.find((c) => c.name === "HasAnimation")!;
+        expect(anim.methods[0]!.name).toBe("animate");
+        const overlay = meta.classes.find((c) => c.name === "HasOverlay")!;
+        expect(overlay.methods[0]!.name).toBe("overlay");
+      });
+
+      it("parses Notification with constant defaults and mixed type", () => {
+        const meta = parsePhpFile(php82("Notification.php"));
+        const cls = meta.classes[0]!;
+        expect(cls.name).toBe("Notification");
+        expect(cls.constructorParams).toHaveLength(4);
+        expect(cls.constructorParams[1]!.default).toBe("self::TYPE_INFO");
+        expect(cls.constructorParams[2]!.type).toBe("mixed");
+      });
+
+      it("parses Pagination with static and instance methods", () => {
+        const meta = parsePhpFile(advanced("Pagination.php"));
+        const cls = meta.classes[0]!;
+        expect(cls.name).toBe("Pagination");
+        expect(cls.constructorParams).toHaveLength(3);
+        const simple = cls.methods.find((m) => m.name === "simple")!;
+        expect(simple.isStatic).toBe(true);
+        expect(simple.params[0]!.name).toBe("total");
+        const render = cls.methods.find((m) => m.name === "render")!;
+        expect(render.isStatic).toBe(false);
+      });
+    });
+
+    it("parser detects iterable and mixed types", () => {
+      const meta = parsePhpFile(advanced("DataRenderer.php"));
+      const cls = meta.classes[0]!;
+      const items = cls.constructorParams.find((p) => p.name === "items")!;
+      expect(items.type).toBe("iterable");
+      const render = cls.methods.find((m) => m.name === "render")!;
+      const transform = render.params.find((p) => p.name === "transform")!;
+      expect(transform.type).toBe("mixed");
+    });
+
+    it("parser detects Visibility enum with all cases and methods", () => {
+      const meta = parsePhpFile(php81("Visibility.php"));
+      const vis = meta.classes.find((c) => c.name === "Visibility")!;
+      expect(vis.isEnum).toBe(true);
+      expect(vis.enumBackingType).toBe("string");
+      expect(vis.enumCases).toEqual(["Public", "Private", "Unlisted", "Draft"]);
+      expect(vis.methods).toHaveLength(2);
+      expect(vis.methods.map((m) => m.name).sort()).toEqual(["badge", "description"]);
+    });
+
+    describe("Parser: new example metadata", () => {
+      it("parses DataRenderer with iterable and mixed types", () => {
+        const meta = parsePhpFile(advanced("DataRenderer.php"));
+        const cls = meta.classes[0]!;
+        expect(cls.constructorParams[0]!.type).toBe("iterable");
+        const render = cls.methods[0]!;
+        expect(render.params[0]!.type).toBe("mixed");
+      });
+    });
+
+    describe("Parser: UC46-UC55 metadata", () => {
+      it("parses keyValueList global function", () => {
+        const meta = parsePhpFile(advanced("KeyValue.php"));
+        expect(meta.functions).toHaveLength(1);
+        const fn = meta.functions[0]!;
+        expect(fn.name).toBe("keyValueList");
+        expect(fn.params).toHaveLength(3);
+        expect(fn.params[0]!.type).toBe("array");
+        expect(fn.params[1]!.name).toBe("horizontal");
+        expect(fn.params[1]!.type).toBe("bool");
+      });
+
+      it("parses FlexGrid with self return type method", () => {
+        const meta = parsePhpFile(advanced("FlexGrid.php"));
+        const cls = meta.classes.find((c) => c.name === "FlexGrid");
+        expect(cls).toBeDefined();
+        const configure = cls!.methods.find((m) => m.name === "configure");
+        expect(configure).toBeDefined();
+        expect(configure!.returnType).toBe("self");
+        const render = cls!.methods.find((m) => m.name === "render");
+        expect(render).toBeDefined();
+        expect(render!.params).toHaveLength(3);
+      });
+    });
+
+    it("parser detects int|float union type", () => {
+      const meta = parsePhpFile(advanced("Meter.php"));
+      const cls = meta.classes.find((c) => c.name === "Meter");
+      expect(cls).toBeDefined();
+      const value = cls!.constructorParams.find((p) => p.name === "value");
+      expect(value).toBeDefined();
+      expect(value!.type).toBe("int|float");
+      expect(value!.required).toBe(true);
+      const min = cls!.constructorParams.find((p) => p.name === "min");
+      expect(min!.type).toBe("int|float");
+      expect(min!.required).toBe(false);
+      const render = cls!.methods.find((m) => m.name === "render");
+      expect(render).toBeDefined();
+      expect(render!.params[0]!.name).toBe("color");
+      expect(render!.params[0]!.nullable).toBe(true);
+    });
+
+    it("parser detects multiple interfaces", () => {
+      const meta = parsePhpFile(advanced("Dropdown.php"));
+      const cls = meta.classes.find((c) => c.name === "Dropdown");
+      expect(cls).toBeDefined();
+      expect(cls!.implements).toContain("Togglable");
+      expect(cls!.implements).toContain("Searchable");
+      expect(cls!.methods).toHaveLength(2);
+      expect(cls!.methods.map((m) => m.name).sort()).toEqual(["search", "toggle"]);
+    });
+
+    it("parser detects all three global functions", () => {
+      const meta = parsePhpFile(advanced("TextFormatter.php"));
+      expect(meta.namespace).toBeNull();
+      expect(meta.functions).toHaveLength(3);
+      const names = meta.functions.map((f) => f.name);
+      expect(names).toContain("truncate");
+      expect(names).toContain("highlight");
+      expect(names).toContain("slugify");
+      // Verify FQN has no namespace prefix
+      const truncate = meta.functions.find((f) => f.name === "truncate")!;
+      expect(truncate.fqn).toBe("truncate");
+      expect(truncate.params).toHaveLength(3);
+      expect(truncate.params[0]!.type).toBe("string");
+      expect(truncate.params[1]!.type).toBe("int");
+    });
+
+    it("parser detects Carousel with variadic constructor and method params", () => {
+      const meta = parsePhpFile(advanced("Carousel.php"));
+      const cls = meta.classes.find((c) => c.name === "Carousel");
+      expect(cls).toBeDefined();
+      const ctorSlides = cls!.constructorParams.find((p) => p.name === "slides");
+      expect(ctorSlides).toBeDefined();
+      expect(ctorSlides!.isVariadic).toBe(true);
+      expect(ctorSlides!.type).toBe("Slide");
+      const render = cls!.methods.find((m) => m.name === "render");
+      expect(render).toBeDefined();
+      const items = render!.params.find((p) => p.name === "items");
+      expect(items).toBeDefined();
+      expect(items!.isVariadic).toBe(true);
+      expect(items!.type).toBe("string");
+    });
+
+    it("parser detects Slide class with __toString", () => {
+      const meta = parsePhpFile(advanced("Carousel.php"));
+      const slide = meta.classes.find((c) => c.name === "Slide");
+      expect(slide).toBeDefined();
+      expect(slide!.methods.some((m) => m.name === "__toString")).toBe(true);
+    });
+
+    describe("Parser: new fixture metadata", () => {
+      it("parses ReadonlyClass fixture", () => {
+        const meta = parsePhpFile(fixturePath("ReadonlyClass.php"));
+        const cls = meta.classes[0]!;
+        expect(cls.name).toBe("Settings");
+        expect(cls.isReadonly).toBe(true);
+        expect(cls.constructorParams).toHaveLength(3);
+      });
+
+      it("parses DefaultNewExpression fixture", () => {
+        const meta = parsePhpFile(fixturePath("DefaultNewExpression.php"));
+        expect(meta.classes).toHaveLength(2);
+        const widget = meta.classes[1]!;
+        expect(widget.name).toBe("Widget");
+        const optionsParam = widget.constructorParams.find((p) => p.name === "options")!;
+        expect(optionsParam.type).toBe("Options");
+        expect(optionsParam.required).toBe(false);
+      });
+
+      it("parses EnumWithInterface fixture", () => {
+        const meta = parsePhpFile(fixturePath("EnumWithInterface.php"));
+        const level = meta.classes.find((c) => c.name === "Level")!;
+        expect(level.isEnum).toBe(true);
+        expect(level.implements).toContain("Renderable");
+        expect(level.enumCases).toEqual(["Low", "Medium", "High"]);
+      });
+    });
+
+    describe("Parser: UC96-UC101 metadata", () => {
+      it("parses Language.php as string-backed enum", () => {
+        const meta = parsePhpFile(php81("Language.php"));
+        expect(meta.classes).toHaveLength(1);
+        const lang = meta.classes[0]!;
+        expect(lang.name).toBe("Language");
+        expect(lang.isEnum).toBe(true);
+        expect(lang.enumBackingType).toBe("string");
+        expect(lang.enumCases).toEqual(["English", "Japanese", "French", "Spanish", "German"]);
+        expect(lang.methods.some((m) => m.name === "greeting")).toBe(true);
+        expect(lang.methods.some((m) => m.name === "flag")).toBe(true);
+      });
+
+      it("parses Renderable.php with interface and multiple implementations", () => {
+        const meta = parsePhpFile(advanced("Renderable.php"));
+        const classNames = meta.classes.map((c) => c.name);
+        expect(classNames).toContain("RenderableInterface");
+        expect(classNames).toContain("InfoBox");
+        expect(classNames).toContain("WarningBox");
+        const infoBox = meta.classes.find((c) => c.name === "InfoBox")!;
+        expect(infoBox.implements).toContain("RenderableInterface");
+        const warningBox = meta.classes.find((c) => c.name === "WarningBox")!;
+        expect(warningBox.implements).toContain("RenderableInterface");
+      });
+    });
+
+    describe("Parser: UC121-UC128 fixture metadata", () => {
+      it("parses EnumConstant fixture", () => {
+        const meta = parsePhpFile(fixturePath("EnumConstant.php"));
+        const cls = meta.classes.find((c) => c.name === "EnumConstant")!;
+        expect(cls.isEnum).toBe(true);
+        expect(cls.enumCases).toEqual(["Success", "Warning", "Danger"]);
+        const badge = cls.methods.find((m) => m.name === "badge")!;
+        expect(badge.isStatic).toBe(false);
+        const all = cls.methods.find((m) => m.name === "all")!;
+        expect(all.isStatic).toBe(true);
+      });
+
+      it("parses DeepInheritance fixture", () => {
+        const meta = parsePhpFile(fixturePath("DeepInheritance.php"));
+        expect(meta.classes).toHaveLength(3);
+        const base = meta.classes.find((c) => c.name === "BaseWidget")!;
+        expect(base.isAbstract).toBe(true);
+        const detail = meta.classes.find((c) => c.name === "DetailWidget")!;
+        expect(detail.extends).toBe("InfoWidget");
+        expect(detail.constructorParams).toHaveLength(4);
+      });
+
+      it("parses GeneratorFunc fixture", () => {
+        const meta = parsePhpFile(fixturePath("GeneratorFunc.php"));
+        expect(meta.functions).toHaveLength(2);
+        expect(meta.functions[0]!.name).toBe("generateList");
+        expect(meta.functions[0]!.returnType).toBe("\\Generator");
+        expect(meta.functions[1]!.name).toBe("generateTable");
+        expect(meta.functions[1]!.returnType).toBe("\\Generator");
+      });
+
+      it("parses NowdocCard fixture", () => {
+        const meta = parsePhpFile(fixturePath("NowdocCard.php"));
+        const cls = meta.classes.find((c) => c.name === "NowdocCard")!;
+        expect(cls).toBeDefined();
+        expect(cls.constructorParams).toHaveLength(3);
+        expect(cls.methods[0]!.name).toBe("render");
+      });
+
+      it("parses PrivateConstruct fixture", () => {
+        const meta = parsePhpFile(fixturePath("PrivateConstruct.php"));
+        const cls = meta.classes.find((c) => c.name === "PrivateConstruct")!;
+        expect(cls.constructorParams).toHaveLength(3);
+        // private constructor params
+        const typeParam = cls.constructorParams.find((p) => p.name === "type")!;
+        expect(typeParam.visibility).toBe("private");
+        // Static methods only (private html() excluded since it's private but still extracted)
+        const publicStatic = cls.methods.filter((m) => m.isStatic && m.visibility === "public");
+        expect(publicStatic).toHaveLength(3);
+      });
+
+      it("parses MultiEnum fixture with two enums", () => {
+        const meta = parsePhpFile(fixturePath("MultiEnum.php"));
+        expect(meta.classes).toHaveLength(2);
+
+        const textAlign = meta.classes.find((c) => c.name === "TextAlign")!;
+        expect(textAlign.isEnum).toBe(true);
+        expect(textAlign.enumCases).toEqual(["Left", "Center", "Right"]);
+
+        const fontWeight = meta.classes.find((c) => c.name === "FontWeight")!;
+        expect(fontWeight.isEnum).toBe(true);
+        expect(fontWeight.enumCases).toEqual(["Light", "Normal", "Bold", "Black"]);
+      });
+
+      it("parses AbstractFactory fixture", () => {
+        const meta = parsePhpFile(fixturePath("AbstractFactory.php"));
+        expect(meta.classes).toHaveLength(2);
+
+        const abstract = meta.classes.find((c) => c.name === "AbstractFactory")!;
+        expect(abstract.isAbstract).toBe(true);
+        expect(abstract.constructorParams).toHaveLength(2);
+        const staticMethods = abstract.methods.filter((m) => m.isStatic);
+        expect(staticMethods).toHaveLength(2);
+        expect(staticMethods.map((m) => m.name).sort()).toEqual(["outline", "pill"]);
+
+        const concrete = meta.classes.find((c) => c.name === "ConcreteBadge")!;
+        expect(concrete.isAbstract).toBe(false);
+        expect(concrete.extends).toBe("AbstractFactory");
+      });
+    });
+
+    describe("Parser: UC130-UC135 fixture metadata", () => {
+      it("parses MixedVisibility fixture", () => {
+        const meta = parsePhpFile(fixturePath("MixedVisibility.php"));
+        const cls = meta.classes[0]!;
+        expect(cls.name).toBe("MixedVisibility");
+        expect(cls.constructorParams).toHaveLength(4);
+        expect(cls.constructorParams[0]!.visibility).toBe("public");
+        expect(cls.constructorParams[1]!.visibility).toBe("private");
+        expect(cls.constructorParams[2]!.visibility).toBe("protected");
+        expect(cls.constructorParams[3]!.visibility).toBe("public");
+      });
+
+      it("parses NoParamClock fixture", () => {
+        const meta = parsePhpFile(fixturePath("NoParamClock.php"));
+        const cls = meta.classes[0]!;
+        expect(cls.name).toBe("NoParamClock");
+        expect(cls.constructorParams).toHaveLength(2);
+        const render = cls.methods.find((m) => m.name === "render")!;
+        expect(render.params).toHaveLength(0);
+      });
+
+      it("parses ComplexDefaults fixture", () => {
+        const meta = parsePhpFile(fixturePath("ComplexDefaults.php"));
+        expect(meta.functions).toHaveLength(1);
+        const fn = meta.functions[0]!;
+        expect(fn.name).toBe("complexList");
+        expect(fn.params).toHaveLength(3);
+        expect(fn.params[0]!.type).toBe("array");
+        expect(fn.params[0]!.required).toBe(false);
+      });
+
+      it("parses EnumMultiInterface fixture", () => {
+        const meta = parsePhpFile(fixturePath("EnumMultiInterface.php"));
+        const cls = meta.classes.find((c) => c.name === "EnumMultiInterface")!;
+        expect(cls.isEnum).toBe(true);
+        expect(cls.implements).toContain("HasLabel");
+        expect(cls.implements).toContain("HasIcon");
+        expect(cls.enumCases).toEqual(["Home", "Settings", "Profile", "Logout"]);
+      });
+
+      it("parses StaticInstance fixture", () => {
+        const meta = parsePhpFile(fixturePath("StaticInstance.php"));
+        const cls = meta.classes[0]!;
+        expect(cls.name).toBe("StaticInstance");
+        const instanceMethods = cls.methods.filter((m) => !m.isStatic);
+        const staticMethods = cls.methods.filter((m) => m.isStatic);
+        expect(instanceMethods).toHaveLength(1);
+        expect(staticMethods).toHaveLength(1);
+      });
+    });
+
+    describe("Parser: UC136-UC141 fixture metadata", () => {
+      it("parses StandaloneTypes fixture", () => {
+        const meta = parsePhpFile(fixturePath("StandaloneTypes.php"));
+        const cls = meta.classes[0]!;
+        expect(cls.name).toBe("StandaloneTypes");
+        expect(cls.constructorParams).toHaveLength(3);
+        expect(cls.constructorParams[1]!.type).toBe("true");
+        expect(cls.constructorParams[2]!.type).toBe("false");
+      });
+
+      it("parses NestedNamespace fixture", () => {
+        const meta = parsePhpFile(fixturePath("NestedNamespace.php"));
+        expect(meta.namespace).toBe("App\\UI\\Components\\Form");
+        const cls = meta.classes[0]!;
+        expect(cls.fqn).toBe("App\\UI\\Components\\Form\\TextInput");
+        expect(cls.constructorParams).toHaveLength(4);
+      });
+
+      it("parses MultiRender fixture", () => {
+        const meta = parsePhpFile(fixturePath("MultiRender.php"));
+        const cls = meta.classes[0]!;
+        expect(cls.name).toBe("MultiRender");
+        expect(cls.methods).toHaveLength(3);
+        expect(cls.methods.map((m) => m.name).sort()).toEqual([
+          "render",
+          "renderCompact",
+          "renderDetailed",
+        ]);
+        const detailed = cls.methods.find((m) => m.name === "renderDetailed")!;
+        expect(detailed.params).toHaveLength(1);
+        expect(detailed.params[0]!.name).toBe("footer");
+      });
+
+      it("parses EnumStaticInstance fixture", () => {
+        const meta = parsePhpFile(fixturePath("EnumStaticInstance.php"));
+        const cls = meta.classes[0]!;
+        expect(cls.isEnum).toBe(true);
+        expect(cls.enumCases).toEqual(["Info", "Warning", "Error"]);
+        const statics = cls.methods.filter((m) => m.isStatic);
+        const instances = cls.methods.filter((m) => !m.isStatic);
+        expect(statics).toHaveLength(1);
+        expect(instances).toHaveLength(1);
+      });
+
+      it("parses EnumTypedConstructor fixture", () => {
+        const meta = parsePhpFile(fixturePath("EnumTypedConstructor.php"));
+        const enumCls = meta.classes.find((c) => c.name === "Theme")!;
+        expect(enumCls.isEnum).toBe(true);
+        expect(enumCls.enumCases).toEqual(["Light", "Dark", "System"]);
+
+        const cls = meta.classes.find((c) => c.name === "EnumTypedConstructor")!;
+        expect(cls.constructorParams).toHaveLength(2);
+        const themeParam = cls.constructorParams.find((p) => p.name === "theme")!;
+        expect(themeParam.type).toBe("Theme");
+      });
+    });
+
+    describe("Parser: UC142-UC146 fixture metadata", () => {
+      it("parses EchoEnum fixture", () => {
+        const meta = parsePhpFile(fixturePath("EchoEnum.php"));
+        const cls = meta.classes[0]!;
+        expect(cls.name).toBe("EchoEnum");
+        expect(cls.isEnum).toBe(true);
+        expect(cls.enumCases).toEqual(["Success", "Error", "Warning"]);
+        const alert = cls.methods.find((m) => m.name === "alert")!;
+        expect(alert.params).toHaveLength(2);
+        expect(alert.returnType).toBe("void");
+      });
+
+      it("parses InvocableEcho fixture", () => {
+        const meta = parsePhpFile(fixturePath("InvocableEcho.php"));
+        const cls = meta.classes[0]!;
+        expect(cls.name).toBe("InvocableEcho");
+        expect(cls.constructorParams).toHaveLength(1);
+        const invoke = cls.methods.find((m) => m.name === "__invoke")!;
+        expect(invoke).toBeDefined();
+        expect(invoke.params).toHaveLength(2);
+        expect(invoke.returnType).toBe("void");
+      });
+
+      it("parses ScalarReturn fixture", () => {
+        const meta = parsePhpFile(fixturePath("ScalarReturn.php"));
+        const cls = meta.classes[0]!;
+        expect(cls.name).toBe("ScalarReturn");
+        expect(cls.methods).toHaveLength(3);
+        const pct = cls.methods.find((m) => m.name === "renderPercent")!;
+        expect(pct.returnType).toBe("int");
+        const ratio = cls.methods.find((m) => m.name === "renderRatio")!;
+        expect(ratio.returnType).toBe("float");
+      });
+
+      it("parses FunctionArrayDefault fixture", () => {
+        const meta = parsePhpFile(fixturePath("FunctionArrayDefault.php"));
+        expect(meta.namespace).toBe("App\\Helpers");
+        expect(meta.functions).toHaveLength(2);
+        expect(meta.functions[0]!.name).toBe("renderNav");
+        expect(meta.functions[0]!.params[0]!.type).toBe("array");
+        expect(meta.functions[0]!.params[0]!.required).toBe(false);
+        expect(meta.functions[1]!.name).toBe("renderTagList");
+      });
+
+      it("parses EnumMethodParams fixture", () => {
+        const meta = parsePhpFile(fixturePath("EnumMethodParams.php"));
+        const cls = meta.classes[0]!;
+        expect(cls.name).toBe("EnumMethodParams");
+        expect(cls.isEnum).toBe(true);
+        expect(cls.enumCases).toEqual(["Badge", "Pill", "Tag"]);
+        const render = cls.methods.find((m) => m.name === "render")!;
+        expect(render.params).toHaveLength(4);
+        const showcase = cls.methods.find((m) => m.name === "showcase")!;
+        expect(showcase.isStatic).toBe(true);
+      });
+    });
+
+    describe("Parser: UC147-UC150 fixture metadata", () => {
+      it("parses EnumWithTrait fixture: traits on enums", () => {
+        const meta = parsePhpFile(fixturePath("EnumWithTrait.php"));
+
+        const priority = meta.classes.find((c) => c.name === "Priority")!;
+        expect(priority.isEnum).toBe(true);
+        expect(priority.traits).toContain("HasBadge");
+        expect(priority.enumCases).toEqual(["Low", "Medium", "High", "Critical"]);
+
+        const severity = meta.classes.find((c) => c.name === "Severity")!;
+        expect(severity.isEnum).toBe(true);
+        expect(severity.traits).toContain("HasBadge");
+        expect(severity.traits).toContain("HasIcon");
+        expect(severity.enumCases).toEqual(["Info", "Warning", "Error"]);
+      });
+
+      it("parses PromotedReadonlyUnion fixture: readonly + union + promoted", () => {
+        const meta = parsePhpFile(fixturePath("PromotedReadonlyUnion.php"));
+        const cls = meta.classes[0]!;
+        expect(cls.constructorParams).toHaveLength(3);
+
+        const id = cls.constructorParams[0]!;
+        expect(id.type).toBe("string|int");
+        expect(id.isPromoted).toBe(true);
+
+        const amount = cls.constructorParams[2]!;
+        expect(amount.type).toBe("int|float");
+        expect(amount.required).toBe(false);
+      });
+
+      it("parses FunctionUnionReturn fixture: union return types", () => {
+        const meta = parsePhpFile(fixturePath("FunctionUnionReturn.php"));
+        expect(meta.functions).toHaveLength(2);
+
+        const fv = meta.functions.find((f) => f.name === "formatValue")!;
+        expect(fv.returnType).toBe("string|int");
+
+        const rs = meta.functions.find((f) => f.name === "renderStatus")!;
+        expect(rs.returnType).toBe("string|bool");
+      });
+
+      it("parses MethodConstantDefault fixture: self:: defaults in method", () => {
+        const meta = parsePhpFile(fixturePath("MethodConstantDefault.php"));
+        const cls = meta.classes[0]!;
+        const render = cls.methods.find((m) => m.name === "render")!;
+        expect(render.params[0]!.default).toBe("self::FORMAT_HTML");
+        expect(render.params[1]!.default).toBe("self::MAX_LENGTH");
+      });
+    });
+
+    describe("Parser: UC210-220 fixture metadata", () => {
+      it("parses FinalReadonlyPoint as final readonly class", () => {
+        const meta = parsePhpFile(fixturePath("FinalReadonlyPoint.php"));
+        const cls = meta.classes.find((c) => c.name === "Point");
+        expect(cls).toBeDefined();
+        expect(cls!.isFinal).toBe(true);
+        expect(cls!.isReadonly).toBe(true);
+        expect(cls!.constructorParams).toHaveLength(3);
+        expect(cls!.constructorParams[0]!.name).toBe("x");
+        expect(cls!.constructorParams[0]!.type).toBe("float");
+        expect(cls!.methods.some((m) => m.name === "render")).toBe(true);
+        expect(cls!.methods.some((m) => m.name === "origin" && m.isStatic)).toBe(true);
+      });
+
+      it("parses HttpStatusCode as int-backed enum", () => {
+        const meta = parsePhpFile(fixturePath("HttpStatusCode.php"));
+        const cls = meta.classes.find((c) => c.name === "HttpStatusCode");
+        expect(cls).toBeDefined();
+        expect(cls!.isEnum).toBe(true);
+        expect(cls!.enumBackingType).toBe("int");
+        expect(cls!.enumCases).toContain("OK");
+        expect(cls!.enumCases).toContain("NotFound");
+        expect(cls!.enumCases).toContain("InternalServerError");
+        expect(cls!.methods.some((m) => m.name === "badge")).toBe(true);
+        expect(cls!.methods.some((m) => m.name === "table" && m.isStatic)).toBe(true);
+      });
+
+      it("parses MenuAction as enum with multiple interfaces", () => {
+        const meta = parsePhpFile(fixturePath("MenuAction.php"));
+        const cls = meta.classes.find((c) => c.name === "MenuAction");
+        expect(cls).toBeDefined();
+        expect(cls!.isEnum).toBe(true);
+        expect(cls!.implements).toContain("Displayable");
+        expect(cls!.implements).toContain("Accessible");
+        expect(cls!.methods.some((m) => m.name === "menuItem")).toBe(true);
+        expect(cls!.methods.some((m) => m.name === "palette" && m.isStatic)).toBe(true);
+      });
+
+      it("parses UserAvatar with multiple methods", () => {
+        const meta = parsePhpFile(fixturePath("UserAvatar.php"));
+        const cls = meta.classes.find((c) => c.name === "UserAvatar");
+        expect(cls).toBeDefined();
+        expect(cls!.constructorParams).toHaveLength(3);
+        expect(cls!.methods.some((m) => m.name === "circle")).toBe(true);
+        expect(cls!.methods.some((m) => m.name === "card")).toBe(true);
+        expect(cls!.methods.some((m) => m.name === "badge")).toBe(true);
+      });
+
+      it("parses ThreeLevel with abstract + concrete classes", () => {
+        const meta = parsePhpFile(fixturePath("ThreeLevel.php"));
+        const base = meta.classes.find((c) => c.name === "BaseElement");
+        expect(base).toBeDefined();
+        expect(base!.isAbstract).toBe(true);
+
+        const styled = meta.classes.find((c) => c.name === "StyledElement");
+        expect(styled).toBeDefined();
+        expect(styled!.extends).toBe("BaseElement");
+
+        const btn = meta.classes.find((c) => c.name === "InteractiveButton");
+        expect(btn).toBeDefined();
+        expect(btn!.extends).toBe("StyledElement");
+        expect(btn!.constructorParams.some((p) => p.name === "disabled")).toBe(true);
+      });
+
+      it("parses DnfConfig with DNF type parameter", () => {
+        const meta = parsePhpFile(fixturePath("DnfConfig.php"));
+        const cls = meta.classes.find((c) => c.name === "DnfConfig");
+        expect(cls).toBeDefined();
+        const source = cls!.constructorParams.find((p) => p.name === "source");
+        expect(source).toBeDefined();
+        expect(source!.type).toContain("|");
+      });
+
+      it("parses RuleEngine with __invoke method", () => {
+        const meta = parsePhpFile(fixturePath("RuleEngine.php"));
+        const cls = meta.classes.find((c) => c.name === "RuleEngine");
+        expect(cls).toBeDefined();
+        expect(cls!.methods.some((m) => m.name === "__invoke")).toBe(true);
+        const invoke = cls!.methods.find((m) => m.name === "__invoke");
+        expect(invoke!.params).toHaveLength(3);
+      });
+
+      it("parses DefinitionList as standalone generator function", () => {
+        const meta = parsePhpFile(fixturePath("DefinitionList.php"));
+        expect(meta.functions).toHaveLength(1);
+        expect(meta.functions[0]!.name).toBe("definitionList");
+        expect(meta.functions[0]!.params).toHaveLength(2);
+      });
+
+      it("parses FileSize with two static methods", () => {
+        const meta = parsePhpFile(fixturePath("FileSize.php"));
+        const cls = meta.classes.find((c) => c.name === "FileSize");
+        expect(cls).toBeDefined();
+        expect(cls!.constructorParams).toHaveLength(0);
+        expect(cls!.methods.some((m) => m.name === "badge" && m.isStatic)).toBe(true);
+        expect(cls!.methods.some((m) => m.name === "bar" && m.isStatic)).toBe(true);
+      });
+
+      it("parses Sections with two independent classes", () => {
+        const meta = parsePhpFile(fixturePath("Sections.php"));
+        expect(meta.classes.some((c) => c.name === "SectionHeader")).toBe(true);
+        expect(meta.classes.some((c) => c.name === "SectionFooter")).toBe(true);
+      });
+
+      it("parses SocialShare with traits and classes", () => {
+        const meta = parsePhpFile(fixturePath("SocialShare.php"));
+        const twitter = meta.classes.find((c) => c.name === "TwitterShare");
+        expect(twitter).toBeDefined();
+        expect(twitter!.traits).toContain("HasShareLink");
+        expect(twitter!.traits).toContain("HasSocialIcon");
+
+        const facebook = meta.classes.find((c) => c.name === "FacebookShare");
+        expect(facebook).toBeDefined();
+        expect(facebook!.traits).toContain("HasShareLink");
+      });
+    });
+
+    it("parser reads type as 'array' (docblock does not affect parser)", () => {
+      const meta = parsePhpFile(fixturePath("ArrayOfObjects.php"));
+      const tagCloud = meta.classes.find((c) => c.name === "TagCloud");
+      expect(tagCloud).toBeDefined();
+      const tagsParam = tagCloud!.constructorParams.find((p) => p.name === "tags");
+      expect(tagsParam).toBeDefined();
+      expect(tagsParam!.type).toBe("array");
+    });
+
+    it("parser detects ProjectBoard classes and array params", () => {
+      const meta = parsePhpFile(advanced("ProjectBoard.php"));
+
+      const board = meta.classes.find((c) => c.name === "ProjectBoard");
+      expect(board).toBeDefined();
+      const membersParam = board!.constructorParams.find((p) => p.name === "members");
+      expect(membersParam).toBeDefined();
+      expect(membersParam!.type).toBe("array");
+      const milestonesParam = board!.constructorParams.find((p) => p.name === "milestones");
+      expect(milestonesParam).toBeDefined();
+      expect(milestonesParam!.type).toBe("array");
+
+      const member = meta.classes.find((c) => c.name === "Member");
+      expect(member).toBeDefined();
+      const skillsParam = member!.constructorParams.find((p) => p.name === "skills");
+      expect(skillsParam).toBeDefined();
+      expect(skillsParam!.type).toBe("array");
+
+      const milestone = meta.classes.find((c) => c.name === "Milestone");
+      expect(milestone).toBeDefined();
+      const tasksParam = milestone!.constructorParams.find((p) => p.name === "tasks");
+      expect(tasksParam).toBeDefined();
+      expect(tasksParam!.type).toBe("array");
+    });
+
+    describe("UC61: Enum implementing interface", () => {
+      it("parses LogLevel enum with implements HasLabel", () => {
+        const meta = parsePhpFile(php81("LogLevel.php"));
+        const logLevel = meta.classes.find((c) => c.name === "LogLevel");
+        expect(logLevel).toBeDefined();
+        expect(logLevel!.isEnum).toBe(true);
+        expect(logLevel!.enumBackingType).toBe("string");
+        expect(logLevel!.implements).toContain("HasLabel");
+        expect(logLevel!.enumCases).toContain("Debug");
+        expect(logLevel!.enumCases).toContain("Critical");
+      });
+    });
+
+    describe("UC62: Multiple traits", () => {
+      it("parses Widget with HasIcon, HasBadge, HasActions traits", () => {
+        const meta = parsePhpFile(advanced("Widget.php"));
+        const widget = meta.classes.find((c) => c.name === "Widget");
+        expect(widget).toBeDefined();
+        expect(widget!.traits).toContain("HasIcon");
+        expect(widget!.traits).toContain("HasBadge");
+        expect(widget!.traits).toContain("HasActions");
+      });
+    });
+
+    describe("UC63: Array return with html key", () => {
+      it("parses StatsCard with array return type", () => {
+        const meta = parsePhpFile(advanced("ArrayReturn.php"));
+        const cls = meta.classes.find((c) => c.name === "StatsCard");
+        expect(cls).toBeDefined();
+        const render = cls!.methods.find((m) => m.name === "render");
+        expect(render).toBeDefined();
+        expect(render!.returnType).toBe("array");
+      });
+    });
+
+    describe("UC64: Stringable return", () => {
+      it("parses FragmentBuilder with HtmlFragment return type", () => {
+        const meta = parsePhpFile(php80("HtmlFragment.php"));
+        const builder = meta.classes.find((c) => c.name === "FragmentBuilder");
+        expect(builder).toBeDefined();
+        const render = builder!.methods.find((m) => m.name === "render");
+        expect(render).toBeDefined();
+        expect(render!.returnType).toBe("HtmlFragment");
+      });
+    });
+
+    describe("UC65: Multiple static methods", () => {
+      it("parses MarkupHelper with three static methods", () => {
+        const meta = parsePhpFile(advanced("MarkupHelper.php"));
+        const cls = meta.classes.find((c) => c.name === "MarkupHelper");
+        expect(cls).toBeDefined();
+        expect(cls!.constructorParams).toHaveLength(0);
+        const statics = cls!.methods.filter((m) => m.isStatic);
+        expect(statics).toHaveLength(3);
+      });
+    });
+
+    describe("UC102: No-constructor class with instance methods", () => {
+      it("parses Snippet.php with no constructor", () => {
+        const meta = parsePhpFile(advanced("Snippet.php"));
+        const cls = meta.classes.find((c) => c.name === "Snippet")!;
+        expect(cls.constructorParams).toHaveLength(0);
+        expect(cls.methods.length).toBeGreaterThanOrEqual(2);
+        const render = cls.methods.find((m) => m.name === "render")!;
+        expect(render.params).toHaveLength(3);
+        const inline = cls.methods.find((m) => m.name === "inline")!;
+        expect(inline.params).toHaveLength(1);
+      });
+    });
+
+    describe("UC103: Callout with boolean flags", () => {
+      it("parses Callout.php constructor with many boolean params", () => {
+        const meta = parsePhpFile(advanced("Callout.php"));
+        const cls = meta.classes.find((c) => c.name === "Callout")!;
+        const boolParams = cls.constructorParams.filter((p) => p.type === "bool");
+        expect(boolParams.length).toBeGreaterThanOrEqual(5);
+      });
+    });
+
+    describe("UC104: DateFormatter with multiple instance methods", () => {
+      it("parses DateFormatter.php with constructor + 3 methods", () => {
+        const meta = parsePhpFile(advanced("DateFormatter.php"));
+        const cls = meta.classes.find((c) => c.name === "DateFormatter")!;
+        expect(cls.constructorParams).toHaveLength(1);
+        expect(cls.constructorParams[0]!.name).toBe("locale");
+        const methodNames = cls.methods.map((m) => m.name);
+        expect(methodNames).toContain("format");
+        expect(methodNames).toContain("relative");
+        expect(methodNames).toContain("calendar");
+      });
+    });
+
+    describe("UC108: Echo-based standalone functions (renderHtml)", () => {
+      it("parses renderHtml.php as global void functions", () => {
+        const meta = parsePhpFile(advanced("renderHtml.php"));
+        expect(meta.namespace).toBeNull();
+        expect(meta.functions).toHaveLength(2);
+        const banner = meta.functions.find((f) => f.name === "renderBanner")!;
+        expect(banner.params).toHaveLength(3);
+        expect(banner.returnType).toBe("void");
+        const alert = meta.functions.find((f) => f.name === "renderAlert")!;
+        expect(alert.params).toHaveLength(2);
+        expect(alert.returnType).toBe("void");
+      });
+    });
+
+    describe("UC109: Variadic standalone functions (joinItems)", () => {
+      it("parses joinItems.php with variadic functions", () => {
+        const meta = parsePhpFile(advanced("joinItems.php"));
+        expect(meta.namespace).toBe("App\\Helpers");
+        expect(meta.functions).toHaveLength(2);
+        const join = meta.functions.find((f) => f.name === "joinItems")!;
+        expect(join.params[0]!.name).toBe("separator");
+        expect(join.params[0]!.isVariadic).toBe(false);
+        expect(join.params[1]!.name).toBe("items");
+        expect(join.params[1]!.isVariadic).toBe(true);
+        expect(join.params[1]!.type).toBe("string");
+      });
+    });
+
+    describe("UC112: Float type parameters", () => {
+      it("parses FloatGauge.php with float params", () => {
+        const meta = parsePhpFile(advanced("FloatGauge.php"));
+        const cls = meta.classes.find((c) => c.name === "FloatGauge")!;
+        expect(cls).toBeDefined();
+        expect(cls.constructorParams).toHaveLength(6);
+        const valueParam = cls.constructorParams.find((p) => p.name === "value")!;
+        expect(valueParam.type).toBe("float");
+        expect(valueParam.required).toBe(true);
+        const minParam = cls.constructorParams.find((p) => p.name === "min")!;
+        expect(minParam.type).toBe("float");
+        expect(minParam.default).toBe("0.0");
+        const precisionParam = cls.constructorParams.find((p) => p.name === "precision")!;
+        expect(precisionParam.type).toBe("int");
+      });
+    });
+
+    describe("UC113: Standalone readonly class", () => {
+      it("parses ReadonlyContact as readonly class", () => {
+        const meta = parsePhpFile(php82("ReadonlyContact.php"));
+        const cls = meta.classes.find((c) => c.name === "ReadonlyContact")!;
+        expect(cls).toBeDefined();
+        expect(cls.isReadonly).toBe(true);
+        expect(cls.constructorParams).toHaveLength(4);
+        const avatarParam = cls.constructorParams.find((p) => p.name === "avatar")!;
+        expect(avatarParam.nullable).toBe(true);
+      });
+    });
+
+    describe("UC114: Heredoc syntax", () => {
+      it("parses HeredocCard.php correctly", () => {
+        const meta = parsePhpFile(advanced("HeredocCard.php"));
+        const cls = meta.classes.find((c) => c.name === "HeredocCard")!;
+        expect(cls).toBeDefined();
+        expect(cls.constructorParams).toHaveLength(4);
+        const imageParam = cls.constructorParams.find((p) => p.name === "imageUrl")!;
+        expect(imageParam.nullable).toBe(true);
+      });
+    });
+
+    describe("UC115: Enum with static and instance methods", () => {
+      it("parses Compass enum with both static and instance methods", () => {
+        const meta = parsePhpFile(php81("EnumCompass.php"));
+        const cls = meta.classes.find((c) => c.name === "Compass")!;
+        expect(cls).toBeDefined();
+        expect(cls.isEnum).toBe(true);
+        expect(cls.enumBackingType).toBe("string");
+        expect(cls.enumCases).toEqual(["North", "East", "South", "West"]);
+        const arrowMethod = cls.methods.find((m) => m.name === "arrow")!;
+        expect(arrowMethod.isStatic).toBe(false);
+        const roseMethod = cls.methods.find((m) => m.name === "rose")!;
+        expect(roseMethod.isStatic).toBe(true);
+        expect(roseMethod.params).toHaveLength(1);
+      });
+    });
+
+    describe("UC116: Array type parameters", () => {
+      it("parses ArrayBadgeList with array param", () => {
+        const meta = parsePhpFile(advanced("ArrayBadgeList.php"));
+        const cls = meta.classes.find((c) => c.name === "ArrayBadgeList")!;
+        expect(cls).toBeDefined();
+        const renderMethod = cls.methods.find((m) => m.name === "render")!;
+        expect(renderMethod.params).toHaveLength(2);
+        const itemsParam = renderMethod.params.find((p) => p.name === "items")!;
+        expect(itemsParam.type).toBe("array");
+      });
+    });
+
+    describe("UC119: New expression in default parameter", () => {
+      it("parses StyledBox with new BoxOptions() default", () => {
+        const meta = parsePhpFile(php81("NewDefaults.php"));
+        const cls = meta.classes.find((c) => c.name === "StyledBox")!;
+        expect(cls).toBeDefined();
+        const optionsParam = cls.constructorParams.find((p) => p.name === "options")!;
+        expect(optionsParam.type).toBe("BoxOptions");
+        expect(optionsParam.required).toBe(false);
+        expect(optionsParam.default).toContain("new BoxOptions()");
+      });
+    });
+
+    describe("UC120: DNF type parameters", () => {
+      it("parses DnfParam with DNF type", () => {
+        const meta = parsePhpFile(php82("DnfParam.php"));
+        const cls = meta.classes.find((c) => c.name === "DnfParam")!;
+        expect(cls).toBeDefined();
+        const badgeParam = cls.constructorParams.find((p) => p.name === "badge")!;
+        expect(badgeParam).toBeDefined();
+        expect(badgeParam.required).toBe(false);
+      });
+    });
+
+    describe("UC121: Enum with constants", () => {
+      it("parses EnumConstant metadata", () => {
+        const meta = parsePhpFile(php81("EnumConstant.php"));
+        const cls = meta.classes.find((c) => c.name === "EnumConstant")!;
+        expect(cls).toBeDefined();
+        expect(cls.isEnum).toBe(true);
+        expect(cls.enumBackingType).toBe("string");
+        expect(cls.enumCases).toEqual(["Success", "Warning", "Danger"]);
+        expect(cls.methods).toHaveLength(2);
+        const badge = cls.methods.find((m) => m.name === "badge")!;
+        expect(badge.isStatic).toBe(false);
+        const all = cls.methods.find((m) => m.name === "all")!;
+        expect(all.isStatic).toBe(true);
+        expect(all.params).toHaveLength(1);
+      });
+    });
+
+    describe("UC122: Deep inheritance (3 levels)", () => {
+      it("parses deep inheritance hierarchy", () => {
+        const meta = parsePhpFile(advanced("DeepInheritance.php"));
+        expect(meta.classes).toHaveLength(3);
+
+        const base = meta.classes.find((c) => c.name === "BaseWidget")!;
+        expect(base.isAbstract).toBe(true);
+        expect(base.constructorParams).toHaveLength(2);
+
+        const info = meta.classes.find((c) => c.name === "InfoWidget")!;
+        expect(info.extends).toBe("BaseWidget");
+        expect(info.constructorParams).toHaveLength(3);
+
+        const detail = meta.classes.find((c) => c.name === "DetailWidget")!;
+        expect(detail.extends).toBe("InfoWidget");
+        expect(detail.constructorParams).toHaveLength(4);
+      });
+    });
+
+    describe("UC123: Generator standalone functions", () => {
+      it("parses generator functions", () => {
+        const meta = parsePhpFile(advanced("generatorFunc.php"));
+        expect(meta.namespace).toBe("App\\Helpers");
+        expect(meta.functions).toHaveLength(2);
+
+        const genList = meta.functions.find((f) => f.name === "generateList")!;
+        expect(genList).toBeDefined();
+        expect(genList.params).toHaveLength(3);
+        expect(genList.returnType).toBe("\\Generator");
+
+        const genTable = meta.functions.find((f) => f.name === "generateTable")!;
+        expect(genTable).toBeDefined();
+        expect(genTable.params).toHaveLength(2);
+        expect(genTable.returnType).toBe("\\Generator");
+      });
+    });
+
+    describe("UC124: Nowdoc syntax", () => {
+      it("parses NowdocCard correctly despite nowdoc syntax", () => {
+        const meta = parsePhpFile(advanced("NowdocCard.php"));
+        const cls = meta.classes.find((c) => c.name === "NowdocCard")!;
+        expect(cls).toBeDefined();
+        expect(cls.constructorParams).toHaveLength(3);
+        expect(cls.methods).toHaveLength(1);
+        expect(cls.methods[0]!.name).toBe("render");
+      });
+    });
+
+    describe("UC125: Private constructor with static factories", () => {
+      it("parses PrivateConstruct with private constructor", () => {
+        const meta = parsePhpFile(advanced("PrivateConstruct.php"));
+        const cls = meta.classes.find((c) => c.name === "PrivateConstruct")!;
+        expect(cls).toBeDefined();
+        expect(cls.constructorParams).toHaveLength(3);
+        // Static methods
+        const staticMethods = cls.methods.filter((m) => m.isStatic);
+        expect(staticMethods).toHaveLength(3);
+        expect(staticMethods.map((m) => m.name).sort()).toEqual(["error", "info", "success"]);
+      });
+    });
+
+    describe("UC126: Multiple enums in one file", () => {
+      it("parses multiple enums from one file", () => {
+        const meta = parsePhpFile(php81("MultiEnum.php"));
+        expect(meta.classes).toHaveLength(2);
+
+        const textAlign = meta.classes.find((c) => c.name === "TextAlign")!;
+        expect(textAlign.isEnum).toBe(true);
+        expect(textAlign.enumBackingType).toBe("string");
+        expect(textAlign.enumCases).toEqual(["Left", "Center", "Right"]);
+
+        const fontWeight = meta.classes.find((c) => c.name === "FontWeight")!;
+        expect(fontWeight.isEnum).toBe(true);
+        expect(fontWeight.enumBackingType).toBe("string");
+        expect(fontWeight.enumCases).toEqual(["Light", "Normal", "Bold", "Black"]);
+      });
+    });
+
+    describe("UC130: Mixed visibility constructor", () => {
+      it("parses MixedVisibility with mixed visibility params", () => {
+        const meta = parsePhpFile(advanced("MixedVisibility.php"));
+        const cls = meta.classes.find((c) => c.name === "MixedVisibility")!;
+        expect(cls).toBeDefined();
+        expect(cls.constructorParams).toHaveLength(4);
+
+        const label = cls.constructorParams.find((p) => p.name === "label")!;
+        expect(label.visibility).toBe("public");
+        expect(label.isPromoted).toBe(true);
+
+        const variant = cls.constructorParams.find((p) => p.name === "variant")!;
+        expect(variant.visibility).toBe("private");
+        expect(variant.isPromoted).toBe(true);
+
+        const maxLength = cls.constructorParams.find((p) => p.name === "maxLength")!;
+        expect(maxLength.visibility).toBe("protected");
+        expect(maxLength.isPromoted).toBe(true);
+
+        const truncate = cls.constructorParams.find((p) => p.name === "truncate")!;
+        expect(truncate.visibility).toBe("public");
+      });
+    });
+
+    describe("UC133: Enum implementing multiple interfaces", () => {
+      it("parses EnumMultiInterface with multiple implements", () => {
+        const meta = parsePhpFile(php81("EnumMultiInterface.php"));
+        const cls = meta.classes.find((c) => c.name === "EnumMultiInterface")!;
+        expect(cls).toBeDefined();
+        expect(cls.isEnum).toBe(true);
+        expect(cls.enumBackingType).toBe("string");
+        expect(cls.implements).toContain("HasLabel");
+        expect(cls.implements).toContain("HasIcon");
+        expect(cls.enumCases).toEqual(["Home", "Settings", "Profile", "Logout"]);
+        expect(cls.methods).toHaveLength(3);
+      });
+    });
+
+    describe("UC135: Static factory + instance method on same class", () => {
+      it("parses StaticInstance with both method types", () => {
+        const meta = parsePhpFile(advanced("StaticInstance.php"));
+        const cls = meta.classes.find((c) => c.name === "StaticInstance")!;
+        expect(cls).toBeDefined();
+        expect(cls.constructorParams).toHaveLength(2);
+        expect(cls.methods).toHaveLength(2);
+
+        const render = cls.methods.find((m) => m.name === "render")!;
+        expect(render.isStatic).toBe(false);
+
+        const fromMarkdown = cls.methods.find((m) => m.name === "fromMarkdown")!;
+        expect(fromMarkdown.isStatic).toBe(true);
+      });
+    });
+
+    describe("UC136: Pure enum with method params", () => {
+      it("parses Suit pure enum", () => {
+        const meta = parsePhpFile(php81("Suit.php"));
+        const cls = meta.classes.find((c) => c.name === "Suit")!;
+        expect(cls.isEnum).toBe(true);
+        expect(cls.enumBackingType).toBeNull();
+        expect(cls.enumCases).toEqual(["Hearts", "Diamonds", "Clubs", "Spades"]);
+        const cardMethod = cls.methods.find((m) => m.name === "card")!;
+        expect(cardMethod.params).toHaveLength(1);
+        expect(cardMethod.params[0]!.name).toBe("rank");
+      });
+    });
+
+    describe("UC137: PHP 8.2 standalone types", () => {
+      it("parses standalone types from fixture", () => {
+        const meta = parsePhpFile(fixturePath("StandaloneTypes.php"));
+        const cls = meta.classes[0]!;
+        expect(cls.name).toBe("StandaloneTypes");
+        const params = cls.constructorParams;
+        expect(params).toHaveLength(3);
+        expect(params[0]!.type).toBe("string");
+        expect(params[1]!.type).toBe("true");
+        expect(params[2]!.type).toBe("false");
+      });
+
+      it("parses standalone types from example", () => {
+        const meta = parsePhpFile(php82("StandaloneTypes.php"));
+        const cls = meta.classes[0]!;
+        expect(cls.constructorParams).toHaveLength(4);
+        const visible = cls.constructorParams.find((p) => p.name === "visible")!;
+        expect(visible.type).toBe("true");
+        expect(visible.required).toBe(false);
+        const disabled = cls.constructorParams.find((p) => p.name === "disabled")!;
+        expect(disabled.type).toBe("false");
+        expect(disabled.required).toBe(false);
+      });
+    });
+
+    describe("UC138: Deeply nested namespace", () => {
+      it("parses deeply nested namespace", () => {
+        const meta = parsePhpFile(fixturePath("NestedNamespace.php"));
+        expect(meta.namespace).toBe("App\\UI\\Components\\Form");
+        const cls = meta.classes[0]!;
+        expect(cls.name).toBe("TextInput");
+        expect(cls.fqn).toBe("App\\UI\\Components\\Form\\TextInput");
+      });
+    });
+
+    describe("UC139: Multiple render methods", () => {
+      it("parses MultiRender with 3 public methods", () => {
+        const meta = parsePhpFile(advanced("MultiRender.php"));
+        const cls = meta.classes.find((c) => c.name === "MultiRender")!;
+        expect(cls).toBeDefined();
+        expect(cls.methods).toHaveLength(3);
+        expect(cls.methods.map((m) => m.name).sort()).toEqual([
+          "render",
+          "renderCard",
+          "renderRow",
+        ]);
+      });
+    });
+
+    describe("UC140: Enum with static + instance methods", () => {
+      it("parses enum with both method types", () => {
+        const meta = parsePhpFile(php81("EnumStaticInstance.php"));
+        const cls = meta.classes.find((c) => c.name === "EnumStaticInstance")!;
+        expect(cls.isEnum).toBe(true);
+        const instanceMethods = cls.methods.filter((m) => !m.isStatic);
+        const staticMethods = cls.methods.filter((m) => m.isStatic);
+        expect(instanceMethods).toHaveLength(2);
+        expect(staticMethods).toHaveLength(1);
+      });
+    });
+
+    describe("UC141: Enum-typed constructor parameter", () => {
+      it("parses EnumTypedConstructor with enum param", () => {
+        const meta = parsePhpFile(php81("EnumTypedConstructor.php"));
+        const cls = meta.classes.find((c) => c.name === "EnumTypedConstructor")!;
+        expect(cls).toBeDefined();
+        const themeParam = cls.constructorParams.find((p) => p.name === "theme")!;
+        expect(themeParam.type).toBe("Theme");
+        expect(themeParam.required).toBe(false);
+      });
+
+      it("parses Theme enum in same file", () => {
+        const meta = parsePhpFile(php81("EnumTypedConstructor.php"));
+        const enumCls = meta.classes.find((c) => c.name === "Theme")!;
+        expect(enumCls.isEnum).toBe(true);
+        expect(enumCls.enumBackingType).toBe("string");
+        expect(enumCls.enumCases).toEqual(["Light", "Dark", "System"]);
+      });
+    });
+
+    describe("UC142: Echo-based enum method", () => {
+      it("parses EchoEnum with void method", () => {
+        const meta = parsePhpFile(php81("EchoEnum.php"));
+        const cls = meta.classes.find((c) => c.name === "EchoEnum")!;
+        expect(cls.isEnum).toBe(true);
+        expect(cls.enumBackingType).toBe("string");
+        expect(cls.enumCases).toEqual(["Success", "Error", "Warning", "Info"]);
+        const alertMethod = cls.methods.find((m) => m.name === "alert")!;
+        expect(alertMethod.params).toHaveLength(2);
+        expect(alertMethod.returnType).toBe("void");
+      });
+    });
+
+    describe("UC144: Scalar return values", () => {
+      it("parses ScalarReturn with multiple methods", () => {
+        const meta = parsePhpFile(advanced("ScalarReturn.php"));
+        const cls = meta.classes.find((c) => c.name === "ScalarReturn")!;
+        expect(cls.constructorParams).toHaveLength(2);
+        expect(cls.methods).toHaveLength(3);
+        const pct = cls.methods.find((m) => m.name === "renderPercent")!;
+        expect(pct.returnType).toBe("int");
+        const ratio = cls.methods.find((m) => m.name === "renderRatio")!;
+        expect(ratio.returnType).toBe("float");
+      });
+    });
+
+    describe("UC145: Functions with array defaults", () => {
+      it("parses FunctionArrayDefault with two functions", () => {
+        const meta = parsePhpFile(advanced("FunctionArrayDefault.php"));
+        expect(meta.namespace).toBe("App\\Helpers");
+        expect(meta.functions).toHaveLength(2);
+        const nav = meta.functions.find((f) => f.name === "renderNav")!;
+        expect(nav.params).toHaveLength(3);
+        expect(nav.params[0]!.type).toBe("array");
+        expect(nav.params[0]!.required).toBe(false);
+        const tags = meta.functions.find((f) => f.name === "renderTagList")!;
+        expect(tags.params).toHaveLength(2);
+        expect(tags.params[0]!.type).toBe("array");
+      });
+    });
+
+    describe("UC146: Enum with multiple typed method params", () => {
+      it("parses EnumMethodParams with multi-param method", () => {
+        const meta = parsePhpFile(php81("EnumMethodParams.php"));
+        const cls = meta.classes.find((c) => c.name === "EnumMethodParams")!;
+        expect(cls.isEnum).toBe(true);
+        expect(cls.enumCases).toEqual(["Badge", "Pill", "Tag"]);
+        const render = cls.methods.find((m) => m.name === "render")!;
+        expect(render.params).toHaveLength(4);
+        expect(render.params.map((p) => p.name)).toEqual(["label", "color", "size", "rounded"]);
+        expect(render.params[2]!.type).toBe("int");
+        expect(render.params[3]!.type).toBe("bool");
+        const showcase = cls.methods.find((m) => m.name === "showcase")!;
+        expect(showcase.isStatic).toBe(true);
+      });
+    });
+
+    describe("UC147: Enum with trait", () => {
+      it("parses EnumWithTrait with trait usage on enum", () => {
+        const meta = parsePhpFile(fixturePath("EnumWithTrait.php"));
+
+        // Should have traits
+        const hasBadge = meta.classes.find((c) => c.name === "HasBadge");
+        expect(hasBadge).toBeDefined();
+        expect(hasBadge!.methods).toHaveLength(1);
+        expect(hasBadge!.methods[0]!.name).toBe("badge");
+
+        // Priority enum should have trait listed
+        const priority = meta.classes.find((c) => c.name === "Priority");
+        expect(priority).toBeDefined();
+        expect(priority!.isEnum).toBe(true);
+        expect(priority!.traits).toContain("HasBadge");
+        expect(priority!.enumCases).toEqual(["Low", "Medium", "High", "Critical"]);
+
+        // Severity enum should have two traits
+        const severity = meta.classes.find((c) => c.name === "Severity");
+        expect(severity).toBeDefined();
+        expect(severity!.isEnum).toBe(true);
+        expect(severity!.traits).toContain("HasBadge");
+        expect(severity!.traits).toContain("HasIcon");
+      });
+    });
+
+    describe("UC148: Promoted readonly union types", () => {
+      it("parses PromotedReadonlyUnion fixture", () => {
+        const meta = parsePhpFile(fixturePath("PromotedReadonlyUnion.php"));
+        const cls = meta.classes[0]!;
+        expect(cls.name).toBe("PromotedReadonlyUnion");
+        expect(cls.constructorParams).toHaveLength(3);
+
+        const idParam = cls.constructorParams[0]!;
+        expect(idParam.name).toBe("id");
+        expect(idParam.type).toBe("string|int");
+        expect(idParam.isPromoted).toBe(true);
+        expect(idParam.visibility).toBe("public");
+
+        const amountParam = cls.constructorParams[2]!;
+        expect(amountParam.name).toBe("amount");
+        expect(amountParam.type).toBe("int|float");
+        expect(amountParam.isPromoted).toBe(true);
+        expect(amountParam.visibility).toBe("private");
+        expect(amountParam.default).toBe("0");
+      });
+    });
+
+    describe("UC149: Method constant defaults", () => {
+      it("parses MethodConstantDefault fixture", () => {
+        const meta = parsePhpFile(fixturePath("MethodConstantDefault.php"));
+        const cls = meta.classes[0]!;
+        expect(cls.name).toBe("MethodConstantDefault");
+
+        const render = cls.methods.find((m) => m.name === "render")!;
+        expect(render).toBeDefined();
+        expect(render.params).toHaveLength(2);
+
+        const formatParam = render.params[0]!;
+        expect(formatParam.name).toBe("format");
+        expect(formatParam.type).toBe("string");
+        expect(formatParam.default).toBe("self::FORMAT_HTML");
+        expect(formatParam.required).toBe(false);
+
+        const maxLenParam = render.params[1]!;
+        expect(maxLenParam.name).toBe("maxLength");
+        expect(maxLenParam.type).toBe("int");
+        expect(maxLenParam.default).toBe("self::MAX_LENGTH");
+      });
+    });
+
+    describe("UC150: Function union return types", () => {
+      it("parses FunctionUnionReturn fixture", () => {
+        const meta = parsePhpFile(fixturePath("FunctionUnionReturn.php"));
+        expect(meta.functions).toHaveLength(2);
+
+        const formatValue = meta.functions.find((f) => f.name === "formatValue")!;
+        expect(formatValue).toBeDefined();
+        expect(formatValue.returnType).toBe("string|int");
+        expect(formatValue.params).toHaveLength(2);
+
+        const renderStatus = meta.functions.find((f) => f.name === "renderStatus")!;
+        expect(renderStatus).toBeDefined();
+        expect(renderStatus.returnType).toBe("string|bool");
+        expect(renderStatus.params).toHaveLength(2);
+      });
+    });
+
+    describe("UC152: PHP 8 attributes (AttributeCard)", () => {
+      it("parses AttributeCard correctly (attributes stripped)", () => {
+        const meta = parsePhpFile(php83("AttributeCard.php"));
+        // CardStyle is an attribute class, AttributeCard is the main class
+        const cls = meta.classes.find((c) => c.name === "AttributeCard");
+        expect(cls).toBeDefined();
+        expect(cls!.constructorParams).toHaveLength(4);
+
+        const title = cls!.constructorParams.find((p) => p.name === "title")!;
+        expect(title.type).toBe("string");
+        expect(title.required).toBe(true);
+
+        const variant = cls!.constructorParams.find((p) => p.name === "variant")!;
+        expect(variant.default).toBeDefined();
+
+        const render = cls!.methods.find((m) => m.name === "render");
+        expect(render).toBeDefined();
+        expect(render!.returnType).toBe("string");
+      });
+
+      it("parses AttributeClass fixture: attributes on params and methods", () => {
+        const meta = parsePhpFile(fixturePath("AttributeClass.php"));
+        const cls = meta.classes.find((c) => c.name === "AttributeClass");
+        expect(cls).toBeDefined();
+        expect(cls!.constructorParams).toHaveLength(2);
+        expect(cls!.constructorParams[0]!.name).toBe("title");
+        expect(cls!.constructorParams[1]!.name).toBe("body");
+        expect(cls!.methods).toHaveLength(1);
+        expect(cls!.methods[0]!.name).toBe("render");
+      });
+    });
+
+    describe("UC153: Stringable return from class method (EnumToString)", () => {
+      it("parses Mood enum and MoodCard class", () => {
+        const meta = parsePhpFile(php81("EnumToString.php"));
+        const mood = meta.classes.find((c) => c.name === "Mood");
+        expect(mood).toBeDefined();
+        expect(mood!.isEnum).toBe(true);
+        expect(mood!.enumBackingType).toBe("string");
+        expect(mood!.enumCases).toEqual(["Happy", "Sad", "Neutral", "Excited"]);
+
+        const moodBadge = meta.classes.find((c) => c.name === "MoodBadge");
+        expect(moodBadge).toBeDefined();
+        expect(moodBadge!.implements).toContain("\\Stringable");
+
+        const moodCard = meta.classes.find((c) => c.name === "MoodCard");
+        expect(moodCard).toBeDefined();
+        expect(moodCard!.constructorParams).toHaveLength(2);
+        expect(moodCard!.methods).toHaveLength(2);
+      });
+
+      it("parses EnumStringable fixture", () => {
+        const meta = parsePhpFile(fixturePath("EnumStringable.php"));
+        const wrapper = meta.classes.find((c) => c.name === "StringableWrapper");
+        expect(wrapper).toBeDefined();
+        expect(wrapper!.implements).toContain("\\Stringable");
+
+        const badge = meta.classes.find((c) => c.name === "Badge");
+        expect(badge).toBeDefined();
+        expect(badge!.isEnum).toBe(true);
+
+        const holder = meta.classes.find((c) => c.name === "BadgeHolder");
+        expect(holder).toBeDefined();
+        expect(holder!.constructorParams[0]!.type).toBe("Badge");
+      });
+    });
+
+    describe("UC154: Enum with trait static method (TraitStaticEnum)", () => {
+      it("parses Palette enum and HasShowcase trait", () => {
+        const meta = parsePhpFile(advanced("TraitStaticEnum.php"));
+        const trait = meta.classes.find((c) => c.name === "HasShowcase");
+        expect(trait).toBeDefined();
+        expect(trait!.isTrait).toBe(true);
+        expect(trait!.methods).toHaveLength(1);
+        expect(trait!.methods[0]!.name).toBe("showcase");
+        expect(trait!.methods[0]!.isStatic).toBe(true);
+
+        const palette = meta.classes.find((c) => c.name === "Palette");
+        expect(palette).toBeDefined();
+        expect(palette!.isEnum).toBe(true);
+        expect(palette!.traits).toContain("HasShowcase");
+        expect(palette!.enumCases).toEqual(["Rose", "Sky", "Amber", "Emerald", "Violet"]);
+      });
+
+      it("parses TraitStaticEnum fixture", () => {
+        const meta = parsePhpFile(fixturePath("TraitStaticEnum.php"));
+        const trait = meta.classes.find((c) => c.name === "HasShowcase");
+        expect(trait).toBeDefined();
+        expect(trait!.isTrait).toBe(true);
+
+        const swatch = meta.classes.find((c) => c.name === "Swatch");
+        expect(swatch).toBeDefined();
+        expect(swatch!.traits).toContain("HasShowcase");
+      });
+    });
+
+    describe("UC155: Constant expression defaults (ConstExprDefaults)", () => {
+      it("parses PHP constant defaults correctly", () => {
+        const meta = parsePhpFile(advanced("ConstExprDefaults.php"));
+        const cls = meta.classes.find((c) => c.name === "ConstExprDefaults")!;
+        expect(cls.constructorParams).toHaveLength(5);
+
+        const separator = cls.constructorParams.find((p) => p.name === "separator")!;
+        expect(separator.default).toBe("PHP_EOL");
+        expect(separator.required).toBe(false);
+
+        const maxItems = cls.constructorParams.find((p) => p.name === "maxItems")!;
+        expect(maxItems.default).toBe("PHP_INT_SIZE");
+        expect(maxItems.type).toBe("int");
+
+        const version = cls.constructorParams.find((p) => p.name === "version")!;
+        expect(version.default).toBe("PHP_VERSION");
+        expect(version.type).toBe("string");
+      });
+
+      it("parses ConstExprDefaults fixture", () => {
+        const meta = parsePhpFile(fixturePath("ConstExprDefaults.php"));
+        const cls = meta.classes[0]!;
+        expect(cls.constructorParams[1]!.default).toBe("PHP_EOL");
+        expect(cls.constructorParams[2]!.default).toBe("PHP_INT_SIZE");
+        expect(cls.constructorParams[3]!.default).toBe("PHP_VERSION");
+      });
+    });
+
+    describe("UC156: Abstract parent with trait method (AbstractTraitChild)", () => {
+      it("parses AbstractTraitChild with trait, abstract, and concrete classes", () => {
+        const meta = parsePhpFile(advanced("AbstractTraitChild.php"));
+
+        const trait = meta.classes.find((c) => c.name === "HasCardLayout");
+        expect(trait).toBeDefined();
+        expect(trait!.isTrait).toBe(true);
+        expect(trait!.methods.some((m) => m.name === "render")).toBe(true);
+
+        const abstract = meta.classes.find((c) => c.name === "AbstractLayoutCard");
+        expect(abstract).toBeDefined();
+        expect(abstract!.isAbstract).toBe(true);
+        expect(abstract!.traits).toContain("HasCardLayout");
+
+        const article = meta.classes.find((c) => c.name === "ArticleCard");
+        expect(article).toBeDefined();
+        expect(article!.extends).toBe("AbstractLayoutCard");
+        expect(article!.constructorParams).toHaveLength(3);
+
+        const quote = meta.classes.find((c) => c.name === "QuoteCard");
+        expect(quote).toBeDefined();
+        expect(quote!.extends).toBe("AbstractLayoutCard");
+        expect(quote!.constructorParams).toHaveLength(3);
+      });
+
+      it("parses TraitInterface fixture: trait, interface, abstract, concrete", () => {
+        const meta = parsePhpFile(fixturePath("TraitInterface.php"));
+
+        const iface = meta.classes.find((c) => c.name === "Displayable");
+        expect(iface).toBeDefined();
+        expect(iface!.isInterface).toBe(true);
+
+        const trait = meta.classes.find((c) => c.name === "HasRender");
+        expect(trait).toBeDefined();
+        expect(trait!.isTrait).toBe(true);
+        expect(trait!.methods).toHaveLength(2);
+
+        const abstract = meta.classes.find((c) => c.name === "AbstractWidget");
+        expect(abstract).toBeDefined();
+        expect(abstract!.isAbstract).toBe(true);
+        expect(abstract!.traits).toContain("HasRender");
+
+        const concrete = meta.classes.find((c) => c.name === "ConcreteWidget");
+        expect(concrete).toBeDefined();
+        expect(concrete!.extends).toBe("AbstractWidget");
+        expect(concrete!.implements).toContain("Displayable");
+      });
+    });
+
+    describe("UC158: Nullable function params", () => {
+      it("parses NullableFunction fixture", () => {
+        const meta = parsePhpFile(fixturePath("NullableFunction.php"));
+        expect(meta.functions).toHaveLength(1);
+        const fn = meta.functions[0]!;
+        expect(fn.params).toHaveLength(4);
+        expect(fn.params[1]!.nullable).toBe(true);
+        expect(fn.params[2]!.nullable).toBe(true);
+        expect(fn.params[3]!.nullable).toBe(true);
+      });
+    });
+
+    describe("UC159: Echo-based standalone function", () => {
+      it("parses echoGreet function with void return", () => {
+        const meta = parsePhpFile(advanced("echoGreet.php"));
+        expect(meta.functions).toHaveLength(1);
+        const fn = meta.functions[0]!;
+        expect(fn.name).toBe("echoGreet");
+        expect(fn.returnType).toBe("void");
+        expect(fn.params).toHaveLength(2);
+      });
+
+      it("parses EchoFunction fixture", () => {
+        const meta = parsePhpFile(fixturePath("EchoFunction.php"));
+        expect(meta.functions).toHaveLength(1);
+        const fn = meta.functions[0]!;
+        expect(fn.name).toBe("echoGreet");
+        expect(fn.returnType).toBe("void");
+      });
+    });
+
+    describe("UC160: Variadic string constructor", () => {
+      it("parses VariadicCrumb with variadic string param", () => {
+        const meta = parsePhpFile(advanced("VariadicCrumb.php"));
+        const cls = meta.classes[0]!;
+        expect(cls.name).toBe("VariadicCrumb");
+        expect(cls.constructorParams).toHaveLength(2);
+
+        const sep = cls.constructorParams[0]!;
+        expect(sep.name).toBe("separator");
+        expect(sep.isVariadic).toBe(false);
+
+        const segments = cls.constructorParams[1]!;
+        expect(segments.name).toBe("segments");
+        expect(segments.isVariadic).toBe(true);
+        expect(segments.type).toBe("string");
+      });
+
+      it("parses VariadicCrumb fixture", () => {
+        const meta = parsePhpFile(fixturePath("VariadicCrumb.php"));
+        const cls = meta.classes[0]!;
+        expect(cls.constructorParams).toHaveLength(2);
+        expect(cls.constructorParams[1]!.isVariadic).toBe(true);
+      });
+    });
+
+    describe("UC161: Enum array return", () => {
+      it("parses EnumArrayReturn", () => {
+        const meta = parsePhpFile(php81("EnumArrayReturn.php"));
+        const cls = meta.classes[0]!;
+        expect(cls.isEnum).toBe(true);
+        expect(cls.enumBackingType).toBe("string");
+        expect(cls.enumCases).toEqual(["Success", "Warning", "Error"]);
+        const card = cls.methods.find((m) => m.name === "card")!;
+        expect(card.returnType).toBe("array");
+        expect(card.params).toHaveLength(1);
+      });
+
+      it("parses EnumArrayReturn fixture", () => {
+        const meta = parsePhpFile(fixturePath("EnumArrayReturn.php"));
+        const cls = meta.classes[0]!;
+        expect(cls.isEnum).toBe(true);
+        const card = cls.methods.find((m) => m.name === "card")!;
+        expect(card.returnType).toBe("array");
+      });
+    });
+
+    describe("UC162: Match expression rendering", () => {
+      it("parses MatchPanel class", () => {
+        const meta = parsePhpFile(php80("MatchPanel.php"));
+        const cls = meta.classes[0]!;
+        expect(cls.name).toBe("MatchPanel");
+        expect(cls.constructorParams).toHaveLength(3);
+        expect(cls.constructorParams[0]!.name).toBe("variant");
+      });
+
+      it("parses MatchPanel fixture", () => {
+        const meta = parsePhpFile(fixturePath("MatchPanel.php"));
+        const cls = meta.classes[0]!;
+        expect(cls.name).toBe("MatchPanel");
+        expect(cls.constructorParams).toHaveLength(3);
+      });
+    });
+
+    describe("UC163: Multiple functions in one file", () => {
+      it("parses multiple functions in scalarFunc", () => {
+        const meta = parsePhpFile(advanced("scalarFunc.php"));
+        expect(meta.functions).toHaveLength(2);
+        expect(meta.functions.map((f) => f.name).sort()).toEqual(["calcDiscount", "formatBytes"]);
+      });
+    });
+
+    describe("UC165: static return type (FluentElement)", () => {
+      it("parses FluentElement with static return type methods", () => {
+        const meta = parsePhpFile(advanced("FluentElement.php"));
+        expect(meta.classes).toHaveLength(1);
+        const cls = meta.classes[0]!;
+        expect(cls.name).toBe("FluentElement");
+        const addClassMethod = cls.methods.find((m) => m.name === "addClass");
+        expect(addClassMethod).toBeDefined();
+        expect(addClassMethod!.returnType).toBe("static");
+        const addStyleMethod = cls.methods.find((m) => m.name === "addStyle");
+        expect(addStyleMethod).toBeDefined();
+        expect(addStyleMethod!.returnType).toBe("static");
+      });
+
+      it("parses StaticReturnType fixture", () => {
+        const meta = parsePhpFile(fixturePath("StaticReturnType.php"));
+        const cls = meta.classes[0]!;
+        expect(cls.name).toBe("StaticReturnType");
+        const addClass = cls.methods.find((m) => m.name === "addClass");
+        expect(addClass!.returnType).toBe("static");
+        const setText = cls.methods.find((m) => m.name === "setText");
+        expect(setText!.returnType).toBe("static");
+        const render = cls.methods.find((m) => m.name === "render");
+        expect(render!.returnType).toBe("string");
+      });
+    });
+
+    describe("UC166: callable/Closure params (CallableLabel)", () => {
+      it("parses callable and Closure types in CallableLabel", () => {
+        const meta = parsePhpFile(php81("CallableLabel.php"));
+        const cls = meta.classes[0]!;
+        expect(cls.name).toBe("CallableLabel");
+        const transformerParam = cls.constructorParams.find((p) => p.name === "transformer");
+        expect(transformerParam).toBeDefined();
+        expect(transformerParam!.type).toBe("callable");
+        expect(transformerParam!.nullable).toBe(true);
+      });
+
+      it("parses CallableParam fixture with Closure type", () => {
+        const meta = parsePhpFile(fixturePath("CallableParam.php"));
+        const cls = meta.classes[0]!;
+        expect(cls.name).toBe("CallableParam");
+        const ctorCallable = cls.constructorParams.find((p) => p.name === "transformer");
+        expect(ctorCallable!.type).toBe("callable");
+        expect(ctorCallable!.nullable).toBe(true);
+        const renderMethod = cls.methods.find((m) => m.name === "render");
+        const wrapperParam = renderMethod!.params.find((p) => p.name === "wrapper");
+        expect(wrapperParam).toBeDefined();
+        expect(wrapperParam!.type).toBe("Closure");
+        expect(wrapperParam!.nullable).toBe(true);
+      });
+    });
+
+    describe("UC167: object and iterable params (ObjectInspector)", () => {
+      it("parses object and iterable types", () => {
+        const meta = parsePhpFile(advanced("ObjectInspector.php"));
+        const cls = meta.classes[0]!;
+        expect(cls.name).toBe("ObjectInspector");
+        const renderObj = cls.methods.find((m) => m.name === "renderObject");
+        expect(renderObj).toBeDefined();
+        expect(renderObj!.params[0]!.type).toBe("object");
+        const renderIter = cls.methods.find((m) => m.name === "renderIterable");
+        expect(renderIter).toBeDefined();
+        expect(renderIter!.params[0]!.type).toBe("iterable");
+      });
+
+      it("parses ObjectTypeParam fixture", () => {
+        const meta = parsePhpFile(fixturePath("ObjectTypeParam.php"));
+        const cls = meta.classes[0]!;
+        expect(cls.name).toBe("ObjectTypeParam");
+        const renderObj = cls.methods.find((m) => m.name === "renderObject");
+        expect(renderObj!.params[0]!.type).toBe("object");
+        const renderIter = cls.methods.find((m) => m.name === "renderIterable");
+        expect(renderIter!.params[0]!.type).toBe("iterable");
+      });
+    });
+
+    describe("UC168: Nested array defaults (nestedGrid)", () => {
+      it("parses nested default arrays in functions", () => {
+        const meta = parsePhpFile(advanced("nestedGrid.php"));
+        expect(meta.functions).toHaveLength(2);
+        const gridFn = meta.functions.find((f) => f.name === "renderGrid");
+        expect(gridFn).toBeDefined();
+        const rowsParam = gridFn!.params.find((p) => p.name === "rows");
+        expect(rowsParam).toBeDefined();
+        expect(rowsParam!.default).toBeDefined();
+        // The default should contain the nested array representation
+        expect(rowsParam!.default).toContain("[");
+        const configParam = gridFn!.params.find((p) => p.name === "config");
+        expect(configParam).toBeDefined();
+        expect(configParam!.default).toBeDefined();
+      });
+
+      it("parses NestedDefaults fixture", () => {
+        const meta = parsePhpFile(fixturePath("NestedDefaults.php"));
+        expect(meta.functions).toHaveLength(2);
+        const gridFn = meta.functions.find((f) => f.name === "renderGrid");
+        expect(gridFn).toBeDefined();
+        expect(gridFn!.params).toHaveLength(3);
+        const matrixFn = meta.functions.find((f) => f.name === "renderMatrix");
+        expect(matrixFn).toBeDefined();
+        expect(matrixFn!.params).toHaveLength(2);
+      });
+    });
+
+    describe("UC169: Enum static factory (SeverityEnum)", () => {
+      it("parses SeverityEnum with instance + static methods", () => {
+        const meta = parsePhpFile(php81("SeverityEnum.php"));
+        const cls = meta.classes[0]!;
+        expect(cls.name).toBe("SeverityEnum");
+        expect(cls.isEnum).toBe(true);
+        expect(cls.enumBackingType).toBe("string");
+        expect(cls.enumCases).toEqual(["Low", "Medium", "High", "Critical"]);
+        const badge = cls.methods.find((m) => m.name === "badge");
+        expect(badge).toBeDefined();
+        expect(badge!.isStatic).toBe(false);
+        const all = cls.methods.find((m) => m.name === "all");
+        expect(all).toBeDefined();
+        expect(all!.isStatic).toBe(true);
+        const ofLevel = cls.methods.find((m) => m.name === "ofLevel");
+        expect(ofLevel).toBeDefined();
+        expect(ofLevel!.isStatic).toBe(true);
+        expect(ofLevel!.params[0]!.type).toBe("int");
+      });
+
+      it("parses EnumStaticFactory fixture", () => {
+        const meta = parsePhpFile(fixturePath("EnumStaticFactory.php"));
+        const cls = meta.classes[0]!;
+        expect(cls.name).toBe("Severity");
+        expect(cls.isEnum).toBe(true);
+        expect(cls.methods.find((m) => m.name === "badge")).toBeDefined();
+        expect(cls.methods.find((m) => m.name === "all")!.isStatic).toBe(true);
+        expect(cls.methods.find((m) => m.name === "ofLevel")!.isStatic).toBe(true);
+      });
+    });
+
+    describe("UC170: string|false return type (SearchResult)", () => {
+      it("parses string|false return type", () => {
+        const meta = parsePhpFile(php80("SearchResult.php"));
+        const cls = meta.classes[0]!;
+        expect(cls.name).toBe("SearchResult");
+        const findFirst = cls.methods.find((m) => m.name === "findFirst");
+        expect(findFirst).toBeDefined();
+        expect(findFirst!.returnType).toBe("string|false");
+      });
+
+      it("parses StringFalseReturn fixture", () => {
+        const meta = parsePhpFile(fixturePath("StringFalseReturn.php"));
+        const cls = meta.classes[0]!;
+        expect(cls.name).toBe("StringFalseReturn");
+        const findFirst = cls.methods.find((m) => m.name === "findFirst");
+        expect(findFirst!.returnType).toBe("string|false");
+      });
+    });
+
+    describe("UC171: Multiple interface implementation (ItemCollection)", () => {
+      it("parses class implementing 3 interfaces", () => {
+        const meta = parsePhpFile(advanced("ItemCollection.php"));
+        // Interfaces + the class
+        const cls = meta.classes.find((c) => c.name === "ItemCollection");
+        expect(cls).toBeDefined();
+        expect(cls!.implements).toEqual(["HasTitle", "HasCount", "HasSummary"]);
+        expect(cls!.methods.map((m) => m.name).sort()).toEqual([
+          "getCount",
+          "getTitle",
+          "render",
+          "summarize",
+        ]);
+      });
+
+      it("parses MultiInterfaceClass fixture", () => {
+        const meta = parsePhpFile(fixturePath("MultiInterfaceClass.php"));
+        const cls = meta.classes.find((c) => c.name === "MultiInterfaceClass");
+        expect(cls).toBeDefined();
+        expect(cls!.implements).toEqual(["Renderable", "Countable2", "Describable"]);
+      });
+    });
+
+    describe("UC174: Nested trait chain (TraitChain)", () => {
+      it("parses TraitChain with nested trait usage", () => {
+        const meta = parsePhpFile(advanced("TraitChain.php"));
+        const hasStyle = meta.classes.find((c) => c.name === "HasStyle")!;
+        expect(hasStyle.isTrait).toBe(true);
+        expect(hasStyle.methods).toHaveLength(1);
+        expect(hasStyle.methods[0]!.name).toBe("styled");
+
+        const hasLayout = meta.classes.find((c) => c.name === "HasLayout")!;
+        expect(hasLayout.isTrait).toBe(true);
+        expect(hasLayout.traits).toContain("HasStyle");
+        expect(hasLayout.methods[0]!.name).toBe("row");
+
+        const hasContainer = meta.classes.find((c) => c.name === "HasContainer")!;
+        expect(hasContainer.isTrait).toBe(true);
+        expect(hasContainer.traits).toContain("HasLayout");
+
+        const cls = meta.classes.find((c) => c.name === "TraitChain")!;
+        expect(cls.traits).toContain("HasContainer");
+      });
+
+      it("parses NestedTrait fixture", () => {
+        const meta = parsePhpFile(fixturePath("NestedTrait.php"));
+        const hasBorder = meta.classes.find((c) => c.name === "HasBorder")!;
+        expect(hasBorder.isTrait).toBe(true);
+
+        const hasCard = meta.classes.find((c) => c.name === "HasCard")!;
+        expect(hasCard.isTrait).toBe(true);
+        expect(hasCard.traits).toContain("HasBorder");
+
+        const widget = meta.classes.find((c) => c.name === "NestedTraitWidget")!;
+        expect(widget.traits).toContain("HasCard");
+      });
+    });
+
+    describe("UC175: Unit enum with static method (Season)", () => {
+      it("parses Season as unit enum with static and instance methods", () => {
+        const meta = parsePhpFile(basic("Season.php"));
+        const cls = meta.classes.find((c) => c.name === "Season")!;
+        expect(cls.isEnum).toBe(true);
+        expect(cls.enumBackingType).toBeNull();
+        expect(cls.enumCases).toEqual(["Spring", "Summer", "Autumn", "Winter"]);
+
+        const staticMethods = cls.methods.filter((m) => m.isStatic);
+        expect(staticMethods.map((m) => m.name)).toContain("grid");
+        expect(staticMethods.map((m) => m.name)).toContain("current");
+
+        const instanceMethods = cls.methods.filter((m) => !m.isStatic);
+        expect(instanceMethods.map((m) => m.name)).toContain("render");
+        expect(instanceMethods.map((m) => m.name)).toContain("emoji");
+        expect(instanceMethods.map((m) => m.name)).toContain("label");
+      });
+
+      it("parses UnitEnumStatic fixture", () => {
+        const meta = parsePhpFile(fixturePath("UnitEnumStatic.php"));
+        const cls = meta.classes.find((c) => c.name === "Direction")!;
+        expect(cls.isEnum).toBe(true);
+        expect(cls.enumBackingType).toBeNull();
+        expect(cls.enumCases).toEqual(["North", "South", "East", "West"]);
+        expect(cls.methods.find((m) => m.name === "arrow")).toBeTruthy();
+        expect(cls.methods.find((m) => m.name === "compass")!.isStatic).toBe(true);
+      });
+    });
+
+    describe("UC176: Class composition (ComposedCard)", () => {
+      it("parses ComposedCard with Author class in same file", () => {
+        const meta = parsePhpFile(advanced("ComposedCard.php"));
+        const author = meta.classes.find((c) => c.name === "Author")!;
+        expect(author.constructorParams).toHaveLength(3);
+        expect(author.constructorParams[0]!.name).toBe("name");
+
+        const card = meta.classes.find((c) => c.name === "ComposedCard")!;
+        expect(card.constructorParams).toHaveLength(4);
+        const authorParam = card.constructorParams.find((p) => p.name === "author")!;
+        expect(authorParam.type).toBe("Author");
+      });
+
+      it("parses ComposedClass fixture", () => {
+        const meta = parsePhpFile(fixturePath("ComposedClass.php"));
+        const address = meta.classes.find((c) => c.name === "Address")!;
+        expect(address.constructorParams).toHaveLength(2);
+
+        const contact = meta.classes.find((c) => c.name === "Contact")!;
+        const addrParam = contact.constructorParams.find((p) => p.name === "address")!;
+        expect(addrParam.type).toBe("Address");
+      });
+    });
+
+    describe("UC177: Abstract class + interface + concrete children (AbstractWidget)", () => {
+      it("parses AbstractWidget with interface and abstract class", () => {
+        const meta = parsePhpFile(advanced("AbstractWidget.php"));
+
+        const iface = meta.classes.find((c) => c.name === "Displayable")!;
+        expect(iface.isInterface).toBe(true);
+
+        const abstract = meta.classes.find((c) => c.name === "BaseWidget")!;
+        expect(abstract.isAbstract).toBe(true);
+        expect(abstract.implements).toContain("Displayable");
+
+        const info = meta.classes.find((c) => c.name === "InfoWidget")!;
+        expect(info.isAbstract).toBe(false);
+        expect(info.extends).toBe("BaseWidget");
+
+        const counter = meta.classes.find((c) => c.name === "CounterWidget")!;
+        expect(counter.extends).toBe("BaseWidget");
+      });
+
+      it("parses AbstractInterface fixture", () => {
+        const meta = parsePhpFile(fixturePath("AbstractInterface.php"));
+
+        const iface = meta.classes.find((c) => c.name === "Renderable")!;
+        expect(iface.isInterface).toBe(true);
+
+        const abstract = meta.classes.find((c) => c.name === "AbstractPanel")!;
+        expect(abstract.isAbstract).toBe(true);
+        expect(abstract.implements).toContain("Renderable");
+
+        const info = meta.classes.find((c) => c.name === "InfoPanel")!;
+        expect(info.extends).toBe("AbstractPanel");
+      });
+    });
+
+    describe("UC178: Static echo method", () => {
+      it("parses StaticEcho correctly", () => {
+        const meta = parsePhpFile(advanced("StaticEcho.php"));
+        const cls = meta.classes.find((c) => c.name === "StaticEcho");
+        expect(cls).toBeDefined();
+        expect(cls!.methods).toHaveLength(2);
+
+        const banner = cls!.methods.find((m) => m.name === "banner");
+        expect(banner).toBeDefined();
+        expect(banner!.isStatic).toBe(true);
+        expect(banner!.returnType).toBe("void");
+        expect(banner!.params).toHaveLength(2);
+        expect(banner!.params[0]!.name).toBe("title");
+        expect(banner!.params[1]!.name).toBe("color");
+        expect(banner!.params[1]!.required).toBe(false);
+
+        const notice = cls!.methods.find((m) => m.name === "notice");
+        expect(notice).toBeDefined();
+        expect(notice!.isStatic).toBe(true);
+        expect(notice!.returnType).toBe("void");
+      });
+
+      it("parses StaticEcho fixture", () => {
+        const meta = parsePhpFile(fixturePath("StaticEcho.php"));
+        const cls = meta.classes.find((c) => c.name === "StaticEcho");
+        expect(cls).toBeDefined();
+        expect(cls!.methods).toHaveLength(2);
+        expect(cls!.methods.every((m) => m.isStatic)).toBe(true);
+        expect(cls!.methods.every((m) => m.returnType === "void")).toBe(true);
+      });
+    });
+
+    describe("UC179: Trait template method pattern", () => {
+      it("parses trait with abstract methods and class", () => {
+        const meta = parsePhpFile(advanced("TraitTemplate.php"));
+
+        const trait = meta.classes.find((c) => c.name === "HasSection");
+        expect(trait).toBeDefined();
+        expect(trait!.isTrait).toBe(true);
+        // The trait has render() and footer() as concrete methods,
+        // plus heading() and body() as abstract methods (all extracted by parser)
+        expect(trait!.methods.some((m) => m.name === "render")).toBe(true);
+        expect(trait!.methods.some((m) => m.name === "footer")).toBe(true);
+
+        const cls = meta.classes.find((c) => c.name === "InfoSection");
+        expect(cls).toBeDefined();
+        expect(cls!.traits).toContain("HasSection");
+        expect(cls!.constructorParams).toHaveLength(3);
+        expect(cls!.constructorParams[0]!.name).toBe("title");
+        expect(cls!.constructorParams[1]!.name).toBe("content");
+        expect(cls!.constructorParams[2]!.name).toBe("note");
+        expect(cls!.constructorParams[2]!.nullable).toBe(true);
+      });
+
+      it("parses TraitTemplate fixture", () => {
+        const meta = parsePhpFile(fixturePath("TraitTemplate.php"));
+        const trait = meta.classes.find((c) => c.name === "HasSection");
+        expect(trait?.isTrait).toBe(true);
+        expect(trait!.methods.some((m) => m.name === "render")).toBe(true);
+
+        const cls = meta.classes.find((c) => c.name === "InfoSection");
+        expect(cls).toBeDefined();
+        expect(cls!.traits).toContain("HasSection");
+      });
+    });
+
+    describe("UC180: Function returning html array", () => {
+      it("parses function correctly", () => {
+        const meta = parsePhpFile(advanced("funcHtmlArray.php"));
+        expect(meta.functions).toHaveLength(1);
+        expect(meta.functions[0]!.name).toBe("statusCard");
+        expect(meta.functions[0]!.params).toHaveLength(3);
+        expect(meta.functions[0]!.params[0]!.name).toBe("title");
+        expect(meta.functions[0]!.params[0]!.type).toBe("string");
+        expect(meta.functions[0]!.params[0]!.required).toBe(true);
+        expect(meta.functions[0]!.params[1]!.name).toBe("status");
+        expect(meta.functions[0]!.params[1]!.required).toBe(false);
+        expect(meta.functions[0]!.params[2]!.name).toBe("count");
+        expect(meta.functions[0]!.params[2]!.type).toBe("int");
+        expect(meta.functions[0]!.returnType).toBe("array");
+      });
+
+      it("parses FuncHtmlArray fixture", () => {
+        const meta = parsePhpFile(fixturePath("FuncHtmlArray.php"));
+        expect(meta.functions).toHaveLength(1);
+        expect(meta.functions[0]!.name).toBe("statusCard");
+        expect(meta.functions[0]!.returnType).toBe("array");
+      });
+    });
+
+    describe("UC181: Enum with interface and trait", () => {
+      it("parses enum with interface and trait", () => {
+        const meta = parsePhpFile(php81("EnumInterfaceTrait.php"));
+
+        const iface = meta.classes.find((c) => c.name === "Describable");
+        expect(iface).toBeDefined();
+        expect(iface!.isInterface).toBe(true);
+
+        const trait = meta.classes.find((c) => c.name === "HasColorCode");
+        expect(trait).toBeDefined();
+        expect(trait!.isTrait).toBe(true);
+        expect(trait!.methods.some((m) => m.name === "colorCode")).toBe(true);
+
+        const enumCls = meta.classes.find((c) => c.name === "Palette");
+        expect(enumCls).toBeDefined();
+        expect(enumCls!.isEnum).toBe(true);
+        expect(enumCls!.enumBackingType).toBe("string");
+        expect(enumCls!.implements).toContain("Describable");
+        expect(enumCls!.traits).toContain("HasColorCode");
+        expect(enumCls!.enumCases).toEqual(["Red", "Green", "Blue", "Yellow"]);
+        expect(enumCls!.methods.some((m) => m.name === "describe")).toBe(true);
+        expect(enumCls!.methods.some((m) => m.name === "swatch")).toBe(true);
+      });
+
+      it("parses EnumInterfaceTrait fixture", () => {
+        const meta = parsePhpFile(fixturePath("EnumInterfaceTrait.php"));
+        const enumCls = meta.classes.find((c) => c.name === "Palette");
+        expect(enumCls?.isEnum).toBe(true);
+        expect(enumCls?.implements).toContain("Describable");
+        expect(enumCls?.traits).toContain("HasColorCode");
+      });
+    });
+
+    describe("UC182: Class overriding trait method", () => {
+      it("parses class with overridden trait method", () => {
+        const meta = parsePhpFile(advanced("OverrideTrait.php"));
+
+        const trait = meta.classes.find((c) => c.name === "HasDefaultRender");
+        expect(trait).toBeDefined();
+        expect(trait!.isTrait).toBe(true);
+        expect(trait!.methods.some((m) => m.name === "render")).toBe(true);
+        expect(trait!.methods.some((m) => m.name === "badge")).toBe(true);
+
+        const cls = meta.classes.find((c) => c.name === "OverrideTrait");
+        expect(cls).toBeDefined();
+        expect(cls!.traits).toContain("HasDefaultRender");
+        // The class defines its own render() method
+        expect(cls!.methods.some((m) => m.name === "render")).toBe(true);
+        // badge() is only in the trait, not in the class directly
+        expect(cls!.methods.some((m) => m.name === "badge")).toBe(false);
+        expect(cls!.constructorParams).toHaveLength(2);
+      });
+
+      it("parses OverrideTrait fixture", () => {
+        const meta = parsePhpFile(fixturePath("OverrideTrait.php"));
+        const cls = meta.classes.find((c) => c.name === "OverrideTrait");
+        expect(cls).toBeDefined();
+        expect(cls!.methods.some((m) => m.name === "render")).toBe(true);
+        expect(cls!.traits).toContain("HasDefaultRender");
+      });
+    });
+
+    describe("UC185: Backed enum implementing Stringable", () => {
+      it("parses enum with multiple methods", () => {
+        const meta = parsePhpFile(php81("Currency.php"));
+        const cls = meta.classes.find((c) => c.name === "Currency");
+        expect(cls).toBeDefined();
+        expect(cls!.isEnum).toBe(true);
+        expect(cls!.enumBackingType).toBe("string");
+        expect(cls!.methods.some((m) => m.name === "label")).toBe(true);
+        expect(cls!.methods.some((m) => m.name === "format")).toBe(true);
+        expect(cls!.methods.find((m) => m.name === "table")!.isStatic).toBe(true);
+      });
+    });
+
+    describe("UC189: Interface + Trait + Abstract + Concrete hierarchy", () => {
+      it("parses all 4 class-like declarations", () => {
+        const meta = parsePhpFile(advanced("ConcreteWidget.php"));
+        expect(meta.classes).toHaveLength(4);
+
+        const iface = meta.classes.find((c) => c.name === "Displayable")!;
+        expect(iface.isInterface).toBe(true);
+
+        const trait = meta.classes.find((c) => c.name === "HasContainer")!;
+        expect(trait.isTrait).toBe(true);
+
+        const abstract = meta.classes.find((c) => c.name === "BaseElement")!;
+        expect(abstract.isAbstract).toBe(true);
+        expect(abstract.traits).toContain("HasContainer");
+
+        const concrete = meta.classes.find((c) => c.name === "ConcreteWidget")!;
+        expect(concrete.extends).toBe("BaseElement");
+        expect(concrete.implements).toContain("Displayable");
+      });
+    });
+
+    describe("UC191: Multiple standalone functions", () => {
+      it("parses all 3 functions", () => {
+        const meta = parsePhpFile(advanced("utilFormat.php"));
+        expect(meta.namespace).toBe("App\\Helpers");
+        expect(meta.functions).toHaveLength(3);
+        expect(meta.functions.map((f) => f.name).sort()).toEqual([
+          "formatCurrency",
+          "formatDate",
+          "formatFileSize",
+        ]);
+      });
+    });
+
+    describe("UC193: 3-level deep object composition", () => {
+      it("parses 3 classes including 2 readonly", () => {
+        const meta = parsePhpFile(advanced("NestedCompose.php"));
+        expect(meta.classes).toHaveLength(3);
+
+        const country = meta.classes.find((c) => c.name === "Country")!;
+        expect(country.isReadonly).toBe(true);
+
+        const address = meta.classes.find((c) => c.name === "Address")!;
+        expect(address.isReadonly).toBe(true);
+        expect(address.constructorParams[2]!.type).toBe("Country");
+
+        const compose = meta.classes.find((c) => c.name === "NestedCompose")!;
+        expect(compose.constructorParams[1]!.type).toBe("Address");
+      });
+    });
+
+    describe("UC221: Autoloaded nested classes", () => {
+      it("parses ContactCard as the only class in its file", () => {
+        const meta = parsePhpFile(advanced("Autoload/ContactCard.php"));
+        expect(meta.classes).toHaveLength(1);
+        expect(meta.classes[0]!.name).toBe("ContactCard");
+        expect(meta.classes[0]!.constructorParams[1]!.type).toBe("Address");
+      });
+    });
+  });
+
+  describe("Moved from examples-refactor.integration.test.ts", () => {
+    it("should parse PHPDoc generic annotations", () => {
+      // Given: a PHP file with @param list<string> annotation
+      // When: parsing the file
+      const meta = parsePhpFile(advanced("PhpDocGenericList.php"));
+
+      // Then: class and constructor params should be detected
+      const cls = meta.classes.find((c) => c.name === "PhpDocGenericList");
+      expect(cls).toBeDefined();
+      const itemsParam = cls!.constructorParams.find((p) => p.name === "items");
+      expect(itemsParam).toBeDefined();
+      expect(itemsParam!.type).toBe("array");
+    });
+
+    it("should parse array-of-objects class", () => {
+      const meta = parsePhpFile(advanced("ArrayOfObjects.php"));
+      const cls = meta.classes.find((c) => c.name === "ArrayOfObjects");
+      expect(cls).toBeDefined();
+      const itemsParam = cls!.constructorParams.find((p) => p.name === "items");
+      expect(itemsParam).toBeDefined();
+      expect(itemsParam!.type).toBe("array");
+    });
+
+    it("should parse multiple classes from single file", () => {
+      const meta = parsePhpFile(advanced("MultiClassExport.php"));
+      const classNames = meta.classes.map((c) => c.name);
+      expect(classNames).toContain("MultiClassExportA");
+      expect(classNames).toContain("MultiClassExportB");
+    });
+
+    it("should parse self/static return type methods", () => {
+      const meta = parsePhpFile(advanced("SelfReturn.php"));
+      const cls = meta.classes.find((c) => c.name === "SelfReturn");
+      expect(cls).toBeDefined();
+
+      // Should have methods with self or static return types
+      const methods = cls!.methods;
+      expect(methods.length).toBeGreaterThanOrEqual(1);
+    });
+
+    it("should parse nested array default parameters", () => {
+      const meta = parsePhpFile(advanced("NestedArrayDefault.php"));
+      expect(meta.functions.length).toBeGreaterThanOrEqual(1);
+      const fn = meta.functions[0]!;
+      const configParam = fn.params.find((p) => p.name === "config");
+      expect(configParam).toBeDefined();
+      expect(configParam!.default).toBeDefined();
+    });
+
+    it("should parse variadic object constructor param", () => {
+      const meta = parsePhpFile(advanced("VariadicObject.php"));
+      const cls = meta.classes.find((c) => c.name === "VariadicObject");
+      expect(cls).toBeDefined();
+      // Should detect variadic parameter
+      const variadicParam = cls!.constructorParams.find((p) => p.isVariadic);
+      expect(variadicParam).toBeDefined();
+    });
+
+    it("should parse first-class callable class", () => {
+      const meta = parsePhpFile(php81("FirstClassCallable.php"));
+      const cls = meta.classes.find((c) => c.name === "FirstClassCallable");
+      expect(cls).toBeDefined();
+      expect(cls!.methods.some((m) => m.name === "render")).toBe(true);
+    });
+
+    describe("Representative files still parse correctly after deletion", () => {
+      it("should parse GeneratorList.php (kept from generator group)", () => {
+        const meta = parsePhpFile(advanced("GeneratorList.php"));
+        const cls = meta.classes.find((c) => c.name === "GeneratorList");
+        expect(cls).toBeDefined();
+        expect(cls!.methods.some((m) => m.name === "render")).toBe(true);
+      });
+
+      it("should parse InvocableGreeting.php (kept from invocable group)", () => {
+        const meta = parsePhpFile(advanced("InvocableGreeting.php"));
+        const cls = meta.classes.find((c) => c.name === "InvocableGreeting");
+        expect(cls).toBeDefined();
+      });
+
+      it("should parse AbstractShape.php (kept from abstract group)", () => {
+        const meta = parsePhpFile(advanced("AbstractShape.php"));
+        const cls = meta.classes.find((c) => c.name === "AbstractShape");
+        expect(cls).toBeDefined();
+        expect(cls!.isAbstract).toBe(true);
+      });
+
+      it("should parse TraitTemplate.php (kept from trait group)", () => {
+        const meta = parsePhpFile(advanced("TraitTemplate.php"));
+        expect(meta.classes.length).toBeGreaterThanOrEqual(1);
+      });
+
+      it("should parse PrivateConstruct.php (kept from static factory group)", () => {
+        const meta = parsePhpFile(advanced("PrivateConstruct.php"));
+        const cls = meta.classes.find((c) => c.name === "PrivateConstruct");
+        expect(cls).toBeDefined();
+      });
+    });
+  });
+  // END moved parser cases from integration
 });
