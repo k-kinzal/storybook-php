@@ -1,5 +1,5 @@
 import { createHash } from "node:crypto";
-import type { PhpRenderPlan } from "../types.js";
+import type { PhpRenderPlan } from "../../types.js";
 
 export class RenderRegistry {
   private plans = new Map<string, PhpRenderPlan>();

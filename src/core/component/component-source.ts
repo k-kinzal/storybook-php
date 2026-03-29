@@ -4,7 +4,7 @@ import {
   resolveAdapterForSourceFile,
   type ResolvedFrameworkOptions,
 } from "../config/framework-config.js";
-import type { ArgOverride, PhpArgMap, PhpFileMeta, PhpParamMeta } from "../types.js";
+import type { ArgOverride, PhpArgMap, PhpFileMeta, PhpParamMeta } from "../../types.js";
 
 interface EnrichedParamMeta extends PhpParamMeta {
   options?: (string | number | boolean)[];

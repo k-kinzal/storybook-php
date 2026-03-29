@@ -1,15 +1,15 @@
 import { describe, it, expect, vi, beforeEach } from "vite-plus/test";
 import type { IncomingMessage, ServerResponse } from "node:http";
 import { EventEmitter } from "node:events";
-import { RenderRegistry } from "../render/render-registry.js";
-import { createPhpMiddleware, RENDER_PATH } from "../server/dev-middleware.js";
+import { RenderRegistry } from "../runtime/render/render-registry.js";
+import { createPhpMiddleware, RENDER_PATH } from "../runtime/server/dev-middleware.js";
 
 // ---------------------------------------------------------------------------
 // Mock PhpExecutor
 // ---------------------------------------------------------------------------
 const mockExecute = vi.fn();
 
-vi.mock("../server/php-executor.js", () => ({
+vi.mock("../runtime/server/php-executor.js", () => ({
   PhpExecutor: vi.fn().mockImplementation(function () {
     return { execute: mockExecute };
   }),

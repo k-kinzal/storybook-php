@@ -5,7 +5,7 @@ import type {
   PhpFileMeta,
   PhpMethodMeta,
   PhpParamMeta,
-} from "../types.js";
+} from "../../types.js";
 
 interface EnrichedParamMeta extends PhpParamMeta {
   options?: (string | number | boolean)[];

@@ -1,4 +1,4 @@
-import type { StoryTypeMap } from "../types.js";
+import type { StoryTypeMap } from "../../types.js";
 
 export function mergeStoryTypeMaps(
   base: { bindings?: Record<string, string>; args?: Record<string, unknown> } | null,

@@ -5,7 +5,7 @@ import type {
   FileMapTarget,
   FrameworkOptions,
   TypeMapConfig,
-} from "../types.js";
+} from "../../types.js";
 
 export const PHP_IMPORT_RE: RegExp = /\.php(?:@(\w+))?$/;
 export const VIRTUAL_PREFIX = "\0storybook-php:";

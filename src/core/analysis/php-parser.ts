@@ -5,7 +5,7 @@ import type {
   PhpFunctionMeta,
   PhpMethodMeta,
   PhpParamMeta,
-} from "../types.js";
+} from "../../types.js";
 
 // ---------------------------------------------------------------------------
 // Public API

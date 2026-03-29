@@ -4,9 +4,9 @@ import type {
   PhpRenderInvokeRequest,
   PhpRenderRequest,
   StoryTypeMap,
-} from "../types.js";
+} from "../../types.js";
 
-export const RENDER_PATH = "/__storybook_php/render";
+export { RENDER_PATH } from "../../shared/render-contract.js";
 export const VALID_RENDER_TYPES: PhpCallableType[] = [
   "classMethod",
   "staticMethod",

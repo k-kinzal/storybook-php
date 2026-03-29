@@ -6,7 +6,7 @@ import {
   resolveComponentSource,
 } from "../component/component-source.js";
 import { buildSchemasFromMeta, buildTemplateSchema } from "../component/schema-builder.js";
-import type { FrameworkOptions, PhpFileMeta, TypeMapConfig } from "../types.js";
+import type { FrameworkOptions, PhpFileMeta, TypeMapConfig } from "../../types.js";
 
 export interface DeclarationOutput {
   path: string;

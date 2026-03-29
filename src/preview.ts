@@ -1,6 +1,6 @@
 import type { PhpComponent, PhpRenderInvokeRequest, StoryTypeMap } from "./types.js";
+import { RENDER_PATH } from "./shared/render-contract.js";
 
-const RENDER_ENDPOINT = "/__storybook_php/render";
 const PHP_PLACEHOLDER = "<!-- storybook-php-content -->";
 
 const abortControllers = new WeakMap<HTMLElement, AbortController>();
@@ -51,7 +51,7 @@ export async function renderToCanvas(
   };
 
   try {
-    const response = await fetch(RENDER_ENDPOINT, {
+    const response = await fetch(RENDER_PATH, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(request),

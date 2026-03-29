@@ -5,8 +5,8 @@ import { spawn } from "node:child_process";
 import { createRequire } from "node:module";
 import { existsSync, writeFileSync, readdirSync, statSync } from "node:fs";
 import { ensureLink } from "./cli/node-modules-link.js";
-import { loadFrameworkOptionsFile } from "./config/framework-options-loader.js";
-import { generateDtsOutputsForFile } from "./typescript/typegen.js";
+import { loadFrameworkOptionsFile } from "./cli/framework-options-loader.js";
+import { generateDtsOutputsForFile } from "./core/typescript/typegen.js";
 
 const [, , command, ...args] = process.argv;
 

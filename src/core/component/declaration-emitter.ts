@@ -1,5 +1,5 @@
 import { phpTypeToTs } from "../typescript/php-type-to-ts.js";
-import type { PhpArgMap, PhpComponentSchema } from "../types.js";
+import type { PhpArgMap, PhpComponentSchema } from "../../types.js";
 
 export function generateDeclarationModule(schemas: PhpComponentSchema[]): string {
   const parts: string[] = ["import type { PhpComponent } from 'storybook-php';", ""];

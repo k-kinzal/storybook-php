@@ -6,7 +6,7 @@ import {
 } from "./component-source.js";
 import { buildSchemasFromMeta, buildTemplateSchema } from "./schema-builder.js";
 import type { ResolvedFrameworkOptions } from "../config/framework-config.js";
-import type { PhpComponentSchema } from "../types.js";
+import type { PhpComponentSchema } from "../../types.js";
 
 export interface LoadComponentSchemasResult {
   schemas: PhpComponentSchema[];

@@ -1,4 +1,4 @@
-import type { PhpArgMap, PhpComponentSchema } from "../types.js";
+import type { PhpArgMap, PhpComponentSchema } from "../../types.js";
 
 export interface RegisteredComponentSchema extends PhpComponentSchema {
   componentId: string;
