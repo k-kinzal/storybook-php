@@ -352,7 +352,7 @@ describe("createPhpMiddleware", () => {
   // -------------------------------------------------------------------------
   // Invalid JSON body
   // -------------------------------------------------------------------------
-  it("returns 500 for invalid JSON body", async () => {
+  it("returns 400 for invalid JSON body", async () => {
     const req = createMockReq("POST", RENDER_PATH, "not valid json{{{");
     const res = createMockRes();
     const next = vi.fn();
@@ -360,9 +360,22 @@ describe("createPhpMiddleware", () => {
     await middleware(req, res, next);
 
     expect(next).not.toHaveBeenCalled();
-    expect(res._status).toBe(500);
+    expect(res._status).toBe(400);
     const parsed = JSON.parse(res._body) as { error: string };
-    expect(parsed.error).toBeDefined();
+    expect(parsed.error).toBe("Invalid JSON body");
+  });
+
+  it("returns 400 for non-object JSON body", async () => {
+    const req = createMockReq("POST", RENDER_PATH, "null");
+    const res = createMockRes();
+    const next = vi.fn();
+
+    await middleware(req, res, next);
+
+    expect(next).not.toHaveBeenCalled();
+    expect(res._status).toBe(400);
+    const parsed = JSON.parse(res._body) as { error: string };
+    expect(parsed.error).toBe("Render request body must be a JSON object");
   });
 
   // -------------------------------------------------------------------------

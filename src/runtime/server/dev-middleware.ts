@@ -1,9 +1,12 @@
 import type { IncomingMessage, ServerResponse } from "node:http";
 import { PhpExecutor, type PhpExecutorOptions } from "./php-executor.js";
-import type { PhpRenderInvokeRequest } from "../../types.js";
 import { RenderRegistry } from "../render/render-registry.js";
 import { RENDER_PATH } from "../../shared/render-contract.js";
-import { RequestValidationError, resolveExecutionRequest } from "../render/render-request.js";
+import {
+  parseRenderInvokeRequest,
+  RequestValidationError,
+  resolveExecutionRequest,
+} from "../render/render-request.js";
 
 type PhpMiddleware = (req: IncomingMessage, res: ServerResponse, next: () => void) => Promise<void>;
 
@@ -21,7 +24,7 @@ export function createPhpMiddleware(
 
     try {
       const body = await readBody(req);
-      const data = JSON.parse(body) as PhpRenderInvokeRequest;
+      const data = parseRenderInvokeRequest(body);
       const request = resolveExecutionRequest(data, registry);
 
       const result = await executor.execute(request);
