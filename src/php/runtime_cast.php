@@ -47,19 +47,13 @@ function castArrayElements(array $value, string $docType, ReflectionParameter $p
 
     if (class_exists($resolved)) {
         /** @var class-string $resolved */
-        $ref = new ReflectionClass($resolved);
-        $constructor = $ref->getConstructor();
         $result = [];
         foreach ($value as $key => $item) {
             if ($item instanceof $resolved) {
                 $result[$key] = $item;
                 continue;
             }
-            if ($constructor !== null) {
-                $result[$key] = $ref->newInstanceArgs(matchArgs($constructor, (array) $item, $typeMap));
-            } else {
-                $result[$key] = $ref->newInstance();
-            }
+            $result[$key] = instantiateClassFromValue($resolved, $item, $typeMap);
         }
         return $result;
     }
@@ -293,6 +287,49 @@ function scoreDocTypeMatch(string $docType, mixed $value, ?ReflectionParameter $
 }
 
 /**
+ * Instantiate a class from Storybook input using the constructor shape when possible.
+ *
+ * Associative arrays are treated as named args, lists as positional args, and
+ * scalars fall back to single-parameter constructors.
+ *
+ * @param class-string $className
+ * @param array<string, mixed>|null $typeMap
+ */
+function instantiateClassFromValue(string $className, mixed $value, ?array $typeMap = null): object
+{
+    $ref = new ReflectionClass($className);
+
+    if ($value instanceof $className) {
+        return $value;
+    }
+
+    $constructor = $ref->getConstructor();
+    if ($constructor === null) {
+        return $ref->newInstance();
+    }
+
+    if (is_array($value)) {
+        if (isListArray($value)) {
+            return $ref->newInstanceArgs($value);
+        }
+
+        return $ref->newInstanceArgs(matchArgs($constructor, $value, $typeMap));
+    }
+
+    $parameters = $constructor->getParameters();
+    if (count($parameters) === 1 && !$parameters[0]->isVariadic()) {
+        $parameter = $parameters[0];
+        $docType = resolveParamDocType($parameter, parseDocBlockParamTypes($constructor));
+
+        return $ref->newInstanceArgs([
+            castArg($parameter, $value, $docType, $typeMap),
+        ]);
+    }
+
+    return $ref->newInstanceArgs(matchArgs($constructor, (array) $value, $typeMap));
+}
+
+/**
  * @param array<string, mixed>|null $typeMap
  */
 function castInlineNamedType(string $typeName, mixed $value, ?array $typeMap = null): mixed
@@ -353,17 +390,7 @@ function castInlineNamedType(string $typeName, mixed $value, ?array $typeMap = n
     }
 
     /** @var class-string $resolved */
-    if ($value instanceof $resolved) {
-        return $value;
-    }
-
-    $ref = new ReflectionClass($resolved);
-    $constructor = $ref->getConstructor();
-    if ($constructor !== null) {
-        return $ref->newInstanceArgs(matchArgs($constructor, is_array($value) ? $value : (array) $value, $typeMap));
-    }
-
-    return $ref->newInstance();
+    return instantiateClassFromValue($resolved, $value, $typeMap);
 }
 
 /**
@@ -784,12 +811,7 @@ function castWithNamedType(ReflectionNamedType $type, mixed $value, ReflectionPa
             }
         }
 
-        $ref = new ReflectionClass($typeName);
-        $constructor = $ref->getConstructor();
-        if ($constructor !== null) {
-            return $ref->newInstanceArgs(matchArgs($constructor, (array) $value, $typeMap));
-        }
-        return $ref->newInstance();
+        return instantiateClassFromValue($typeName, $value, $typeMap);
     }
 
     // @codeCoverageIgnoreStart
@@ -918,12 +940,13 @@ function resolveArgs(?ReflectionFunctionAbstract $ref, array $args, ?array $type
             if (array_key_exists($name, $args)) {
                 $value = $args[$name];
                 $values = is_array($value) && isListArray($value) ? $value : [$value];
-                $named[$name] = [];
+                $variadicValues = [];
                 foreach ($values as $item) {
                     $casted = castArg($param, $item, $docType, $typeMap);
                     $ordered[] = $casted;
-                    $named[$name][] = $casted;
+                    $variadicValues[] = $casted;
                 }
+                $named[$name] = $variadicValues;
             }
             continue;
         }

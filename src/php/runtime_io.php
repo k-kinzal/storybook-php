@@ -296,13 +296,24 @@ function runAdapterMiddleware(array $middlewares, array $context, callable $term
         /**
          * @param callable(array<string, mixed>): mixed $next
          * @param callable(array<string, mixed>, callable(array<string, mixed>): mixed): mixed $middleware
-         * @return callable(array<string, mixed>): array<string, mixed>
+         * @return callable(array<string, mixed>): array{
+         *   html: string,
+         *   result?: mixed,
+         *   buffered?: string,
+         *   instance?: object|null,
+         *   publicArgs?: array<string, mixed>,
+         *   templateArgs?: array<string, mixed>,
+         *   constructorArgs?: array<string, mixed>,
+         *   methodArgs?: array<string, mixed>,
+         *   enumCaseValue?: mixed
+         * }
          */
         static function (callable $next, callable $middleware): callable {
             /**
              * @param array<string, mixed> $innerContext
              */
             return static function (array $innerContext) use ($middleware, $next): array {
+                /** @var array<string, mixed> $innerContext */
                 /** @var array<string, mixed> $adapterContext */
                 $adapterContext = hydrateExecutionContext($innerContext);
                 return normalizeAdapterResponse($middleware($adapterContext, $next));
@@ -322,6 +333,7 @@ function runAdapterMiddleware(array $middlewares, array $context, callable $term
          * }
          */
         static function (array $innerContext) use ($terminal): array {
+            /** @var array<string, mixed> $innerContext */
             /** @var array<string, mixed> $terminalContext */
             $terminalContext = hydrateExecutionContext($innerContext);
             return normalizeAdapterResponse($terminal($terminalContext));

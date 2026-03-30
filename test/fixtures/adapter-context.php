@@ -7,7 +7,9 @@
 return function (array $context, callable $next): array {
     if (($context['type'] ?? null) === 'template') {
         $file = $context['file'] ?? '';
-        $args = resolveTemplateContextArgs($context);
+        $args = isset($context['templateArgs']) && is_array($context['templateArgs'])
+            ? $context['templateArgs']
+            : resolveTemplateContextArgs($context);
         $argsJson = json_encode($args);
         return [
             'html' => "<div data-adapter=\"context\" data-file=\"{$file}\" data-args=\"" . htmlspecialchars($argsJson) . "\">"
@@ -19,8 +21,7 @@ return function (array $context, callable $next): array {
 
     $response = $next($context);
     $type = $context['type'] ?? 'unknown';
-    return [
-        ...$response,
+    return array_merge($response, [
         'html' => "<div data-adapter=\"context\" data-type=\"{$type}\">{$response['html']}</div>",
-    ];
+    ]);
 };

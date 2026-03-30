@@ -88,24 +88,7 @@ function executeRunnerRequest(array $__sb_request): array
 }
 
 /**
- * @param array{
- *   type: 'classMethod'|'staticMethod'|'function'|'template'|'enumMethod',
- *   file: string,
- *   executionFile: string,
- *   class: string|null,
- *   callable: string|null,
- *   publicArgs: array<string, mixed>,
- *   publicArgDefs?: array<string, mixed>|null,
- *   constructorArgDefs?: array<string, mixed>|null,
- *   callableArgDefs?: array<string, mixed>|null,
- *   templateArgs?: array<string, mixed>,
- *   constructorArgs?: array<string, mixed>,
- *   methodArgs?: array<string, mixed>,
- *   enumCaseValue?: mixed,
- *   suppressOutputResolutionErrors?: bool,
- *   __planner?: array<string, mixed>,
- *   typeMap?: array<string, mixed>|null
- * } $__sb_context
+ * @param array<string, mixed> $__sb_context
  * @return array{
  *   html: string,
  *   result?: mixed,
@@ -121,8 +104,33 @@ function executeRunnerRequest(array $__sb_request): array
 function executeCoreContext(array $__sb_context): array
 {
     $__sb_context = hydrateExecutionContext($__sb_context);
+    /** @var array{
+     *   type: 'classMethod'|'staticMethod'|'function'|'template'|'enumMethod',
+     *   file?: string,
+     *   executionFile: string,
+     *   class: string|null,
+     *   callable: string|null,
+     *   publicArgs: array<string, mixed>,
+     *   publicArgDefs?: array<string, mixed>|null,
+     *   constructorArgDefs?: array<string, mixed>|null,
+     *   callableArgDefs?: array<string, mixed>|null,
+     *   templateArgs?: array<string, mixed>,
+     *   constructorArgs?: array<string, mixed>,
+     *   methodArgs?: array<string, mixed>,
+     *   enumCaseValue?: mixed,
+     *   suppressOutputResolutionErrors?: bool,
+     *   __planner: array{
+     *     classReflection?: ReflectionClass<object>,
+     *     constructorReflection?: ReflectionMethod|null,
+     *     callableReflection?: ReflectionFunctionAbstract,
+     *     effectiveConstructorArgDefs?: array<string, mixed>|null,
+     *     effectiveCallableArgDefs?: array<string, mixed>|null
+     *   },
+     *   typeMap?: array<string, mixed>|null
+     * } $__sb_context
+     */
     $__sb_type = $__sb_context['type'];
-    $__sb_planner = $__sb_context['__planner'] ?? [];
+    $__sb_planner = $__sb_context['__planner'];
     $__sb_file = $__sb_context['executionFile'];
     $__sb_class = $__sb_context['class'];
     $__sb_callable = $__sb_context['callable'];
@@ -130,7 +138,9 @@ function executeCoreContext(array $__sb_context): array
 
     switch ($__sb_type) {
         case 'classMethod':
-            /** @var ReflectionClass $__sb_ref */
+            assert(isset($__sb_planner['classReflection']));
+            assert(isset($__sb_planner['callableReflection']));
+            /** @var ReflectionClass<object> $__sb_ref */
             $__sb_ref = $__sb_planner['classReflection'];
             /** @var ReflectionMethod|null $__sb_constructor */
             $__sb_constructor = $__sb_planner['constructorReflection'] ?? null;
@@ -157,6 +167,7 @@ function executeCoreContext(array $__sb_context): array
 
         case 'staticMethod':
             $__sb_methodArgs = $__sb_context['methodArgs'] ?? [];
+            assert(isset($__sb_planner['callableReflection']));
             /** @var ReflectionMethod $__sb_method */
             $__sb_method = $__sb_planner['callableReflection'];
             ob_start();
@@ -175,6 +186,7 @@ function executeCoreContext(array $__sb_context): array
 
         case 'function':
             $__sb_methodArgs = $__sb_context['methodArgs'] ?? [];
+            assert(isset($__sb_planner['callableReflection']));
             /** @var ReflectionFunction $__sb_ref */
             $__sb_ref = $__sb_planner['callableReflection'];
             ob_start();
@@ -193,6 +205,7 @@ function executeCoreContext(array $__sb_context): array
 
         case 'template':
             $__sb_templateArgs = $__sb_context['templateArgs'] ?? resolveTemplateContextArgs($__sb_context);
+            /** @var array<string, mixed> $__sb_templateArgs */
             extract($__sb_templateArgs, EXTR_SKIP);
             ob_start();
             include $__sb_file;
@@ -207,8 +220,11 @@ function executeCoreContext(array $__sb_context): array
 
         case 'enumMethod':
             $__sb_caseValue = $__sb_context['enumCaseValue'] ?? $__sb_context['publicArgs']['_case'] ?? null;
+            assert(is_string($__sb_class) && $__sb_class !== '');
+            /** @var class-string $__sb_class */
             $__sb_enumInstance = resolveEnumCase($__sb_class, $__sb_caseValue);
             $__sb_methodArgs = $__sb_context['methodArgs'] ?? [];
+            assert(isset($__sb_planner['callableReflection']));
             /** @var ReflectionMethod $__sb_method */
             $__sb_method = $__sb_planner['callableReflection'];
             ob_start();
@@ -230,22 +246,7 @@ function executeCoreContext(array $__sb_context): array
 }
 
 /**
- * @param array{
- *   type: 'classMethod'|'staticMethod'|'function'|'template'|'enumMethod',
- *   executionFile?: string,
- *   class?: string|null,
- *   callable?: string|null,
- *   publicArgs?: array<string, mixed>,
- *   publicArgDefs?: array<string, mixed>|null,
- *   constructorArgDefs?: array<string, mixed>|null,
- *   callableArgDefs?: array<string, mixed>|null,
- *   templateArgs?: array<string, mixed>,
- *   constructorArgs?: array<string, mixed>,
- *   methodArgs?: array<string, mixed>,
- *   enumCaseValue?: mixed,
- *   __planner?: array<string, mixed>,
- *   typeMap?: array<string, mixed>|null
- * } $context
+ * @param array<string, mixed> $context
  * @return array<string, mixed>
  */
 function hydrateExecutionContext(array $context): array
@@ -253,9 +254,32 @@ function hydrateExecutionContext(array $context): array
     $context = ensureExecutionPlanner($context);
     $publicArgs = $context['publicArgs'] ?? [];
     $context['publicArgs'] = is_array($publicArgs) ? $publicArgs : [];
+    /** @var array{
+     *   type: 'classMethod'|'staticMethod'|'function'|'template'|'enumMethod',
+     *   executionFile?: string,
+     *   class?: string|null,
+     *   callable?: string|null,
+     *   publicArgs: array<string, mixed>,
+     *   publicArgDefs?: array<string, mixed>|null,
+     *   constructorArgDefs?: array<string, mixed>|null,
+     *   callableArgDefs?: array<string, mixed>|null,
+     *   templateArgs?: array<string, mixed>,
+     *   constructorArgs?: array<string, mixed>,
+     *   methodArgs?: array<string, mixed>,
+     *   enumCaseValue?: mixed,
+     *   __planner: array{
+     *     classReflection?: ReflectionClass<object>,
+     *     constructorReflection?: ReflectionMethod|null,
+     *     callableReflection?: ReflectionFunctionAbstract,
+     *     effectiveConstructorArgDefs?: array<string, mixed>|null,
+     *     effectiveCallableArgDefs?: array<string, mixed>|null
+     *   },
+     *   typeMap?: array<string, mixed>|null
+     * } $context
+     */
 
     $mappedArgs = mapPublicArgsToExecutionTargets($context);
-    $planner = $context['__planner'] ?? [];
+    $planner = $context['__planner'];
     $typeMap = $context['typeMap'] ?? null;
 
     switch ($context['type']) {
@@ -311,9 +335,11 @@ function hydrateExecutionContext(array $context): array
             unset($context['templateArgs'], $context['constructorArgs']);
             return $context;
     }
+
 }
 
 /**
+ * @param array<string, mixed> $context
  * @param array<string, mixed> $computedArgs
  * @return array<string, mixed>
  */
@@ -335,6 +361,10 @@ function applyResolvedExecutionArgs(array $context, string $field, string $snaps
     return $context;
 }
 
+/**
+ * @param array<string, mixed> $context
+ * @return array<string, mixed>
+ */
 function applyResolvedExecutionValue(array $context, string $field, string $snapshotField, mixed $computedValue): array
 {
     $existingValue = $context[$field] ?? null;
@@ -353,28 +383,32 @@ function applyResolvedExecutionValue(array $context, string $field, string $snap
 }
 
 /**
- * @param array{
- *   type: 'classMethod'|'staticMethod'|'function'|'template'|'enumMethod',
- *   executionFile?: string,
- *   class?: string|null,
- *   callable?: string|null,
- *   publicArgDefs?: array<string, mixed>|null,
- *   constructorArgDefs?: array<string, mixed>|null,
- *   callableArgDefs?: array<string, mixed>|null,
- *   __planner?: array<string, mixed>
- * } $context
+ * @param array<string, mixed> $context
  * @return array<string, mixed>
  */
 function ensureExecutionPlanner(array $context): array
 {
-    if (isset($context['__planner']) && is_array($context['__planner'])) {
+    if (isset($context['__planner'])) {
         return $context;
     }
 
     $type = $context['type'];
+    if (!is_string($type)) {
+        throw new \RuntimeException('Unknown type: ' . get_debug_type($type));
+    }
+    if (!isRenderType($type)) {
+        throw new \RuntimeException("Unknown type: {$type}");
+    }
+    /** @var 'classMethod'|'staticMethod'|'function'|'template'|'enumMethod' $type */
     $executionFile = $context['executionFile'] ?? null;
     $class = $context['class'] ?? null;
     $callable = $context['callable'] ?? null;
+    $publicArgDefs = $context['publicArgDefs'] ?? null;
+    $publicArgDefs = normalizeNamedArgDefMap($publicArgDefs);
+    $constructorArgDefs = $context['constructorArgDefs'] ?? null;
+    $constructorArgDefs = normalizeNamedArgDefMap($constructorArgDefs);
+    $callableArgDefs = $context['callableArgDefs'] ?? null;
+    $callableArgDefs = normalizeNamedArgDefMap($callableArgDefs);
 
     $planner = [
         'type' => $type,
@@ -397,13 +431,13 @@ function ensureExecutionPlanner(array $context): array
             $planner['constructorReflection'] = $classReflection->getConstructor();
             $planner['callableReflection'] = $classReflection->getMethod($callable);
             $planner['effectiveConstructorArgDefs'] = buildTargetArgDefs(
-                $context['constructorArgDefs'] ?? null,
-                $context['publicArgDefs'] ?? null,
+                $constructorArgDefs,
+                $publicArgDefs,
                 'constructor'
             );
             $planner['effectiveCallableArgDefs'] = buildTargetArgDefs(
-                $context['callableArgDefs'] ?? null,
-                $context['publicArgDefs'] ?? null,
+                $callableArgDefs,
+                $publicArgDefs,
                 'method'
             );
             break;
@@ -421,8 +455,8 @@ function ensureExecutionPlanner(array $context): array
             $planner['classReflection'] = $classReflection;
             $planner['callableReflection'] = $classReflection->getMethod($callable);
             $planner['effectiveCallableArgDefs'] = buildTargetArgDefs(
-                $context['callableArgDefs'] ?? null,
-                $context['publicArgDefs'] ?? null,
+                $callableArgDefs,
+                $publicArgDefs,
                 'method'
             );
             break;
@@ -437,8 +471,8 @@ function ensureExecutionPlanner(array $context): array
             require_once $executionFile;
             $planner['callableReflection'] = new ReflectionFunction($callable);
             $planner['effectiveCallableArgDefs'] = buildTargetArgDefs(
-                $context['callableArgDefs'] ?? null,
-                $context['publicArgDefs'] ?? null,
+                $callableArgDefs,
+                $publicArgDefs,
                 'method'
             );
             break;
@@ -467,8 +501,8 @@ function ensureExecutionPlanner(array $context): array
             $planner['classReflection'] = $classReflection;
             $planner['callableReflection'] = $classReflection->getMethod($callable);
             $planner['effectiveCallableArgDefs'] = buildTargetArgDefs(
-                $context['callableArgDefs'] ?? null,
-                $context['publicArgDefs'] ?? null,
+                $callableArgDefs,
+                $publicArgDefs,
                 'method'
             );
             break;
@@ -480,6 +514,26 @@ function ensureExecutionPlanner(array $context): array
     $context['__planner'] = $planner;
 
     return $context;
+}
+
+/**
+ * @return array<string, mixed>|null
+ */
+function normalizeNamedArgDefMap(mixed $value): ?array
+{
+    if (!is_array($value)) {
+        return null;
+    }
+
+    $normalized = [];
+    foreach ($value as $key => $item) {
+        if (!is_string($key)) {
+            continue;
+        }
+        $normalized[$key] = $item;
+    }
+
+    return $normalized;
 }
 
 /**
@@ -552,21 +606,46 @@ function mergeTargetArgDef(array $targetArgDef, ?array $publicArgDef): array
 }
 
 /**
- * @param array{
- *   type: string,
- *   publicArgs?: array<string, mixed>,
- *   templateArgs?: array<string, mixed>,
- *   publicArgDefs?: array<string, mixed>|null,
- *   typeMap?: array<string, mixed>|null
- * } $context
+ * @param array<string, mixed> $context
  * @param array<string, mixed>|null $templateInput
  * @return array<string, mixed>
  */
 function resolveTemplateContextArgs(array $context, ?array $templateInput = null): array
 {
-    $templateArgs = $templateInput ?? $context['templateArgs'] ?? $context['publicArgs'] ?? [];
-    $publicArgDefs = $context['publicArgDefs'] ?? null;
-    $typeMap = $context['typeMap'] ?? null;
+    $templateArgsSource = $templateInput ?? $context['templateArgs'] ?? $context['publicArgs'] ?? [];
+    $templateArgs = [];
+    if (is_array($templateArgsSource)) {
+        foreach ($templateArgsSource as $key => $value) {
+            if (!is_string($key)) {
+                continue;
+            }
+            $templateArgs[$key] = $value;
+        }
+    }
+    $publicArgDefsSource = $context['publicArgDefs'] ?? null;
+    if (!is_array($publicArgDefsSource)) {
+        $publicArgDefs = null;
+    } else {
+        $publicArgDefs = [];
+        foreach ($publicArgDefsSource as $key => $value) {
+            if (!is_string($key)) {
+                continue;
+            }
+            $publicArgDefs[$key] = $value;
+        }
+    }
+    $typeMapSource = $context['typeMap'] ?? null;
+    if (!is_array($typeMapSource)) {
+        $typeMap = null;
+    } else {
+        $typeMap = [];
+        foreach ($typeMapSource as $key => $value) {
+            if (!is_string($key)) {
+                continue;
+            }
+            $typeMap[$key] = $value;
+        }
+    }
 
     return $publicArgDefs !== null
         ? castTemplateArgs($templateArgs, $publicArgDefs, $typeMap)
