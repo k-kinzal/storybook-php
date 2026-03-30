@@ -1,0 +1,17 @@
+<?php
+
+$titleEscaped = htmlspecialchars((string) $title, ENT_QUOTES, 'UTF-8');
+$noteHtml = '';
+if (array_key_exists('note', get_defined_vars()) && $note !== null) {
+    $noteEscaped = htmlspecialchars((string) $note, ENT_QUOTES, 'UTF-8');
+    $noteHtml = "<p style=\"margin: 12px 0 0; color: #9a3412; font-size: 13px;\">{$noteEscaped}</p>";
+}
+?>
+<aside
+    data-featured="<?php echo $featured ? 'yes' : 'no'; ?>"
+    style="font-family: system-ui; border-radius: 12px; padding: 16px; max-width: 440px; border: 1px solid <?php echo $featured ? '#fb923c' : '#d1d5db'; ?>; background: <?php echo $featured ? '#fff7ed' : '#ffffff'; ?>;"
+>
+    <h3 style="margin: 0 0 12px;"><?php echo $titleEscaped; ?></h3>
+    <?php echo $content->toHtml(); ?>
+    <?php echo $noteHtml; ?>
+</aside>

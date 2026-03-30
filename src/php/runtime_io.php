@@ -67,6 +67,7 @@ function normalizeStringKeyArray(array $value, string $fieldName): array
  *   class: string|null,
  *   callable: string|null,
  *   args: array<string, mixed>,
+ *   argDefs: array<string, mixed>|null,
  *   bootstrap: string|null,
  *   adapter: string|null,
  *   typeMap: array<string, mixed>|null
@@ -111,6 +112,11 @@ function readRunnerRequest(string $input): array
         throw new \RuntimeException('Request field "args" must be an object.');
     }
 
+    $argDefs = $decoded['argDefs'] ?? null;
+    if ($argDefs !== null && !is_array($argDefs)) {
+        throw new \RuntimeException('Request field "argDefs" must be an object or null.');
+    }
+
     $bootstrap = $decoded['bootstrap'] ?? null;
     if ($bootstrap !== null && !is_string($bootstrap)) {
         throw new \RuntimeException('Request field "bootstrap" must be a string or null.');
@@ -133,6 +139,7 @@ function readRunnerRequest(string $input): array
         'class' => $class,
         'callable' => $callable,
         'args' => normalizeStringKeyArray($args, 'args'),
+        'argDefs' => $argDefs === null ? null : normalizeStringKeyArray($argDefs, 'argDefs'),
         'bootstrap' => $bootstrap,
         'adapter' => $adapter,
         'typeMap' => $typeMap === null ? null : normalizeStringKeyArray($typeMap, 'typeMap'),

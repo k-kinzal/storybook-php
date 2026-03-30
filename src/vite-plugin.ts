@@ -41,7 +41,7 @@ export function storybookPhpPlugin(options: FrameworkOptions = {}): Plugin {
 
       const registeredSchemas = result.schemas.map((schema) => ({
         ...schema,
-        componentId: registry.register(schema.renderPlan),
+        componentId: registry.register(schema.renderPlan, schema.allArgs),
       }));
 
       return generateVirtualModule(registeredSchemas, result.error);

@@ -110,6 +110,8 @@ export interface PhpRenderRequest {
   class: string | null;
   callable: string | null;
   args: Record<string, unknown>;
+  /** Inline/template argument definitions needed for runtime casting */
+  argDefs?: PhpArgMap | null;
   bootstrap?: string | null;
   adapter?: string | null;
   /** Per-story typeMap override (merged with global typeMap by the executor) */

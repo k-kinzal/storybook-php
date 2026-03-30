@@ -29,6 +29,7 @@ interface ExecutionTarget {
   sourceFile: string | null;
   class: string | null;
   callable: string | null;
+  argDefs: PhpRenderRequest["argDefs"];
   adapter: string | null;
 }
 
@@ -82,14 +83,18 @@ function resolveRegisteredTarget(
   return executionTargetFromPlan(renderPlan);
 }
 
-function executionTargetFromPlan(renderPlan: PhpRenderPlan): ExecutionTarget {
+function executionTargetFromPlan(renderTarget: {
+  plan: PhpRenderPlan;
+  argDefs: PhpRenderRequest["argDefs"];
+}): ExecutionTarget {
   return {
-    type: renderPlan.type,
-    file: renderPlan.file,
-    sourceFile: renderPlan.sourceFile,
-    class: renderPlan.class,
-    callable: renderPlan.callable,
-    adapter: renderPlan.adapter ?? null,
+    type: renderTarget.plan.type,
+    file: renderTarget.plan.file,
+    sourceFile: renderTarget.plan.sourceFile,
+    class: renderTarget.plan.class,
+    callable: renderTarget.plan.callable,
+    argDefs: renderTarget.argDefs ?? null,
+    adapter: renderTarget.plan.adapter ?? null,
   };
 }
 
@@ -108,6 +113,7 @@ function validateLegacyTarget(data: PhpRenderInvokeRequest): ExecutionTarget {
     sourceFile: nullableString(data.sourceFile),
     class: nullableString(data.class),
     callable: nullableString(data.callable),
+    argDefs: null,
     adapter: null,
   };
 }
@@ -119,6 +125,7 @@ function buildExecutionRequest(
   return {
     ...target,
     args: isRecord(data.args) ? data.args : {},
+    argDefs: target.argDefs ?? null,
     bootstrap: nullableString(data.bootstrap),
     adapter: nullableString(data.adapter) ?? target.adapter,
     typeMap: normalizeStoryTypeMap(data.typeMap),

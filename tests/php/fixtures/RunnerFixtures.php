@@ -45,7 +45,13 @@ final class StringableValue
     }
 }
 
-final class ListCollection
+interface ListCollectionContract
+{
+    /** @return list<Item> */
+    public function items(): array;
+}
+
+final class ListCollection implements ListCollectionContract
 {
     /**
      * @param list<Item> $items
@@ -53,6 +59,18 @@ final class ListCollection
     public function __construct(public array $items)
     {
     }
+
+    /** @return list<Item> */
+    public function items(): array
+    {
+        return $this->items;
+    }
+}
+
+final class NoConstructorCollection
+{
+    /** @var list<Item> */
+    public array $items = [];
 }
 
 final class SelfReferencing
@@ -193,6 +211,15 @@ function acceptsFormatter(FormatterInterface $formatter): FormatterInterface
 function acceptsObject(object $value): object
 {
     return $value;
+}
+
+final class OverrideTarget
+{
+    public function __construct(
+        public int $limit,
+        public $subtitle,
+    ) {
+    }
 }
 
 /**

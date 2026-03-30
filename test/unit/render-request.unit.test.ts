@@ -25,14 +25,19 @@ describe("render-request", () => {
   describe("resolveExecutionRequest", () => {
     it("builds a request from a registry plan and preserves request overrides", () => {
       const registry = new RenderRegistry();
-      const componentId = registry.register({
-        type: "classMethod",
-        file: "/runtime/Card.php",
-        sourceFile: "/stories/Card.php",
-        class: "App\\Card",
-        callable: "render",
-        adapter: "/runtime/default-adapter.php",
-      });
+      const componentId = registry.register(
+        {
+          type: "classMethod",
+          file: "/runtime/Card.php",
+          sourceFile: "/stories/Card.php",
+          class: "App\\Card",
+          callable: "render",
+          adapter: "/runtime/default-adapter.php",
+        },
+        {
+          title: { type: "string", required: true, position: 0, nullable: false },
+        },
+      );
 
       const request = resolveExecutionRequest(
         {
@@ -54,6 +59,9 @@ describe("render-request", () => {
         class: "App\\Card",
         callable: "render",
         args: { title: "Hello" },
+        argDefs: {
+          title: { type: "string", required: true, position: 0, nullable: false },
+        },
         bootstrap: "/bootstrap/app.php",
         adapter: "/runtime/story-adapter.php",
         typeMap: {
@@ -84,6 +92,7 @@ describe("render-request", () => {
         class: null,
         callable: null,
         args: {},
+        argDefs: null,
         bootstrap: null,
         adapter: null,
         typeMap: null,
@@ -115,6 +124,7 @@ describe("render-request", () => {
       });
 
       expect(resolveExecutionRequest({ componentId, args: {} }, registry).adapter).toBeNull();
+      expect(resolveExecutionRequest({ componentId, args: {} }, registry).argDefs).toBeNull();
     });
   });
 });

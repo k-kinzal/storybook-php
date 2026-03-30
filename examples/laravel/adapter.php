@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 /**
  * storybook-php adapter for Laravel Illuminate\View\Component.
  *
@@ -10,17 +12,34 @@
  * For non-Component classes the default behavior is preserved.
  */
 
+use Illuminate\Container\Container;
+use Illuminate\Contracts\View\View as ViewContract;
+use Illuminate\View\Factory as ViewFactory;
 use Illuminate\View\Component;
 
-return function (mixed $result, string $buffered, ?object $instance): string {
+return function (mixed $result, string $buffered, ?object $instance, array $context = []): string {
+    $factory = Container::getInstance()->make(ViewFactory::class);
+
+    if (($context['type'] ?? null) === 'template') {
+        return $factory->file($context['file'], $context['args'] ?? [])->render();
+    }
+
     if ($instance instanceof Component) {
         $view = $instance->resolveView();
 
-        if (is_string($view)) {
-            return $view;
+        if ($view instanceof \Closure) {
+            $view = $view($instance->data());
         }
 
-        return $view->with($instance->data())->render();
+        if ($view instanceof ViewContract) {
+            return $view->with($instance->data())->render();
+        }
+
+        if (is_string($view)) {
+            return $factory->make($view, $instance->data())->render();
+        }
+
+        return (string) $view;
     }
 
     // Default: delegate to the built-in resolveOutput()

@@ -8,6 +8,15 @@ import type { StorybookConfig } from "storybook";
  *   1. files   — Map file paths to type information sources
  *   2. bindings — DI-style type resolution (interface → concrete)
  *   3. args    — Override/supplement argument metadata (options, elementType, type)
+ *
+ * The stories in ../src cover:
+ *   - options for string and enum controls
+ *   - interface bindings
+ *   - elementType for arrays
+ *   - type overrides for untyped params
+ *   - runtime defaults and nullable overrides
+ *   - direct non-PHP template imports via files.args
+ *   - phpFile redirects for non-PHP sources
  */
 const config: StorybookConfig = {
   addons: ["@storybook/addon-vitest"],
@@ -27,6 +36,33 @@ const config: StorybookConfig = {
           // BaseCard.php so it can resolve the parent constructor params.
           "../src/InfoCard.php": {
             includes: ["../src/BaseCard.php"],
+          },
+
+          // Direct template import: this file is not PHP-parsed, so
+          // we provide the full arg contract here.
+          "../src/InlineCallout.view": {
+            args: {
+              title: "string",
+              content: {
+                type: "App\\Components\\Renderable",
+                required: true,
+              },
+              featured: {
+                type: "bool",
+                default: false,
+              },
+              note: {
+                type: "string",
+                nullable: true,
+              },
+            },
+          },
+
+          // phpFile redirect: importing button.bridge reuses Button.php's
+          // signature and runtime plan while keeping the source import stable.
+          "../src/button.bridge": {
+            phpFile: "../src/Button.php",
+            callable: "render",
           },
         },
 
@@ -60,6 +96,21 @@ const config: StorybookConfig = {
           // element should be, enabling proper casting at runtime.
           "App\\Components\\TagList::$tags": {
             elementType: "string",
+          },
+
+          // Untyped constructor parameter: tell the runner which concrete
+          // class to instantiate from Storybook args.
+          "App\\Components\\UntypedBlock::$content": "App\\Components\\HtmlBlock",
+
+          // Runtime defaults and nullable handling for parameters that
+          // don't have native defaults in the PHP signature.
+          "App\\Components\\DefaultNotice::$limit": {
+            type: "int",
+            default: 3,
+          },
+          "App\\Components\\DefaultNotice::$subtitle": {
+            type: "string",
+            nullable: true,
           },
         },
       },

@@ -394,6 +394,31 @@ describe.skipIf(!hasPhp)("Integration: All Plan Patterns", () => {
       // $showAlert conditional rendering
       expect(result.html).toContain('data-pattern="alert"');
     });
+
+    it("renders a Blade file directly through the template adapter", async () => {
+      const result = await bladeExecutor.execute({
+        type: "template",
+        file: laravel("views/direct-template.blade.php"),
+        class: null,
+        callable: null,
+        argDefs: {
+          title: { type: "string", required: true, position: 0, nullable: false },
+          message: {
+            type: "string",
+            required: false,
+            position: 1,
+            nullable: false,
+            default: "Hello from Blade!",
+          },
+        },
+        args: {
+          title: "Direct Blade import",
+        },
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain("Direct Blade import");
+      expect(result.html).toContain("Hello from Blade!");
+    });
   });
 
   // -------------------------------------------------------------------------

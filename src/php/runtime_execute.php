@@ -10,6 +10,7 @@ declare(strict_types=1);
  *   class: string|null,
  *   callable: string|null,
  *   args: array<string, mixed>,
+ *   argDefs: array<string, mixed>|null,
  *   bootstrap: string|null,
  *   adapter: string|null,
  *   typeMap: array<string, mixed>|null
@@ -24,6 +25,7 @@ function executeRunnerRequest(array $__sb_request): array
     $__sb_class = $__sb_request['class'];
     $__sb_callable = $__sb_request['callable'];
     $__sb_args = $__sb_request['args'];
+    $__sb_argDefs = $__sb_request['argDefs'] ?? null;
     $__sb_bootstrap = $__sb_request['bootstrap'];
     $__sb_adapterPath = $__sb_request['adapter'];
     $__sb_typeMap = $__sb_request['typeMap'];
@@ -94,10 +96,14 @@ function executeRunnerRequest(array $__sb_request): array
             break;
 
         case 'template':
+            $__sb_templateArgs = $__sb_argDefs !== null
+                ? castTemplateArgs($__sb_args, $__sb_argDefs, $__sb_typeMap)
+                : $__sb_args;
+            $__sb_context['args'] = $__sb_templateArgs;
             if ($__sb_adapter !== null) {
                 $__sb_html = applyAdapter($__sb_adapter, null, '', null, $__sb_context);
             } else {
-                extract($__sb_args, EXTR_SKIP);
+                extract($__sb_templateArgs, EXTR_SKIP);
                 ob_start();
                 include $__sb_file;
                 $__sb_html = getOutputBuffer();

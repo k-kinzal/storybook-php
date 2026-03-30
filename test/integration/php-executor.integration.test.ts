@@ -86,6 +86,147 @@ describe.skipIf(!hasPhp)("PhpExecutor", () => {
       expect(result.error).toBeUndefined();
       expect(result.html).toBe('<div class="card">Card Title (featured)</div>');
     });
+
+    it("casts untyped constructor params via typeMap.args type overrides", async () => {
+      const typedExecutor = new PhpExecutor({
+        timeout: 10000,
+        typeMap: {
+          args: {
+            "App\\Components\\UntypedRenderer::$content": "App\\Components\\UntypedHtmlBlock",
+          },
+        },
+      });
+
+      const result = await typedExecutor.execute({
+        type: "classMethod",
+        file: fixture("TypeMapUntypedTarget.php"),
+        class: "App\\Components\\UntypedRenderer",
+        callable: "render",
+        args: {
+          content: { content: "Typed from override", tag: "p" },
+        },
+      });
+
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain("<p>Typed from override</p>");
+    });
+
+    it("applies typeMap.args default and nullable overrides at runtime", async () => {
+      const typedExecutor = new PhpExecutor({
+        timeout: 10000,
+        typeMap: {
+          args: {
+            "App\\Components\\OverrideDefaults::$limit": {
+              type: "int",
+              default: 12,
+            },
+            "App\\Components\\OverrideDefaults::$subtitle": {
+              type: "string",
+              nullable: true,
+            },
+          },
+        },
+      });
+
+      const result = await typedExecutor.execute({
+        type: "classMethod",
+        file: fixture("TypeMapOverrideRuntime.php"),
+        class: "App\\Components\\OverrideDefaults",
+        callable: "render",
+        args: {
+          title: "Defaults from typeMap",
+        },
+      });
+
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('data-limit="12"');
+      expect(result.html).toContain("<p>none</p>");
+    });
+
+    it("keeps later union candidates available for untyped overrides", async () => {
+      const typedExecutor = new PhpExecutor({
+        timeout: 10000,
+        typeMap: {
+          args: {
+            "App\\Components\\UnionOverrideRenderer::$value": "int|string",
+          },
+        },
+      });
+
+      const result = await typedExecutor.execute({
+        type: "classMethod",
+        file: fixture("TypeMapUnionOverride.php"),
+        class: "App\\Components\\UnionOverrideRenderer",
+        callable: "render",
+        args: {
+          value: "draft",
+        },
+      });
+
+      expect(result.error).toBeUndefined();
+      expect(result.html).toBe('<span data-type="string">draft</span>');
+    });
+
+    it("treats elementType-only overrides as arrays for untyped params", async () => {
+      const typedExecutor = new PhpExecutor({
+        timeout: 10000,
+        typeMap: {
+          args: {
+            "App\\Components\\ElementOnlyRenderer::$items": {
+              elementType: "App\\Components\\ElementOnlyItem",
+            },
+          },
+        },
+      });
+
+      const result = await typedExecutor.execute({
+        type: "classMethod",
+        file: fixture("TypeMapElementTypeOnly.php"),
+        class: "App\\Components\\ElementOnlyRenderer",
+        callable: "render",
+        args: {
+          items: [{ label: "Alpha" }, { label: "Beta" }],
+        },
+      });
+
+      expect(result.error).toBeUndefined();
+      expect(result.html).toBe("<ul><li>Alpha</li><li>Beta</li></ul>");
+    });
+
+    it("casts wrapper objects from combined type and elementType overrides", async () => {
+      const typedExecutor = new PhpExecutor({
+        timeout: 10000,
+        typeMap: {
+          bindings: {
+            "App\\Components\\WrappedRenderable": "App\\Components\\WrappedHtmlBlock",
+            "App\\Components\\WrappedListContract": "App\\Components\\WrappedList",
+          },
+          args: {
+            "App\\Components\\WrappedListRenderer::$items": {
+              type: "App\\Components\\WrappedListContract",
+              elementType: "App\\Components\\WrappedRenderable",
+            },
+          },
+        },
+      });
+
+      const result = await typedExecutor.execute({
+        type: "classMethod",
+        file: fixture("TypeMapWrapperOverride.php"),
+        class: "App\\Components\\WrappedListRenderer",
+        callable: "render",
+        args: {
+          items: [
+            { content: "First", tag: "p" },
+            { content: "Second", tag: "span" },
+          ],
+        },
+      });
+
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain("<p>First</p>");
+      expect(result.html).toContain("<span>Second</span>");
+    });
   });
 
   // ---------------------------------------------------------------------------
@@ -172,6 +313,92 @@ describe.skipIf(!hasPhp)("PhpExecutor", () => {
       expect(result.html).toContain("My Card");
       expect(result.html).toContain("Card content");
       expect(result.html).toContain("card-primary");
+    });
+
+    it("casts template args using inline arg definitions", async () => {
+      const result = await executor.execute({
+        type: "template",
+        file: fixture("TypeMapTemplateDirect.php"),
+        class: null,
+        callable: null,
+        bootstrap: fixture("TypeMapTemplateBootstrap.php"),
+        argDefs: {
+          title: { type: "string", required: true, position: 0, nullable: false },
+          featured: { type: "bool", required: false, position: 1, nullable: false, default: false },
+          tone: {
+            type: "App\\Templates\\SnippetTone",
+            required: true,
+            position: 2,
+            nullable: false,
+          },
+          content: {
+            type: "App\\Templates\\RenderableSnippet",
+            required: true,
+            position: 3,
+            nullable: false,
+          },
+          items: {
+            type: "App\\Templates\\SnippetList",
+            required: true,
+            position: 4,
+            nullable: false,
+            elementType: "App\\Templates\\RenderableSnippet",
+          },
+          note: {
+            type: "string",
+            required: false,
+            position: 5,
+            nullable: true,
+          },
+          footer: {
+            type: "string",
+            required: false,
+            position: 6,
+            nullable: false,
+            default: "Generated footer",
+          },
+        },
+        typeMap: {
+          bindings: {
+            "App\\Templates\\RenderableSnippet": "App\\Templates\\HtmlSnippet",
+          },
+        },
+        args: {
+          title: "Template Cast",
+          featured: 1,
+          tone: "success",
+          content: { content: "Primary body", tag: "article" },
+          items: [
+            { content: "First", tag: "p" },
+            { content: "Second", tag: "span" },
+          ],
+        },
+      });
+
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('data-featured="yes"');
+      expect(result.html).toContain('<p class="tone tone-success">SUCCESS</p>');
+      expect(result.html).toContain("<article>Primary body</article>");
+      expect(result.html).toContain("<p>First</p>");
+      expect(result.html).toContain("<span>Second</span>");
+      expect(result.html).toContain("<em>note:null</em>");
+      expect(result.html).toContain("<small>Generated footer</small>");
+    });
+
+    it("rejects missing required template args from inline definitions", async () => {
+      const result = await executor.execute({
+        type: "template",
+        file: fixture("TypeMapTemplateDirect.php"),
+        class: null,
+        callable: null,
+        bootstrap: fixture("TypeMapTemplateBootstrap.php"),
+        argDefs: {
+          title: { type: "string", required: true, position: 0, nullable: false },
+        },
+        args: {},
+      });
+
+      expect(result.error).toContain("Missing required argument: title");
     });
   });
 

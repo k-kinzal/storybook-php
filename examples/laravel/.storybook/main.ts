@@ -9,6 +9,22 @@ const config: StorybookConfig = {
       bootstrap: new URL("../bootstrap.php", import.meta.url).pathname,
       adapter: new URL("../adapter.php", import.meta.url).pathname,
       timeout: 10000,
+      typeMap: {
+        files: {
+          "*.blade.php": {
+            adapter: new URL("../adapter.php", import.meta.url).pathname,
+          },
+          "../src/views/direct-template.blade.php": {
+            args: {
+              title: "string",
+              message: {
+                type: "string",
+                default: "Hello from Blade!",
+              },
+            },
+          },
+        },
+      },
     },
   },
 };
