@@ -59,35 +59,45 @@ export class PhpExecutor {
   }
 
   /**
-   * Resolve a per-file adapter from adapterMap.
-   * Checks exact file match first, then suffix patterns (longest suffix wins).
+   * Resolve all per-file adapters from adapterMap.
+   * Middleware order is outer → inner:
+   *   matching patterns (least specific → most specific), then exact file adapter.
    */
-  private resolveFileAdapter(filePath: string): string | null {
-    if (!this.adapterMap) return null;
-    // Exact file match takes priority
-    if (this.adapterMap.files[filePath]) return this.adapterMap.files[filePath]!;
-    // Suffix pattern match — longest (most specific) suffix wins
-    let best: string | null = null;
-    let bestLen = 0;
-    for (const { suffix, adapter } of this.adapterMap.patterns) {
-      if (filePath.endsWith(suffix) && suffix.length > bestLen) {
-        best = adapter;
-        bestLen = suffix.length;
-      }
-    }
-    return best;
+  private resolveFileAdapters(filePath: string): string[] {
+    if (!this.adapterMap) return [];
+
+    const matchedPatterns = this.adapterMap.patterns
+      .filter(({ suffix }) => filePath.endsWith(suffix))
+      .sort((a, b) => a.suffix.length - b.suffix.length)
+      .map(({ adapter }) => adapter);
+
+    const exactAdapter = this.adapterMap.files[filePath];
+    return exactAdapter ? [...matchedPatterns, exactAdapter] : matchedPatterns;
+  }
+
+  /**
+   * Compose the final adapter middleware chain from least specific to most specific.
+   */
+  private resolveAdapterChain(
+    filePath: string,
+    requestAdapter: string | null | undefined,
+  ): string[] {
+    const chain = [this.adapter, ...this.resolveFileAdapters(filePath), requestAdapter].filter(
+      (value): value is string => typeof value === "string" && value !== "",
+    );
+
+    return [...new Set(chain)];
   }
 
   async execute(request: PhpRenderRequest): Promise<PhpRenderResponse> {
-    const { typeMap: storyTypeMap, ...rest } = request;
+    const { typeMap: storyTypeMap, adapter: requestAdapter, ...rest } = request;
     const mergedTypeMap = mergeRuntimeTypeMaps(this.runtimeTypeMap, storyTypeMap);
-
-    const fileAdapter = this.resolveFileAdapter(rest.sourceFile ?? rest.file);
+    const adapters = this.resolveAdapterChain(rest.sourceFile ?? rest.file, requestAdapter);
 
     const input = JSON.stringify({
       ...rest,
       bootstrap: request.bootstrap ?? this.bootstrap,
-      adapter: request.adapter ?? fileAdapter ?? this.adapter,
+      adapters: adapters.length > 0 ? adapters : null,
       ...(mergedTypeMap ? { typeMap: mergedTypeMap } : {}),
     });
 

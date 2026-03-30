@@ -80,6 +80,23 @@ function createMockRes(): ServerResponse & {
   };
 }
 
+function createRegisteredMiddleware(plan: {
+  type: "classMethod" | "staticMethod" | "function" | "template" | "enumMethod";
+  file: string;
+  sourceFile: string;
+  class: string | null;
+  callable: string | null;
+  adapter?: string | null;
+}) {
+  const registry = new RenderRegistry();
+  const componentId = registry.register(plan);
+
+  return {
+    componentId,
+    middleware: createPhpMiddleware({}, registry),
+  };
+}
+
 // ---------------------------------------------------------------------------
 // Tests
 // ---------------------------------------------------------------------------
@@ -128,10 +145,9 @@ describe("createPhpMiddleware", () => {
   // -------------------------------------------------------------------------
   // Validation errors
   // -------------------------------------------------------------------------
-  it("returns 400 for invalid type", async () => {
+  it("returns 400 for missing componentId", async () => {
     const body = JSON.stringify({
-      type: "invalidType",
-      file: "/some/file.php",
+      args: {},
     });
     const req = createMockReq("POST", RENDER_PATH, body);
     const res = createMockRes();
@@ -142,23 +158,11 @@ describe("createPhpMiddleware", () => {
     expect(next).not.toHaveBeenCalled();
     expect(res._status).toBe(400);
     const parsed = JSON.parse(res._body) as { error: string };
-    expect(parsed.error).toContain("Invalid type");
+    expect(parsed.error).toBe("Render request body must include componentId");
   });
 
-  it("returns 400 for missing type", async () => {
-    const body = JSON.stringify({ file: "/some/file.php" });
-    const req = createMockReq("POST", RENDER_PATH, body);
-    const res = createMockRes();
-    const next = vi.fn();
-
-    await middleware(req, res, next);
-
-    expect(next).not.toHaveBeenCalled();
-    expect(res._status).toBe(400);
-  });
-
-  it("returns 400 for missing file", async () => {
-    const body = JSON.stringify({ type: "classMethod" });
+  it("returns 400 for missing args", async () => {
+    const body = JSON.stringify({ componentId: "cmp_1" });
     const req = createMockReq("POST", RENDER_PATH, body);
     const res = createMockRes();
     const next = vi.fn();
@@ -168,7 +172,21 @@ describe("createPhpMiddleware", () => {
     expect(next).not.toHaveBeenCalled();
     expect(res._status).toBe(400);
     const parsed = JSON.parse(res._body) as { error: string };
-    expect(parsed.error).toContain("Missing required field: file");
+    expect(parsed.error).toBe('Render request body field "args" must be a JSON object');
+  });
+
+  it("returns 400 for invalid typeMap", async () => {
+    const body = JSON.stringify({ componentId: "cmp_1", args: {}, typeMap: [] });
+    const req = createMockReq("POST", RENDER_PATH, body);
+    const res = createMockRes();
+    const next = vi.fn();
+
+    await middleware(req, res, next);
+
+    expect(next).not.toHaveBeenCalled();
+    expect(res._status).toBe(400);
+    const parsed = JSON.parse(res._body) as { error: string };
+    expect(parsed.error).toBe('Render request body field "typeMap" must be a JSON object or null');
   });
 
   // -------------------------------------------------------------------------
@@ -178,19 +196,23 @@ describe("createPhpMiddleware", () => {
     mockExecute.mockResolvedValueOnce({
       html: "<div>Hello</div>",
     });
-
-    const body = JSON.stringify({
+    const { componentId, middleware: registryMiddleware } = createRegisteredMiddleware({
       type: "classMethod",
       file: "/some/file.php",
+      sourceFile: "/some/source.php",
       class: "App\\MyClass",
       callable: "render",
+    });
+
+    const body = JSON.stringify({
+      componentId,
       args: { name: "World" },
     });
     const req = createMockReq("POST", RENDER_PATH, body);
     const res = createMockRes();
     const next = vi.fn();
 
-    await middleware(req, res, next);
+    await registryMiddleware(req, res, next);
 
     expect(next).not.toHaveBeenCalled();
     expect(res._status).toBe(200);
@@ -203,7 +225,7 @@ describe("createPhpMiddleware", () => {
     expect(mockExecute).toHaveBeenCalledWith({
       type: "classMethod",
       file: "/some/file.php",
-      sourceFile: null,
+      sourceFile: "/some/source.php",
       class: "App\\MyClass",
       callable: "render",
       args: { name: "World" },
@@ -220,19 +242,23 @@ describe("createPhpMiddleware", () => {
     mockExecute.mockResolvedValueOnce({
       html: '<div class="alert">Error</div>',
     });
-
-    const body = JSON.stringify({
+    const { componentId, middleware: registryMiddleware } = createRegisteredMiddleware({
       type: "staticMethod",
       file: "/some/alert.php",
+      sourceFile: "/some/alert.php",
       class: "App\\Alert",
       callable: "danger",
+    });
+
+    const body = JSON.stringify({
+      componentId,
       args: { message: "Error" },
     });
     const req = createMockReq("POST", RENDER_PATH, body);
     const res = createMockRes();
     const next = vi.fn();
 
-    await middleware(req, res, next);
+    await registryMiddleware(req, res, next);
 
     expect(res._status).toBe(200);
   });
@@ -241,18 +267,23 @@ describe("createPhpMiddleware", () => {
     mockExecute.mockResolvedValueOnce({
       html: "<span>badge</span>",
     });
-
-    const body = JSON.stringify({
+    const { componentId, middleware: registryMiddleware } = createRegisteredMiddleware({
       type: "function",
       file: "/some/functions.php",
+      sourceFile: "/some/functions.php",
+      class: null,
       callable: "badge",
+    });
+
+    const body = JSON.stringify({
+      componentId,
       args: { label: "New" },
     });
     const req = createMockReq("POST", RENDER_PATH, body);
     const res = createMockRes();
     const next = vi.fn();
 
-    await middleware(req, res, next);
+    await registryMiddleware(req, res, next);
 
     expect(res._status).toBe(200);
   });
@@ -261,17 +292,23 @@ describe("createPhpMiddleware", () => {
     mockExecute.mockResolvedValueOnce({
       html: "<div>template</div>",
     });
-
-    const body = JSON.stringify({
+    const { componentId, middleware: registryMiddleware } = createRegisteredMiddleware({
       type: "template",
       file: "/some/template.php",
+      sourceFile: "/some/template.php",
+      class: null,
+      callable: null,
+    });
+
+    const body = JSON.stringify({
+      componentId,
       args: { title: "Hi" },
     });
     const req = createMockReq("POST", RENDER_PATH, body);
     const res = createMockRes();
     const next = vi.fn();
 
-    await middleware(req, res, next);
+    await registryMiddleware(req, res, next);
 
     expect(res._status).toBe(200);
   });
@@ -280,19 +317,23 @@ describe("createPhpMiddleware", () => {
     mockExecute.mockResolvedValueOnce({
       html: '<span style="color:red">Red</span>',
     });
-
-    const body = JSON.stringify({
+    const { componentId, middleware: registryMiddleware } = createRegisteredMiddleware({
       type: "enumMethod",
       file: "/some/enum.php",
+      sourceFile: "/some/enum.php",
       class: "App\\Color",
       callable: "badge",
+    });
+
+    const body = JSON.stringify({
+      componentId,
       args: { _case: "red" },
     });
     const req = createMockReq("POST", RENDER_PATH, body);
     const res = createMockRes();
     const next = vi.fn();
 
-    await middleware(req, res, next);
+    await registryMiddleware(req, res, next);
 
     expect(res._status).toBe(200);
   });
@@ -348,19 +389,23 @@ describe("createPhpMiddleware", () => {
       error: "PHP fatal error",
       trace: "stack trace here",
     });
-
-    const body = JSON.stringify({
+    const { componentId, middleware: registryMiddleware } = createRegisteredMiddleware({
       type: "classMethod",
       file: "/some/file.php",
+      sourceFile: "/some/file.php",
       class: "App\\Broken",
       callable: "render",
+    });
+
+    const body = JSON.stringify({
+      componentId,
       args: {},
     });
     const req = createMockReq("POST", RENDER_PATH, body);
     const res = createMockRes();
     const next = vi.fn();
 
-    await middleware(req, res, next);
+    await registryMiddleware(req, res, next);
 
     expect(next).not.toHaveBeenCalled();
     expect(res._status).toBe(500);
@@ -402,15 +447,19 @@ describe("createPhpMiddleware", () => {
   // -------------------------------------------------------------------------
   it("forwards typeMap from POST body to executor", async () => {
     mockExecute.mockResolvedValueOnce({ html: "<p>ok</p>" });
+    const { componentId, middleware: registryMiddleware } = createRegisteredMiddleware({
+      type: "classMethod",
+      file: "/some/file.php",
+      sourceFile: "/some/file.php",
+      class: "App\\MyClass",
+      callable: "render",
+    });
 
     const typeMap = {
       bindings: { "App\\Iface": "App\\Concrete" },
     };
     const body = JSON.stringify({
-      type: "classMethod",
-      file: "/some/file.php",
-      class: "App\\MyClass",
-      callable: "render",
+      componentId,
       args: {},
       typeMap,
     });
@@ -418,7 +467,7 @@ describe("createPhpMiddleware", () => {
     const res = createMockRes();
     const next = vi.fn();
 
-    await middleware(req, res, next);
+    await registryMiddleware(req, res, next);
 
     expect(res._status).toBe(200);
     expect(mockExecute).toHaveBeenCalledWith(expect.objectContaining({ typeMap }));
@@ -427,24 +476,31 @@ describe("createPhpMiddleware", () => {
   // -------------------------------------------------------------------------
   // Defaults for optional fields
   // -------------------------------------------------------------------------
-  it("fills in defaults for optional fields (class, callable, args, bootstrap)", async () => {
+  it("fills in defaults for optional fields from the registry plan", async () => {
     mockExecute.mockResolvedValueOnce({ html: "<p>ok</p>" });
-
-    const body = JSON.stringify({
+    const { componentId, middleware: registryMiddleware } = createRegisteredMiddleware({
       type: "template",
       file: "/some/template.php",
+      sourceFile: "/some/template.php",
+      class: null,
+      callable: null,
+    });
+
+    const body = JSON.stringify({
+      componentId,
+      args: {},
     });
     const req = createMockReq("POST", RENDER_PATH, body);
     const res = createMockRes();
     const next = vi.fn();
 
-    await middleware(req, res, next);
+    await registryMiddleware(req, res, next);
 
     expect(res._status).toBe(200);
     expect(mockExecute).toHaveBeenCalledWith({
       type: "template",
       file: "/some/template.php",
-      sourceFile: null,
+      sourceFile: "/some/template.php",
       class: null,
       callable: null,
       args: {},

@@ -1,11 +1,10 @@
 <?php
 
-return [
-    'render' => function (mixed $result, string $buffered, ?object $instance): string {
-        if (is_string($result) && $result !== '') {
-            return $result;
-        }
+return static function (array $context, callable $next): array {
+    $response = $next($context);
 
-        return resolveOutput($result, $buffered);
-    },
-];
+    return [
+        ...$response,
+        'html' => resolveOutput($response['result'] ?? null, (string) ($response['buffered'] ?? '')),
+    ];
+};

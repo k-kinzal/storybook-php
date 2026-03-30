@@ -57,7 +57,7 @@ Supported fields:
 - `phpFile`: reuse another PHP file as the execution/type source
 - `callable`: force the callable used by `phpFile` redirects or mapped imports
 - `includes`: extra PHP files to parse for inheritance / trait metadata
-- `adapter`: adapter file for this file or pattern
+- `adapter`: adapter middleware for this file or pattern
 
 ### Public Args Surface
 
@@ -151,6 +151,8 @@ files: {
   },
 }
 ```
+
+That adapter can be a terminal middleware that renders the template engine directly and returns HTML without calling `next`.
 
 ### `phpFile` Redirects
 

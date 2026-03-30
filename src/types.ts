@@ -117,6 +117,7 @@ export interface PhpRenderRequest {
   /** Invoked callable parameter definitions for callable-backed stories */
   callableArgDefs?: PhpArgMap | null;
   bootstrap?: string | null;
+  /** Most specific per-request adapter override, composed inside the middleware chain */
   adapter?: string | null;
   /** Runtime-only bindings used while casting PHP objects */
   typeMap?: RuntimeTypeMap | null;
@@ -125,21 +126,10 @@ export interface PhpRenderRequest {
 /** Browser-to-server render invoke request */
 export interface PhpRenderInvokeRequest {
   /** Opaque registry id for a server-owned render plan */
-  componentId?: string;
+  componentId: string;
   args: Record<string, unknown>;
   /** Per-story public args / bindings override */
   typeMap?: StoryTypeMap | null;
-  /**
-   * Legacy fallback fields for clients that still send full execution details.
-   * The middleware validates these before delegating to the executor.
-   */
-  type?: PhpCallableType;
-  file?: string;
-  sourceFile?: string | null;
-  class?: string | null;
-  callable?: string | null;
-  bootstrap?: string | null;
-  adapter?: string | null;
 }
 
 /** Response from the PHP runner */
@@ -213,8 +203,8 @@ export interface FileMapTarget {
   /**
    * Path to a PHP adapter file for this file or pattern.
    * Overrides the global `adapter` option for matching files.
-   * The file must return an adapter definition with optional `mapArgs`
-   * and `render` hooks.
+   * The file must return a middleware callable:
+   *   function (array $context, callable $next): array|string
    */
   adapter?: string;
 }
@@ -254,14 +244,11 @@ export interface FrameworkOptions {
   /** Default method name when @method is omitted from import */
   defaultMethod?: string;
   /**
-   * Path to a PHP adapter file.
-   * The file must return an adapter definition:
-   *   [
-   *     'mapArgs' => fn(array $args, array $context): array, // optional
-   *     'render' => fn(mixed $result, string $buffered, ?object $instance, array $context): string, // optional
-   *   ]
-   * Used to adapt Storybook args to the target runtime model and to convert
-   * the execution result to HTML.
+   * Path to a global PHP adapter middleware.
+   * The file must return:
+   *   function (array $context, callable $next): array|string
+   * Middleware can rewrite Storybook args before delegating to `$next($context)`
+   * and can wrap or replace the returned HTML response.
    */
   adapter?: string;
   /** Static type mapping configuration */

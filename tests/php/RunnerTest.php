@@ -27,10 +27,6 @@ final class RunnerTest extends TestCase
     private const TEMPLATE_FILE = __DIR__ . '/fixtures/Template.php';
     private const BOOTSTRAP_FILE = __DIR__ . '/fixtures/Bootstrap.php';
     private const ADAPTER_FILE = __DIR__ . '/fixtures/Adapter.php';
-    private const ARRAY_ADAPTER_FILE = __DIR__ . '/fixtures/ArrayAdapter.php';
-    private const INVALID_MAP_HOOK_ADAPTER_FILE = __DIR__ . '/fixtures/InvalidMapHookAdapter.php';
-    private const INVALID_RENDER_HOOK_ADAPTER_FILE = __DIR__ . '/fixtures/InvalidRenderHookAdapter.php';
-    private const EMPTY_HOOKS_ADAPTER_FILE = __DIR__ . '/fixtures/EmptyHooksAdapter.php';
     private const INVALID_ADAPTER_FILE = __DIR__ . '/fixtures/InvalidAdapter.php';
     private const NON_STRING_ADAPTER_FILE = __DIR__ . '/fixtures/NonStringAdapter.php';
 
@@ -816,7 +812,7 @@ final class RunnerTest extends TestCase
             'constructorArgDefs' => ['title' => ['type' => 'string']],
             'callableArgDefs' => [],
             'bootstrap' => null,
-            'adapter' => null,
+            'adapters' => [self::ADAPTER_FILE],
             'typeMap' => ['bindings' => []],
         ], JSON_THROW_ON_ERROR));
 
@@ -827,6 +823,7 @@ final class RunnerTest extends TestCase
         self::assertSame(['title' => ['type' => 'string']], $request['publicArgDefs']);
         self::assertSame(['title' => ['type' => 'string']], $request['constructorArgDefs']);
         self::assertSame([], $request['callableArgDefs']);
+        self::assertSame([self::ADAPTER_FILE], $request['adapters']);
         self::assertSame(['bindings' => []], $request['typeMap']);
 
         $cases = [
@@ -841,7 +838,7 @@ final class RunnerTest extends TestCase
             [json_encode(['type' => 'function', 'file' => self::FIXTURE_FILE, 'constructorArgDefs' => 'bad'], JSON_THROW_ON_ERROR), 'Request field "constructorArgDefs" must be an object or null.'],
             [json_encode(['type' => 'function', 'file' => self::FIXTURE_FILE, 'callableArgDefs' => 'bad'], JSON_THROW_ON_ERROR), 'Request field "callableArgDefs" must be an object or null.'],
             [json_encode(['type' => 'function', 'file' => self::FIXTURE_FILE, 'bootstrap' => 1], JSON_THROW_ON_ERROR), 'Request field "bootstrap" must be a string or null.'],
-            [json_encode(['type' => 'function', 'file' => self::FIXTURE_FILE, 'adapter' => 1], JSON_THROW_ON_ERROR), 'Request field "adapter" must be a string or null.'],
+            [json_encode(['type' => 'function', 'file' => self::FIXTURE_FILE, 'adapters' => 'bad'], JSON_THROW_ON_ERROR), 'Request field "adapters" must be an array or null.'],
             [json_encode(['type' => 'function', 'file' => self::FIXTURE_FILE, 'typeMap' => 'bad'], JSON_THROW_ON_ERROR), 'Request field "typeMap" must be an object or null.'],
         ];
 
@@ -855,123 +852,68 @@ final class RunnerTest extends TestCase
         }
     }
 
-    public function testAdapterHelpersAndResolveOutputHandleSupportedPaths(): void
+    public function testMiddlewareHelpersAndResolveOutputHandleSupportedPaths(): void
     {
         self::assertNull(loadAdapter(null));
         self::assertNull(loadAdapter(''));
 
         $adapter = loadAdapter(self::ADAPTER_FILE);
-        self::assertIsArray($adapter);
-        self::assertSame(
-            'function|RunnerFixtures.php|buffer|none|result',
-            applyAdapterRender($adapter, 'result', 'buffer', null, [
-                'type' => 'function',
-                'file' => self::FIXTURE_FILE,
-                'args' => [],
-            ]),
-        );
+        self::assertIsCallable($adapter);
+        self::assertCount(1, loadAdapters([self::ADAPTER_FILE]));
 
         try {
             loadAdapter(self::INVALID_ADAPTER_FILE);
             self::fail('Expected invalid adapter to throw.');
         } catch (RuntimeException $e) {
-            self::assertStringContainsString('Adapter file must return an adapter definition array or callable', $e->getMessage());
-        }
-
-        $arrayAdapter = loadAdapter(self::ARRAY_ADAPTER_FILE);
-        self::assertIsArray($arrayAdapter);
-        self::assertIsCallable($arrayAdapter['mapArgs']);
-        self::assertIsCallable($arrayAdapter['render']);
-
-        try {
-            loadAdapter(self::INVALID_MAP_HOOK_ADAPTER_FILE);
-            self::fail('Expected invalid mapArgs hook to throw.');
-        } catch (RuntimeException $e) {
-            self::assertStringContainsString("Adapter 'mapArgs' hook must be callable", $e->getMessage());
+            self::assertStringContainsString('Adapter file must return a callable middleware', $e->getMessage());
         }
 
         try {
-            loadAdapter(self::INVALID_RENDER_HOOK_ADAPTER_FILE);
-            self::fail('Expected invalid render hook to throw.');
+            normalizeAdapterResponse((require self::NON_STRING_ADAPTER_FILE)([], static fn (): array => ['html' => 'ok']));
+            self::fail('Expected adapter returning an invalid response to throw.');
         } catch (RuntimeException $e) {
-            self::assertStringContainsString("Adapter 'render' hook must be callable", $e->getMessage());
+            self::assertSame('Adapter middleware must return a response array or HTML string.', $e->getMessage());
         }
+
+        self::assertSame(['html' => 'done'], normalizeAdapterResponse('done'));
+        self::assertSame(['html' => 'done'], normalizeAdapterResponse(['html' => 'done']));
 
         try {
-            loadAdapter(self::EMPTY_HOOKS_ADAPTER_FILE);
-            self::fail('Expected empty adapter hooks to throw.');
+            normalizeAdapterResponse(['html' => 123]);
+            self::fail('Expected invalid html field to throw.');
         } catch (RuntimeException $e) {
-            self::assertStringContainsString("Adapter must define at least one of 'mapArgs' or 'render'", $e->getMessage());
+            self::assertSame("Adapter middleware responses must include a string 'html' field.", $e->getMessage());
         }
 
-        try {
-            $nonStringAdapter = ['mapArgs' => null, 'render' => require self::NON_STRING_ADAPTER_FILE];
-            applyAdapterRender($nonStringAdapter, 'result', '', null, ['type' => 'function', 'file' => self::FIXTURE_FILE, 'args' => []]);
-            self::fail('Expected adapter returning a non-string to throw.');
-        } catch (RuntimeException $e) {
-            self::assertSame('Adapter must return a string.', $e->getMessage());
-        }
-
-        self::assertSame(
-            'resultbuffer',
-            applyAdapterRender(
-                ['mapArgs' => null, 'render' => null],
-                'result',
-                'buffer',
-                null,
-                ['type' => 'function', 'file' => self::FIXTURE_FILE, 'args' => []],
-            ),
-        );
-
-        self::assertSame(
+        $chainResponse = runAdapterMiddleware(
             [
-                'constructor' => ['id' => '7'],
-                'method' => ['title' => 'Story title'],
-                'template' => ['greeting' => 'hello'],
+                static function (array $context, callable $next): array {
+                    $context['args']['title'] = 'inner';
+                    $response = $next($context);
+                    return [...$response, 'html' => '[outer]' . $response['html']];
+                },
+                static function (array $context, callable $next): array {
+                    $response = $next($context);
+                    return [...$response, 'html' => '[middle:' . $context['args']['title'] . ']' . $response['html']];
+                },
             ],
-            mapAdapterArgs($arrayAdapter, [
-                'type' => 'classMethod',
+            [
+                'type' => 'function',
                 'file' => self::FIXTURE_FILE,
                 'executionFile' => self::FIXTURE_FILE,
-                'storyArgs' => ['constructor.id' => '7', 'method.title' => 'Story title'],
-            ]),
+                'args' => ['title' => 'start'],
+            ],
+            static fn (array $context): array => ['html' => '[core:' . $context['args']['title'] . ']']
         );
-
-        try {
-            mapAdapterArgs(
-                ['mapArgs' => static fn (): string => 'invalid', 'render' => null],
-                [
-                    'type' => 'classMethod',
-                    'file' => self::FIXTURE_FILE,
-                    'executionFile' => self::FIXTURE_FILE,
-                    'storyArgs' => [],
-                ],
-            );
-            self::fail('Expected invalid adapter mapArgs payload to throw.');
-        } catch (RuntimeException $e) {
-            self::assertSame("Adapter 'mapArgs' hook must return an array.", $e->getMessage());
-        }
-
-        try {
-            mapAdapterArgs(
-                ['mapArgs' => static fn (): array => ['method' => 'invalid'], 'render' => null],
-                [
-                    'type' => 'classMethod',
-                    'file' => self::FIXTURE_FILE,
-                    'executionFile' => self::FIXTURE_FILE,
-                    'storyArgs' => [],
-                ],
-            );
-            self::fail('Expected invalid adapter mapArgs.method payload to throw.');
-        } catch (RuntimeException $e) {
-            self::assertSame("Adapter 'mapArgs.method' value must be an object.", $e->getMessage());
-        }
+        self::assertSame('[outer][middle:inner][core:inner]', $chainResponse['html']);
 
         self::assertSame(
             ['template' => ['greeting' => 'hello']],
-            defaultAdapterMapArgs(
-                ['greeting' => 'hello', 'constructor.title' => 'skip', 'method.title' => 'skip'],
-                ['type' => 'template'],
+            mapPublicArgsToExecutionTargets(
+                [
+                    'type' => 'template',
+                    'args' => ['greeting' => 'hello', 'constructor.title' => 'skip', 'method.title' => 'skip'],
+                ]
             ),
         );
         self::assertSame(
@@ -979,10 +921,10 @@ final class RunnerTest extends TestCase
                 'constructor' => ['id' => '1'],
                 'method' => ['title' => 'scoped'],
             ],
-            defaultAdapterMapArgs(
-                ['constructor.id' => '1', 'title' => 'flat', 'method.title' => 'scoped'],
+            mapPublicArgsToExecutionTargets(
                 [
                     'type' => 'classMethod',
+                    'args' => ['constructor.id' => '1', 'title' => 'flat', 'method.title' => 'scoped'],
                     'constructorArgDefs' => ['id' => ['type' => 'int']],
                     'callableArgDefs' => ['title' => ['type' => 'string']],
                 ],
@@ -993,14 +935,16 @@ final class RunnerTest extends TestCase
                 'constructor' => ['id' => '1', 'shared' => 'value'],
                 'method' => ['title' => 'fallback', 'shared' => 'value'],
             ],
-            defaultAdapterMapArgs(
-                ['constructor.id' => '1', 'method.title' => 'fallback', 'shared' => 'value'],
-                ['type' => 'classMethod'],
+            mapPublicArgsToExecutionTargets(
+                [
+                    'type' => 'classMethod',
+                    'args' => ['constructor.id' => '1', 'method.title' => 'fallback', 'shared' => 'value'],
+                ],
             ),
         );
         self::assertSame(
             ['title' => 'scoped', 'count' => 2],
-            projectStoryArgsToTarget(
+            projectPublicArgsToTarget(
                 ['method.title' => 'scoped', 'title' => 'flat', 'count' => 2],
                 ['title' => ['type' => 'string'], 'count' => ['type' => 'int']],
                 'method',
@@ -1008,14 +952,14 @@ final class RunnerTest extends TestCase
         );
         self::assertSame(
             ['title' => 'ctor', 'shared' => 'value'],
-            projectStoryArgsWithoutDefinitions(
+            projectNamespacedPublicArgs(
                 ['constructor.title' => 'ctor', 'method.title' => 'method', 'shared' => 'value'],
                 'constructor',
             ),
         );
         self::assertSame(
             ['title' => 'method', 'shared' => 'value'],
-            projectStoryArgsWithoutDefinitions(
+            projectNamespacedPublicArgs(
                 ['constructor.title' => 'ctor', 'method.title' => 'method', 'shared' => 'value'],
                 'method',
             ),
@@ -1025,6 +969,12 @@ final class RunnerTest extends TestCase
             yield 'A';
             yield new StringableValue('B');
         };
+        $throwingStringable = new class {
+            public function __toString(): string
+            {
+                throw new RuntimeException('explode');
+            }
+        };
 
         self::assertSame('AB', resolveOutput($generator(), ''));
         self::assertSame('stringable', resolveOutput(new StringableValue('stringable'), ''));
@@ -1033,6 +983,14 @@ final class RunnerTest extends TestCase
         self::assertSame('buffer', resolveOutput('', 'buffer'));
         self::assertSame('123', resolveOutput(123, ''));
         self::assertSame('', resolveOutput([], ''));
+        self::assertSame('buffer', resolveExecutionHtml($throwingStringable, 'buffer', true));
+
+        try {
+            resolveExecutionHtml($throwingStringable, 'buffer', false);
+            self::fail('Expected output resolution failure to bubble when suppression is disabled.');
+        } catch (RuntimeException $e) {
+            self::assertSame('explode', $e->getMessage());
+        }
     }
 
     public function testExecuteRunnerRequestSupportsAllRenderModes(): void
@@ -1052,7 +1010,7 @@ final class RunnerTest extends TestCase
                 'count' => '3',
             ],
             'bootstrap' => self::BOOTSTRAP_FILE,
-            'adapter' => self::ADAPTER_FILE,
+            'adapters' => [self::ADAPTER_FILE],
             'typeMap' => null,
         ]);
         self::assertSame('loaded', $GLOBALS['storybookPhpBootstrapLoaded']);
@@ -1068,7 +1026,7 @@ final class RunnerTest extends TestCase
             'callable' => 'render',
             'args' => [],
             'bootstrap' => null,
-            'adapter' => null,
+            'adapters' => null,
             'typeMap' => null,
         ]);
         self::assertSame('plainplain-buffer:', $plainClassResult['html']);
@@ -1080,7 +1038,7 @@ final class RunnerTest extends TestCase
             'callable' => 'staticRender',
             'args' => ['amount' => '2.5'],
             'bootstrap' => null,
-            'adapter' => null,
+            'adapters' => null,
             'typeMap' => null,
         ]);
         self::assertSame('static:2.5', $staticResult['html']);
@@ -1092,7 +1050,7 @@ final class RunnerTest extends TestCase
             'callable' => 'staticRender',
             'args' => ['amount' => '2.5'],
             'bootstrap' => null,
-            'adapter' => self::ADAPTER_FILE,
+            'adapters' => [self::ADAPTER_FILE],
             'typeMap' => null,
         ]);
         self::assertSame('staticMethod|RunnerFixtures.php||none|static:2.5', $staticAdapterResult['html']);
@@ -1109,7 +1067,7 @@ final class RunnerTest extends TestCase
                 'numbers' => ['1', '2'],
             ],
             'bootstrap' => null,
-            'adapter' => null,
+            'adapters' => null,
             'typeMap' => ['bindings' => [FormatterInterface::class => Formatter::class]],
         ]);
         self::assertSame('say-HELLO:first:1,2func:', $functionResult['html']);
@@ -1124,7 +1082,7 @@ final class RunnerTest extends TestCase
                 'items' => [['label' => 'first']],
             ],
             'bootstrap' => null,
-            'adapter' => self::ADAPTER_FILE,
+            'adapters' => [self::ADAPTER_FILE],
             'typeMap' => null,
         ]);
         self::assertSame('function|RunnerFixtures.php|func:|none|hello:first:', $functionAdapterResult['html']);
@@ -1140,7 +1098,7 @@ final class RunnerTest extends TestCase
                 'items' => [['label' => 'first']],
             ],
             'bootstrap' => null,
-            'adapter' => self::ADAPTER_FILE,
+            'adapters' => [self::ADAPTER_FILE],
             'typeMap' => null,
         ]);
         self::assertSame('function|AliasFixture.php|func:|none|hello:first:', $functionSourceAdapterResult['html']);
@@ -1153,7 +1111,7 @@ final class RunnerTest extends TestCase
             'args' => ['greeting' => 'hi', 'count' => 2],
             'publicArgDefs' => null,
             'bootstrap' => null,
-            'adapter' => null,
+            'adapters' => null,
             'typeMap' => null,
         ]);
         self::assertSame('hi:2', $templateResult['html']);
@@ -1169,7 +1127,7 @@ final class RunnerTest extends TestCase
                 'count' => ['type' => 'int', 'required' => false, 'position' => 1, 'nullable' => false, 'default' => '4'],
             ],
             'bootstrap' => null,
-            'adapter' => null,
+            'adapters' => null,
             'typeMap' => null,
         ]);
         self::assertSame('typed:4', $templateTypedResult['html']);
@@ -1182,7 +1140,7 @@ final class RunnerTest extends TestCase
             'args' => ['greeting' => 'hi', 'count' => 2],
             'publicArgDefs' => null,
             'bootstrap' => null,
-            'adapter' => self::ADAPTER_FILE,
+            'adapters' => [self::ADAPTER_FILE],
             'typeMap' => null,
         ]);
         self::assertSame('template|Template.php||none|null', $templateAdapterResult['html']);
@@ -1195,7 +1153,7 @@ final class RunnerTest extends TestCase
                 'callable' => 'render',
                 'args' => ['_case' => 'draft', 'suffix' => '!'],
                 'bootstrap' => null,
-                'adapter' => null,
+                'adapters' => null,
                 'typeMap' => null,
             ]);
             self::assertSame('Draft!enum:', $enumResult['html']);
@@ -1207,7 +1165,7 @@ final class RunnerTest extends TestCase
                 'callable' => 'render',
                 'args' => ['_case' => 'draft', 'suffix' => '!'],
                 'bootstrap' => null,
-                'adapter' => self::ADAPTER_FILE,
+                'adapters' => [self::ADAPTER_FILE],
                 'typeMap' => null,
             ]);
             self::assertSame('enumMethod|EnumFixtures.php|enum:|' . Status::class . '|Draft!', $enumAdapterResult['html']);
@@ -1224,7 +1182,7 @@ final class RunnerTest extends TestCase
                 'callable' => 'render',
                 'args' => [],
                 'bootstrap' => null,
-                'adapter' => null,
+                'adapters' => null,
                 'typeMap' => null,
                 'message' => 'classMethod requires class and callable.',
             ],
@@ -1235,7 +1193,7 @@ final class RunnerTest extends TestCase
                 'callable' => 'render',
                 'args' => [],
                 'bootstrap' => null,
-                'adapter' => null,
+                'adapters' => null,
                 'typeMap' => null,
                 'message' => 'staticMethod requires class and callable.',
             ],
@@ -1246,7 +1204,7 @@ final class RunnerTest extends TestCase
                 'callable' => null,
                 'args' => [],
                 'bootstrap' => null,
-                'adapter' => null,
+                'adapters' => null,
                 'typeMap' => null,
                 'message' => 'function render requires callable.',
             ],
@@ -1257,7 +1215,7 @@ final class RunnerTest extends TestCase
                 'callable' => null,
                 'args' => [],
                 'bootstrap' => null,
-                'adapter' => null,
+                'adapters' => null,
                 'typeMap' => null,
                 'message' => 'enumMethod requires enum class and callable.',
             ],
@@ -1268,7 +1226,7 @@ final class RunnerTest extends TestCase
                 'callable' => null,
                 'args' => [],
                 'bootstrap' => null,
-                'adapter' => null,
+                'adapters' => null,
                 'typeMap' => null,
                 'message' => 'Unknown type: unknown',
             ],
@@ -1282,7 +1240,7 @@ final class RunnerTest extends TestCase
                 'callable' => 'render',
                 'args' => ['_case' => 'draft'],
                 'bootstrap' => null,
-                'adapter' => null,
+                'adapters' => null,
                 'typeMap' => null,
                 'message' => "Enum '" . ExampleRenderer::class . "' is not available.",
             ];
@@ -1297,7 +1255,7 @@ final class RunnerTest extends TestCase
                     'callable' => $case['callable'],
                     'args' => $case['args'],
                     'bootstrap' => $case['bootstrap'],
-                    'adapter' => $case['adapter'],
+                    'adapters' => $case['adapters'],
                     'typeMap' => $case['typeMap'],
                 ]);
                 self::fail('Expected execution to fail.');
@@ -1322,7 +1280,7 @@ final class RunnerTest extends TestCase
             'callable' => null,
             'args' => ['greeting' => 'run', 'count' => 5],
             'bootstrap' => null,
-            'adapter' => null,
+            'adapters' => null,
             'typeMap' => null,
         ], JSON_THROW_ON_ERROR);
         $encoded = storybookPhpRun($validInput, false);
@@ -1340,7 +1298,7 @@ final class RunnerTest extends TestCase
             'callable' => null,
             'args' => [],
             'bootstrap' => null,
-            'adapter' => null,
+            'adapters' => null,
             'typeMap' => null,
         ], JSON_THROW_ON_ERROR);
         $errorResponse = json_decode(storybookPhpRun($errorInput, false), true, 512, JSON_THROW_ON_ERROR);

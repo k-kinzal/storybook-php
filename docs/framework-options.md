@@ -28,7 +28,7 @@ export default config;
 | `phpBinary`     | `string`        | `"php"`     | PHP executable path                                    |
 | `timeout`       | `number`        | `5000`      | Render timeout in milliseconds                         |
 | `defaultMethod` | `string`        | `undefined` | Method name used when `@method` is omitted             |
-| `adapter`       | `string`        | `undefined` | Global adapter file used to convert results into HTML  |
+| `adapter`       | `string`        | `undefined` | Global adapter middleware wrapped around PHP execution |
 | `typeMap`       | `TypeMapConfig` | `undefined` | Advanced mapping for files, bindings, and arg metadata |
 
 ## `bootstrap`
@@ -84,51 +84,109 @@ If you use `defaultMethod`, configure the TS plugin with the same value for cons
 
 ## `adapter`
 
-Adapters customize how PHP results become HTML. This is especially useful when the callable returns a framework object instead of a plain string.
+Adapters are PHP middleware around the core executor. They can:
+
+- rewrite Storybook args before PHP reflection/template execution
+- delegate to the next adapter or terminate the chain
+- wrap or replace the final HTML response
+
+This is especially useful when the target runtime has its own input/output model, such as Blade, Twig, Latte, or framework view objects.
 
 Recommended adapter signature:
 
 ```php
 <?php
 
-return function (mixed $result, string $buffered, ?object $instance, array $context): string {
-    return resolveOutput($result, $buffered);
+return static function (array $context, callable $next): array|string {
+    $response = $next($context);
+
+    return [
+        ...$response,
+        'html' => resolveOutput($response['result'] ?? null, (string) ($response['buffered'] ?? '')),
+    ];
 };
 ```
 
-The fourth `$context` argument is optional but supported. It contains:
+`$context` contains:
 
 - `type`: the resolved callable type such as `classMethod` or `template`
-- `file`: the source file path
+- `file`: the original imported file path
+- `executionFile`: the PHP file that will actually execute
+- `class`: resolved PHP class name when applicable
+- `callable`: resolved method/function name when applicable
 - `args`: the story args sent from Storybook
+- `publicArgDefs`, `constructorArgDefs`, `callableArgDefs`: resolved arg definitions
+- `typeMap`: runtime bindings used during casting
 
-Existing three-argument adapters remain valid.
+`$next($context)` returns a response envelope with:
+
+- `html`: current HTML payload
+- `result`: raw PHP return value from the core executor
+- `buffered`: captured output buffer
+- `instance`: constructed object for instance methods
+- `args`, `constructorArgs`, `methodArgs`: resolved input snapshots
+
+Returning a plain string is shorthand for `['html' => '...']`. If an adapter does not call `next`, it becomes the terminal renderer.
+
+### Execution Order
+
+Middleware wraps from least specific to most specific:
+
+1. global `framework.options.adapter`
+2. matching `typeMap.files` pattern adapters, from shortest suffix to longest suffix
+3. exact `typeMap.files["/exact/path"]` adapter
+4. per-request adapter overrides
+5. the built-in core executor
+
+Request flows in that order and the response unwinds in reverse.
 
 ### Laravel Blade Example
 
 ```php
 <?php
 
+use Illuminate\Container\Container;
+use Illuminate\Contracts\View\View as ViewContract;
+use Illuminate\View\Factory as ViewFactory;
 use Illuminate\View\Component;
 
-return function (mixed $result, string $buffered, ?object $instance): string {
+return static function (array $context, callable $next): array {
+    $factory = Container::getInstance()->make(ViewFactory::class);
+
+    if (($context['type'] ?? null) === 'template') {
+        return [
+            'html' => $factory->file($context['file'], resolveTemplateContextArgs($context))->render(),
+        ];
+    }
+
+    $response = $next($context);
+    $instance = $response['instance'] ?? null;
+
     if ($instance instanceof Component) {
         $view = $instance->resolveView();
 
-        if (is_string($view)) {
-            return $view;
+        if ($view instanceof Closure) {
+            $view = $view($instance->data());
         }
 
-        return $view->with($instance->data())->render();
+        if ($view instanceof ViewContract) {
+            return [...$response, 'html' => $view->with($instance->data())->render()];
+        }
+
+        if (is_string($view)) {
+            return [...$response, 'html' => $factory->make($view, $instance->data())->render()];
+        }
+
+        return [...$response, 'html' => (string) $view];
     }
 
-    return resolveOutput($result, $buffered);
+    return $response;
 };
 ```
 
 ### Template-Engine Adapters
 
-For `template` mode, adapters take over rendering completely. This is how Blade, Twig, Latte, and similar engines can render files that should not be included directly.
+For `template` mode, adapters can take over rendering completely by returning HTML without calling `next`. This is how Blade, Twig, Latte, and similar engines can render files that should not be included directly.
 
 ## Per-File Adapters
 

@@ -13,8 +13,9 @@ declare(strict_types=1);
  *   publicArgDefs: array<string, mixed>|null,
  *   constructorArgDefs: array<string, mixed>|null,
  *   callableArgDefs: array<string, mixed>|null,
+ *   suppressOutputResolutionErrors?: bool,
  *   bootstrap: string|null,
- *   adapter: string|null,
+ *   adapters: list<string>|null,
  *   typeMap: array<string, mixed>|null
  * } $__sb_request
  * @return array{html: string}
@@ -31,27 +32,88 @@ function executeRunnerRequest(array $__sb_request): array
     $__sb_constructorArgDefs = $__sb_request['constructorArgDefs'] ?? null;
     $__sb_callableArgDefs = $__sb_request['callableArgDefs'] ?? null;
     $__sb_bootstrap = $__sb_request['bootstrap'];
-    $__sb_adapterPath = $__sb_request['adapter'];
+    $__sb_adapterPaths = $__sb_request['adapters'] ?? null;
     $__sb_typeMap = $__sb_request['typeMap'];
 
     if ($__sb_bootstrap !== null && $__sb_bootstrap !== '') {
         require_once $__sb_bootstrap;
     }
 
-    $__sb_adapter = loadAdapter($__sb_adapterPath);
-
-    $__sb_html = '';
+    $__sb_adapters = loadAdapters($__sb_adapterPaths);
     $__sb_context = [
         'type' => $__sb_type,
         'file' => $__sb_sourceFile,
         'executionFile' => $__sb_file,
         'class' => $__sb_class,
         'callable' => $__sb_callable,
-        'storyArgs' => $__sb_storyArgs,
+        'args' => $__sb_storyArgs,
         'publicArgDefs' => $__sb_publicArgDefs,
         'constructorArgDefs' => $__sb_constructorArgDefs,
         'callableArgDefs' => $__sb_callableArgDefs,
+        'suppressOutputResolutionErrors' => $__sb_adapters !== [],
+        'typeMap' => $__sb_typeMap,
     ];
+
+    $__sb_response = runAdapterMiddleware(
+        $__sb_adapters,
+        $__sb_context,
+        /**
+         * @param array<string, mixed> $adapterContext
+         */
+        static function (array $adapterContext): array {
+            /** @var array{
+             *   type: 'classMethod'|'staticMethod'|'function'|'template'|'enumMethod',
+             *   file: string,
+             *   executionFile: string,
+             *   class: string|null,
+             *   callable: string|null,
+             *   args: array<string, mixed>,
+             *   publicArgDefs?: array<string, mixed>|null,
+             *   constructorArgDefs?: array<string, mixed>|null,
+             *   callableArgDefs?: array<string, mixed>|null,
+             *   suppressOutputResolutionErrors?: bool,
+             *   typeMap?: array<string, mixed>|null
+             * } $adapterContext
+             */
+            return executeCoreContext($adapterContext);
+        }
+    );
+
+    return ['html' => $__sb_response['html']];
+}
+
+/**
+ * @param array{
+ *   type: 'classMethod'|'staticMethod'|'function'|'template'|'enumMethod',
+ *   file: string,
+ *   executionFile: string,
+ *   class: string|null,
+ *   callable: string|null,
+ *   args: array<string, mixed>,
+ *   publicArgDefs?: array<string, mixed>|null,
+ *   constructorArgDefs?: array<string, mixed>|null,
+ *   callableArgDefs?: array<string, mixed>|null,
+ *   suppressOutputResolutionErrors?: bool,
+ *   typeMap?: array<string, mixed>|null
+ * } $__sb_context
+ * @return array{
+ *   html: string,
+ *   result?: mixed,
+ *   buffered?: string,
+ *   instance?: object|null,
+ *   args?: array<string, mixed>,
+ *   constructorArgs?: array<string, mixed>,
+ *   methodArgs?: array<string, mixed>
+ * }
+ */
+function executeCoreContext(array $__sb_context): array
+{
+    $__sb_type = $__sb_context['type'];
+    $__sb_file = $__sb_context['executionFile'];
+    $__sb_class = $__sb_context['class'];
+    $__sb_callable = $__sb_context['callable'];
+    $__sb_typeMap = $__sb_context['typeMap'] ?? null;
+    $__sb_suppressOutputResolutionErrors = $__sb_context['suppressOutputResolutionErrors'] ?? false;
 
     switch ($__sb_type) {
         case 'classMethod':
@@ -63,22 +125,22 @@ function executeRunnerRequest(array $__sb_request): array
             $__sb_ref = new ReflectionClass($__sb_class);
             $__sb_constructor = $__sb_ref->getConstructor();
             $__sb_effectiveConstructorArgDefs = buildTargetArgDefs(
-                $__sb_constructorArgDefs,
-                $__sb_publicArgDefs,
+                $__sb_context['constructorArgDefs'] ?? null,
+                $__sb_context['publicArgDefs'] ?? null,
                 'constructor'
             );
             $__sb_effectiveCallableArgDefs = buildTargetArgDefs(
-                $__sb_callableArgDefs,
-                $__sb_publicArgDefs,
+                $__sb_context['callableArgDefs'] ?? null,
+                $__sb_context['publicArgDefs'] ?? null,
                 'method'
             );
-            $__sb_mappedArgs = mapAdapterArgs($__sb_adapter, $__sb_context);
-            $__sb_context['constructorArgs'] = $__sb_mappedArgs['constructor'] ?? [];
-            $__sb_context['methodArgs'] = $__sb_mappedArgs['method'] ?? [];
+            $__sb_mappedArgs = mapPublicArgsToExecutionTargets($__sb_context);
+            $__sb_constructorArgs = $__sb_mappedArgs['constructor'] ?? [];
+            $__sb_methodArgs = $__sb_mappedArgs['method'] ?? [];
             $__sb_instance = $__sb_constructor !== null
                 ? $__sb_ref->newInstanceArgs(matchArgs(
                     $__sb_constructor,
-                    $__sb_mappedArgs['constructor'] ?? [],
+                    $__sb_constructorArgs,
                     $__sb_typeMap,
                     $__sb_effectiveConstructorArgDefs
                 ))
@@ -87,15 +149,20 @@ function executeRunnerRequest(array $__sb_request): array
             ob_start();
             $__sb_result = $__sb_method->invokeArgs($__sb_instance, matchArgs(
                 $__sb_method,
-                $__sb_mappedArgs['method'] ?? [],
+                $__sb_methodArgs,
                 $__sb_typeMap,
                 $__sb_effectiveCallableArgDefs
             ));
             $__sb_buffered = getOutputBuffer();
-            $__sb_html = $__sb_adapter !== null
-                ? applyAdapterRender($__sb_adapter, $__sb_result, $__sb_buffered, $__sb_instance, $__sb_context)
-                : resolveOutput($__sb_result, $__sb_buffered);
-            break;
+            return buildExecutionResponse(
+                resolveExecutionHtml($__sb_result, $__sb_buffered, $__sb_suppressOutputResolutionErrors),
+                $__sb_result,
+                $__sb_buffered,
+                $__sb_instance,
+                $__sb_context['args'],
+                $__sb_constructorArgs,
+                $__sb_methodArgs,
+            );
 
         case 'staticMethod':
             if ($__sb_class === null || $__sb_callable === null) {
@@ -106,24 +173,29 @@ function executeRunnerRequest(array $__sb_request): array
             $__sb_ref = new ReflectionClass($__sb_class);
             $__sb_method = $__sb_ref->getMethod($__sb_callable);
             $__sb_effectiveCallableArgDefs = buildTargetArgDefs(
-                $__sb_callableArgDefs,
-                $__sb_publicArgDefs,
+                $__sb_context['callableArgDefs'] ?? null,
+                $__sb_context['publicArgDefs'] ?? null,
                 'method'
             );
-            $__sb_mappedArgs = mapAdapterArgs($__sb_adapter, $__sb_context);
-            $__sb_context['methodArgs'] = $__sb_mappedArgs['method'] ?? [];
+            $__sb_mappedArgs = mapPublicArgsToExecutionTargets($__sb_context);
+            $__sb_methodArgs = $__sb_mappedArgs['method'] ?? [];
             ob_start();
             $__sb_result = $__sb_method->invokeArgs(null, matchArgs(
                 $__sb_method,
-                $__sb_mappedArgs['method'] ?? [],
+                $__sb_methodArgs,
                 $__sb_typeMap,
                 $__sb_effectiveCallableArgDefs
             ));
             $__sb_buffered = getOutputBuffer();
-            $__sb_html = $__sb_adapter !== null
-                ? applyAdapterRender($__sb_adapter, $__sb_result, $__sb_buffered, null, $__sb_context)
-                : resolveOutput($__sb_result, $__sb_buffered);
-            break;
+            return buildExecutionResponse(
+                resolveExecutionHtml($__sb_result, $__sb_buffered, $__sb_suppressOutputResolutionErrors),
+                $__sb_result,
+                $__sb_buffered,
+                null,
+                $__sb_context['args'],
+                [],
+                $__sb_methodArgs,
+            );
 
         case 'function':
             if ($__sb_callable === null) {
@@ -132,41 +204,43 @@ function executeRunnerRequest(array $__sb_request): array
             require_once $__sb_file;
             $__sb_ref = new ReflectionFunction($__sb_callable);
             $__sb_effectiveCallableArgDefs = buildTargetArgDefs(
-                $__sb_callableArgDefs,
-                $__sb_publicArgDefs,
+                $__sb_context['callableArgDefs'] ?? null,
+                $__sb_context['publicArgDefs'] ?? null,
                 'method'
             );
-            $__sb_mappedArgs = mapAdapterArgs($__sb_adapter, $__sb_context);
-            $__sb_context['methodArgs'] = $__sb_mappedArgs['method'] ?? [];
+            $__sb_mappedArgs = mapPublicArgsToExecutionTargets($__sb_context);
+            $__sb_methodArgs = $__sb_mappedArgs['method'] ?? [];
             ob_start();
             $__sb_result = $__sb_ref->invokeArgs(matchArgs(
                 $__sb_ref,
-                $__sb_mappedArgs['method'] ?? [],
+                $__sb_methodArgs,
                 $__sb_typeMap,
                 $__sb_effectiveCallableArgDefs
             ));
             $__sb_buffered = getOutputBuffer();
-            $__sb_html = $__sb_adapter !== null
-                ? applyAdapterRender($__sb_adapter, $__sb_result, $__sb_buffered, null, $__sb_context)
-                : resolveOutput($__sb_result, $__sb_buffered);
-            break;
+            return buildExecutionResponse(
+                resolveExecutionHtml($__sb_result, $__sb_buffered, $__sb_suppressOutputResolutionErrors),
+                $__sb_result,
+                $__sb_buffered,
+                null,
+                $__sb_context['args'],
+                [],
+                $__sb_methodArgs,
+            );
 
         case 'template':
-            $__sb_mappedArgs = mapAdapterArgs($__sb_adapter, $__sb_context);
-            $__sb_templateInput = $__sb_mappedArgs['template'] ?? $__sb_storyArgs;
-            $__sb_templateArgs = $__sb_publicArgDefs !== null
-                ? castTemplateArgs($__sb_templateInput, $__sb_publicArgDefs, $__sb_typeMap)
-                : $__sb_templateInput;
-            $__sb_context['args'] = $__sb_templateArgs;
-            if ($__sb_adapter !== null) {
-                $__sb_html = applyAdapterRender($__sb_adapter, null, '', null, $__sb_context);
-            } else {
-                extract($__sb_templateArgs, EXTR_SKIP);
-                ob_start();
-                include $__sb_file;
-                $__sb_html = getOutputBuffer();
-            }
-            break;
+            $__sb_templateInput = mapPublicArgsToExecutionTargets($__sb_context)['template'] ?? $__sb_context['args'];
+            $__sb_templateArgs = resolveTemplateContextArgs($__sb_context, $__sb_templateInput);
+            extract($__sb_templateArgs, EXTR_SKIP);
+            ob_start();
+            include $__sb_file;
+            return buildExecutionResponse(
+                getOutputBuffer(),
+                null,
+                '',
+                null,
+                $__sb_templateArgs,
+            );
 
         case 'enumMethod':
             if ($__sb_class === null || $__sb_callable === null) {
@@ -184,14 +258,13 @@ function executeRunnerRequest(array $__sb_request): array
             assert(class_exists($__sb_class));
             $__sb_ref = new ReflectionClass($__sb_class);
             $__sb_effectiveCallableArgDefs = buildTargetArgDefs(
-                $__sb_callableArgDefs,
-                $__sb_publicArgDefs,
+                $__sb_context['callableArgDefs'] ?? null,
+                $__sb_context['publicArgDefs'] ?? null,
                 'method'
             );
-            $__sb_mappedArgs = mapAdapterArgs($__sb_adapter, $__sb_context);
+            $__sb_mappedArgs = mapPublicArgsToExecutionTargets($__sb_context);
             $__sb_methodInput = $__sb_mappedArgs['method'] ?? [];
-            $__sb_context['methodArgs'] = $__sb_methodInput;
-            $__sb_caseValue = $__sb_methodInput['_case'] ?? $__sb_storyArgs['_case'] ?? null;
+            $__sb_caseValue = $__sb_methodInput['_case'] ?? $__sb_context['args']['_case'] ?? null;
             $__sb_enumInstance = resolveEnumCase($__sb_class, $__sb_caseValue);
             $__sb_method = $__sb_ref->getMethod($__sb_callable);
             $__sb_methodArgs = array_diff_key($__sb_methodInput, ['_case' => true]);
@@ -203,16 +276,86 @@ function executeRunnerRequest(array $__sb_request): array
                 $__sb_effectiveCallableArgDefs
             ));
             $__sb_buffered = getOutputBuffer();
-            $__sb_html = $__sb_adapter !== null
-                ? applyAdapterRender($__sb_adapter, $__sb_result, $__sb_buffered, $__sb_enumInstance, $__sb_context)
-                : resolveOutput($__sb_result, $__sb_buffered);
-            break;
+            return buildExecutionResponse(
+                resolveExecutionHtml($__sb_result, $__sb_buffered, $__sb_suppressOutputResolutionErrors),
+                $__sb_result,
+                $__sb_buffered,
+                $__sb_enumInstance,
+                $__sb_context['args'],
+                [],
+                $__sb_methodArgs,
+            );
 
         default:
             throw new \RuntimeException("Unknown type: {$__sb_type}");
     }
+}
 
-    return ['html' => $__sb_html];
+/**
+ * @param array{
+ *   args: array<string, mixed>,
+ *   publicArgDefs?: array<string, mixed>|null,
+ *   typeMap?: array<string, mixed>|null
+ * } $context
+ * @param array<string, mixed>|null $templateInput
+ * @return array<string, mixed>
+ */
+function resolveTemplateContextArgs(array $context, ?array $templateInput = null): array
+{
+    $templateArgs = $templateInput ?? $context['args'];
+    $publicArgDefs = $context['publicArgDefs'] ?? null;
+    $typeMap = $context['typeMap'] ?? null;
+
+    return $publicArgDefs !== null
+        ? castTemplateArgs($templateArgs, $publicArgDefs, $typeMap)
+        : $templateArgs;
+}
+
+/**
+ * @param array<string, mixed> $args
+ * @param array<string, mixed> $constructorArgs
+ * @param array<string, mixed> $methodArgs
+ * @return array{
+ *   html: string,
+ *   result?: mixed,
+ *   buffered?: string,
+ *   instance?: object|null,
+ *   args?: array<string, mixed>,
+ *   constructorArgs?: array<string, mixed>,
+ *   methodArgs?: array<string, mixed>
+ * }
+ */
+function buildExecutionResponse(
+    string $html,
+    mixed $result,
+    string $buffered,
+    ?object $instance,
+    array $args,
+    array $constructorArgs = [],
+    array $methodArgs = [],
+): array {
+    return [
+        'html' => $html,
+        'result' => $result,
+        'buffered' => $buffered,
+        'instance' => $instance,
+        'args' => $args,
+        'constructorArgs' => $constructorArgs,
+        'methodArgs' => $methodArgs,
+    ];
+}
+
+function resolveExecutionHtml(mixed $result, string $buffered, bool $suppressErrors): string
+{
+    if (!$suppressErrors) {
+        return resolveOutput($result, $buffered);
+    }
+
+    try {
+        return resolveOutput($result, $buffered);
+    } catch (\Throwable) {
+        return $buffered;
+    }
 }
 
 /**

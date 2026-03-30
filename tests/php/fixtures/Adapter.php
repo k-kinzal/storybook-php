@@ -2,8 +2,12 @@
 
 declare(strict_types=1);
 
-return static function (mixed $result, string $buffered, ?object $instance, array $context): string {
+return static function (array $context, callable $next): array {
+    $response = $next($context);
     $resultText = 'null';
+    $result = $response['result'] ?? null;
+    $buffered = is_string($response['buffered'] ?? null) ? $response['buffered'] : '';
+    $instance = $response['instance'] ?? null;
 
     if (is_string($result)) {
         $resultText = $result;
@@ -13,11 +17,14 @@ return static function (mixed $result, string $buffered, ?object $instance, arra
         $resultText = get_class($result);
     }
 
-    return implode('|', [
-        (string) ($context['type'] ?? ''),
-        basename((string) ($context['file'] ?? '')),
-        $buffered,
-        $instance === null ? 'none' : get_class($instance),
-        $resultText,
-    ]);
+    return [
+        ...$response,
+        'html' => implode('|', [
+            (string) ($context['type'] ?? ''),
+            basename((string) ($context['file'] ?? '')),
+            $buffered,
+            $instance === null ? 'none' : get_class($instance),
+            $resultText,
+        ]),
+    ];
 };

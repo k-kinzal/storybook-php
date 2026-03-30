@@ -1,7 +1,6 @@
 import { RenderRegistry } from "./render-registry.js";
 import { mergePublicArgOverrides } from "../../core/component/public-args.js";
 import type {
-  PhpCallableType,
   PhpRenderInvokeRequest,
   PhpRenderRequest,
   PhpRenderPlan,
@@ -10,13 +9,6 @@ import type {
 } from "../../types.js";
 
 export { RENDER_PATH } from "../../shared/render-contract.js";
-export const VALID_RENDER_TYPES: PhpCallableType[] = [
-  "classMethod",
-  "staticMethod",
-  "function",
-  "template",
-  "enumMethod",
-];
 
 export class RequestValidationError extends Error {
   constructor(message: string) {
@@ -50,25 +42,35 @@ export function parseRenderInvokeRequest(body: string): PhpRenderInvokeRequest {
     throw new RequestValidationError("Render request body must be a JSON object");
   }
 
-  return parsed as unknown as PhpRenderInvokeRequest;
+  const componentId = parsed["componentId"];
+  if (typeof componentId !== "string" || componentId === "") {
+    throw new RequestValidationError("Render request body must include componentId");
+  }
+
+  const args = parsed["args"];
+  if (!isRecord(args)) {
+    throw new RequestValidationError('Render request body field "args" must be a JSON object');
+  }
+
+  const typeMap = parsed["typeMap"];
+  if (typeMap !== undefined && typeMap !== null && !isRecord(typeMap)) {
+    throw new RequestValidationError(
+      'Render request body field "typeMap" must be a JSON object or null',
+    );
+  }
+
+  return {
+    componentId,
+    args,
+    ...(typeMap !== undefined ? { typeMap: typeMap as StoryTypeMap | null } : {}),
+  };
 }
 
 export function resolveExecutionRequest(
   data: PhpRenderInvokeRequest,
   registry: RenderRegistry | undefined,
 ): PhpRenderRequest {
-  return buildExecutionRequest(resolveExecutionTarget(data, registry), data);
-}
-
-function resolveExecutionTarget(
-  data: PhpRenderInvokeRequest,
-  registry: RenderRegistry | undefined,
-): ExecutionTarget {
-  if (hasComponentId(data)) {
-    return resolveRegisteredTarget(data.componentId, registry);
-  }
-
-  return validateLegacyTarget(data);
+  return buildExecutionRequest(resolveRegisteredTarget(data.componentId, registry), data);
 }
 
 function resolveRegisteredTarget(
@@ -106,28 +108,6 @@ function executionTargetFromPlan(renderTarget: {
   };
 }
 
-function validateLegacyTarget(data: PhpRenderInvokeRequest): ExecutionTarget {
-  if (!data.type || !VALID_RENDER_TYPES.includes(data.type)) {
-    throw new RequestValidationError(`Invalid type: ${String(data.type)}`);
-  }
-
-  if (typeof data.file !== "string" || data.file === "") {
-    throw new RequestValidationError("Missing required field: file");
-  }
-
-  return {
-    type: data.type,
-    file: data.file,
-    sourceFile: nullableString(data.sourceFile),
-    class: nullableString(data.class),
-    callable: nullableString(data.callable),
-    publicArgDefs: null,
-    constructorArgDefs: null,
-    callableArgDefs: null,
-    adapter: null,
-  };
-}
-
 function buildExecutionRequest(
   target: ExecutionTarget,
   data: PhpRenderInvokeRequest,
@@ -140,8 +120,8 @@ function buildExecutionRequest(
     publicArgDefs: mergeStoryPublicArgDefs(target, storyTypeMap) ?? null,
     constructorArgDefs: target.constructorArgDefs ?? null,
     callableArgDefs: target.callableArgDefs ?? null,
-    bootstrap: nullableString(data.bootstrap),
-    adapter: nullableString(data.adapter) ?? target.adapter,
+    bootstrap: null,
+    adapter: target.adapter,
     typeMap: normalizeRuntimeTypeMap(storyTypeMap),
   };
 }
@@ -172,16 +152,6 @@ function mergeStoryPublicArgDefs(
     target.callableArgDefs ?? {},
     storyTypeMap?.args ?? null,
   );
-}
-
-function hasComponentId(data: PhpRenderInvokeRequest): data is PhpRenderInvokeRequest & {
-  componentId: string;
-} {
-  return typeof data.componentId === "string" && data.componentId !== "";
-}
-
-function nullableString(value: unknown): string | null {
-  return typeof value === "string" ? value : null;
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {

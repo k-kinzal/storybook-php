@@ -60,6 +60,25 @@ function normalizeStringKeyArray(array $value, string $fieldName): array
 }
 
 /**
+ * @param array<array-key, mixed> $value
+ * @return list<string>
+ */
+function normalizeStringList(array $value, string $fieldName): array
+{
+    $normalized = [];
+
+    foreach ($value as $item) {
+        if (!is_string($item) || $item === '') {
+            throw new \RuntimeException("Field '{$fieldName}' must be a list of non-empty strings.");
+        }
+
+        $normalized[] = $item;
+    }
+
+    return $normalized;
+}
+
+/**
  * @return array{
  *   type: 'classMethod'|'staticMethod'|'function'|'template'|'enumMethod',
  *   file: string,
@@ -71,7 +90,7 @@ function normalizeStringKeyArray(array $value, string $fieldName): array
  *   constructorArgDefs: array<string, mixed>|null,
  *   callableArgDefs: array<string, mixed>|null,
  *   bootstrap: string|null,
- *   adapter: string|null,
+ *   adapters: list<string>|null,
  *   typeMap: array<string, mixed>|null
  * }
  */
@@ -134,9 +153,9 @@ function readRunnerRequest(string $input): array
         throw new \RuntimeException('Request field "bootstrap" must be a string or null.');
     }
 
-    $adapter = $decoded['adapter'] ?? null;
-    if ($adapter !== null && !is_string($adapter)) {
-        throw new \RuntimeException('Request field "adapter" must be a string or null.');
+    $adapters = $decoded['adapters'] ?? null;
+    if ($adapters !== null && !is_array($adapters)) {
+        throw new \RuntimeException('Request field "adapters" must be an array or null.');
     }
 
     $typeMap = $decoded['typeMap'] ?? null;
@@ -155,7 +174,7 @@ function readRunnerRequest(string $input): array
         'constructorArgDefs' => $constructorArgDefs === null ? null : normalizeStringKeyArray($constructorArgDefs, 'constructorArgDefs'),
         'callableArgDefs' => $callableArgDefs === null ? null : normalizeStringKeyArray($callableArgDefs, 'callableArgDefs'),
         'bootstrap' => $bootstrap,
-        'adapter' => $adapter,
+        'adapters' => $adapters === null ? null : normalizeStringList($adapters, 'adapters'),
         'typeMap' => $typeMap === null ? null : normalizeStringKeyArray($typeMap, 'typeMap'),
     ];
 }
@@ -174,126 +193,149 @@ function readRunnerStdin(): string
 }
 
 /**
- * @return array{mapArgs: callable|null, render: callable|null}|null
+ * @return callable(array<string, mixed>, callable): mixed|null
  */
-function loadAdapter(?string $adapterPath): ?array
+function loadAdapter(?string $adapterPath): ?callable
 {
     if ($adapterPath === null || $adapterPath === '') {
         return null;
     }
 
     $adapter = require $adapterPath;
-    if (is_callable($adapter)) {
-        return ['mapArgs' => null, 'render' => $adapter];
+    if (!is_callable($adapter)) {
+        throw new \RuntimeException("Adapter file must return a callable middleware: {$adapterPath}");
     }
 
-    if (!is_array($adapter)) {
-        throw new \RuntimeException("Adapter file must return an adapter definition array or callable: {$adapterPath}");
-    }
-
-    $mapArgs = $adapter['mapArgs'] ?? null;
-    $render = $adapter['render'] ?? null;
-
-    if ($mapArgs !== null && !is_callable($mapArgs)) {
-        throw new \RuntimeException("Adapter 'mapArgs' hook must be callable: {$adapterPath}");
-    }
-
-    if ($render !== null && !is_callable($render)) {
-        throw new \RuntimeException("Adapter 'render' hook must be callable: {$adapterPath}");
-    }
-
-    if ($mapArgs === null && $render === null) {
-        throw new \RuntimeException("Adapter must define at least one of 'mapArgs' or 'render': {$adapterPath}");
-    }
-
-    return ['mapArgs' => $mapArgs, 'render' => $render];
+    return $adapter;
 }
 
 /**
- * @param array{
- *   mapArgs: callable|null,
- *   render: callable|null
- * } $adapter
- * @param array{
- *   type: string,
- *   file: string,
- *   executionFile: string,
+ * @param list<string>|null $adapterPaths
+ * @return list<callable(array<string, mixed>, callable): mixed>
+ */
+function loadAdapters(?array $adapterPaths): array
+{
+    if ($adapterPaths === null || $adapterPaths === []) {
+        return [];
+    }
+
+    /** @var list<callable(array<string, mixed>, callable(array<string, mixed>): mixed): mixed> $middlewares */
+    $middlewares = [];
+    foreach ($adapterPaths as $adapterPath) {
+        $middleware = loadAdapter($adapterPath);
+        if ($middleware !== null) {
+            $middlewares[] = $middleware;
+        }
+    }
+
+    return $middlewares;
+}
+
+/**
+ * @return array{
+ *   html: string,
+ *   result?: mixed,
+ *   buffered?: string,
+ *   instance?: object|null,
  *   args?: array<string, mixed>,
- *   storyArgs?: array<string, mixed>,
- *   publicArgDefs?: array<string, mixed>|null,
- *   constructorArgDefs?: array<string, mixed>|null,
- *   callableArgDefs?: array<string, mixed>|null
- * } $context
+ *   constructorArgs?: array<string, mixed>,
+ *   methodArgs?: array<string, mixed>
+ * }
  */
-function applyAdapterRender(array $adapter, mixed $result, string $buffered, ?object $instance, array $context): string
+function normalizeAdapterResponse(mixed $response): array
 {
-    $render = $adapter['render'] ?? null;
-    if ($render === null) {
-        return resolveOutput($result, $buffered);
+    if (is_string($response)) {
+        return ['html' => $response];
     }
 
-    /** @var callable $render */
-    $html = call_user_func($render, $result, $buffered, $instance, $context);
-    if (!is_string($html)) {
-        throw new \RuntimeException('Adapter must return a string.');
+    if (!is_array($response)) {
+        throw new \RuntimeException('Adapter middleware must return a response array or HTML string.');
     }
 
-    return $html;
+    if (!array_key_exists('html', $response) || !is_string($response['html'])) {
+        throw new \RuntimeException("Adapter middleware responses must include a string 'html' field.");
+    }
+
+    /** @var array{
+     *   html: string,
+     *   result?: mixed,
+     *   buffered?: string,
+     *   instance?: object|null,
+     *   args?: array<string, mixed>,
+     *   constructorArgs?: array<string, mixed>,
+     *   methodArgs?: array<string, mixed>
+     * } $response
+     */
+    return $response;
 }
 
 /**
- * @param array{mapArgs: callable|null, render: callable|null}|null $adapter
+ * @param list<callable(array<string, mixed>, callable(array<string, mixed>): mixed): mixed> $middlewares
+ * @param array<string, mixed> $context
+ * @param callable(array<string, mixed>): mixed $terminal
+ * @return array{
+ *   html: string,
+ *   result?: mixed,
+ *   buffered?: string,
+ *   instance?: object|null,
+ *   args?: array<string, mixed>,
+ *   constructorArgs?: array<string, mixed>,
+ *   methodArgs?: array<string, mixed>
+ * }
+ */
+function runAdapterMiddleware(array $middlewares, array $context, callable $terminal): array
+{
+    $runner = array_reduce(
+        array_reverse($middlewares),
+        /**
+         * @param callable(array<string, mixed>): mixed $next
+         * @param callable(array<string, mixed>, callable(array<string, mixed>): mixed): mixed $middleware
+         * @return callable(array<string, mixed>): array<string, mixed>
+         */
+        static function (callable $next, callable $middleware): callable {
+            /**
+             * @param array<string, mixed> $innerContext
+             */
+            return static function (array $innerContext) use ($middleware, $next): array {
+                /** @var array<string, mixed> $adapterContext */
+                $adapterContext = $innerContext;
+                return normalizeAdapterResponse($middleware($adapterContext, $next));
+            };
+        },
+        /**
+         * @return array{
+         *   html: string,
+         *   result?: mixed,
+         *   buffered?: string,
+         *   instance?: object|null,
+         *   args?: array<string, mixed>,
+         *   constructorArgs?: array<string, mixed>,
+         *   methodArgs?: array<string, mixed>
+         * }
+         */
+        static function (array $innerContext) use ($terminal): array {
+            /** @var array<string, mixed> $terminalContext */
+            $terminalContext = $innerContext;
+            return normalizeAdapterResponse($terminal($terminalContext));
+        }
+    );
+
+    return $runner($context);
+}
+
+/**
  * @param array{
  *   type: string,
- *   file: string,
- *   executionFile: string,
- *   storyArgs: array<string, mixed>,
- *   publicArgDefs?: array<string, mixed>|null,
+ *   args: array<string, mixed>,
  *   constructorArgDefs?: array<string, mixed>|null,
  *   callableArgDefs?: array<string, mixed>|null
  * } $context
  * @return array{constructor?: array<string, mixed>, method?: array<string, mixed>, template?: array<string, mixed>}
  */
-function mapAdapterArgs(?array $adapter, array $context): array
+function mapPublicArgsToExecutionTargets(array $context): array
 {
-    $mapArgs = $adapter['mapArgs'] ?? null;
-    $mapped = $mapArgs !== null
-        ? call_user_func($mapArgs, $context['storyArgs'], $context)
-        : defaultAdapterMapArgs($context['storyArgs'], $context);
+    $storyArgs = $context['args'];
 
-    if (!is_array($mapped)) {
-        throw new \RuntimeException("Adapter 'mapArgs' hook must return an array.");
-    }
-
-    $normalized = [];
-    foreach (['constructor', 'method', 'template'] as $field) {
-        if (!array_key_exists($field, $mapped)) {
-            continue;
-        }
-
-        if (!is_array($mapped[$field])) {
-            throw new \RuntimeException("Adapter 'mapArgs.{$field}' value must be an object.");
-        }
-
-        /** @var array<array-key, mixed> $fieldValue */
-        $fieldValue = $mapped[$field];
-        $normalized[$field] = normalizeStringKeyArray($fieldValue, "mapArgs.{$field}");
-    }
-
-    return $normalized;
-}
-
-/**
- * @param array<string, mixed> $storyArgs
- * @param array{
- *   type: string,
- *   constructorArgDefs?: array<string, mixed>|null,
- *   callableArgDefs?: array<string, mixed>|null
- * } $context
- * @return array{constructor?: array<string, mixed>, method?: array<string, mixed>, template?: array<string, mixed>}
- */
-function defaultAdapterMapArgs(array $storyArgs, array $context): array
-{
     if ($context['type'] === 'template') {
         $templateArgs = [];
         foreach ($storyArgs as $key => $value) {
@@ -309,16 +351,16 @@ function defaultAdapterMapArgs(array $storyArgs, array $context): array
     $mapped = [];
     $constructorArgDefs = $context['constructorArgDefs'] ?? null;
     if (is_array($constructorArgDefs) && $constructorArgDefs !== []) {
-        $mapped['constructor'] = projectStoryArgsToTarget($storyArgs, $constructorArgDefs, 'constructor');
+        $mapped['constructor'] = projectPublicArgsToTarget($storyArgs, $constructorArgDefs, 'constructor');
     } elseif ($context['type'] === 'classMethod') {
-        $mapped['constructor'] = projectStoryArgsWithoutDefinitions($storyArgs, 'constructor');
+        $mapped['constructor'] = projectNamespacedPublicArgs($storyArgs, 'constructor');
     }
 
     $callableArgDefs = $context['callableArgDefs'] ?? null;
     if (is_array($callableArgDefs) && $callableArgDefs !== []) {
-        $mapped['method'] = projectStoryArgsToTarget($storyArgs, $callableArgDefs, 'method');
+        $mapped['method'] = projectPublicArgsToTarget($storyArgs, $callableArgDefs, 'method');
     } elseif ($context['type'] !== 'template') {
-        $mapped['method'] = projectStoryArgsWithoutDefinitions($storyArgs, 'method');
+        $mapped['method'] = projectNamespacedPublicArgs($storyArgs, 'method');
     }
 
     return $mapped;
@@ -329,7 +371,7 @@ function defaultAdapterMapArgs(array $storyArgs, array $context): array
  * @param array<string, mixed> $targetArgDefs
  * @return array<string, mixed>
  */
-function projectStoryArgsToTarget(array $storyArgs, array $targetArgDefs, string $scope): array
+function projectPublicArgsToTarget(array $storyArgs, array $targetArgDefs, string $scope): array
 {
     $mapped = [];
 
@@ -352,7 +394,7 @@ function projectStoryArgsToTarget(array $storyArgs, array $targetArgDefs, string
  * @param array<string, mixed> $storyArgs
  * @return array<string, mixed>
  */
-function projectStoryArgsWithoutDefinitions(array $storyArgs, string $scope): array
+function projectNamespacedPublicArgs(array $storyArgs, string $scope): array
 {
     $mapped = [];
 

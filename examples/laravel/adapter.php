@@ -17,32 +17,38 @@ use Illuminate\Contracts\View\View as ViewContract;
 use Illuminate\View\Factory as ViewFactory;
 use Illuminate\View\Component;
 
-return [
-    'render' => function (mixed $result, string $buffered, ?object $instance, array $context = []): string {
-        $factory = Container::getInstance()->make(ViewFactory::class);
+return static function (array $context, callable $next): array {
+    $factory = Container::getInstance()->make(ViewFactory::class);
 
-        if (($context['type'] ?? null) === 'template') {
-            return $factory->file($context['file'], $context['args'] ?? [])->render();
+    if (($context['type'] ?? null) === 'template') {
+        return [
+            'html' => $factory->file($context['file'], resolveTemplateContextArgs($context))->render(),
+        ];
+    }
+
+    $response = $next($context);
+    $instance = $response['instance'] ?? null;
+
+    if ($instance instanceof Component) {
+        $view = $instance->resolveView();
+
+        if ($view instanceof \Closure) {
+            $view = $view($instance->data());
         }
 
-        if ($instance instanceof Component) {
-            $view = $instance->resolveView();
-
-            if ($view instanceof \Closure) {
-                $view = $view($instance->data());
-            }
-
-            if ($view instanceof ViewContract) {
-                return $view->with($instance->data())->render();
-            }
-
-            if (is_string($view)) {
-                return $factory->make($view, $instance->data())->render();
-            }
-
-            return (string) $view;
+        if ($view instanceof ViewContract) {
+            return [...$response, 'html' => $view->with($instance->data())->render()];
         }
 
-        return resolveOutput($result, $buffered);
-    },
-];
+        if (is_string($view)) {
+            return [...$response, 'html' => $factory->make($view, $instance->data())->render()];
+        }
+
+        return [...$response, 'html' => (string) $view];
+    }
+
+    return [
+        ...$response,
+        'html' => resolveOutput($response['result'] ?? null, (string) ($response['buffered'] ?? '')),
+    ];
+};

@@ -14,7 +14,7 @@ Preview renderer
 Dev middleware
   -> validates the request and invokes PhpExecutor
 PHP runner
-  -> reflects on the callable, matches args, renders HTML
+  -> runs adapter middleware around the core executor
 Storybook canvas
   -> injects the returned HTML
 ```
@@ -75,6 +75,25 @@ The runner converts PHP output into final HTML using these rules:
 
 This means components that `return`, `echo`, or mix both styles all work.
 
+## Adapter Middleware
+
+Adapters sit around the core executor as middleware.
+
+- They receive the public Storybook `args` surface in `$context['args']`.
+- They may rewrite that input before calling `next($context)`.
+- They may wrap or replace the returned HTML response after `next(...)`.
+- They may terminate the chain entirely by returning HTML without calling `next`.
+
+The runtime composes adapters from least specific to most specific:
+
+1. global `framework.options.adapter`
+2. matching `typeMap.files` pattern adapters
+3. exact file adapters
+4. per-request adapter overrides
+5. core executor
+
+This keeps cross-cutting adapters on the outside while file-specific adapters stay closest to the target runtime.
+
 ## Templates
 
 When you import a PHP file without a callable suffix, `storybook-php` treats it as a template:
@@ -89,7 +108,7 @@ Without an adapter, the runner:
 2. Includes the template file inside an output buffer.
 3. Returns the buffered HTML.
 
-For Blade, Twig, Latte, and other engines that need their own rendering pipeline, use an adapter instead of raw `include`.
+For Blade, Twig, Latte, and other engines that need their own rendering pipeline, use a terminal adapter middleware instead of raw `include`.
 
 ## Decorators and Script Tags
 

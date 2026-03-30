@@ -5,7 +5,6 @@ import {
   RequestValidationError,
   resolveExecutionRequest,
 } from "../../src/runtime/render/render-request.js";
-import type { PhpRenderInvokeRequest } from "../../src/types.js";
 
 describe("render-request", () => {
   describe("parseRenderInvokeRequest", () => {
@@ -20,10 +19,22 @@ describe("render-request", () => {
         "Render request body must be a JSON object",
       );
     });
+
+    it("requires componentId and args", () => {
+      expect(() => parseRenderInvokeRequest(JSON.stringify({ args: {} }))).toThrowError(
+        "Render request body must include componentId",
+      );
+      expect(() => parseRenderInvokeRequest(JSON.stringify({ componentId: "cmp_1" }))).toThrowError(
+        'Render request body field "args" must be a JSON object',
+      );
+      expect(() =>
+        parseRenderInvokeRequest(JSON.stringify({ componentId: "cmp_1", args: {}, typeMap: [] })),
+      ).toThrowError('Render request body field "typeMap" must be a JSON object or null');
+    });
   });
 
   describe("resolveExecutionRequest", () => {
-    it("builds a request from a registry plan and preserves request overrides", () => {
+    it("builds a request from a registry plan", () => {
       const registry = new RenderRegistry();
       const componentId = registry.register(
         {
@@ -47,8 +58,6 @@ describe("render-request", () => {
         {
           componentId,
           args: { title: "Hello" },
-          bootstrap: "/bootstrap/app.php",
-          adapter: "/runtime/story-adapter.php",
           typeMap: {
             bindings: { "App\\Contracts\\Card": "App\\Card" },
           },
@@ -70,42 +79,11 @@ describe("render-request", () => {
           title: { type: "string", required: true, position: 0, nullable: false },
         },
         callableArgDefs: {},
-        bootstrap: "/bootstrap/app.php",
-        adapter: "/runtime/story-adapter.php",
+        bootstrap: null,
+        adapter: "/runtime/default-adapter.php",
         typeMap: {
           bindings: { "App\\Contracts\\Card": "App\\Card" },
         },
-      });
-    });
-
-    it("normalizes malformed optional legacy fields to null-safe defaults", () => {
-      const malformed = {
-        type: "template",
-        file: "/stories/template.php",
-        sourceFile: 42,
-        class: false,
-        callable: { name: "render" },
-        args: [],
-        bootstrap: 7,
-        adapter: 9,
-        typeMap: [],
-      } as unknown as PhpRenderInvokeRequest;
-
-      const request = resolveExecutionRequest(malformed, undefined);
-
-      expect(request).toEqual({
-        type: "template",
-        file: "/stories/template.php",
-        sourceFile: null,
-        class: null,
-        callable: null,
-        args: {},
-        publicArgDefs: null,
-        constructorArgDefs: null,
-        callableArgDefs: null,
-        bootstrap: null,
-        adapter: null,
-        typeMap: null,
       });
     });
 
