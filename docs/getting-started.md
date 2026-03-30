@@ -97,8 +97,9 @@ Other supported commands:
 - `npx storybook-php build`
 - `npx storybook-php test`
 - `npx storybook-php typegen`
+- `npx storybook-php typegen --options-file storybook-php.config.mjs`
 
-`start` and `build` accept the same options as the regular Storybook CLI.
+`start` and `build` accept the same options as the regular Storybook CLI. `test` passes arguments through to `vitest run`.
 
 If you want to use `storybook-php` from a PHP-first repository without a local `package.json`, see [PHP Project Setup](php-project-setup.md).
 
@@ -116,6 +117,19 @@ If you want richer TypeScript editor support, add the client types and TS plugin
 ```
 
 This is optional. It improves IDE support for `.php` imports and gives your stories typed `args` based on parsed PHP signatures.
+
+If you want declaration files on disk, run:
+
+```bash
+npx storybook-php typegen
+```
+
+That command writes bare-import and exact-import declarations next to the source file, for example:
+
+- `Greeting.php.d.ts`
+- `Greeting.php@render.d.ts`
+
+If your setup relies on `defaultMethod` or `typeMap`, pass those settings to `typegen` with `--options-file`. The CLI does not read `.storybook/main.ts`.
 
 ## Next Steps
 

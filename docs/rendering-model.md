@@ -21,6 +21,8 @@ Storybook canvas
 
 The PHP process runs server-side. Storybook only receives HTML.
 
+Behind that request flow, each imported component is registered server-side as a render plan. The browser only sends `componentId`, story `args`, and optional `parameters.typeMap` overrides to `/__storybook_php/render`.
+
 ## Internal Layering
 
 The TypeScript codebase is split into five layers:
@@ -37,17 +39,30 @@ The dependency rule is one-way: entrypoints may depend on runtime, core, shared,
 
 ## Supported Import Patterns
 
-| Pattern              | Import syntax            | Args source                            |
-| -------------------- | ------------------------ | -------------------------------------- |
-| Instance method      | `./File.php@render`      | Constructor params + method params     |
-| Static method        | `./File.php@danger`      | Method params                          |
-| Standalone function  | `./file.php@renderBadge` | Function params                        |
-| Invocable class      | `./File.php@__invoke`    | Constructor params + `__invoke` params |
-| Enum instance method | `./File.php@badge`       | `_case` + method params                |
-| Template file        | `./file.php`             | Story args become template variables   |
+| Pattern                      | Import syntax            | Args source                            |
+| ---------------------------- | ------------------------ | -------------------------------------- |
+| Instance method              | `./File.php@render`      | Constructor params + method params     |
+| Static method                | `./File.php@danger`      | Method params                          |
+| Standalone function          | `./file.php@renderBadge` | Function params                        |
+| Invocable class              | `./File.php@__invoke`    | Constructor params + `__invoke` params |
+| Enum instance method         | `./File.php@badge`       | `_case` + method params                |
+| Template file                | `./file.php`             | Story args become template variables   |
+| Mapped non-PHP import source | `./card.blade.php`       | `typeMap.files` defines the contract   |
 
 If `framework.options.defaultMethod` is set, you can omit `@render` and import `./File.php` directly.
 Bare `.php` imports only mean template mode when `defaultMethod` is not set.
+
+Non-PHP imports are resolved only when they match `typeMap.files`. Those mappings can keep template mode, redirect execution with `phpFile`, force a callable with `callable`, and attach adapters.
+
+## Build-Time Resolution
+
+At import time, `storybook-php` resolves three related concepts:
+
+- `sourceFile`: the file you imported in the story
+- `executionFile`: the PHP file that will actually be parsed and executed
+- `adapter`: the middleware chain chosen from global options, file mappings, and request overrides
+
+For plain `.php` imports, `sourceFile` and `executionFile` are the same file. For mapped files such as Blade or Twig templates, `typeMap.files[*].phpFile` can redirect execution to a separate PHP file while preserving the original import path as `sourceFile`.
 
 ## How Args Are Matched
 
@@ -57,6 +72,7 @@ Bare `.php` imports only mean template mode when `defaultMethod` is not set.
 - Static methods and standalone functions only receive callable args.
 - Enum methods reserve `_case` to select the enum case before the method runs.
 - Template files receive all story args as local template variables.
+- If constructor and method parameters share a name but cannot be merged safely, the public surface splits into `constructor.name` and `method.name`. `typeMap` can also introduce those namespaced keys explicitly.
 
 Parameters are matched by name, not just position, so Storybook controls map naturally to PHP parameter names.
 
@@ -122,6 +138,6 @@ If the rendered HTML contains `<script>` tags, `storybook-php` recreates them af
 
 - PHP exceptions are returned to Storybook and shown as `PHP Render Error`.
 - Changes to PHP files invalidate the generated virtual modules.
-- Changes to mapped files referenced by `typeMap.files` also trigger reloads.
+- Changes to redirected execution files and `typeMap.files[*].includes` dependencies also trigger reloads.
 
 For configuration-driven cases such as Blade or cross-file inheritance, see [Framework Options](framework-options.md) and [Type Mapping](type-mapping.md).

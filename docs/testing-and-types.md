@@ -34,7 +34,7 @@ If you rely on `defaultMethod`, pass the same setting to the TS plugin:
 
 ## `typegen`
 
-Generate `.d.ts` files next to your PHP files:
+Generate `.d.ts` files next to your source files:
 
 ```bash
 npx storybook-php typegen
@@ -48,7 +48,14 @@ You can also target specific directories:
 npx storybook-php typegen src components templates
 ```
 
-What `typegen` generates:
+`typegen` writes both bare-import and exact-import declaration modules whenever they resolve:
+
+- `Button.php.d.ts`
+- `Button.php@render.d.ts`
+
+For a callable-backed file without `defaultMethod`, the bare `.php.d.ts` output stays template-shaped. When `defaultMethod` resolves, the bare output mirrors that callable instead.
+
+What `typegen` generates inside those files:
 
 - class exports for parsed class methods
 - function exports for standalone functions
@@ -63,6 +70,35 @@ Output notes:
 - class-like types become `Record<string, unknown>`
 - optional PHP parameters become optional TS properties
 
+## `typegen --options-file`
+
+`typegen` does not read `.storybook/main.ts`. If declaration generation depends on `defaultMethod` or `typeMap`, pass them through a separate JSON or JS module:
+
+```bash
+npx storybook-php typegen --options-file storybook-php.config.mjs
+```
+
+Example options file:
+
+```ts
+import { fileURLToPath } from "node:url";
+
+export default {
+  _configDir: fileURLToPath(new URL("./.storybook/", import.meta.url)),
+  defaultMethod: "render",
+  typeMap: {
+    files: {
+      "../src/views/components/card.blade.php": {
+        phpFile: "../src/BladeCard.php",
+        callable: "render",
+      },
+    },
+  },
+};
+```
+
+`typegen` reads `defaultMethod`, `typeMap`, and `_configDir` from this file. `_configDir` is useful when relative `typeMap.files` entries should resolve the same way they do from your Storybook config directory.
+
 ## Storybook Tests
 
 Run Storybook tests with:
@@ -71,7 +107,7 @@ Run Storybook tests with:
 npx storybook-php test
 ```
 
-If your project does not define `vitest.config.*`, `storybook-php` automatically falls back to its bundled Vitest config.
+`storybook-php test` runs `vitest run`. If your project does not define `vitest.config.*` and you do not pass `--config`, it automatically falls back to the bundled Vitest config.
 
 ## Required Test Dependencies
 
@@ -107,6 +143,14 @@ When you provide your own `vitest.config.*` or pass `--config`, `storybook-php` 
 This is the right choice when you need custom browser settings, aliases, reporters, or workspace-level Vitest configuration.
 
 It can also be used as a fallback in package-less `npx` environments to add `server.fs.allow` entries for packages resolved from npm's cache.
+
+## Editor Support vs Generated Files
+
+Use the TS plugin when you want live editor support without writing files to disk.
+
+Use `typegen` when you want `.d.ts` files checked into the repo, consumed by tooling outside the TS plugin, or shared across editors and CI.
+
+It is normal to use both together.
 
 ## Related Guides
 
