@@ -194,6 +194,16 @@ final class RunnerTest extends TestCase
 
         $noConstructor = castInlineNamedType(NoConstructorItem::class, []);
         self::assertInstanceOf(NoConstructorItem::class, $noConstructor);
+        $positionalCollection = castInlineNamedType(BrokenCollection::class, [[new Item('alpha')], 'named']);
+        self::assertInstanceOf(BrokenCollection::class, $positionalCollection);
+        self::assertSame('alpha', $positionalCollection->items[0]->label);
+        self::assertSame('named', $positionalCollection->name);
+        try {
+            castInlineNamedType(ExampleRenderer::class, '5');
+            self::fail('Expected scalar fallback into multi-parameter constructors to require named args.');
+        } catch (RuntimeException $e) {
+            self::assertSame('Missing required argument: id', $e->getMessage());
+        }
 
         if (PHP_VERSION_ID >= 80100) {
             self::assertSame(Status::Published, castInlineNamedType(Status::class, 'published'));
@@ -1332,6 +1342,17 @@ final class RunnerTest extends TestCase
                 'message' => 'enumMethod requires enum class and callable.',
             ],
             [
+                'type' => ['bad'],
+                'file' => self::FIXTURE_FILE,
+                'class' => null,
+                'callable' => null,
+                'args' => [],
+                'bootstrap' => null,
+                'adapters' => null,
+                'typeMap' => null,
+                'message' => 'Unknown type: array',
+            ],
+            [
                 'type' => 'unknown',
                 'file' => self::FIXTURE_FILE,
                 'class' => null,
@@ -1375,6 +1396,45 @@ final class RunnerTest extends TestCase
                 self::assertSame($case['message'], $e->getMessage());
             }
         }
+    }
+
+    public function testRuntimeExecuteHelpersNormalizeNonStringKeys(): void
+    {
+        self::assertSame(
+            ['title' => ['type' => 'string']],
+            normalizeNamedArgDefMap([
+                0 => 'skip',
+                'title' => ['type' => 'string'],
+            ]),
+        );
+
+        $resolved = resolveTemplateContextArgs(
+            [
+                'type' => 'template',
+                'publicArgs' => ['fallback' => 'unused'],
+                'publicArgDefs' => [
+                    0 => 'skip',
+                    'title' => ['type' => 'string', 'required' => true],
+                    'featured' => ['type' => 'bool', 'default' => 1],
+                ],
+                'typeMap' => [
+                    0 => 'skip',
+                    'bindings' => [],
+                ],
+            ],
+            [
+                0 => 'skip',
+                'title' => 'Normalized',
+            ],
+        );
+
+        self::assertSame(
+            [
+                'title' => 'Normalized',
+                'featured' => true,
+            ],
+            $resolved,
+        );
     }
 
     public function testBuildEncodeAndRunHelpersProduceJsonResponses(): void

@@ -507,8 +507,10 @@ function ensureExecutionPlanner(array $context): array
             );
             break;
 
+        // @codeCoverageIgnoreStart
         default:
             throw new \RuntimeException("Unknown type: {$type}");
+        // @codeCoverageIgnoreEnd
     }
 
     $context['__planner'] = $planner;
