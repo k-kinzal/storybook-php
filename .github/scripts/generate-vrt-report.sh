@@ -12,10 +12,37 @@ HAS_DIFFS=false
 TOTAL_DIFFS=0
 TOTAL_EXAMPLES=0
 
-# Collect data per example
-declare -A EXAMPLE_DIFFS
+# Collect data per example. Keep this Bash 3 compatible for macOS local runs.
+EXAMPLE_DIFFS_LINES=""
 declare -a CHANGED_EXAMPLES=()
 declare -a PASSED_EXAMPLES=()
+
+append_example_diff() {
+  EXAMPLE_DIFFS_LINES="${EXAMPLE_DIFFS_LINES}${1}"$'\t'"${2}"$'\n'
+}
+
+get_example_diff_count() {
+  local example="$1"
+  local name count
+  while IFS=$'\t' read -r name count; do
+    [ -n "$name" ] || continue
+    if [ "$name" = "$example" ]; then
+      printf '%s' "$count"
+      return 0
+    fi
+  done <<EOF
+$EXAMPLE_DIFFS_LINES
+EOF
+}
+
+print_example_diff_rows() {
+  while IFS=$'\t' read -r name count; do
+    [ -n "$name" ] || continue
+    printf '%s\t%s\n' "$name" "$count"
+  done <<EOF
+$EXAMPLE_DIFFS_LINES
+EOF
+}
 
 if [ ! -d "$RESULTS_DIR" ]; then
   echo "No VRT results directory found. Skipping report generation."
@@ -36,7 +63,7 @@ for artifact_dir in "$RESULTS_DIR"/vrt-results-*; do
   if [ "$diff_count" -gt 0 ]; then
     HAS_DIFFS=true
     TOTAL_DIFFS=$((TOTAL_DIFFS + diff_count))
-    EXAMPLE_DIFFS["$example_name"]="$diff_count"
+    append_example_diff "$example_name" "$diff_count"
     CHANGED_EXAMPLES+=("$example_name")
   else
     PASSED_EXAMPLES+=("$example_name")
@@ -169,7 +196,7 @@ for example in $(printf '%s\n' "${CHANGED_EXAMPLES[@]}" | sort); do
     first_project="$example"
     active_class=" active"
   fi
-  count="${EXAMPLE_DIFFS[$example]}"
+  count="$(get_example_diff_count "$example")"
   cat >> "$OUTPUT" << EOF
   <div class="sidebar-row${active_class}" onclick="selectProject('${example}',0)" data-project="${example}">
     <span class="sidebar-dot sidebar-dot--changed"></span>
@@ -204,7 +231,7 @@ echo '<div class="main">' >> "$OUTPUT"
 
 # Changed example panels
 for example in $(printf '%s\n' "${CHANGED_EXAMPLES[@]}" | sort); do
-  count="${EXAMPLE_DIFFS[$example]}"
+  count="$(get_example_diff_count "$example")"
   artifact_dir="$RESULTS_DIR/vrt-results-${example}"
   active_class=""
   [ "$example" = "$first_project" ] && active_class=" active"
@@ -335,8 +362,8 @@ if [ "$HAS_DIFFS" = true ]; then
   {
     echo "| Example | Diffs |"
     echo "|---------|-------|"
-    for example in $(printf '%s\n' "${!EXAMPLE_DIFFS[@]}" | sort); do
-      echo "| ${example} | ${EXAMPLE_DIFFS[$example]} |"
+    print_example_diff_rows | sort | while IFS=$'\t' read -r example count; do
+      echo "| ${example} | ${count} |"
     done
   } > "$DIFF_SUMMARY"
 fi
