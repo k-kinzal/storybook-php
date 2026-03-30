@@ -75,5 +75,6 @@ function quoteOrNull(value: string | null): string {
 }
 
 function renderObjectKey(name: string): string {
+  if (name === "__proto__") return `[${JSON.stringify(name)}]`;
   return /^[A-Za-z_$][\w$]*$/.test(name) ? name : JSON.stringify(name);
 }

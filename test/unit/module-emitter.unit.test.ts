@@ -45,4 +45,32 @@ describe("module-emitter", () => {
     expect(code).toContain('classType: "App\\\\Dto\\\\ItemList"');
     expect(code).toContain('unionTypes: ["array","Traversable"]');
   });
+
+  it("emits __proto__ arg keys as computed properties", () => {
+    const code = generateVirtualModule([
+      {
+        exportName: "Widget",
+        componentId: "cmp_proto",
+        renderPlan: {
+          type: "template",
+          file: "/tmp/widget.php",
+          sourceFile: "/tmp/widget.php",
+          class: null,
+          callable: null,
+        },
+        constructorArgs: {},
+        callableArgs: {},
+        publicArgs: {
+          ["__proto__"]: {
+            type: "string",
+            required: true,
+            position: 0,
+            nullable: false,
+          },
+        },
+      },
+    ]);
+
+    expect(code).toContain('["__proto__"]: {');
+  });
 });

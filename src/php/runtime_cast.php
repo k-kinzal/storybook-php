@@ -999,7 +999,7 @@ function resolveArgs(?ReflectionFunctionAbstract $ref, array $args, ?array $type
         } elseif (
             is_array($argDef)
             && (($argDef['nullable'] ?? false) === true)
-            && (!$param->getType() instanceof \ReflectionType || $param->allowsNull())
+            && ($param->getType() === null || $param->allowsNull())
         ) {
             $resolved = null;
         } elseif ($param->allowsNull()) {

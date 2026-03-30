@@ -810,12 +810,22 @@ final class RunnerTest extends TestCase
         self::assertSame('buffered', getOutputBuffer());
 
         self::assertSame(['alpha' => 1], normalizeStringKeyArray(['alpha' => 1], 'args'));
+        self::assertSame(['adapter.php'], normalizeStringList(['adapter.php'], 'adapters'));
+        self::assertTrue(isSequentialList(['a', 'b']));
+        self::assertFalse(isSequentialList(['first' => 'a']));
 
         try {
             normalizeStringKeyArray([0 => 'bad'], 'args');
             self::fail('Expected non-string keys to throw.');
         } catch (RuntimeException $e) {
             self::assertSame("Field 'args' must use string keys.", $e->getMessage());
+        }
+
+        try {
+            normalizeStringList(['named' => 'adapter.php'], 'adapters');
+            self::fail('Expected non-list adapter array to throw.');
+        } catch (RuntimeException $e) {
+            self::assertSame("Field 'adapters' must be a list of non-empty strings.", $e->getMessage());
         }
     }
 
@@ -860,6 +870,7 @@ final class RunnerTest extends TestCase
             [json_encode(['type' => 'function', 'file' => self::FIXTURE_FILE, 'bootstrap' => 1], JSON_THROW_ON_ERROR), 'Request field "bootstrap" must be a string or null.'],
             [json_encode(['type' => 'function', 'file' => self::FIXTURE_FILE, 'adapters' => 'bad'], JSON_THROW_ON_ERROR), 'Request field "adapters" must be an array or null.'],
             [json_encode(['type' => 'function', 'file' => self::FIXTURE_FILE, 'adapters' => ['']], JSON_THROW_ON_ERROR), "Field 'adapters' must be a list of non-empty strings."],
+            [json_encode(['type' => 'function', 'file' => self::FIXTURE_FILE, 'adapters' => ['first' => self::ADAPTER_FILE]], JSON_THROW_ON_ERROR), "Field 'adapters' must be a list of non-empty strings."],
             [json_encode(['type' => 'function', 'file' => self::FIXTURE_FILE, 'typeMap' => 'bad'], JSON_THROW_ON_ERROR), 'Request field "typeMap" must be an object or null.'],
         ];
 

@@ -65,6 +65,10 @@ function normalizeStringKeyArray(array $value, string $fieldName): array
  */
 function normalizeStringList(array $value, string $fieldName): array
 {
+    if (!isSequentialList($value)) {
+        throw new \RuntimeException("Field '{$fieldName}' must be a list of non-empty strings.");
+    }
+
     $normalized = [];
 
     foreach ($value as $item) {
@@ -76,6 +80,24 @@ function normalizeStringList(array $value, string $fieldName): array
     }
 
     return $normalized;
+}
+
+/**
+ * @param array<array-key, mixed> $value
+ */
+function isSequentialList(array $value): bool
+{
+    $expectedKey = 0;
+
+    foreach ($value as $key => $_item) {
+        if (!is_int($key) || $key !== $expectedKey) {
+            return false;
+        }
+
+        $expectedKey++;
+    }
+
+    return true;
 }
 
 /**
