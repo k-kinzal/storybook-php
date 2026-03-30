@@ -247,8 +247,11 @@ export interface FrameworkOptions {
    * Path to a global PHP adapter middleware.
    * The file must return:
    *   function (array $context, callable $next): array|string
-   * Middleware can rewrite Storybook args before delegating to `$next($context)`
-   * and can wrap or replace the returned HTML response.
+   * Middleware receives `publicArgs` plus hydrated `templateArgs`,
+   * `constructorArgs`, and `methodArgs` where applicable.
+   * Rewriting `publicArgs` before delegating to `$next($context)` causes inner
+   * adapters and the core executor to receive freshly re-hydrated inputs.
+   * Adapters may also replace resolved target args directly or terminate the chain.
    */
   adapter?: string;
   /** Static type mapping configuration */

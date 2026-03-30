@@ -79,8 +79,10 @@ This means components that `return`, `echo`, or mix both styles all work.
 
 Adapters sit around the core executor as middleware.
 
-- They receive the public Storybook `args` surface in `$context['args']`.
-- They may rewrite that input before calling `next($context)`.
+- They receive the public Storybook `args` surface in `$context['publicArgs']`.
+- They also receive hydrated execution inputs in `$context['templateArgs']`, `$context['constructorArgs']`, and `$context['methodArgs']` when those targets exist.
+- They may rewrite `publicArgs` before calling `next($context)`.
+- Inner adapters and the core executor will then receive freshly re-hydrated execution inputs.
 - They may wrap or replace the returned HTML response after `next(...)`.
 - They may terminate the chain entirely by returning HTML without calling `next`.
 
@@ -108,7 +110,7 @@ Without an adapter, the runner:
 2. Includes the template file inside an output buffer.
 3. Returns the buffered HTML.
 
-For Blade, Twig, Latte, and other engines that need their own rendering pipeline, use a terminal adapter middleware instead of raw `include`.
+For Blade, Twig, Latte, and other engines that need their own rendering pipeline, use a terminal adapter middleware instead of raw `include`. Those adapters can read `$context['templateArgs']` directly and return HTML without calling `next`.
 
 ## Decorators and Script Tags
 

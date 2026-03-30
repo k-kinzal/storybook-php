@@ -237,9 +237,11 @@ function loadAdapters(?array $adapterPaths): array
  *   result?: mixed,
  *   buffered?: string,
  *   instance?: object|null,
- *   args?: array<string, mixed>,
+ *   publicArgs?: array<string, mixed>,
+ *   templateArgs?: array<string, mixed>,
  *   constructorArgs?: array<string, mixed>,
- *   methodArgs?: array<string, mixed>
+ *   methodArgs?: array<string, mixed>,
+ *   enumCaseValue?: mixed
  * }
  */
 function normalizeAdapterResponse(mixed $response): array
@@ -261,9 +263,11 @@ function normalizeAdapterResponse(mixed $response): array
      *   result?: mixed,
      *   buffered?: string,
      *   instance?: object|null,
-     *   args?: array<string, mixed>,
+     *   publicArgs?: array<string, mixed>,
+     *   templateArgs?: array<string, mixed>,
      *   constructorArgs?: array<string, mixed>,
-     *   methodArgs?: array<string, mixed>
+     *   methodArgs?: array<string, mixed>,
+     *   enumCaseValue?: mixed
      * } $response
      */
     return $response;
@@ -278,9 +282,11 @@ function normalizeAdapterResponse(mixed $response): array
  *   result?: mixed,
  *   buffered?: string,
  *   instance?: object|null,
- *   args?: array<string, mixed>,
+ *   publicArgs?: array<string, mixed>,
+ *   templateArgs?: array<string, mixed>,
  *   constructorArgs?: array<string, mixed>,
- *   methodArgs?: array<string, mixed>
+ *   methodArgs?: array<string, mixed>,
+ *   enumCaseValue?: mixed
  * }
  */
 function runAdapterMiddleware(array $middlewares, array $context, callable $terminal): array
@@ -298,7 +304,7 @@ function runAdapterMiddleware(array $middlewares, array $context, callable $term
              */
             return static function (array $innerContext) use ($middleware, $next): array {
                 /** @var array<string, mixed> $adapterContext */
-                $adapterContext = $innerContext;
+                $adapterContext = hydrateExecutionContext($innerContext);
                 return normalizeAdapterResponse($middleware($adapterContext, $next));
             };
         },
@@ -308,25 +314,27 @@ function runAdapterMiddleware(array $middlewares, array $context, callable $term
          *   result?: mixed,
          *   buffered?: string,
          *   instance?: object|null,
-         *   args?: array<string, mixed>,
+         *   publicArgs?: array<string, mixed>,
+         *   templateArgs?: array<string, mixed>,
          *   constructorArgs?: array<string, mixed>,
-         *   methodArgs?: array<string, mixed>
+         *   methodArgs?: array<string, mixed>,
+         *   enumCaseValue?: mixed
          * }
          */
         static function (array $innerContext) use ($terminal): array {
             /** @var array<string, mixed> $terminalContext */
-            $terminalContext = $innerContext;
+            $terminalContext = hydrateExecutionContext($innerContext);
             return normalizeAdapterResponse($terminal($terminalContext));
         }
     );
 
-    return $runner($context);
+    return $runner(hydrateExecutionContext($context));
 }
 
 /**
  * @param array{
  *   type: string,
- *   args: array<string, mixed>,
+ *   publicArgs: array<string, mixed>,
  *   constructorArgDefs?: array<string, mixed>|null,
  *   callableArgDefs?: array<string, mixed>|null
  * } $context
@@ -334,7 +342,7 @@ function runAdapterMiddleware(array $middlewares, array $context, callable $term
  */
 function mapPublicArgsToExecutionTargets(array $context): array
 {
-    $storyArgs = $context['args'];
+    $storyArgs = $context['publicArgs'];
 
     if ($context['type'] === 'template') {
         $templateArgs = [];

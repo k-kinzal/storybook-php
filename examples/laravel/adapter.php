@@ -19,13 +19,6 @@ use Illuminate\View\Component;
 
 return static function (array $context, callable $next): array {
     $factory = Container::getInstance()->make(ViewFactory::class);
-
-    if (($context['type'] ?? null) === 'template') {
-        return [
-            'html' => $factory->file($context['file'], resolveTemplateContextArgs($context))->render(),
-        ];
-    }
-
     $response = $next($context);
     $instance = $response['instance'] ?? null;
 
@@ -47,7 +40,5 @@ return static function (array $context, callable $next): array {
         return array_merge($response, ['html' => (string) $view]);
     }
 
-    return array_merge($response, [
-        'html' => resolveOutput($response['result'] ?? null, (string) ($response['buffered'] ?? '')),
-    ]);
+    return $response;
 };

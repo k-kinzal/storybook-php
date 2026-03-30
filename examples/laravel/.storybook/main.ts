@@ -12,7 +12,7 @@ const config: StorybookConfig = {
       typeMap: {
         files: {
           "*.blade.php": {
-            adapter: new URL("../adapter.php", import.meta.url).pathname,
+            adapter: new URL("../blade.php", import.meta.url).pathname,
           },
           "../src/views/direct-template.blade.php": {
             args: {

@@ -152,7 +152,7 @@ files: {
 }
 ```
 
-That adapter can be a terminal middleware that renders the template engine directly and returns HTML without calling `next`.
+That adapter can be a terminal middleware that renders the template engine directly and returns HTML without calling `next`. The pre-cast template input is already available in `$context['templateArgs']`.
 
 ### `phpFile` Redirects
 

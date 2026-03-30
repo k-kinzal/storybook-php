@@ -889,31 +889,61 @@ final class RunnerTest extends TestCase
         $chainResponse = runAdapterMiddleware(
             [
                 static function (array $context, callable $next): array {
-                    $context['args']['title'] = 'inner';
+                    self::assertSame('1.5', $context['publicArgs']['amount']);
+                    self::assertSame(1.5, $context['methodArgs']['amount']);
+                    $context['publicArgs']['amount'] = '2.5';
                     $response = $next($context);
                     return array_merge($response, ['html' => '[outer]' . $response['html']]);
                 },
                 static function (array $context, callable $next): array {
+                    self::assertSame('2.5', $context['publicArgs']['amount']);
+                    self::assertSame(2.5, $context['methodArgs']['amount']);
                     $response = $next($context);
-                    return array_merge($response, ['html' => '[middle:' . $context['args']['title'] . ']' . $response['html']]);
+                    return array_merge($response, ['html' => '[middle:' . $context['methodArgs']['amount'] . ']' . $response['html']]);
                 },
             ],
             [
-                'type' => 'function',
+                'type' => 'staticMethod',
                 'file' => self::FIXTURE_FILE,
                 'executionFile' => self::FIXTURE_FILE,
-                'args' => ['title' => 'start'],
+                'class' => ExampleRenderer::class,
+                'callable' => 'staticRender',
+                'publicArgs' => ['amount' => '1.5'],
             ],
-            static fn (array $context): array => ['html' => '[core:' . $context['args']['title'] . ']']
+            static fn (array $context): array => ['html' => '[core:' . $context['methodArgs']['amount'] . ']']
         );
-        self::assertSame('[outer][middle:inner][core:inner]', $chainResponse['html']);
+        self::assertSame('[outer][middle:2.5][core:2.5]', $chainResponse['html']);
+
+        $templateResponse = runAdapterMiddleware(
+            [
+                static function (array $context, callable $next): array {
+                    self::assertSame(['greeting' => 'hello'], $context['publicArgs']);
+                    self::assertSame('hello', $context['templateArgs']['greeting']);
+                    self::assertSame(4, $context['templateArgs']['count']);
+
+                    return ['html' => $context['templateArgs']['greeting'] . ':' . $context['templateArgs']['count']];
+                },
+            ],
+            [
+                'type' => 'template',
+                'file' => self::TEMPLATE_FILE,
+                'executionFile' => self::TEMPLATE_FILE,
+                'publicArgs' => ['greeting' => 'hello'],
+                'publicArgDefs' => [
+                    'greeting' => ['type' => 'string', 'required' => true, 'position' => 0, 'nullable' => false],
+                    'count' => ['type' => 'int', 'required' => false, 'position' => 1, 'nullable' => false, 'default' => '4'],
+                ],
+            ],
+            static fn (): array => ['html' => 'unreachable']
+        );
+        self::assertSame('hello:4', $templateResponse['html']);
 
         self::assertSame(
             ['template' => ['greeting' => 'hello']],
             mapPublicArgsToExecutionTargets(
                 [
                     'type' => 'template',
-                    'args' => ['greeting' => 'hello', 'constructor.title' => 'skip', 'method.title' => 'skip'],
+                    'publicArgs' => ['greeting' => 'hello', 'constructor.title' => 'skip', 'method.title' => 'skip'],
                 ]
             ),
         );
@@ -925,7 +955,7 @@ final class RunnerTest extends TestCase
             mapPublicArgsToExecutionTargets(
                 [
                     'type' => 'classMethod',
-                    'args' => ['constructor.id' => '1', 'title' => 'flat', 'method.title' => 'scoped'],
+                    'publicArgs' => ['constructor.id' => '1', 'title' => 'flat', 'method.title' => 'scoped'],
                     'constructorArgDefs' => ['id' => ['type' => 'int']],
                     'callableArgDefs' => ['title' => ['type' => 'string']],
                 ],
@@ -939,7 +969,7 @@ final class RunnerTest extends TestCase
             mapPublicArgsToExecutionTargets(
                 [
                     'type' => 'classMethod',
-                    'args' => ['constructor.id' => '1', 'method.title' => 'fallback', 'shared' => 'value'],
+                    'publicArgs' => ['constructor.id' => '1', 'method.title' => 'fallback', 'shared' => 'value'],
                 ],
             ),
         );
@@ -991,6 +1021,87 @@ final class RunnerTest extends TestCase
             self::fail('Expected output resolution failure to bubble when suppression is disabled.');
         } catch (RuntimeException $e) {
             self::assertSame('explode', $e->getMessage());
+        }
+    }
+
+    public function testHydrationHelpersPreserveExplicitOverridesAndValidatePlannerInputs(): void
+    {
+        self::assertSame([], orderResolvedArgs(null, []));
+
+        $resolvedArgsContext = applyResolvedExecutionArgs(
+            [
+                'methodArgs' => ['title' => 'manual'],
+                '__computedMethodArgs' => ['title' => 'computed'],
+            ],
+            'methodArgs',
+            '__computedMethodArgs',
+            ['title' => 'computed', 'count' => 2],
+        );
+        self::assertSame(
+            ['title' => 'manual', 'count' => 2],
+            $resolvedArgsContext['methodArgs'],
+        );
+        self::assertSame(
+            ['title' => 'computed', 'count' => 2],
+            $resolvedArgsContext['__computedMethodArgs'],
+        );
+
+        $resolvedValueContext = applyResolvedExecutionValue(
+            [
+                'enumCaseValue' => 'manual',
+                '__computedEnumCaseValue' => 'draft',
+            ],
+            'enumCaseValue',
+            '__computedEnumCaseValue',
+            'published',
+        );
+        self::assertSame('manual', $resolvedValueContext['enumCaseValue']);
+        self::assertSame('published', $resolvedValueContext['__computedEnumCaseValue']);
+
+        $plannerCases = [
+            [
+                'context' => [
+                    'type' => 'classMethod',
+                    'class' => ExampleRenderer::class,
+                    'callable' => 'render',
+                ],
+                'message' => 'classMethod requires an execution file.',
+            ],
+            [
+                'context' => [
+                    'type' => 'staticMethod',
+                    'class' => ExampleRenderer::class,
+                    'callable' => 'staticRender',
+                ],
+                'message' => 'staticMethod requires an execution file.',
+            ],
+            [
+                'context' => [
+                    'type' => 'function',
+                    'callable' => 'StorybookPhp\\TestFixture\\renderFixture',
+                ],
+                'message' => 'function render requires an execution file.',
+            ],
+        ];
+
+        if (PHP_VERSION_ID >= 80100) {
+            $plannerCases[] = [
+                'context' => [
+                    'type' => 'enumMethod',
+                    'class' => Status::class,
+                    'callable' => 'render',
+                ],
+                'message' => 'enumMethod requires an execution file.',
+            ];
+        }
+
+        foreach ($plannerCases as $plannerCase) {
+            try {
+                ensureExecutionPlanner($plannerCase['context']);
+                self::fail('Expected missing execution file to fail.');
+            } catch (RuntimeException $e) {
+                self::assertSame($plannerCase['message'], $e->getMessage());
+            }
         }
     }
 

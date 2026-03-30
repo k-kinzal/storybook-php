@@ -86,7 +86,8 @@ If you use `defaultMethod`, configure the TS plugin with the same value for cons
 
 Adapters are PHP middleware around the core executor. They can:
 
-- rewrite Storybook args before PHP reflection/template execution
+- rewrite public Storybook args before PHP reflection/template execution
+- read hydrated execution inputs from `templateArgs`, `constructorArgs`, and `methodArgs`
 - delegate to the next adapter or terminate the chain
 - wrap or replace the final HTML response
 
@@ -100,10 +101,9 @@ Recommended adapter signature:
 return static function (array $context, callable $next): array|string {
     $response = $next($context);
 
-    return [
-        ...$response,
+    return array_merge($response, [
         'html' => resolveOutput($response['result'] ?? null, (string) ($response['buffered'] ?? '')),
-    ];
+    ]);
 };
 ```
 
@@ -114,7 +114,10 @@ return static function (array $context, callable $next): array|string {
 - `executionFile`: the PHP file that will actually execute
 - `class`: resolved PHP class name when applicable
 - `callable`: resolved method/function name when applicable
-- `args`: the story args sent from Storybook
+- `publicArgs`: the story args sent from Storybook
+- `templateArgs`: hydrated template variables for template imports
+- `constructorArgs`: hydrated constructor arguments for instance methods
+- `methodArgs`: hydrated method/function arguments
 - `publicArgDefs`, `constructorArgDefs`, `callableArgDefs`: resolved arg definitions
 - `typeMap`: runtime bindings used during casting
 
@@ -124,7 +127,7 @@ return static function (array $context, callable $next): array|string {
 - `result`: raw PHP return value from the core executor
 - `buffered`: captured output buffer
 - `instance`: constructed object for instance methods
-- `args`, `constructorArgs`, `methodArgs`: resolved input snapshots
+- `publicArgs`, `templateArgs`, `constructorArgs`, `methodArgs`: input snapshots used for execution
 
 Returning a plain string is shorthand for `['html' => '...']`. If an adapter does not call `next`, it becomes the terminal renderer.
 
@@ -146,47 +149,44 @@ Request flows in that order and the response unwinds in reverse.
 <?php
 
 use Illuminate\Container\Container;
-use Illuminate\Contracts\View\View as ViewContract;
 use Illuminate\View\Factory as ViewFactory;
-use Illuminate\View\Component;
 
 return static function (array $context, callable $next): array {
     $factory = Container::getInstance()->make(ViewFactory::class);
+    $templateArgs = $context['templateArgs'] ?? [];
+    $templateFile = realpath((string) ($context['file'] ?? '')) ?: (string) ($context['file'] ?? '');
 
-    if (($context['type'] ?? null) === 'template') {
-        return [
-            'html' => $factory->file($context['file'], resolveTemplateContextArgs($context))->render(),
-        ];
+    foreach ($factory->getFinder()->getPaths() as $viewPath) {
+        $resolvedViewPath = realpath($viewPath) ?: $viewPath;
+        $normalizedViewPath = rtrim($resolvedViewPath, DIRECTORY_SEPARATOR) . DIRECTORY_SEPARATOR;
+
+        if (!str_starts_with($templateFile, $normalizedViewPath)) {
+            continue;
+        }
+
+        $relativeViewPath = substr($templateFile, strlen($normalizedViewPath));
+        $viewName = preg_replace('/\\.blade\\.php$/', '', str_replace(DIRECTORY_SEPARATOR, '.', $relativeViewPath));
+
+        if (is_string($viewName) && $viewName !== '') {
+            return [
+                'html' => $factory->make($viewName, $templateArgs)->render(),
+            ];
+        }
     }
 
-    $response = $next($context);
-    $instance = $response['instance'] ?? null;
-
-    if ($instance instanceof Component) {
-        $view = $instance->resolveView();
-
-        if ($view instanceof Closure) {
-            $view = $view($instance->data());
-        }
-
-        if ($view instanceof ViewContract) {
-            return [...$response, 'html' => $view->with($instance->data())->render()];
-        }
-
-        if (is_string($view)) {
-            return [...$response, 'html' => $factory->make($view, $instance->data())->render()];
-        }
-
-        return [...$response, 'html' => (string) $view];
-    }
-
-    return $response;
+    return [
+        'html' => $factory->file($templateFile, $templateArgs)->render(),
+    ];
 };
 ```
 
+This adapter is terminal middleware for direct Blade imports. It does not call `next()`.
+
+If you also want to adapt `Illuminate\View\Component` classes, keep that as a separate middleware that calls `next()` first and then rewrites the HTML based on the constructed instance.
+
 ### Template-Engine Adapters
 
-For `template` mode, adapters can take over rendering completely by returning HTML without calling `next`. This is how Blade, Twig, Latte, and similar engines can render files that should not be included directly.
+For `template` mode, adapters can take over rendering completely by reading `$context['templateArgs']` and returning HTML without calling `next`. This is how Blade, Twig, Latte, and similar engines can render files that should not be included directly.
 
 ## Per-File Adapters
 

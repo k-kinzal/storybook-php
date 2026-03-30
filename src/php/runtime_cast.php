@@ -892,17 +892,18 @@ function buildOverrideDocType(ReflectionParameter $param, array $argDef): ?strin
  * @param array<array-key, mixed> $args
  * @param array<string, mixed>|null $typeMap
  * @param array<string, mixed>|null $argDefs
- * @return list<mixed>
+ * @return array{ordered: list<mixed>, named: array<string, mixed>}
  */
-function matchArgs(?ReflectionFunctionAbstract $ref, array $args, ?array $typeMap = null, ?array $argDefs = null): array
+function resolveArgs(?ReflectionFunctionAbstract $ref, array $args, ?array $typeMap = null, ?array $argDefs = null): array
 {
     if (!$ref instanceof \ReflectionFunctionAbstract) {
-        return [];
+        return ['ordered' => [], 'named' => []];
     }
 
     $docTypes = parseDocBlockParamTypes($ref);
 
     $ordered = [];
+    $named = [];
     foreach ($ref->getParameters() as $param) {
         $name = $param->getName();
         $argDef = null;
@@ -917,31 +918,64 @@ function matchArgs(?ReflectionFunctionAbstract $ref, array $args, ?array $typeMa
             if (array_key_exists($name, $args)) {
                 $value = $args[$name];
                 $values = is_array($value) && isListArray($value) ? $value : [$value];
+                $named[$name] = [];
                 foreach ($values as $item) {
-                    $ordered[] = castArg($param, $item, $docType, $typeMap);
+                    $casted = castArg($param, $item, $docType, $typeMap);
+                    $ordered[] = $casted;
+                    $named[$name][] = $casted;
                 }
             }
             continue;
         }
 
+        $resolved = null;
         if (array_key_exists($name, $args)) {
-            $ordered[] = castArg($param, $args[$name], $docType, $typeMap);
+            $resolved = castArg($param, $args[$name], $docType, $typeMap);
         } elseif (is_array($argDef) && array_key_exists('default', $argDef)) {
-            $ordered[] = castArg($param, $argDef['default'], $docType, $typeMap);
+            $resolved = castArg($param, $argDef['default'], $docType, $typeMap);
         } elseif ($param->isDefaultValueAvailable()) {
-            $ordered[] = $param->getDefaultValue();
+            $resolved = $param->getDefaultValue();
         } elseif (
             is_array($argDef)
             && (($argDef['nullable'] ?? false) === true)
             && (!$param->getType() instanceof \ReflectionType || $param->allowsNull())
         ) {
-            $ordered[] = null;
+            $resolved = null;
         } elseif ($param->allowsNull()) {
-            $ordered[] = null;
+            $resolved = null;
         } else {
             throw new \RuntimeException("Missing required argument: {$name}");
         }
+
+        $ordered[] = $resolved;
+        $named[$name] = $resolved;
     }
 
-    return $ordered;
+    return ['ordered' => $ordered, 'named' => $named];
+}
+
+/**
+ * Match arguments from an associative array to the parameter order expected by reflection.
+ *
+ * @param array<array-key, mixed> $args
+ * @param array<string, mixed>|null $typeMap
+ * @param array<string, mixed>|null $argDefs
+ * @return list<mixed>
+ */
+function matchArgs(?ReflectionFunctionAbstract $ref, array $args, ?array $typeMap = null, ?array $argDefs = null): array
+{
+    return resolveArgs($ref, $args, $typeMap, $argDefs)['ordered'];
+}
+
+/**
+ * Resolve arguments into a named map keyed by parameter name.
+ *
+ * @param array<array-key, mixed> $args
+ * @param array<string, mixed>|null $typeMap
+ * @param array<string, mixed>|null $argDefs
+ * @return array<string, mixed>
+ */
+function resolveNamedArgs(?ReflectionFunctionAbstract $ref, array $args, ?array $typeMap = null, ?array $argDefs = null): array
+{
+    return resolveArgs($ref, $args, $typeMap, $argDefs)['named'];
 }

@@ -46,7 +46,7 @@ function executeRunnerRequest(array $__sb_request): array
         'executionFile' => $__sb_file,
         'class' => $__sb_class,
         'callable' => $__sb_callable,
-        'args' => $__sb_storyArgs,
+        'publicArgs' => $__sb_storyArgs,
         'publicArgDefs' => $__sb_publicArgDefs,
         'constructorArgDefs' => $__sb_constructorArgDefs,
         'callableArgDefs' => $__sb_callableArgDefs,
@@ -67,11 +67,16 @@ function executeRunnerRequest(array $__sb_request): array
              *   executionFile: string,
              *   class: string|null,
              *   callable: string|null,
-             *   args: array<string, mixed>,
+             *   publicArgs: array<string, mixed>,
              *   publicArgDefs?: array<string, mixed>|null,
              *   constructorArgDefs?: array<string, mixed>|null,
              *   callableArgDefs?: array<string, mixed>|null,
+             *   templateArgs?: array<string, mixed>,
+             *   constructorArgs?: array<string, mixed>,
+             *   methodArgs?: array<string, mixed>,
+             *   enumCaseValue?: mixed,
              *   suppressOutputResolutionErrors?: bool,
+             *   __planner?: array<string, mixed>,
              *   typeMap?: array<string, mixed>|null
              * } $adapterContext
              */
@@ -89,11 +94,16 @@ function executeRunnerRequest(array $__sb_request): array
  *   executionFile: string,
  *   class: string|null,
  *   callable: string|null,
- *   args: array<string, mixed>,
+ *   publicArgs: array<string, mixed>,
  *   publicArgDefs?: array<string, mixed>|null,
  *   constructorArgDefs?: array<string, mixed>|null,
  *   callableArgDefs?: array<string, mixed>|null,
+ *   templateArgs?: array<string, mixed>,
+ *   constructorArgs?: array<string, mixed>,
+ *   methodArgs?: array<string, mixed>,
+ *   enumCaseValue?: mixed,
  *   suppressOutputResolutionErrors?: bool,
+ *   __planner?: array<string, mixed>,
  *   typeMap?: array<string, mixed>|null
  * } $__sb_context
  * @return array{
@@ -101,136 +111,88 @@ function executeRunnerRequest(array $__sb_request): array
  *   result?: mixed,
  *   buffered?: string,
  *   instance?: object|null,
- *   args?: array<string, mixed>,
+ *   publicArgs?: array<string, mixed>,
+ *   templateArgs?: array<string, mixed>,
  *   constructorArgs?: array<string, mixed>,
- *   methodArgs?: array<string, mixed>
+ *   methodArgs?: array<string, mixed>,
+ *   enumCaseValue?: mixed
  * }
  */
 function executeCoreContext(array $__sb_context): array
 {
+    $__sb_context = hydrateExecutionContext($__sb_context);
     $__sb_type = $__sb_context['type'];
+    $__sb_planner = $__sb_context['__planner'] ?? [];
     $__sb_file = $__sb_context['executionFile'];
     $__sb_class = $__sb_context['class'];
     $__sb_callable = $__sb_context['callable'];
-    $__sb_typeMap = $__sb_context['typeMap'] ?? null;
     $__sb_suppressOutputResolutionErrors = $__sb_context['suppressOutputResolutionErrors'] ?? false;
 
     switch ($__sb_type) {
         case 'classMethod':
-            if ($__sb_class === null || $__sb_callable === null) {
-                throw new \RuntimeException('classMethod requires class and callable.');
-            }
-            require_once $__sb_file;
-            /** @var class-string $__sb_class */
-            $__sb_ref = new ReflectionClass($__sb_class);
-            $__sb_constructor = $__sb_ref->getConstructor();
-            $__sb_effectiveConstructorArgDefs = buildTargetArgDefs(
-                $__sb_context['constructorArgDefs'] ?? null,
-                $__sb_context['publicArgDefs'] ?? null,
-                'constructor'
-            );
-            $__sb_effectiveCallableArgDefs = buildTargetArgDefs(
-                $__sb_context['callableArgDefs'] ?? null,
-                $__sb_context['publicArgDefs'] ?? null,
-                'method'
-            );
-            $__sb_mappedArgs = mapPublicArgsToExecutionTargets($__sb_context);
-            $__sb_constructorArgs = $__sb_mappedArgs['constructor'] ?? [];
-            $__sb_methodArgs = $__sb_mappedArgs['method'] ?? [];
+            /** @var ReflectionClass $__sb_ref */
+            $__sb_ref = $__sb_planner['classReflection'];
+            /** @var ReflectionMethod|null $__sb_constructor */
+            $__sb_constructor = $__sb_planner['constructorReflection'] ?? null;
+            $__sb_constructorArgs = $__sb_context['constructorArgs'] ?? [];
+            $__sb_methodArgs = $__sb_context['methodArgs'] ?? [];
             $__sb_instance = $__sb_constructor !== null
-                ? $__sb_ref->newInstanceArgs(matchArgs(
-                    $__sb_constructor,
-                    $__sb_constructorArgs,
-                    $__sb_typeMap,
-                    $__sb_effectiveConstructorArgDefs
-                ))
+                ? $__sb_ref->newInstanceArgs(orderResolvedArgs($__sb_constructor, $__sb_constructorArgs))
                 : $__sb_ref->newInstance();
-            $__sb_method = $__sb_ref->getMethod($__sb_callable);
+            /** @var ReflectionMethod $__sb_method */
+            $__sb_method = $__sb_planner['callableReflection'];
             ob_start();
-            $__sb_result = $__sb_method->invokeArgs($__sb_instance, matchArgs(
-                $__sb_method,
-                $__sb_methodArgs,
-                $__sb_typeMap,
-                $__sb_effectiveCallableArgDefs
-            ));
+            $__sb_result = $__sb_method->invokeArgs($__sb_instance, orderResolvedArgs($__sb_method, $__sb_methodArgs));
             $__sb_buffered = getOutputBuffer();
             return buildExecutionResponse(
                 resolveExecutionHtml($__sb_result, $__sb_buffered, $__sb_suppressOutputResolutionErrors),
                 $__sb_result,
                 $__sb_buffered,
                 $__sb_instance,
-                $__sb_context['args'],
+                $__sb_context['publicArgs'],
+                [],
                 $__sb_constructorArgs,
                 $__sb_methodArgs,
             );
 
         case 'staticMethod':
-            if ($__sb_class === null || $__sb_callable === null) {
-                throw new \RuntimeException('staticMethod requires class and callable.');
-            }
-            require_once $__sb_file;
-            /** @var class-string $__sb_class */
-            $__sb_ref = new ReflectionClass($__sb_class);
-            $__sb_method = $__sb_ref->getMethod($__sb_callable);
-            $__sb_effectiveCallableArgDefs = buildTargetArgDefs(
-                $__sb_context['callableArgDefs'] ?? null,
-                $__sb_context['publicArgDefs'] ?? null,
-                'method'
-            );
-            $__sb_mappedArgs = mapPublicArgsToExecutionTargets($__sb_context);
-            $__sb_methodArgs = $__sb_mappedArgs['method'] ?? [];
+            $__sb_methodArgs = $__sb_context['methodArgs'] ?? [];
+            /** @var ReflectionMethod $__sb_method */
+            $__sb_method = $__sb_planner['callableReflection'];
             ob_start();
-            $__sb_result = $__sb_method->invokeArgs(null, matchArgs(
-                $__sb_method,
-                $__sb_methodArgs,
-                $__sb_typeMap,
-                $__sb_effectiveCallableArgDefs
-            ));
+            $__sb_result = $__sb_method->invokeArgs(null, orderResolvedArgs($__sb_method, $__sb_methodArgs));
             $__sb_buffered = getOutputBuffer();
             return buildExecutionResponse(
                 resolveExecutionHtml($__sb_result, $__sb_buffered, $__sb_suppressOutputResolutionErrors),
                 $__sb_result,
                 $__sb_buffered,
                 null,
-                $__sb_context['args'],
+                $__sb_context['publicArgs'],
+                [],
                 [],
                 $__sb_methodArgs,
             );
 
         case 'function':
-            if ($__sb_callable === null) {
-                throw new \RuntimeException('function render requires callable.');
-            }
-            require_once $__sb_file;
-            $__sb_ref = new ReflectionFunction($__sb_callable);
-            $__sb_effectiveCallableArgDefs = buildTargetArgDefs(
-                $__sb_context['callableArgDefs'] ?? null,
-                $__sb_context['publicArgDefs'] ?? null,
-                'method'
-            );
-            $__sb_mappedArgs = mapPublicArgsToExecutionTargets($__sb_context);
-            $__sb_methodArgs = $__sb_mappedArgs['method'] ?? [];
+            $__sb_methodArgs = $__sb_context['methodArgs'] ?? [];
+            /** @var ReflectionFunction $__sb_ref */
+            $__sb_ref = $__sb_planner['callableReflection'];
             ob_start();
-            $__sb_result = $__sb_ref->invokeArgs(matchArgs(
-                $__sb_ref,
-                $__sb_methodArgs,
-                $__sb_typeMap,
-                $__sb_effectiveCallableArgDefs
-            ));
+            $__sb_result = $__sb_ref->invokeArgs(orderResolvedArgs($__sb_ref, $__sb_methodArgs));
             $__sb_buffered = getOutputBuffer();
             return buildExecutionResponse(
                 resolveExecutionHtml($__sb_result, $__sb_buffered, $__sb_suppressOutputResolutionErrors),
                 $__sb_result,
                 $__sb_buffered,
                 null,
-                $__sb_context['args'],
+                $__sb_context['publicArgs'],
+                [],
                 [],
                 $__sb_methodArgs,
             );
 
         case 'template':
-            $__sb_templateInput = mapPublicArgsToExecutionTargets($__sb_context)['template'] ?? $__sb_context['args'];
-            $__sb_templateArgs = resolveTemplateContextArgs($__sb_context, $__sb_templateInput);
+            $__sb_templateArgs = $__sb_context['templateArgs'] ?? resolveTemplateContextArgs($__sb_context);
             extract($__sb_templateArgs, EXTR_SKIP);
             ob_start();
             include $__sb_file;
@@ -239,11 +201,253 @@ function executeCoreContext(array $__sb_context): array
                 null,
                 '',
                 null,
+                $__sb_context['publicArgs'],
                 $__sb_templateArgs,
             );
 
         case 'enumMethod':
-            if ($__sb_class === null || $__sb_callable === null) {
+            $__sb_caseValue = $__sb_context['enumCaseValue'] ?? $__sb_context['publicArgs']['_case'] ?? null;
+            $__sb_enumInstance = resolveEnumCase($__sb_class, $__sb_caseValue);
+            $__sb_methodArgs = $__sb_context['methodArgs'] ?? [];
+            /** @var ReflectionMethod $__sb_method */
+            $__sb_method = $__sb_planner['callableReflection'];
+            ob_start();
+            $__sb_result = $__sb_method->invokeArgs($__sb_enumInstance, orderResolvedArgs($__sb_method, $__sb_methodArgs));
+            $__sb_buffered = getOutputBuffer();
+            return buildExecutionResponse(
+                resolveExecutionHtml($__sb_result, $__sb_buffered, $__sb_suppressOutputResolutionErrors),
+                $__sb_result,
+                $__sb_buffered,
+                $__sb_enumInstance,
+                $__sb_context['publicArgs'],
+                [],
+                [],
+                $__sb_methodArgs,
+                $__sb_caseValue,
+            );
+
+    }
+}
+
+/**
+ * @param array{
+ *   type: 'classMethod'|'staticMethod'|'function'|'template'|'enumMethod',
+ *   executionFile?: string,
+ *   class?: string|null,
+ *   callable?: string|null,
+ *   publicArgs?: array<string, mixed>,
+ *   publicArgDefs?: array<string, mixed>|null,
+ *   constructorArgDefs?: array<string, mixed>|null,
+ *   callableArgDefs?: array<string, mixed>|null,
+ *   templateArgs?: array<string, mixed>,
+ *   constructorArgs?: array<string, mixed>,
+ *   methodArgs?: array<string, mixed>,
+ *   enumCaseValue?: mixed,
+ *   __planner?: array<string, mixed>,
+ *   typeMap?: array<string, mixed>|null
+ * } $context
+ * @return array<string, mixed>
+ */
+function hydrateExecutionContext(array $context): array
+{
+    $context = ensureExecutionPlanner($context);
+    $publicArgs = $context['publicArgs'] ?? [];
+    $context['publicArgs'] = is_array($publicArgs) ? $publicArgs : [];
+
+    $mappedArgs = mapPublicArgsToExecutionTargets($context);
+    $planner = $context['__planner'] ?? [];
+    $typeMap = $context['typeMap'] ?? null;
+
+    switch ($context['type']) {
+        case 'template':
+            $templateInput = $mappedArgs['template'] ?? $context['publicArgs'];
+            $computedTemplateArgs = resolveTemplateContextArgs($context, $templateInput);
+            $context = applyResolvedExecutionArgs($context, 'templateArgs', '__computedTemplateArgs', $computedTemplateArgs);
+            unset($context['constructorArgs'], $context['methodArgs'], $context['enumCaseValue']);
+            return $context;
+
+        case 'classMethod':
+            $computedConstructorArgs = resolveNamedArgs(
+                $planner['constructorReflection'] ?? null,
+                $mappedArgs['constructor'] ?? [],
+                $typeMap,
+                $planner['effectiveConstructorArgDefs'] ?? null,
+            );
+            $computedMethodArgs = resolveNamedArgs(
+                $planner['callableReflection'] ?? null,
+                $mappedArgs['method'] ?? [],
+                $typeMap,
+                $planner['effectiveCallableArgDefs'] ?? null,
+            );
+            $context = applyResolvedExecutionArgs($context, 'constructorArgs', '__computedConstructorArgs', $computedConstructorArgs);
+            $context = applyResolvedExecutionArgs($context, 'methodArgs', '__computedMethodArgs', $computedMethodArgs);
+            unset($context['templateArgs'], $context['enumCaseValue']);
+            return $context;
+
+        case 'staticMethod':
+        case 'function':
+            $computedMethodArgs = resolveNamedArgs(
+                $planner['callableReflection'] ?? null,
+                $mappedArgs['method'] ?? [],
+                $typeMap,
+                $planner['effectiveCallableArgDefs'] ?? null,
+            );
+            $context = applyResolvedExecutionArgs($context, 'methodArgs', '__computedMethodArgs', $computedMethodArgs);
+            unset($context['templateArgs'], $context['constructorArgs'], $context['enumCaseValue']);
+            return $context;
+
+        case 'enumMethod':
+            $methodInput = $mappedArgs['method'] ?? [];
+            $computedEnumCaseValue = $methodInput['_case'] ?? $context['publicArgs']['_case'] ?? null;
+            $context = applyResolvedExecutionValue($context, 'enumCaseValue', '__computedEnumCaseValue', $computedEnumCaseValue);
+            unset($methodInput['_case']);
+            $computedMethodArgs = resolveNamedArgs(
+                $planner['callableReflection'] ?? null,
+                $methodInput,
+                $typeMap,
+                $planner['effectiveCallableArgDefs'] ?? null,
+            );
+            $context = applyResolvedExecutionArgs($context, 'methodArgs', '__computedMethodArgs', $computedMethodArgs);
+            unset($context['templateArgs'], $context['constructorArgs']);
+            return $context;
+    }
+}
+
+/**
+ * @param array<string, mixed> $computedArgs
+ * @return array<string, mixed>
+ */
+function applyResolvedExecutionArgs(array $context, string $field, string $snapshotField, array $computedArgs): array
+{
+    $existingArgs = $context[$field] ?? null;
+    $previousComputedArgs = $context[$snapshotField] ?? null;
+
+    if (!is_array($existingArgs) || !is_array($previousComputedArgs) || $existingArgs === $previousComputedArgs) {
+        $context[$field] = $computedArgs;
+        $context[$snapshotField] = $computedArgs;
+
+        return $context;
+    }
+
+    $context[$field] = array_merge($computedArgs, $existingArgs);
+    $context[$snapshotField] = $computedArgs;
+
+    return $context;
+}
+
+function applyResolvedExecutionValue(array $context, string $field, string $snapshotField, mixed $computedValue): array
+{
+    $existingValue = $context[$field] ?? null;
+    $previousComputedValue = $context[$snapshotField] ?? null;
+
+    if (!array_key_exists($field, $context) || $existingValue === $previousComputedValue) {
+        $context[$field] = $computedValue;
+        $context[$snapshotField] = $computedValue;
+
+        return $context;
+    }
+
+    $context[$snapshotField] = $computedValue;
+
+    return $context;
+}
+
+/**
+ * @param array{
+ *   type: 'classMethod'|'staticMethod'|'function'|'template'|'enumMethod',
+ *   executionFile?: string,
+ *   class?: string|null,
+ *   callable?: string|null,
+ *   publicArgDefs?: array<string, mixed>|null,
+ *   constructorArgDefs?: array<string, mixed>|null,
+ *   callableArgDefs?: array<string, mixed>|null,
+ *   __planner?: array<string, mixed>
+ * } $context
+ * @return array<string, mixed>
+ */
+function ensureExecutionPlanner(array $context): array
+{
+    if (isset($context['__planner']) && is_array($context['__planner'])) {
+        return $context;
+    }
+
+    $type = $context['type'];
+    $executionFile = $context['executionFile'] ?? null;
+    $class = $context['class'] ?? null;
+    $callable = $context['callable'] ?? null;
+
+    $planner = [
+        'type' => $type,
+        'effectiveConstructorArgDefs' => null,
+        'effectiveCallableArgDefs' => null,
+    ];
+
+    switch ($type) {
+        case 'classMethod':
+            if (!is_string($class) || $class === '' || !is_string($callable) || $callable === '') {
+                throw new \RuntimeException('classMethod requires class and callable.');
+            }
+            if (!is_string($executionFile) || $executionFile === '') {
+                throw new \RuntimeException('classMethod requires an execution file.');
+            }
+            require_once $executionFile;
+            /** @var class-string $class */
+            $classReflection = new ReflectionClass($class);
+            $planner['classReflection'] = $classReflection;
+            $planner['constructorReflection'] = $classReflection->getConstructor();
+            $planner['callableReflection'] = $classReflection->getMethod($callable);
+            $planner['effectiveConstructorArgDefs'] = buildTargetArgDefs(
+                $context['constructorArgDefs'] ?? null,
+                $context['publicArgDefs'] ?? null,
+                'constructor'
+            );
+            $planner['effectiveCallableArgDefs'] = buildTargetArgDefs(
+                $context['callableArgDefs'] ?? null,
+                $context['publicArgDefs'] ?? null,
+                'method'
+            );
+            break;
+
+        case 'staticMethod':
+            if (!is_string($class) || $class === '' || !is_string($callable) || $callable === '') {
+                throw new \RuntimeException('staticMethod requires class and callable.');
+            }
+            if (!is_string($executionFile) || $executionFile === '') {
+                throw new \RuntimeException('staticMethod requires an execution file.');
+            }
+            require_once $executionFile;
+            /** @var class-string $class */
+            $classReflection = new ReflectionClass($class);
+            $planner['classReflection'] = $classReflection;
+            $planner['callableReflection'] = $classReflection->getMethod($callable);
+            $planner['effectiveCallableArgDefs'] = buildTargetArgDefs(
+                $context['callableArgDefs'] ?? null,
+                $context['publicArgDefs'] ?? null,
+                'method'
+            );
+            break;
+
+        case 'function':
+            if (!is_string($callable) || $callable === '') {
+                throw new \RuntimeException('function render requires callable.');
+            }
+            if (!is_string($executionFile) || $executionFile === '') {
+                throw new \RuntimeException('function render requires an execution file.');
+            }
+            require_once $executionFile;
+            $planner['callableReflection'] = new ReflectionFunction($callable);
+            $planner['effectiveCallableArgDefs'] = buildTargetArgDefs(
+                $context['callableArgDefs'] ?? null,
+                $context['publicArgDefs'] ?? null,
+                'method'
+            );
+            break;
+
+        case 'template':
+            break;
+
+        case 'enumMethod':
+            if (!is_string($class) || $class === '' || !is_string($callable) || $callable === '') {
                 throw new \RuntimeException('enumMethod requires enum class and callable.');
             }
             // @codeCoverageIgnoreStart
@@ -251,111 +455,31 @@ function executeCoreContext(array $__sb_context): array
                 throw new \RuntimeException("Enum methods require PHP 8.1+. Current PHP: " . PHP_VERSION);
             }
             // @codeCoverageIgnoreEnd
-            require_once $__sb_file;
-            if (!enum_exists($__sb_class)) {
-                throw new \RuntimeException("Enum '{$__sb_class}' is not available.");
+            if (!is_string($executionFile) || $executionFile === '') {
+                throw new \RuntimeException('enumMethod requires an execution file.');
             }
-            assert(class_exists($__sb_class));
-            $__sb_ref = new ReflectionClass($__sb_class);
-            $__sb_effectiveCallableArgDefs = buildTargetArgDefs(
-                $__sb_context['callableArgDefs'] ?? null,
-                $__sb_context['publicArgDefs'] ?? null,
+            require_once $executionFile;
+            if (!enum_exists($class)) {
+                throw new \RuntimeException("Enum '{$class}' is not available.");
+            }
+            assert(class_exists($class));
+            $classReflection = new ReflectionClass($class);
+            $planner['classReflection'] = $classReflection;
+            $planner['callableReflection'] = $classReflection->getMethod($callable);
+            $planner['effectiveCallableArgDefs'] = buildTargetArgDefs(
+                $context['callableArgDefs'] ?? null,
+                $context['publicArgDefs'] ?? null,
                 'method'
             );
-            $__sb_mappedArgs = mapPublicArgsToExecutionTargets($__sb_context);
-            $__sb_methodInput = $__sb_mappedArgs['method'] ?? [];
-            $__sb_caseValue = $__sb_methodInput['_case'] ?? $__sb_context['args']['_case'] ?? null;
-            $__sb_enumInstance = resolveEnumCase($__sb_class, $__sb_caseValue);
-            $__sb_method = $__sb_ref->getMethod($__sb_callable);
-            $__sb_methodArgs = array_diff_key($__sb_methodInput, ['_case' => true]);
-            ob_start();
-            $__sb_result = $__sb_method->invokeArgs($__sb_enumInstance, matchArgs(
-                $__sb_method,
-                $__sb_methodArgs,
-                $__sb_typeMap,
-                $__sb_effectiveCallableArgDefs
-            ));
-            $__sb_buffered = getOutputBuffer();
-            return buildExecutionResponse(
-                resolveExecutionHtml($__sb_result, $__sb_buffered, $__sb_suppressOutputResolutionErrors),
-                $__sb_result,
-                $__sb_buffered,
-                $__sb_enumInstance,
-                $__sb_context['args'],
-                [],
-                $__sb_methodArgs,
-            );
+            break;
 
         default:
-            throw new \RuntimeException("Unknown type: {$__sb_type}");
-    }
-}
-
-/**
- * @param array{
- *   args: array<string, mixed>,
- *   publicArgDefs?: array<string, mixed>|null,
- *   typeMap?: array<string, mixed>|null
- * } $context
- * @param array<string, mixed>|null $templateInput
- * @return array<string, mixed>
- */
-function resolveTemplateContextArgs(array $context, ?array $templateInput = null): array
-{
-    $templateArgs = $templateInput ?? $context['args'];
-    $publicArgDefs = $context['publicArgDefs'] ?? null;
-    $typeMap = $context['typeMap'] ?? null;
-
-    return $publicArgDefs !== null
-        ? castTemplateArgs($templateArgs, $publicArgDefs, $typeMap)
-        : $templateArgs;
-}
-
-/**
- * @param array<string, mixed> $args
- * @param array<string, mixed> $constructorArgs
- * @param array<string, mixed> $methodArgs
- * @return array{
- *   html: string,
- *   result?: mixed,
- *   buffered?: string,
- *   instance?: object|null,
- *   args?: array<string, mixed>,
- *   constructorArgs?: array<string, mixed>,
- *   methodArgs?: array<string, mixed>
- * }
- */
-function buildExecutionResponse(
-    string $html,
-    mixed $result,
-    string $buffered,
-    ?object $instance,
-    array $args,
-    array $constructorArgs = [],
-    array $methodArgs = [],
-): array {
-    return [
-        'html' => $html,
-        'result' => $result,
-        'buffered' => $buffered,
-        'instance' => $instance,
-        'args' => $args,
-        'constructorArgs' => $constructorArgs,
-        'methodArgs' => $methodArgs,
-    ];
-}
-
-function resolveExecutionHtml(mixed $result, string $buffered, bool $suppressErrors): string
-{
-    if (!$suppressErrors) {
-        return resolveOutput($result, $buffered);
+            throw new \RuntimeException("Unknown type: {$type}");
     }
 
-    try {
-        return resolveOutput($result, $buffered);
-    } catch (\Throwable) {
-        return $buffered;
-    }
+    $context['__planner'] = $planner;
+
+    return $context;
 }
 
 /**
@@ -425,6 +549,119 @@ function mergeTargetArgDef(array $targetArgDef, ?array $publicArgDef): array
     }
 
     return array_merge($targetArgDef, $publicArgDef);
+}
+
+/**
+ * @param array{
+ *   type: string,
+ *   publicArgs?: array<string, mixed>,
+ *   templateArgs?: array<string, mixed>,
+ *   publicArgDefs?: array<string, mixed>|null,
+ *   typeMap?: array<string, mixed>|null
+ * } $context
+ * @param array<string, mixed>|null $templateInput
+ * @return array<string, mixed>
+ */
+function resolveTemplateContextArgs(array $context, ?array $templateInput = null): array
+{
+    $templateArgs = $templateInput ?? $context['templateArgs'] ?? $context['publicArgs'] ?? [];
+    $publicArgDefs = $context['publicArgDefs'] ?? null;
+    $typeMap = $context['typeMap'] ?? null;
+
+    return $publicArgDefs !== null
+        ? castTemplateArgs($templateArgs, $publicArgDefs, $typeMap)
+        : $templateArgs;
+}
+
+/**
+ * @param array<string, mixed> $resolvedArgs
+ * @return list<mixed>
+ */
+function orderResolvedArgs(?ReflectionFunctionAbstract $ref, array $resolvedArgs): array
+{
+    if (!$ref instanceof ReflectionFunctionAbstract) {
+        return [];
+    }
+
+    $ordered = [];
+    foreach ($ref->getParameters() as $param) {
+        $name = $param->getName();
+        if (!array_key_exists($name, $resolvedArgs)) {
+            continue;
+        }
+
+        $value = $resolvedArgs[$name];
+        if ($param->isVariadic()) {
+            $values = is_array($value) && isListArray($value) ? $value : [$value];
+            foreach ($values as $item) {
+                $ordered[] = $item;
+            }
+            continue;
+        }
+
+        $ordered[] = $value;
+    }
+
+    return $ordered;
+}
+
+/**
+ * @param array<string, mixed> $publicArgs
+ * @param array<string, mixed> $templateArgs
+ * @param array<string, mixed> $constructorArgs
+ * @param array<string, mixed> $methodArgs
+ * @return array{
+ *   html: string,
+ *   result?: mixed,
+ *   buffered?: string,
+ *   instance?: object|null,
+ *   publicArgs?: array<string, mixed>,
+ *   templateArgs?: array<string, mixed>,
+ *   constructorArgs?: array<string, mixed>,
+ *   methodArgs?: array<string, mixed>,
+ *   enumCaseValue?: mixed
+ * }
+ */
+function buildExecutionResponse(
+    string $html,
+    mixed $result,
+    string $buffered,
+    ?object $instance,
+    array $publicArgs,
+    array $templateArgs = [],
+    array $constructorArgs = [],
+    array $methodArgs = [],
+    mixed $enumCaseValue = null,
+): array {
+    $response = [
+        'html' => $html,
+        'result' => $result,
+        'buffered' => $buffered,
+        'instance' => $instance,
+        'publicArgs' => $publicArgs,
+        'templateArgs' => $templateArgs,
+        'constructorArgs' => $constructorArgs,
+        'methodArgs' => $methodArgs,
+    ];
+
+    if ($enumCaseValue !== null) {
+        $response['enumCaseValue'] = $enumCaseValue;
+    }
+
+    return $response;
+}
+
+function resolveExecutionHtml(mixed $result, string $buffered, bool $suppressErrors): string
+{
+    if (!$suppressErrors) {
+        return resolveOutput($result, $buffered);
+    }
+
+    try {
+        return resolveOutput($result, $buffered);
+    } catch (\Throwable) {
+        return $buffered;
+    }
 }
 
 function storybookPhpRun(?string $input = null, bool $writeOutput = true): string

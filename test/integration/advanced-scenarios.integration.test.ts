@@ -67,6 +67,7 @@ const hasAdvancedVendor = existsSync(
 );
 const laravelBootstrap = resolve(import.meta.dirname!, "../../examples/laravel/bootstrap.php");
 const laravelAdapter = resolve(import.meta.dirname!, "../../examples/laravel/adapter.php");
+const laravelBladeAdapter = resolve(import.meta.dirname!, "../../examples/laravel/blade.php");
 const fixture = (name: string) => resolve(fixturesDir, name);
 const basic = (name: string) => resolve(examplesDir, name);
 const advanced = (name: string) => resolveAdvancedFile(name);
@@ -410,6 +411,7 @@ describe.skipIf(!hasPhp)("Integration: All Plan Patterns", () => {
         file: laravel("views/direct-template.blade.php"),
         class: null,
         callable: null,
+        adapter: laravelBladeAdapter,
         publicArgDefs: {
           title: { type: "string", required: true, position: 0, nullable: false },
           message: {

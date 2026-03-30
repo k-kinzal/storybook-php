@@ -3,8 +3,7 @@
 return static function (array $context, callable $next): array {
     $response = $next($context);
 
-    return [
-        ...$response,
+    return array_merge($response, [
         'html' => resolveOutput($response['result'] ?? null, (string) ($response['buffered'] ?? '')),
-    ];
+    ]);
 };
