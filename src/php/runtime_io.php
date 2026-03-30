@@ -89,7 +89,7 @@ function isSequentialList(array $value): bool
 {
     $expectedKey = 0;
 
-    foreach ($value as $key => $_item) {
+    foreach (array_keys($value) as $key) {
         if (!is_int($key) || $key !== $expectedKey) {
             return false;
         }

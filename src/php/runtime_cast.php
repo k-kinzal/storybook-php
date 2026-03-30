@@ -966,6 +966,7 @@ function resolveArgs(?ReflectionFunctionAbstract $ref, array $args, ?array $type
     $named = [];
     foreach ($ref->getParameters() as $param) {
         $name = $param->getName();
+        $paramType = $param->getType();
         $argDef = null;
         if ($argDefs !== null && isset($argDefs[$name]) && is_array($argDefs[$name])) {
             /** @var array<string, mixed> $resolvedArgDef */
@@ -999,7 +1000,7 @@ function resolveArgs(?ReflectionFunctionAbstract $ref, array $args, ?array $type
         } elseif (
             is_array($argDef)
             && (($argDef['nullable'] ?? false) === true)
-            && ($param->getType() === null || $param->allowsNull())
+            && ($paramType === null || $param->allowsNull())
         ) {
             $resolved = null;
         } elseif ($param->allowsNull()) {
