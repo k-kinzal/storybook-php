@@ -31,6 +31,7 @@ export type PhpArgMap = Record<string, PhpArgDef>;
 /** A PHP component descriptor (the virtual module export) */
 export interface PhpComponent<TArgs extends Record<string, unknown> = Record<string, unknown>> {
   __php: true;
+  __id: string;
   __type: PhpCallableType;
   __file: string;
   __class: string | null;
@@ -57,7 +58,7 @@ export interface PhpParamMeta {
   type: string | null;
   nullable: boolean;
   required: boolean;
-  default?: string;
+  default?: unknown;
   isVariadic: boolean;
   isPromoted: boolean;
   visibility?: "public" | "protected" | "private";
@@ -76,6 +77,7 @@ export interface PhpClassMeta {
   extends: string | null;
   implements: string[];
   traits: string[];
+  hasConstructor: boolean;
   constructorParams: PhpParamMeta[];
   methods: PhpMethodMeta[];
   isEnum: boolean;
@@ -103,6 +105,8 @@ export interface PhpFileMeta {
 export interface PhpRenderRequest {
   type: PhpCallableType;
   file: string;
+  /** Original imported file path, used for adapter selection and diagnostics */
+  sourceFile?: string | null;
   class: string | null;
   callable: string | null;
   args: Record<string, unknown>;
@@ -112,11 +116,52 @@ export interface PhpRenderRequest {
   typeMap?: StoryTypeMap | null;
 }
 
+/** Browser-to-server render invoke request */
+export interface PhpRenderInvokeRequest {
+  /** Opaque registry id for a server-owned render plan */
+  componentId?: string;
+  args: Record<string, unknown>;
+  /** Per-story typeMap override (runtime-only) */
+  typeMap?: StoryTypeMap | null;
+  /**
+   * Legacy fallback fields for clients that still send full execution details.
+   * The middleware validates these before delegating to the executor.
+   */
+  type?: PhpCallableType;
+  file?: string;
+  sourceFile?: string | null;
+  class?: string | null;
+  callable?: string | null;
+  bootstrap?: string | null;
+  adapter?: string | null;
+}
+
 /** Response from the PHP runner */
 export interface PhpRenderResponse {
   html: string;
   error?: string;
   trace?: string;
+}
+
+/** Server-owned render plan registered during virtual module generation */
+export interface PhpRenderPlan {
+  type: PhpCallableType;
+  /** Executable PHP file path */
+  file: string;
+  /** Original imported file path */
+  sourceFile: string;
+  class: string | null;
+  callable: string | null;
+  adapter?: string | null;
+}
+
+/** Shared schema used by Vite, type generation, and TS editor support */
+export interface PhpComponentSchema {
+  exportName: string;
+  renderPlan: PhpRenderPlan;
+  constructorArgs: PhpArgMap;
+  callableArgs: PhpArgMap;
+  allArgs: PhpArgMap;
 }
 
 // ---------------------------------------------------------------------------

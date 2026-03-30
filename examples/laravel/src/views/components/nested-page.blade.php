@@ -27,7 +27,7 @@
 
     {{-- Pattern 5: @each --}}
     <section data-pattern="each" style="margin-bottom: 24px;">
-        <h3 style="margin-bottom: 8px;">Items (@each)</h3>
+        <h3 style="margin-bottom: 8px;">Items (@@each)</h3>
         @each('partials.list-item', $items, 'item')
     </section>
 

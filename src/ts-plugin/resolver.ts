@@ -1,22 +1,84 @@
 import type ts from "typescript";
-import { parsePhpSource } from "../php-parser.js";
-import { readFileSync, existsSync, statSync } from "node:fs";
-import { resolve, dirname } from "node:path";
-import type { PhpFileMeta } from "../types.js";
+import { existsSync, readFileSync, statSync } from "node:fs";
+import { resolveComponentSource } from "../core/component/component-source.js";
+import {
+  PHP_IMPORT_RE,
+  resolveFrameworkOptions,
+  resolveImportSource,
+  extractCallableName,
+  stripCallableSuffix,
+} from "../core/config/framework-config.js";
+import {
+  declarationPathForImport,
+  generateDeclarationContentForImport,
+  versionForResolvedSource,
+} from "../core/typescript/declaration-files.js";
+import { parsePhpSource } from "../core/analysis/php-parser.js";
+import type { FrameworkOptions, PhpFileMeta } from "../types.js";
 
 export interface PhpResolver {
-  /** Resolve a .php or .php@method import specifier to virtual type declarations */
   resolvePhpImport(specifier: string, containingFile: string): string | null;
-  /** Check if a specifier is a PHP import */
   isPhpImport(specifier: string): boolean;
-  /** Get the parsed metadata for a PHP file */
   getPhpMeta(filePath: string): PhpFileMeta | null;
+  getVirtualDeclarationPath(specifier: string, containingFile: string): string | null;
+  getVirtualDeclaration(fileName: string): string | null;
+  getVirtualDeclarationVersion(fileName: string): string | null;
 }
 
-const PHP_IMPORT_RE = /\.php(?:@(\w+))?$/;
+export interface PhpResolverConfig extends Pick<
+  FrameworkOptions,
+  "defaultMethod" | "typeMap" | "_configDir"
+> {
+  configDir?: string;
+}
 
-export function createPhpResolver(_tsModule: typeof ts, defaultMethod?: string): PhpResolver {
+export function createPhpResolver(
+  _tsModule: typeof ts,
+  config: string | PhpResolverConfig = {},
+): PhpResolver {
+  const resolvedOptions = resolveFrameworkOptions(normalizeResolverConfig(config));
   const metaCache = new Map<string, { mtime: number; meta: PhpFileMeta }>();
+  const declarationCache = new Map<string, { version: string; content: string }>();
+
+  function resolveImportTarget(
+    specifier: string,
+    containingFile: string,
+  ): {
+    explicitCallable: string | null;
+    sourceFile: string;
+  } | null {
+    const explicitCallable = extractCallableName(specifier);
+    const resolvedImport = resolveImportSource(specifier, containingFile, resolvedOptions);
+    if (!resolvedImport) {
+      return null;
+    }
+
+    return {
+      explicitCallable,
+      sourceFile: resolvedImport.sourceFile,
+    };
+  }
+
+  function resolveVirtualDeclarationTarget(fileName: string): {
+    explicitCallable: string | null;
+    importPath: string;
+  } | null {
+    const sourcePath = stripVirtualDeclarationSuffix(fileName);
+    if (!sourcePath) {
+      return null;
+    }
+
+    const explicitCallable = extractCallableName(sourcePath);
+    const importPath = stripCallableSuffix(sourcePath);
+    if (!existsSync(importPath)) {
+      return null;
+    }
+
+    return {
+      explicitCallable,
+      importPath,
+    };
+  }
 
   function isPhpImport(specifier: string): boolean {
     return PHP_IMPORT_RE.test(specifier);
@@ -40,152 +102,97 @@ export function createPhpResolver(_tsModule: typeof ts, defaultMethod?: string):
   }
 
   function resolvePhpImport(specifier: string, containingFile: string): string | null {
-    const match = specifier.match(PHP_IMPORT_RE);
-    if (!match) return null;
+    const resolvedTarget = resolveImportTarget(specifier, containingFile);
+    if (!resolvedTarget) return null;
 
-    const callableName = match[1] ?? defaultMethod ?? null;
-    const phpRelPath = specifier.replace(/@\w+$/, "");
-    const phpAbsPath = resolve(dirname(containingFile), phpRelPath);
-
-    const meta = getPhpMeta(phpAbsPath);
-    if (!meta) return null;
-
-    return generateVirtualDeclaration(meta, callableName);
-  }
-
-  return { resolvePhpImport, isPhpImport, getPhpMeta };
-}
-
-function generateVirtualDeclaration(meta: PhpFileMeta, callableName: string | null): string {
-  const lines: string[] = ["import type { PhpComponent } from 'storybook-php';", ""];
-
-  if (!callableName) {
-    // Template mode
-    lines.push("declare const _default: PhpComponent<Record<string, unknown>>;");
-    lines.push("export default _default;");
-    return lines.join("\n");
-  }
-
-  // Search in classes/enums
-  for (const cls of meta.classes) {
-    if (cls.isEnum) {
-      const method = cls.methods.find((m) => m.name === callableName);
-      if (method) {
-        const ifaceName = `${cls.name}_${callableName}_Args`;
-        lines.push(`interface ${ifaceName} {`);
-        lines.push("  _case: string;");
-        for (const p of method.params) {
-          const opt = p.required ? "" : "?";
-          lines.push(`  ${p.name}${opt}: ${phpTypeToTs(p.type, p.nullable)};`);
-        }
-        lines.push("}");
-        lines.push("");
-        lines.push(`export declare const ${cls.name}: PhpComponent<${ifaceName}>;`);
-        return lines.join("\n");
-      }
-      continue;
-    }
-
-    const method = cls.methods.find((m) => m.name === callableName);
-    if (method) {
-      const ifaceName = `${cls.name}_${callableName}_Args`;
-      lines.push(`interface ${ifaceName} {`);
-
-      // Constructor params (if instance method)
-      if (!method.isStatic) {
-        for (const p of cls.constructorParams) {
-          const opt = p.required ? "" : "?";
-          lines.push(`  ${p.name}${opt}: ${phpTypeToTs(p.type, p.nullable)};`);
-        }
-      }
-
-      // Method params
-      for (const p of method.params) {
-        const opt = p.required ? "" : "?";
-        lines.push(`  ${p.name}${opt}: ${phpTypeToTs(p.type, p.nullable)};`);
-      }
-
-      lines.push("}");
-      lines.push("");
-      lines.push(`export declare const ${cls.name}: PhpComponent<${ifaceName}>;`);
-      return lines.join("\n");
+    try {
+      const resolvedSource = resolveComponentSource(resolvedTarget.sourceFile, resolvedOptions);
+      return generateDeclarationContentForImport(
+        resolvedSource,
+        resolvedTarget.explicitCallable,
+        resolvedOptions.defaultMethod,
+      );
+    } catch {
+      return null;
     }
   }
 
-  // Search in functions
-  for (const fn of meta.functions) {
-    if (fn.name === callableName) {
-      const ifaceName = `${fn.name}_Args`;
-      lines.push(`interface ${ifaceName} {`);
-      for (const p of fn.params) {
-        const opt = p.required ? "" : "?";
-        lines.push(`  ${p.name}${opt}: ${phpTypeToTs(p.type, p.nullable)};`);
+  function getVirtualDeclarationPath(specifier: string, containingFile: string): string | null {
+    const resolvedTarget = resolveImportTarget(specifier, containingFile);
+    if (!resolvedTarget) return null;
+
+    return declarationPathForImport(resolvedTarget.sourceFile, resolvedTarget.explicitCallable);
+  }
+
+  function getVirtualDeclaration(fileName: string): string | null {
+    const resolvedTarget = resolveVirtualDeclarationTarget(fileName);
+    if (!resolvedTarget) return null;
+
+    try {
+      const resolvedSource = resolveComponentSource(resolvedTarget.importPath, resolvedOptions);
+      const version = versionForResolvedSource(resolvedSource);
+      const cached = declarationCache.get(fileName);
+      if (cached && cached.version === version) {
+        return cached.content;
       }
-      lines.push("}");
-      lines.push("");
-      lines.push(`export declare const ${fn.name}: PhpComponent<${ifaceName}>;`);
-      return lines.join("\n");
+
+      const content = generateDeclarationContentForImport(
+        resolvedSource,
+        resolvedTarget.explicitCallable,
+        resolvedOptions.defaultMethod,
+      );
+      if (content === "") {
+        return null;
+      }
+
+      declarationCache.set(fileName, { version, content });
+      return content;
+    } catch {
+      return null;
     }
   }
 
-  return "";
+  function getVirtualDeclarationVersion(fileName: string): string | null {
+    const resolvedTarget = resolveVirtualDeclarationTarget(fileName);
+    if (!resolvedTarget) return null;
+
+    try {
+      return versionForResolvedSource(
+        resolveComponentSource(resolvedTarget.importPath, resolvedOptions),
+      );
+    } catch {
+      return null;
+    }
+  }
+
+  return {
+    resolvePhpImport,
+    isPhpImport,
+    getPhpMeta,
+    getVirtualDeclarationPath,
+    getVirtualDeclaration,
+    getVirtualDeclarationVersion,
+  };
 }
 
-function phpTypeToTs(phpType: string | null, nullable: boolean): string {
-  if (!phpType) return "unknown";
-
-  let tsType: string;
-
-  if (phpType.startsWith("?")) {
-    return `${phpTypeToTs(phpType.slice(1), false)} | null`;
-  }
-
-  if (phpType.includes("|")) {
-    tsType = phpType
-      .split("|")
-      .map((t) => mapSingleType(t.trim()))
-      .join(" | ");
-  } else {
-    tsType = mapSingleType(phpType);
-  }
-
-  if (nullable && !tsType.includes("null")) {
-    tsType += " | null";
-  }
-
-  return tsType;
+function stripVirtualDeclarationSuffix(fileName: string): string | null {
+  if (!fileName.endsWith(".d.ts")) return null;
+  return fileName.slice(0, -".d.ts".length);
 }
 
-function mapSingleType(t: string): string {
-  switch (t.toLowerCase()) {
-    case "string":
-      return "string";
-    case "int":
-    case "integer":
-    case "float":
-    case "double":
-      return "number";
-    case "bool":
-    case "boolean":
-      return "boolean";
-    case "array":
-      return "unknown[]";
-    case "object":
-    case "mixed":
-      return "unknown";
-    case "void":
-      return "void";
-    case "null":
-      return "null";
-    case "true":
-      return "true";
-    case "false":
-      return "false";
-    case "self":
-    case "static":
-    case "parent":
-      return "Record<string, unknown>";
-    default:
-      return "Record<string, unknown>";
+function normalizeResolverConfig(config: string | PhpResolverConfig): PhpResolverConfig {
+  if (typeof config === "string") {
+    return { defaultMethod: config };
   }
+
+  const normalized: PhpResolverConfig = {
+    ...config,
+  };
+
+  const configDir = config._configDir ?? config.configDir;
+  if (configDir !== undefined) {
+    normalized._configDir = configDir;
+  }
+
+  return normalized;
 }

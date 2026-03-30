@@ -1,0 +1,49 @@
+{
+  "name": "storybook-php/dev-tools",
+  "description": "Development quality tooling for the storybook-php PHP runtime",
+  "type": "project",
+  "license": "MIT",
+  "require": {
+    "php": "^8.0"
+  },
+  "require-dev": {
+    "php-parallel-lint/php-parallel-lint": "^1.4",
+    "phpstan/extension-installer": "^1.4",
+    "phpstan/phpstan": "^2.1.44",
+    "phpstan/phpstan-deprecation-rules": "^2.0",
+    "phpstan/phpstan-strict-rules": "^2.0.10",
+    "phpunit/phpunit": "^9.6.34",
+    "rector/rector": "^2.3.9"
+  },
+  "config": {
+    "allow-plugins": {
+      "phpstan/extension-installer": true
+    },
+    "audit": {
+      "abandoned": "fail"
+    },
+    "platform": {
+      "php": "8.0.0"
+    },
+    "sort-packages": true
+  },
+  "scripts": {
+    "lint": [
+      "composer validate --strict",
+      "@lint:syntax",
+      "@phpstan",
+      "@audit:security",
+      "@rector"
+    ],
+    "lint:syntax": "parallel-lint --colors src/php",
+    "audit:security": "composer audit --no-interaction",
+    "phpstan": "phpstan analyse --ansi",
+    "rector": "rector process --dry-run --ansi",
+    "test": "phpunit --colors=always --configuration phpunit.xml.dist",
+    "test:coverage": [
+      "@php -r \"is_dir('build/coverage') || mkdir('build/coverage', 0777, true);\"",
+      "@php -d xdebug.mode=coverage ./vendor/bin/phpunit --colors=always --configuration phpunit.xml.dist --coverage-clover build/coverage/clover.xml --coverage-text",
+      "@php tools/php/assert-coverage.php build/coverage/clover.xml src/php 100"
+    ]
+  }
+}

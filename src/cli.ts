@@ -4,8 +4,10 @@ import { fileURLToPath, pathToFileURL } from "node:url";
 import { spawn } from "node:child_process";
 import { createRequire } from "node:module";
 import { existsSync, writeFileSync, readdirSync, statSync } from "node:fs";
-import { generateDtsForFile } from "./typegen.js";
-import { ensureLink } from "./node-modules-link.js";
+import { ensureLink } from "./cli/node-modules-link.js";
+import { loadFrameworkOptionsFile } from "./cli/framework-options-loader.js";
+import { TypegenArgsError, parseTypegenArgs } from "./cli/typegen-args.js";
+import { generateDtsOutputsForFile } from "./core/typescript/typegen.js";
 
 const [, , command, ...args] = process.argv;
 
@@ -20,7 +22,11 @@ switch (command) {
     runTest(args);
     break;
   case "typegen":
-    runTypegen(args);
+    try {
+      await runTypegen(args);
+    } catch (error) {
+      reportTypegenError(error);
+    }
     break;
   default:
     printUsage();
@@ -150,18 +156,20 @@ function hasUserConfig(): boolean {
   return bases.some((base) => exts.some((ext) => existsSync(resolve(base + ext))));
 }
 
-function runTypegen(dirs: string[]): void {
+async function runTypegen(rawArgs: string[]): Promise<void> {
+  const { dirs, optionsFile } = parseTypegenArgs(rawArgs);
+  const frameworkOptions = await loadFrameworkOptionsFile(optionsFile);
   const targetDirs = dirs.length > 0 ? dirs : ["src"];
   let count = 0;
 
   for (const dir of targetDirs) {
     const absDir = resolve(dir);
     walkPhpFiles(absDir, (phpPath) => {
-      const dts = generateDtsForFile(phpPath);
-      if (dts.trim()) {
-        const dtsPath = phpPath + ".d.ts";
-        writeFileSync(dtsPath, dts);
-        console.log(`  ${relative(process.cwd(), dtsPath)}`);
+      const outputs = generateDtsOutputsForFile(phpPath, frameworkOptions);
+      for (const output of outputs) {
+        if (!output.content.trim()) continue;
+        writeFileSync(output.path, output.content);
+        console.log(`  ${relative(process.cwd(), output.path)}`);
         count++;
       }
     });
@@ -180,8 +188,23 @@ function printUsage(): void {
       "  build [opts]      Build static Storybook",
       "  test [opts]       Run Storybook tests",
       "  typegen [dirs...] Generate .d.ts files for PHP sources",
+      "",
+      "Typegen options:",
+      "  --options-file <path>  Load FrameworkOptions from a JSON/JS module",
     ].join("\n"),
   );
+}
+
+function reportTypegenError(error: unknown): never {
+  if (error instanceof TypegenArgsError) {
+    console.error(error.message);
+    console.error("");
+    printUsage();
+    process.exit(1);
+  }
+
+  console.error(error instanceof Error ? error.message : String(error));
+  process.exit(1);
 }
 
 function walkPhpFiles(dir: string, cb: (path: string) => void): void {

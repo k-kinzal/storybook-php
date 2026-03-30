@@ -1,15 +1,15 @@
-import type { PhpComponent, PhpRenderRequest, StoryTypeMap } from "./types.js";
+import type { PhpComponent, PhpRenderInvokeRequest, StoryTypeMap } from "./types.js";
+import { RENDER_PATH } from "./shared/render-contract.js";
 
-const RENDER_ENDPOINT = "/__storybook_php/render";
 const PHP_PLACEHOLDER = "<!-- storybook-php-content -->";
 
-let currentAbortController: AbortController | null = null;
+const abortControllers = new WeakMap<HTMLElement, AbortController>();
 
 interface RenderContext {
   storyContext: {
     component?: PhpComponent;
     args: Record<string, unknown>;
-    parameters?: Record<string, unknown>;
+    parameters?: ({ typeMap?: StoryTypeMap } & Record<string, unknown>) | undefined;
     name: string;
     title: string;
     id: string;
@@ -35,26 +35,23 @@ export async function renderToCanvas(
   // Get the decorated story output (includes placeholder wrapped by decorators)
   const decoratedOutput = storyFn();
 
-  // Cancel any in-flight request
-  if (currentAbortController) {
-    currentAbortController.abort();
-  }
-  currentAbortController = new AbortController();
-  const { signal } = currentAbortController;
+  const previousAbortController = abortControllers.get(canvasElement);
+  previousAbortController?.abort();
 
-  const storyTypeMap = parameters?.typeMap as StoryTypeMap | undefined;
+  const abortController = new AbortController();
+  abortControllers.set(canvasElement, abortController);
+  const { signal } = abortController;
 
-  const request: PhpRenderRequest = {
-    type: component.__type,
-    file: component.__file,
-    class: component.__class,
-    callable: component.__callable,
+  const storyTypeMap = parameters?.["typeMap"];
+
+  const request: PhpRenderInvokeRequest = {
+    componentId: component.__id,
     args: args ?? {},
     ...(storyTypeMap ? { typeMap: storyTypeMap } : {}),
   };
 
   try {
-    const response = await fetch(RENDER_ENDPOINT, {
+    const response = await fetch(RENDER_PATH, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(request),
@@ -112,7 +109,7 @@ function isPhpComponent(value: unknown): value is PhpComponent {
     typeof value === "object" &&
     value !== null &&
     "__php" in value &&
-    (value as Record<string, unknown>).__php === true
+    (value as Record<string, unknown>)["__php"] === true
   );
 }
 

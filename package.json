@@ -55,20 +55,24 @@
     "build": "vp pack",
     "dev": "vp pack --watch",
     "test": "vp test run",
+    "test:unit": "vp test run --project unit",
+    "test:integration": "vp test run --project integration",
     "test:watch": "vp test",
     "lint": "vp check",
-    "typecheck": "tsc --noEmit",
+    "typecheck": "tsc --noEmit -p tsconfig.json && tsc -p tsconfig.test.json",
     "typegen": "node dist/cli.mjs typegen",
     "prepare": "npm run build"
   },
   "devDependencies": {
     "@storybook/builder-vite": "^10.3.0",
     "@types/node": "^25.5.0",
+    "@vitest/coverage-v8": "^4.1.2",
     "jsdom": "^29.0.0",
     "storybook": "^10.3.0",
     "typescript": "^6.0.2",
     "vite": "^8.0.0",
-    "vite-plus": "^0.1.12"
+    "vite-plus": "^0.1.12",
+    "vitest": "^4.1.2"
   },
   "peerDependencies": {
     "@storybook/addon-vitest": "^10.0.0",
