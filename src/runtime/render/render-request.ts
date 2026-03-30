@@ -1,20 +1,14 @@
 import { RenderRegistry } from "./render-registry.js";
+import { mergePublicArgOverrides } from "../../core/component/public-args.js";
 import type {
-  PhpCallableType,
   PhpRenderInvokeRequest,
   PhpRenderRequest,
   PhpRenderPlan,
+  RuntimeTypeMap,
   StoryTypeMap,
 } from "../../types.js";
 
 export { RENDER_PATH } from "../../shared/render-contract.js";
-export const VALID_RENDER_TYPES: PhpCallableType[] = [
-  "classMethod",
-  "staticMethod",
-  "function",
-  "template",
-  "enumMethod",
-];
 
 export class RequestValidationError extends Error {
   constructor(message: string) {
@@ -29,6 +23,9 @@ interface ExecutionTarget {
   sourceFile: string | null;
   class: string | null;
   callable: string | null;
+  publicArgDefs: PhpRenderRequest["publicArgDefs"];
+  constructorArgDefs: PhpRenderRequest["constructorArgDefs"];
+  callableArgDefs: PhpRenderRequest["callableArgDefs"];
   adapter: string | null;
 }
 
@@ -45,25 +42,35 @@ export function parseRenderInvokeRequest(body: string): PhpRenderInvokeRequest {
     throw new RequestValidationError("Render request body must be a JSON object");
   }
 
-  return parsed as unknown as PhpRenderInvokeRequest;
+  const componentId = parsed["componentId"];
+  if (typeof componentId !== "string" || componentId === "") {
+    throw new RequestValidationError("Render request body must include componentId");
+  }
+
+  const args = parsed["args"];
+  if (!isRecord(args)) {
+    throw new RequestValidationError('Render request body field "args" must be a JSON object');
+  }
+
+  const typeMap = parsed["typeMap"];
+  if (typeMap !== undefined && typeMap !== null && !isRecord(typeMap)) {
+    throw new RequestValidationError(
+      'Render request body field "typeMap" must be a JSON object or null',
+    );
+  }
+
+  return {
+    componentId,
+    args,
+    ...(typeMap !== undefined ? { typeMap: typeMap as StoryTypeMap | null } : {}),
+  };
 }
 
 export function resolveExecutionRequest(
   data: PhpRenderInvokeRequest,
   registry: RenderRegistry | undefined,
 ): PhpRenderRequest {
-  return buildExecutionRequest(resolveExecutionTarget(data, registry), data);
-}
-
-function resolveExecutionTarget(
-  data: PhpRenderInvokeRequest,
-  registry: RenderRegistry | undefined,
-): ExecutionTarget {
-  if (hasComponentId(data)) {
-    return resolveRegisteredTarget(data.componentId, registry);
-  }
-
-  return validateLegacyTarget(data);
+  return buildExecutionRequest(resolveRegisteredTarget(data.componentId, registry), data);
 }
 
 function resolveRegisteredTarget(
@@ -82,33 +89,22 @@ function resolveRegisteredTarget(
   return executionTargetFromPlan(renderPlan);
 }
 
-function executionTargetFromPlan(renderPlan: PhpRenderPlan): ExecutionTarget {
+function executionTargetFromPlan(renderTarget: {
+  plan: PhpRenderPlan;
+  publicArgDefs: PhpRenderRequest["publicArgDefs"];
+  constructorArgDefs: PhpRenderRequest["constructorArgDefs"];
+  callableArgDefs: PhpRenderRequest["callableArgDefs"];
+}): ExecutionTarget {
   return {
-    type: renderPlan.type,
-    file: renderPlan.file,
-    sourceFile: renderPlan.sourceFile,
-    class: renderPlan.class,
-    callable: renderPlan.callable,
-    adapter: renderPlan.adapter ?? null,
-  };
-}
-
-function validateLegacyTarget(data: PhpRenderInvokeRequest): ExecutionTarget {
-  if (!data.type || !VALID_RENDER_TYPES.includes(data.type)) {
-    throw new RequestValidationError(`Invalid type: ${String(data.type)}`);
-  }
-
-  if (typeof data.file !== "string" || data.file === "") {
-    throw new RequestValidationError("Missing required field: file");
-  }
-
-  return {
-    type: data.type,
-    file: data.file,
-    sourceFile: nullableString(data.sourceFile),
-    class: nullableString(data.class),
-    callable: nullableString(data.callable),
-    adapter: null,
+    type: renderTarget.plan.type,
+    file: renderTarget.plan.file,
+    sourceFile: renderTarget.plan.sourceFile,
+    class: renderTarget.plan.class,
+    callable: renderTarget.plan.callable,
+    publicArgDefs: renderTarget.publicArgDefs ?? null,
+    constructorArgDefs: renderTarget.constructorArgDefs ?? null,
+    callableArgDefs: renderTarget.callableArgDefs ?? null,
+    adapter: renderTarget.plan.adapter ?? null,
   };
 }
 
@@ -116,12 +112,17 @@ function buildExecutionRequest(
   target: ExecutionTarget,
   data: PhpRenderInvokeRequest,
 ): PhpRenderRequest {
+  const storyTypeMap = normalizeStoryTypeMap(data.typeMap);
+
   return {
     ...target,
     args: isRecord(data.args) ? data.args : {},
-    bootstrap: nullableString(data.bootstrap),
-    adapter: nullableString(data.adapter) ?? target.adapter,
-    typeMap: normalizeStoryTypeMap(data.typeMap),
+    publicArgDefs: mergeStoryPublicArgDefs(target, storyTypeMap) ?? null,
+    constructorArgDefs: target.constructorArgDefs ?? null,
+    callableArgDefs: target.callableArgDefs ?? null,
+    bootstrap: null,
+    adapter: target.adapter,
+    typeMap: normalizeRuntimeTypeMap(storyTypeMap),
   };
 }
 
@@ -129,14 +130,28 @@ function normalizeStoryTypeMap(value: unknown): StoryTypeMap | null {
   return isRecord(value) ? (value as StoryTypeMap) : null;
 }
 
-function hasComponentId(data: PhpRenderInvokeRequest): data is PhpRenderInvokeRequest & {
-  componentId: string;
-} {
-  return typeof data.componentId === "string" && data.componentId !== "";
+function normalizeRuntimeTypeMap(storyTypeMap: StoryTypeMap | null): RuntimeTypeMap | null {
+  if (!storyTypeMap?.bindings) {
+    return null;
+  }
+
+  return { bindings: storyTypeMap.bindings };
 }
 
-function nullableString(value: unknown): string | null {
-  return typeof value === "string" ? value : null;
+function mergeStoryPublicArgDefs(
+  target: ExecutionTarget,
+  storyTypeMap: StoryTypeMap | null,
+): PhpRenderRequest["publicArgDefs"] {
+  if (!target.publicArgDefs) {
+    return null;
+  }
+
+  return mergePublicArgOverrides(
+    target.publicArgDefs,
+    target.constructorArgDefs ?? {},
+    target.callableArgDefs ?? {},
+    storyTypeMap?.args ?? null,
+  );
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {

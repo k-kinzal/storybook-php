@@ -3,7 +3,7 @@
 namespace App\Components;
 
 /**
- * Button with string variant — typeMap.args provides the valid options.
+ * Button with string variant — typeMap.files[*].args provides the valid options.
  */
 class Button
 {

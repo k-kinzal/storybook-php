@@ -1,10 +1,9 @@
 <?php
 
-return function (mixed $result, string $buffered, ?object $instance): string {
-    // CakePHP components return rendered HTML strings directly
-    if (is_string($result) && $result !== '') {
-        return $result;
-    }
+return static function (array $context, callable $next): array {
+    $response = $next($context);
 
-    return resolveOutput($result, $buffered);
+    return array_merge($response, [
+        'html' => resolveOutput($response['result'] ?? null, (string) ($response['buffered'] ?? '')),
+    ]);
 };

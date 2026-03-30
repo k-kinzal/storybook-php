@@ -38,7 +38,7 @@ export interface PhpComponent<TArgs extends Record<string, unknown> = Record<str
   __callable: string | null;
   __constructorArgs: PhpArgMap;
   __callableArgs: PhpArgMap;
-  __allArgs: PhpArgMap;
+  __publicArgs: PhpArgMap;
   /** Phantom type carrier for TArgs */
   __args?: TArgs;
 }
@@ -110,30 +110,26 @@ export interface PhpRenderRequest {
   class: string | null;
   callable: string | null;
   args: Record<string, unknown>;
+  /** Public Storybook args after build-time and per-story overrides */
+  publicArgDefs?: PhpArgMap | null;
+  /** Constructor parameter definitions for callable-backed stories */
+  constructorArgDefs?: PhpArgMap | null;
+  /** Invoked callable parameter definitions for callable-backed stories */
+  callableArgDefs?: PhpArgMap | null;
   bootstrap?: string | null;
+  /** Most specific per-request adapter override, composed inside the middleware chain */
   adapter?: string | null;
-  /** Per-story typeMap override (merged with global typeMap by the executor) */
-  typeMap?: StoryTypeMap | null;
+  /** Runtime-only bindings used while casting PHP objects */
+  typeMap?: RuntimeTypeMap | null;
 }
 
 /** Browser-to-server render invoke request */
 export interface PhpRenderInvokeRequest {
   /** Opaque registry id for a server-owned render plan */
-  componentId?: string;
+  componentId: string;
   args: Record<string, unknown>;
-  /** Per-story typeMap override (runtime-only) */
+  /** Per-story public args / bindings override */
   typeMap?: StoryTypeMap | null;
-  /**
-   * Legacy fallback fields for clients that still send full execution details.
-   * The middleware validates these before delegating to the executor.
-   */
-  type?: PhpCallableType;
-  file?: string;
-  sourceFile?: string | null;
-  class?: string | null;
-  callable?: string | null;
-  bootstrap?: string | null;
-  adapter?: string | null;
 }
 
 /** Response from the PHP runner */
@@ -161,7 +157,7 @@ export interface PhpComponentSchema {
   renderPlan: PhpRenderPlan;
   constructorArgs: PhpArgMap;
   callableArgs: PhpArgMap;
-  allArgs: PhpArgMap;
+  publicArgs: PhpArgMap;
 }
 
 // ---------------------------------------------------------------------------
@@ -189,8 +185,15 @@ export type ArgOverride =
 
 /** Target for a file mapping entry */
 export interface FileMapTarget {
-  /** Inline argument definitions (for files the parser can't handle, e.g. Blade) */
+  /** Public Storybook args for this import target */
   args?: Record<string, string | ArgOverride>;
+  /** Callable-specific public args overrides for PHP files with multiple callables */
+  callables?: Record<
+    string,
+    {
+      args?: Record<string, string | ArgOverride>;
+    }
+  >;
   /** Path to a PHP file to use as the type source instead */
   phpFile?: string;
   /** Method/callable name when using phpFile */
@@ -200,8 +203,8 @@ export interface FileMapTarget {
   /**
    * Path to a PHP adapter file for this file or pattern.
    * Overrides the global `adapter` option for matching files.
-   * The file must return a callable with signature:
-   *   fn(mixed $result, string $buffered, ?object $instance, array $context): string
+   * The file must return a middleware callable:
+   *   function (array $context, callable $next): array|string
    */
   adapter?: string;
 }
@@ -212,26 +215,22 @@ export interface TypeMapConfig {
   files?: Record<string, FileMapTarget>;
   /** Map PHP type → PHP type (interface/abstract → concrete, DI-style) */
   bindings?: Record<string, string>;
-  /**
-   * Override argument metadata.
-   * Key format: "FQCN::$arg" or "FQCN::method::$arg"
-   */
-  args?: Record<string, string | ArgOverride>;
 }
 
 /**
- * Per-story typeMap override (runtime-relevant sections only).
+ * Per-story typeMap override.
  * Use via `parameters.typeMap` in Meta or StoryObj.
- * The `files` section is build-time only and cannot be overridden per-story.
  */
 export interface StoryTypeMap {
   /** Map PHP type → PHP type (interface/abstract → concrete, DI-style) */
   bindings?: Record<string, string>;
-  /**
-   * Override argument metadata.
-   * Key format: "FQCN::$arg" or "FQCN::method::$arg"
-   */
+  /** Override the public Storybook args surface for the current story */
   args?: Record<string, string | ArgOverride>;
+}
+
+/** Runtime type information sent to the PHP runner */
+export interface RuntimeTypeMap {
+  bindings?: Record<string, string>;
 }
 
 /** Framework options for storybook-php */
@@ -245,11 +244,14 @@ export interface FrameworkOptions {
   /** Default method name when @method is omitted from import */
   defaultMethod?: string;
   /**
-   * Path to a PHP adapter file.
-   * The file must return a callable with signature:
-   *   fn(mixed $result, string $buffered, ?object $instance): string
-   * Used to customize how method return values are converted to HTML
-   * (e.g. Laravel Component → resolveView + data).
+   * Path to a global PHP adapter middleware.
+   * The file must return:
+   *   function (array $context, callable $next): array|string
+   * Middleware receives `publicArgs` plus hydrated `templateArgs`,
+   * `constructorArgs`, and `methodArgs` where applicable.
+   * Rewriting `publicArgs` before delegating to `$next($context)` causes inner
+   * adapters and the core executor to receive freshly re-hydrated inputs.
+   * Adapters may also replace resolved target args directly or terminate the chain.
    */
   adapter?: string;
   /** Static type mapping configuration */

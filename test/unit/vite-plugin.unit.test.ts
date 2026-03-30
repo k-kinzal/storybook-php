@@ -100,7 +100,7 @@ describe("Vite Plugin", () => {
       expect(code).toContain('__callable: "render"');
       expect(code).toContain("__constructorArgs:");
       expect(code).toContain("__callableArgs:");
-      expect(code).toContain("__allArgs:");
+      expect(code).toContain("__publicArgs:");
       // Constructor params
       expect(code).toContain("name:");
       expect(code).toContain("age:");
@@ -157,7 +157,7 @@ describe("Vite Plugin", () => {
       expect(code).toContain("__type: 'enumMethod'");
       expect(code).toContain('__class: "App\\\\Components\\\\Color"');
       expect(code).toContain('__callable: "badge"');
-      // Should have _case in allArgs
+      // Should expose _case on the public args surface
       expect(code).toContain("_case:");
       expect(code).toContain("export const Color");
     });
@@ -176,7 +176,7 @@ describe("Vite Plugin", () => {
       expect(code).toContain("__callable: null");
       expect(code).toContain("__constructorArgs: {}");
       expect(code).toContain("__callableArgs: {}");
-      expect(code).toContain("__allArgs: {}");
+      expect(code).toContain("__publicArgs: {}");
       expect(code).toContain("export default");
     });
 
@@ -1192,17 +1192,22 @@ describe("Vite Plugin", () => {
   __php: true,`);
         expect(code).toContain(`__class: "App\\\\Components\\\\ConstructorOverride"`);
         expect(code).toContain("__constructorArgs: {}");
-        expect(code).toContain("__allArgs: {}");
+        expect(code).toContain("__publicArgs: {}");
       });
     });
 
-    describe("typeMap.args overrides", () => {
+    describe("typeMap.files args overrides", () => {
       it("applies options override to constructor param", () => {
         const plugin = storybookPhpPlugin({
+          _configDir: FIXTURES,
           typeMap: {
-            args: {
-              "App\\Components\\SimpleComponent::$name": {
-                options: ["Alice", "Bob", "Charlie"],
+            files: {
+              "SimpleComponent.php": {
+                args: {
+                  name: {
+                    options: ["Alice", "Bob", "Charlie"],
+                  },
+                },
               },
             },
           },
@@ -1217,9 +1222,14 @@ describe("Vite Plugin", () => {
 
       it("applies type override to constructor param", () => {
         const plugin = storybookPhpPlugin({
+          _configDir: FIXTURES,
           typeMap: {
-            args: {
-              "App\\Components\\SimpleComponent::$name": "App\\Enums\\NameEnum",
+            files: {
+              "SimpleComponent.php": {
+                args: {
+                  name: "App\\Enums\\NameEnum",
+                },
+              },
             },
           },
         });
@@ -1298,7 +1308,7 @@ describe("Vite Plugin", () => {
 
         expect(code).toBeTruthy();
         expect(code).toContain("__type: 'template'");
-        expect(code).toContain("__allArgs: {}");
+        expect(code).toContain("__publicArgs: {}");
       });
 
       it("merges pattern adapter with exact-match args", () => {
@@ -1471,8 +1481,8 @@ describe("vite-plugin runtime hooks", () => {
       bootstrap: "Bootstrap.php",
       adapter: "fixture-adapter.php",
       typeMap: {
-        args: { "App\\Components\\SimpleComponent::$name": "string" },
         files: {
+          "SimpleComponent.php": { args: { name: "string" } },
           "TemplateFile.php": { adapter: "fixture-adapter.php" },
         },
       },
@@ -1495,8 +1505,8 @@ describe("vite-plugin runtime hooks", () => {
         phpBinary: "php",
         timeout: 5000,
         typeMap: {
-          args: { "App\\Components\\SimpleComponent::$name": "string" },
           files: {
+            "SimpleComponent.php": { args: { name: "string" } },
             "TemplateFile.php": { adapter: "fixture-adapter.php" },
           },
         },

@@ -3,12 +3,7 @@ import {
   resolveSourceFileMapping,
   type ResolvedFrameworkOptions,
 } from "../config/framework-config.js";
-import type { ArgOverride, PhpArgMap, PhpFileMeta, PhpParamMeta } from "../../types.js";
-
-interface EnrichedParamMeta extends PhpParamMeta {
-  options?: (string | number | boolean)[];
-  elementType?: string;
-}
+import type { ArgOverride, PhpFileMeta } from "../../types.js";
 
 export interface ResolvedComponentSource {
   sourceFile: string;
@@ -16,7 +11,8 @@ export interface ResolvedComponentSource {
   adapter: string | null;
   dependencies: string[];
   meta: PhpFileMeta | null;
-  inlineArgs: PhpArgMap | null;
+  fileArgOverrides: Record<string, string | ArgOverride> | null;
+  callableArgOverrides: Record<string, Record<string, string | ArgOverride>>;
   mappedCallable: string | null;
 }
 
@@ -26,18 +22,6 @@ export function resolveComponentSource(
 ): ResolvedComponentSource {
   const mapping = resolveSourceFileMapping(sourceFile, options);
   const adapter = mapping?.adapter ?? options.adapter;
-
-  if (mapping?.args) {
-    return {
-      sourceFile,
-      executionFile: sourceFile,
-      adapter,
-      dependencies: [sourceFile],
-      meta: null,
-      inlineArgs: inlineArgsToArgMap(mapping.args),
-      mappedCallable: mapping.callable ?? null,
-    };
-  }
 
   const executionFile = mapping?.phpFile ?? sourceFile;
   const dependencies = uniquePaths([sourceFile, executionFile, ...(mapping?.includes ?? [])]);
@@ -49,17 +33,21 @@ export function resolveComponentSource(
     meta = mergeFileMetas(meta, ...extraMetas);
   }
 
-  if (options.typeMap?.args) {
-    applyArgOverrides(meta, options.typeMap.args);
-  }
-
   return {
     sourceFile,
     executionFile,
     adapter,
     dependencies,
     meta,
-    inlineArgs: null,
+    fileArgOverrides: mapping?.args ?? null,
+    callableArgOverrides: mapping?.callables
+      ? Object.fromEntries(
+          Object.entries(mapping.callables).map(([callableName, target]) => [
+            callableName,
+            target.args ?? {},
+          ]),
+        )
+      : {},
     mappedCallable: mapping?.callable ?? null,
   };
 }
@@ -74,7 +62,7 @@ export function resolveComponentCallable(
 export function listCallableNamesFromResolvedSource(
   resolvedSource: ResolvedComponentSource,
 ): string[] {
-  if (!resolvedSource.meta || resolvedSource.inlineArgs) {
+  if (!resolvedSource.meta) {
     return [];
   }
 
@@ -104,38 +92,6 @@ export function listCallableNamesFromMeta(meta: PhpFileMeta): string[] {
   return [...callableNames].sort();
 }
 
-function inlineArgsToArgMap(args: Record<string, string | ArgOverride>): PhpArgMap {
-  return Object.fromEntries(
-    Object.entries(args).map(([name, def], position) => {
-      if (typeof def === "string") {
-        const nullable = def.startsWith("?");
-        return [
-          name,
-          {
-            type: nullable ? def.slice(1) : def,
-            required: !nullable,
-            position,
-            nullable,
-          },
-        ] as const;
-      }
-
-      return [
-        name,
-        {
-          type: def.type ?? "unknown",
-          required: def.required ?? (def.default === undefined && !(def.nullable ?? false)),
-          position,
-          nullable: def.nullable ?? false,
-          ...(def.default !== undefined ? { default: def.default } : {}),
-          ...(def.options !== undefined ? { options: def.options } : {}),
-          ...(def.elementType !== undefined ? { elementType: def.elementType } : {}),
-        },
-      ] as const;
-    }),
-  );
-}
-
 function mergeFileMetas(base: PhpFileMeta, ...extras: PhpFileMeta[]): PhpFileMeta {
   const mergedClasses = [...base.classes];
   const mergedFunctions = [...base.functions];
@@ -161,55 +117,6 @@ function mergeFileMetas(base: PhpFileMeta, ...extras: PhpFileMeta[]): PhpFileMet
     classes: mergedClasses,
     functions: mergedFunctions,
   };
-}
-
-function applyArgOverrides(
-  meta: PhpFileMeta,
-  argOverrides: Record<string, string | ArgOverride>,
-): void {
-  for (const [key, override] of Object.entries(argOverrides)) {
-    const match = key.match(/^(.+?)::(?:(\w+)::\$(\w+)|\$(\w+))$/);
-    if (!match) continue;
-
-    const fqn = match[1]!;
-    const methodName = match[2] ?? null;
-    const paramName = match[3] ?? match[4]!;
-
-    for (const cls of meta.classes) {
-      if (cls.fqn !== fqn && cls.name !== fqn) continue;
-      if (methodName) {
-        for (const method of cls.methods) {
-          if (method.name !== methodName) continue;
-          applyOverrideToParam(method.params, paramName, override);
-        }
-      } else {
-        applyOverrideToParam(cls.constructorParams, paramName, override);
-      }
-    }
-  }
-}
-
-function applyOverrideToParam(
-  params: PhpParamMeta[],
-  paramName: string,
-  override: string | ArgOverride,
-): void {
-  const param = params.find((candidate) => candidate.name === paramName) as
-    | EnrichedParamMeta
-    | undefined;
-  if (!param) return;
-
-  if (typeof override === "string") {
-    param.type = override;
-    return;
-  }
-
-  if (override.type !== undefined) param.type = override.type;
-  if (override.nullable !== undefined) param.nullable = override.nullable;
-  if (override.required !== undefined) param.required = override.required;
-  if (override.default !== undefined) param.default = override.default;
-  if (override.options !== undefined) param.options = override.options;
-  if (override.elementType !== undefined) param.elementType = override.elementType;
 }
 
 function uniquePaths(paths: string[]): string[] {

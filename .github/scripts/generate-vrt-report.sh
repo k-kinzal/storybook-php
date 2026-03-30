@@ -78,7 +78,7 @@ b64_encode() {
   if base64 -w 0 /dev/null >/dev/null 2>&1; then
     base64 -w 0 "$1"
   else
-    base64 "$1" | tr -d '\n'
+    base64 < "$1" | tr -d '\n'
   fi
 }
 
@@ -190,7 +190,7 @@ cat >> "$OUTPUT" << EOF
 EOF
 
 first_project=""
-for example in $(printf '%s\n' "${CHANGED_EXAMPLES[@]}" | sort); do
+for example in $(printf '%s\n' "${CHANGED_EXAMPLES[@]-}" | sort); do
   active_class=""
   if [ -z "$first_project" ]; then
     first_project="$example"
@@ -210,7 +210,7 @@ cat >> "$OUTPUT" << EOF
   <div class="sidebar-section" style="margin-top:var(--sp-md)"><div class="sidebar-label">Passed <span class="sidebar-label-count">${PASSED_COUNT}</span></div></div>
 EOF
 
-for example in $(printf '%s\n' "${PASSED_EXAMPLES[@]}" | sort); do
+for example in $(printf '%s\n' "${PASSED_EXAMPLES[@]-}" | sort); do
   active_class=""
   if [ -z "$first_project" ]; then
     first_project="$example"
@@ -230,7 +230,7 @@ echo '</div>' >> "$OUTPUT"
 echo '<div class="main">' >> "$OUTPUT"
 
 # Changed example panels
-for example in $(printf '%s\n' "${CHANGED_EXAMPLES[@]}" | sort); do
+for example in $(printf '%s\n' "${CHANGED_EXAMPLES[@]-}" | sort); do
   count="$(get_example_diff_count "$example")"
   artifact_dir="$RESULTS_DIR/vrt-results-${example}"
   active_class=""
@@ -313,7 +313,7 @@ EOF
 done
 
 # Passed example panels
-for example in $(printf '%s\n' "${PASSED_EXAMPLES[@]}" | sort); do
+for example in $(printf '%s\n' "${PASSED_EXAMPLES[@]-}" | sort); do
   active_class=""
   [ "$example" = "$first_project" ] && active_class=" active"
   cat >> "$OUTPUT" << EOF

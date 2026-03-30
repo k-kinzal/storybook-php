@@ -1,14 +1,12 @@
 /**
- * typeMap.args demo: Enum case values
+ * typeMap.files[*].args demo: Enum case values
  *
  * The parser extracts enum case NAMES (Active, Inactive, ...)
  * but not the backing VALUES (active, inactive, ...).
- * typeMap.args provides these values so the select control works.
+ * typeMap.files[*].args provides these values so the select control works.
  *
  * Config in main.ts:
- *   "App\\Components\\Status::$_case": {
- *     options: ["active", "inactive", "pending", "archived"],
- *   }
+ *   "../src/Status.php": { args: { _case: { options: [...] } } }
  */
 import type { Meta, StoryObj } from "storybook-php";
 import { Status } from "./Status.php@badge";

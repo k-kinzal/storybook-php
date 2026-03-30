@@ -7,6 +7,7 @@ import { execSync } from "node:child_process";
 import { existsSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 import { PhpExecutor } from "../../src/runtime/server/php-executor.js";
+import type { PhpArgDef } from "../../src/types.js";
 import { storybookPhpPlugin } from "../../src/vite-plugin.js";
 import { getLoad, getResolveId } from "../helpers/plugin-test-helpers.js";
 
@@ -66,6 +67,7 @@ const hasAdvancedVendor = existsSync(
 );
 const laravelBootstrap = resolve(import.meta.dirname!, "../../examples/laravel/bootstrap.php");
 const laravelAdapter = resolve(import.meta.dirname!, "../../examples/laravel/adapter.php");
+const laravelBladeAdapter = resolve(import.meta.dirname!, "../../examples/laravel/blade.php");
 const fixture = (name: string) => resolve(fixturesDir, name);
 const basic = (name: string) => resolve(examplesDir, name);
 const advanced = (name: string) => resolveAdvancedFile(name);
@@ -76,6 +78,14 @@ const php81 = (name: string) => resolve(php81Dir, name);
 const php82 = (name: string) => resolve(php82Dir, name);
 const php83 = (name: string) => resolve(php83Dir, name);
 const laravel = (name: string) => resolve(laravelDir, name);
+const argDef = (type: string, position: number, overrides: Partial<PhpArgDef> = {}): PhpArgDef => ({
+  type,
+  required:
+    overrides.required ?? (overrides.default === undefined && !(overrides.nullable ?? false)),
+  position,
+  nullable: overrides.nullable ?? false,
+  ...overrides,
+});
 
 describe.skipIf(!hasPhp)("Integration: All Plan Patterns", () => {
   const executor = new PhpExecutor({ timeout: 10000 });
@@ -393,6 +403,32 @@ describe.skipIf(!hasPhp)("Integration: All Plan Patterns", () => {
       expect(result.html).toContain("pending");
       // $showAlert conditional rendering
       expect(result.html).toContain('data-pattern="alert"');
+    });
+
+    it("renders a Blade file directly through the template adapter", async () => {
+      const result = await bladeExecutor.execute({
+        type: "template",
+        file: laravel("views/direct-template.blade.php"),
+        class: null,
+        callable: null,
+        adapter: laravelBladeAdapter,
+        publicArgDefs: {
+          title: { type: "string", required: true, position: 0, nullable: false },
+          message: {
+            type: "string",
+            required: false,
+            position: 1,
+            nullable: false,
+            default: "Hello from Blade!",
+          },
+        },
+        args: {
+          title: "Direct Blade import",
+        },
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain("Direct Blade import");
+      expect(result.html).toContain("Hello from Blade!");
     });
   });
 
@@ -9600,17 +9636,8 @@ describe.skipIf(!hasPhp)("Integration: All Plan Patterns", () => {
       expect(result.html).toContain("<span>Second</span>");
     });
 
-    it("applies typeMap.args elementType for array casting", async () => {
-      const executor = new PhpExecutor({
-        timeout: 10000,
-        typeMap: {
-          args: {
-            "App\\Components\\TagRenderer::$items": {
-              elementType: "string",
-            },
-          },
-        },
-      });
+    it("applies public arg elementType for array casting", async () => {
+      const executor = new PhpExecutor({ timeout: 10000 });
       const result = await executor.execute({
         type: "classMethod",
         file: fixture("TypeMapElementType.php"),
@@ -9619,6 +9646,13 @@ describe.skipIf(!hasPhp)("Integration: All Plan Patterns", () => {
         args: {
           items: ["PHP", "Storybook"],
         },
+        publicArgDefs: {
+          items: argDef("array", 0, { elementType: "string" }),
+        },
+        constructorArgDefs: {
+          items: argDef("array", 0),
+        },
+        callableArgDefs: {},
       });
       expect(result.error).toBeUndefined();
       expect(result.html).toContain("<b>PHP</b>");
@@ -9653,15 +9687,8 @@ describe.skipIf(!hasPhp)("Integration: All Plan Patterns", () => {
       expect(result.html).toContain("<span>Second</span>");
     });
 
-    it("applies typeMap.args string shorthand as type override", async () => {
-      const executor = new PhpExecutor({
-        timeout: 10000,
-        typeMap: {
-          args: {
-            "App\\Components\\TagRenderer::$items": "array",
-          },
-        },
-      });
+    it("applies public arg string shorthand as type override", async () => {
+      const executor = new PhpExecutor({ timeout: 10000 });
       const result = await executor.execute({
         type: "classMethod",
         file: fixture("TypeMapElementType.php"),
@@ -9670,13 +9697,20 @@ describe.skipIf(!hasPhp)("Integration: All Plan Patterns", () => {
         args: {
           items: ["A", "B"],
         },
+        publicArgDefs: {
+          items: argDef("array", 0),
+        },
+        constructorArgDefs: {
+          items: argDef("array", 0),
+        },
+        callableArgDefs: {},
       });
       expect(result.error).toBeUndefined();
       expect(result.html).toContain("<b>A</b>");
     });
   });
 
-  describe("per-story typeMap override", () => {
+  describe("request-level overrides", () => {
     it("per-request bindings override global bindings", async () => {
       const executor = new PhpExecutor({
         timeout: 10000,
@@ -9708,16 +9742,8 @@ describe.skipIf(!hasPhp)("Integration: All Plan Patterns", () => {
       expect(result.html).toContain("plain text");
     });
 
-    it("per-request args override global args", async () => {
-      const executor = new PhpExecutor({
-        timeout: 10000,
-        typeMap: {
-          args: {
-            "App\\Components\\TagRenderer::$items": "array",
-          },
-        },
-      });
-      // Per-request override: use elementType for proper casting
+    it("request public arg defs refine runtime casting", async () => {
+      const executor = new PhpExecutor({ timeout: 10000 });
       const result = await executor.execute({
         type: "classMethod",
         file: fixture("TypeMapElementType.php"),
@@ -9726,20 +9752,20 @@ describe.skipIf(!hasPhp)("Integration: All Plan Patterns", () => {
         args: {
           items: ["X", "Y"],
         },
-        typeMap: {
-          args: {
-            "App\\Components\\TagRenderer::$items": {
-              elementType: "string",
-            },
-          },
+        publicArgDefs: {
+          items: argDef("array", 0, { elementType: "string" }),
         },
+        constructorArgDefs: {
+          items: argDef("array", 0),
+        },
+        callableArgDefs: {},
       });
       expect(result.error).toBeUndefined();
       expect(result.html).toContain("<b>X</b>");
       expect(result.html).toContain("<b>Y</b>");
     });
 
-    it("per-request typeMap works when no global typeMap exists", async () => {
+    it("request public arg defs work without global bindings", async () => {
       const executor = new PhpExecutor({ timeout: 10000 });
       const result = await executor.execute({
         type: "classMethod",
@@ -9749,13 +9775,13 @@ describe.skipIf(!hasPhp)("Integration: All Plan Patterns", () => {
         args: {
           items: ["A", "B"],
         },
-        typeMap: {
-          args: {
-            "App\\Components\\TagRenderer::$items": {
-              elementType: "string",
-            },
-          },
+        publicArgDefs: {
+          items: argDef("array", 0, { elementType: "string" }),
         },
+        constructorArgDefs: {
+          items: argDef("array", 0),
+        },
+        callableArgDefs: {},
       });
       expect(result.error).toBeUndefined();
       expect(result.html).toContain("<b>A</b>");

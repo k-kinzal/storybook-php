@@ -71,4 +71,65 @@ describe("php-executor", () => {
     expect(spawned.stdin.write).toHaveBeenCalled();
     expect(spawned.stdin.end).toHaveBeenCalled();
   });
+
+  it("serializes adapter middleware in outer-to-inner order", async () => {
+    let written = "";
+
+    vi.doMock("node:child_process", () => ({
+      spawn: vi.fn(() => {
+        const proc = new EventEmitter() as EventEmitter & {
+          stdout: EventEmitter;
+          stderr: EventEmitter;
+          stdin: { write(chunk: string): void; end(): void };
+        };
+        proc.stdout = new EventEmitter();
+        proc.stderr = new EventEmitter();
+        proc.stdin = {
+          write(chunk: string) {
+            written += chunk;
+          },
+          end() {
+            proc.stdout.emit("data", Buffer.from(JSON.stringify({ html: "<div>ok</div>" })));
+            proc.emit("close", 0);
+          },
+        };
+        return proc;
+      }),
+    }));
+
+    const { PhpExecutor } = await import("../../src/runtime/server/php-executor.js");
+    const executor = new PhpExecutor({
+      adapter: "/global.php",
+      adapterMap: {
+        patterns: [
+          { suffix: ".php", adapter: "/pattern-outer.php" },
+          { suffix: "Card.blade.php", adapter: "/pattern-inner.php" },
+        ],
+        files: {
+          "/stories/Card.blade.php": "/exact.php",
+        },
+      },
+    });
+
+    const result = await executor.execute({
+      type: "template",
+      file: "/runtime/card-render.php",
+      sourceFile: "/stories/Card.blade.php",
+      class: null,
+      callable: null,
+      args: {},
+      adapter: "/story.php",
+    });
+
+    expect(result).toEqual({ html: "<div>ok</div>" });
+    expect(JSON.parse(written)).toMatchObject({
+      adapters: [
+        "/global.php",
+        "/pattern-outer.php",
+        "/pattern-inner.php",
+        "/exact.php",
+        "/story.php",
+      ],
+    });
+  });
 });

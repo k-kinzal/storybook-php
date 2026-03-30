@@ -5,7 +5,6 @@ import {
   RequestValidationError,
   resolveExecutionRequest,
 } from "../../src/runtime/render/render-request.js";
-import type { PhpRenderInvokeRequest } from "../../src/types.js";
 
 describe("render-request", () => {
   describe("parseRenderInvokeRequest", () => {
@@ -20,26 +19,45 @@ describe("render-request", () => {
         "Render request body must be a JSON object",
       );
     });
+
+    it("requires componentId and args", () => {
+      expect(() => parseRenderInvokeRequest(JSON.stringify({ args: {} }))).toThrowError(
+        "Render request body must include componentId",
+      );
+      expect(() => parseRenderInvokeRequest(JSON.stringify({ componentId: "cmp_1" }))).toThrowError(
+        'Render request body field "args" must be a JSON object',
+      );
+      expect(() =>
+        parseRenderInvokeRequest(JSON.stringify({ componentId: "cmp_1", args: {}, typeMap: [] })),
+      ).toThrowError('Render request body field "typeMap" must be a JSON object or null');
+    });
   });
 
   describe("resolveExecutionRequest", () => {
-    it("builds a request from a registry plan and preserves request overrides", () => {
+    it("builds a request from a registry plan", () => {
       const registry = new RenderRegistry();
-      const componentId = registry.register({
-        type: "classMethod",
-        file: "/runtime/Card.php",
-        sourceFile: "/stories/Card.php",
-        class: "App\\Card",
-        callable: "render",
-        adapter: "/runtime/default-adapter.php",
-      });
+      const componentId = registry.register(
+        {
+          type: "classMethod",
+          file: "/runtime/Card.php",
+          sourceFile: "/stories/Card.php",
+          class: "App\\Card",
+          callable: "render",
+          adapter: "/runtime/default-adapter.php",
+        },
+        {
+          title: { type: "string", required: true, position: 0, nullable: false },
+        },
+        {
+          title: { type: "string", required: true, position: 0, nullable: false },
+        },
+        {},
+      );
 
       const request = resolveExecutionRequest(
         {
           componentId,
           args: { title: "Hello" },
-          bootstrap: "/bootstrap/app.php",
-          adapter: "/runtime/story-adapter.php",
           typeMap: {
             bindings: { "App\\Contracts\\Card": "App\\Card" },
           },
@@ -54,39 +72,18 @@ describe("render-request", () => {
         class: "App\\Card",
         callable: "render",
         args: { title: "Hello" },
-        bootstrap: "/bootstrap/app.php",
-        adapter: "/runtime/story-adapter.php",
+        publicArgDefs: {
+          title: { type: "string", required: true, position: 0, nullable: false },
+        },
+        constructorArgDefs: {
+          title: { type: "string", required: true, position: 0, nullable: false },
+        },
+        callableArgDefs: {},
+        bootstrap: null,
+        adapter: "/runtime/default-adapter.php",
         typeMap: {
           bindings: { "App\\Contracts\\Card": "App\\Card" },
         },
-      });
-    });
-
-    it("normalizes malformed optional legacy fields to null-safe defaults", () => {
-      const malformed = {
-        type: "template",
-        file: "/stories/template.php",
-        sourceFile: 42,
-        class: false,
-        callable: { name: "render" },
-        args: [],
-        bootstrap: 7,
-        adapter: 9,
-        typeMap: [],
-      } as unknown as PhpRenderInvokeRequest;
-
-      const request = resolveExecutionRequest(malformed, undefined);
-
-      expect(request).toEqual({
-        type: "template",
-        file: "/stories/template.php",
-        sourceFile: null,
-        class: null,
-        callable: null,
-        args: {},
-        bootstrap: null,
-        adapter: null,
-        typeMap: null,
       });
     });
 
@@ -115,6 +112,50 @@ describe("render-request", () => {
       });
 
       expect(resolveExecutionRequest({ componentId, args: {} }, registry).adapter).toBeNull();
+      expect(resolveExecutionRequest({ componentId, args: {} }, registry).publicArgDefs).toBeNull();
+    });
+
+    it("merges story-level public args overrides into registry arg defs", () => {
+      const registry = new RenderRegistry();
+      const componentId = registry.register(
+        {
+          type: "classMethod",
+          file: "/runtime/Card.php",
+          sourceFile: "/stories/Card.php",
+          class: "App\\Card",
+          callable: "render",
+        },
+        {
+          title: { type: "string", required: true, position: 0, nullable: false },
+        },
+        {
+          title: { type: "string", required: true, position: 0, nullable: false },
+        },
+        {
+          title: { type: "string", required: false, position: 0, nullable: true },
+        },
+      );
+
+      const request = resolveExecutionRequest(
+        {
+          componentId,
+          args: { "method.title": "Preview" },
+          typeMap: {
+            args: {
+              "method.title": { type: "?string", default: "Preview" },
+            },
+          },
+        },
+        registry,
+      );
+
+      expect(request.publicArgDefs).toMatchObject({
+        "method.title": {
+          type: "string",
+          nullable: true,
+          default: "Preview",
+        },
+      });
     });
   });
 });

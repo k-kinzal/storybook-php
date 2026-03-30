@@ -272,7 +272,7 @@ function loose($anything): void {}
       },
       constructorArgs: {},
       callableArgs: {},
-      allArgs: {},
+      publicArgs: {},
     };
 
     vi.doMock("../../src/core/component/component-source.js", () => ({

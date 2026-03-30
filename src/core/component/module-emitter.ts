@@ -34,7 +34,7 @@ function componentObjectLiteral(schema: RegisteredComponentSchema): string {
   __callable: ${quoteOrNull(schema.renderPlan.callable)},
   __constructorArgs: ${argMapToCode(schema.constructorArgs)},
   __callableArgs: ${argMapToCode(schema.callableArgs)},
-  __allArgs: ${argMapToCode(schema.allArgs)},
+  __publicArgs: ${argMapToCode(schema.publicArgs)},
 }`;
 }
 
@@ -43,7 +43,7 @@ function argMapToCode(argMap: PhpArgMap): string {
   if (entries.length === 0) return "{}";
 
   return `{\n${entries
-    .map(([name, arg]) => `    ${name}: { ${argDefToCode(arg)} }`)
+    .map(([name, arg]) => `    ${renderObjectKey(name)}: { ${argDefToCode(arg)} }`)
     .join(",\n")}\n  }`;
 }
 
@@ -72,4 +72,9 @@ function argDefToCode(arg: PhpArgMap[string]): string {
 function quoteOrNull(value: string | null): string {
   if (value === null) return "null";
   return JSON.stringify(value);
+}
+
+function renderObjectKey(name: string): string {
+  if (name === "__proto__") return `[${JSON.stringify(name)}]`;
+  return /^[A-Za-z_$][\w$]*$/.test(name) ? name : JSON.stringify(name);
 }

@@ -27,57 +27,59 @@ describe("component-source", () => {
     expect(listCallableNamesFromResolvedSource(resolved)).toContain("render");
   });
 
-  it("applies type-map overrides to method parameters", () => {
+  it("stores callable-specific public args overrides", () => {
     const resolved = resolveComponentSource(
       fixturePath("ComplexComponent.php"),
       resolveFrameworkOptions({
+        _configDir: FIXTURES,
         typeMap: {
-          args: {
-            "App\\Components\\ComplexComponent::renderCard::$extra": {
-              options: ["Alice", "Bob"],
+          files: {
+            "ComplexComponent.php": {
+              callables: {
+                renderCard: {
+                  args: {
+                    extra: {
+                      options: ["Alice", "Bob"],
+                    },
+                  },
+                },
+              },
             },
           },
         },
       }),
     );
 
-    const renderMethod = resolved.meta?.classes[0]?.methods.find(
-      (method) => method.name === "renderCard",
-    );
-    const extraParam = renderMethod?.params.find((param) => param.name === "extra") as
-      | ({ options?: string[] } & Record<string, unknown>)
-      | undefined;
-
-    expect(extraParam?.options).toEqual(["Alice", "Bob"]);
+    expect(resolved.callableArgOverrides["renderCard"]?.["extra"]).toEqual({
+      options: ["Alice", "Bob"],
+    });
   });
 
-  it("applies rich overrides to constructor params and ignores missing params", () => {
+  it("stores rich file-level public args overrides for PHP files", () => {
     const resolved = resolveComponentSource(
       fixturePath("SimpleComponent.php"),
       resolveFrameworkOptions({
+        _configDir: FIXTURES,
         typeMap: {
-          args: {
-            "App\\Components\\SimpleComponent::$name": {
-              type: "array",
-              nullable: true,
-              required: false,
-              default: [],
-              options: ["primary"],
-              elementType: "string",
-            },
-            "App\\Components\\SimpleComponent::render::$missing": {
-              type: "string",
+          files: {
+            "SimpleComponent.php": {
+              args: {
+                name: {
+                  type: "array",
+                  nullable: true,
+                  required: false,
+                  default: [],
+                  options: ["primary"],
+                  elementType: "string",
+                },
+              },
             },
           },
         },
       }),
     );
 
-    const nameParam = resolved.meta?.classes[0]?.constructorParams[0] as
-      | ({ options?: string[]; elementType?: string } & Record<string, unknown>)
-      | undefined;
-
-    expect(nameParam).toMatchObject({
+    expect(resolved.fileArgOverrides?.["name"]).toMatchObject({
       type: "array",
       nullable: true,
       required: false,
@@ -87,7 +89,7 @@ describe("component-source", () => {
     });
   });
 
-  it("handles inline args without explicit types and deduplicates included metadata", () => {
+  it("stores file-level public args without explicit types and deduplicates included metadata", () => {
     const inlineResolved = resolveComponentSource(
       fixturePath("TypeMapInlineTarget.blade.php"),
       resolveFrameworkOptions({
@@ -108,11 +110,8 @@ describe("component-source", () => {
       }),
     );
 
-    const tagsArg = inlineResolved.inlineArgs?.["tags"];
-
-    expect(tagsArg).toMatchObject({
-      type: "unknown",
-      required: false,
+    expect(inlineResolved.fileArgOverrides?.["tags"]).toMatchObject({
+      default: [],
       options: ["a"],
       elementType: "string",
     });
@@ -150,29 +149,7 @@ describe("component-source", () => {
     expect(duplicateFunctions.meta?.functions.map((fn) => fn.name)).toEqual(["badge", "icon"]);
   });
 
-  it("ignores invalid override keys and non-matching classes", () => {
-    const resolved = resolveComponentSource(
-      fixturePath("SimpleComponent.php"),
-      resolveFrameworkOptions({
-        _configDir: FIXTURES,
-        typeMap: {
-          args: {
-            invalid: "string",
-            "App\\Components\\ComplexComponent::renderCard::$extra": {
-              type: "string",
-            },
-            "App\\Components\\SimpleComponent::$name": {
-              type: "string",
-            },
-          },
-        },
-      }),
-    );
-
-    expect(resolved.meta?.classes[0]?.constructorParams[0]?.type).toBe("string");
-  });
-
-  it("skips trait/interface callables and honors explicit required inline args", () => {
+  it("skips trait/interface callables and preserves explicit public arg metadata", () => {
     const inlineResolved = resolveComponentSource(
       fixturePath("TypeMapInlineTarget.blade.php"),
       resolveFrameworkOptions({
@@ -198,11 +175,13 @@ describe("component-source", () => {
       resolveFrameworkOptions(),
     );
 
-    const titleArg = inlineResolved.inlineArgs?.["title"];
-    const subtitleArg = inlineResolved.inlineArgs?.["subtitle"];
+    const titleArg = inlineResolved.fileArgOverrides?.["title"] as
+      | ({ required?: boolean } & Record<string, unknown>)
+      | undefined;
+    const subtitleArg = inlineResolved.fileArgOverrides?.["subtitle"];
 
     expect(titleArg?.required).toBe(true);
-    expect(subtitleArg?.required).toBe(false);
+    expect((subtitleArg as { nullable?: boolean } | undefined)?.nullable).toBe(true);
     expect(listCallableNamesFromResolvedSource(traitMeta)).toContain("display");
     expect(listCallableNamesFromResolvedSource(traitMeta)).not.toContain("factory");
   });

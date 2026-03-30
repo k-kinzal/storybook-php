@@ -40,7 +40,7 @@ const phpComponent: PhpComponent = {
   __callable: "render",
   __constructorArgs: {},
   __callableArgs: {},
-  __allArgs: {},
+  __publicArgs: {},
 };
 
 beforeEach(() => {
@@ -95,7 +95,7 @@ describe("renderToCanvas", () => {
     const canvas = document.createElement("div");
     const typeMap = {
       bindings: { "App\\Iface": "App\\Concrete" },
-      args: { "App\\Foo::$bar": "string" },
+      args: { name: "string" },
     };
     const ctx = makeContext(phpComponent, { name: "Alice" }, { typeMap });
 

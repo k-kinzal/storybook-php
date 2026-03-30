@@ -15,7 +15,7 @@ describe("declaration-emitter", () => {
         },
         constructorArgs: {},
         callableArgs: {},
-        allArgs: {
+        publicArgs: {
           title: { type: "string", required: true, position: 0, nullable: false },
         },
       },
@@ -37,7 +37,7 @@ describe("declaration-emitter", () => {
         },
         constructorArgs: {},
         callableArgs: {},
-        allArgs: {
+        publicArgs: {
           body: { type: "string", required: true, position: 0, nullable: false },
         },
       },
@@ -59,7 +59,7 @@ describe("declaration-emitter", () => {
         },
         constructorArgs: {},
         callableArgs: {},
-        allArgs: {
+        publicArgs: {
           body: { type: "string", required: true, position: 0, nullable: false },
         },
       },

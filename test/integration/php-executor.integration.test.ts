@@ -2,7 +2,7 @@ import { describe, it, expect } from "vite-plus/test";
 import { execSync } from "node:child_process";
 import { resolve } from "node:path";
 import { PhpExecutor } from "../../src/runtime/server/php-executor.js";
-import type { PhpRenderRequest } from "../../src/types.js";
+import type { PhpArgDef, PhpRenderRequest } from "../../src/types.js";
 
 // Check PHP version
 let phpMajor = 0;
@@ -22,6 +22,14 @@ const hasPhp81 = phpMajor > 8 || (phpMajor === 8 && phpMinor >= 1);
 
 const fixturesDir = resolve(import.meta.dirname!, "../fixtures");
 const fixture = (name: string) => resolve(fixturesDir, name);
+const argDef = (type: string, position: number, overrides: Partial<PhpArgDef> = {}): PhpArgDef => ({
+  type,
+  required:
+    overrides.required ?? (overrides.default === undefined && !(overrides.nullable ?? false)),
+  position,
+  nullable: overrides.nullable ?? false,
+  ...overrides,
+});
 
 describe.skipIf(!hasPhp)("PhpExecutor", () => {
   const executor = new PhpExecutor({ timeout: 10000 });
@@ -58,6 +66,38 @@ describe.skipIf(!hasPhp)("PhpExecutor", () => {
       expect(result.html).toBe("<div>Bob is 25</div>");
     });
 
+    it("prefers reflection defaults over inherited generated defaults", async () => {
+      const result = await executor.execute({
+        type: "classMethod",
+        file: fixture("RuntimeInheritedDefaults.php"),
+        class: "App\\Components\\RuntimeInheritedDefaults",
+        callable: "render",
+        args: { name: "World" },
+        publicArgDefs: {
+          name: argDef("string", 0),
+          greeting: argDef("string", 1, { required: false, default: "__PLACEHOLDER__" }),
+          enabled: argDef("bool", 2, { required: false, default: "false" }),
+          tags: argDef("array", 3, { required: false, default: "[]" }),
+          suffix: argDef("string", 4, { required: false, default: "__PLACEHOLDER__" }),
+        },
+        constructorArgDefs: {
+          name: argDef("string", 0),
+          greeting: argDef("string", 1, { required: false, default: "__PLACEHOLDER__" }),
+          enabled: argDef("bool", 2, { required: false, default: "false" }),
+          tags: argDef("array", 3, { required: false, default: "[]" }),
+        },
+        callableArgDefs: {
+          suffix: argDef("string", 0, { required: false, default: "__PLACEHOLDER__" }),
+        },
+      });
+
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('data-greeting="Hello"');
+      expect(result.html).toContain('data-enabled="false"');
+      expect(result.html).toContain('data-tags="alpha,beta"');
+      expect(result.html).toContain("Hello, World!");
+    });
+
     it("renders EchoComponent (void return, output buffer)", async () => {
       const request: PhpRenderRequest = {
         type: "classMethod",
@@ -85,6 +125,195 @@ describe.skipIf(!hasPhp)("PhpExecutor", () => {
       const result = await executor.execute(request);
       expect(result.error).toBeUndefined();
       expect(result.html).toBe('<div class="card">Card Title (featured)</div>');
+    });
+
+    it("supports constructor./method. public args for colliding parameter names", async () => {
+      const result = await executor.execute({
+        type: "classMethod",
+        file: fixture("ScopedArgsComponent.php"),
+        class: "App\\Components\\ScopedArgsComponent",
+        callable: "render",
+        args: {
+          "constructor.title": "Outer",
+          "method.title": "Inner",
+        },
+        publicArgDefs: {
+          "constructor.title": argDef("string", 0),
+          "method.title": argDef("string", 1),
+        },
+        constructorArgDefs: {
+          title: argDef("string", 0),
+        },
+        callableArgDefs: {
+          title: argDef("string", 0),
+        },
+      });
+
+      expect(result.error).toBeUndefined();
+      expect(result.html).toBe(
+        '<div data-constructor="Outer" data-method="Inner">Outer|Inner</div>',
+      );
+    });
+
+    it("casts untyped constructor params via public arg type overrides", async () => {
+      const result = await executor.execute({
+        type: "classMethod",
+        file: fixture("TypeMapUntypedTarget.php"),
+        class: "App\\Components\\UntypedRenderer",
+        callable: "render",
+        args: {
+          content: { content: "Typed from override", tag: "p" },
+        },
+        publicArgDefs: {
+          content: argDef("App\\Components\\UntypedHtmlBlock", 0),
+        },
+        constructorArgDefs: {
+          content: argDef("unknown", 0),
+        },
+        callableArgDefs: {},
+      });
+
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain("<p>Typed from override</p>");
+    });
+
+    it("preserves PHPDoc generic casting when arg defs match reflection types", async () => {
+      const result = await executor.execute({
+        type: "classMethod",
+        file: fixture("GenericArrayOfObjectsPhp80.php"),
+        class: "App\\Fixtures\\LegacyTagCloud",
+        callable: "render",
+        args: {
+          tags: [{ name: "Alpha", color: "red" }, { name: "Beta" }],
+        },
+        publicArgDefs: {
+          tags: argDef("array", 0),
+          title: argDef("string", 1, { required: false, default: "__PLACEHOLDER__" }),
+        },
+        constructorArgDefs: {
+          tags: argDef("array", 0),
+          title: argDef("string", 1, { required: false, default: "__PLACEHOLDER__" }),
+        },
+        callableArgDefs: {},
+      });
+
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain("<h3>Tags</h3>");
+      expect(result.html).toContain("Alpha");
+      expect(result.html).toContain("Beta");
+      expect(result.html).toContain("color: red");
+      expect(result.html).toContain("color: gray");
+    });
+
+    it("applies public arg defaults and nullable overrides at runtime", async () => {
+      const result = await executor.execute({
+        type: "classMethod",
+        file: fixture("TypeMapOverrideRuntime.php"),
+        class: "App\\Components\\OverrideDefaults",
+        callable: "render",
+        args: {
+          title: "Defaults from typeMap",
+        },
+        publicArgDefs: {
+          title: argDef("string", 0),
+          limit: argDef("int", 1, { required: false, default: 12 }),
+          subtitle: argDef("string", 2, { required: false, nullable: true }),
+        },
+        constructorArgDefs: {
+          title: argDef("string", 0),
+          limit: argDef("int", 1),
+          subtitle: argDef("unknown", 2),
+        },
+        callableArgDefs: {},
+      });
+
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('data-limit="12"');
+      expect(result.html).toContain("<p>none</p>");
+    });
+
+    it("keeps later union candidates available for untyped overrides", async () => {
+      const result = await executor.execute({
+        type: "classMethod",
+        file: fixture("TypeMapUnionOverride.php"),
+        class: "App\\Components\\UnionOverrideRenderer",
+        callable: "render",
+        args: {
+          value: "draft",
+        },
+        publicArgDefs: {
+          value: argDef("int|string", 0),
+        },
+        constructorArgDefs: {
+          value: argDef("unknown", 0),
+        },
+        callableArgDefs: {},
+      });
+
+      expect(result.error).toBeUndefined();
+      expect(result.html).toBe('<span data-type="string">draft</span>');
+    });
+
+    it("treats elementType-only overrides as arrays for untyped params", async () => {
+      const result = await executor.execute({
+        type: "classMethod",
+        file: fixture("TypeMapElementTypeOnly.php"),
+        class: "App\\Components\\ElementOnlyRenderer",
+        callable: "render",
+        args: {
+          items: [{ label: "Alpha" }, { label: "Beta" }],
+        },
+        publicArgDefs: {
+          items: argDef("unknown", 0, {
+            elementType: "App\\Components\\ElementOnlyItem",
+          }),
+        },
+        constructorArgDefs: {
+          items: argDef("unknown", 0),
+        },
+        callableArgDefs: {},
+      });
+
+      expect(result.error).toBeUndefined();
+      expect(result.html).toBe("<ul><li>Alpha</li><li>Beta</li></ul>");
+    });
+
+    it("casts wrapper objects from combined type and elementType overrides", async () => {
+      const typedExecutor = new PhpExecutor({
+        timeout: 10000,
+        typeMap: {
+          bindings: {
+            "App\\Components\\WrappedRenderable": "App\\Components\\WrappedHtmlBlock",
+            "App\\Components\\WrappedListContract": "App\\Components\\WrappedList",
+          },
+        },
+      });
+
+      const result = await typedExecutor.execute({
+        type: "classMethod",
+        file: fixture("TypeMapWrapperOverride.php"),
+        class: "App\\Components\\WrappedListRenderer",
+        callable: "render",
+        args: {
+          items: [
+            { content: "First", tag: "p" },
+            { content: "Second", tag: "span" },
+          ],
+        },
+        publicArgDefs: {
+          items: argDef("App\\Components\\WrappedListContract", 0, {
+            elementType: "App\\Components\\WrappedRenderable",
+          }),
+        },
+        constructorArgDefs: {
+          items: argDef("unknown", 0),
+        },
+        callableArgDefs: {},
+      });
+
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain("<p>First</p>");
+      expect(result.html).toContain("<span>Second</span>");
     });
   });
 
@@ -152,6 +381,31 @@ describe.skipIf(!hasPhp)("PhpExecutor", () => {
       expect(result.error).toBeUndefined();
       expect(result.html).toBe('<span class="badge badge-gray">Default</span>');
     });
+
+    it("prefers reflection defaults for functions over inherited generated defaults", async () => {
+      const result = await executor.execute({
+        type: "function",
+        file: fixture("RuntimeInheritedDefaults.php"),
+        class: null,
+        callable: "App\\Components\\runtimeInheritedDefaultsBadge",
+        args: { label: "Default" },
+        publicArgDefs: {
+          label: argDef("string", 0),
+          color: argDef("string", 1, { required: false, default: "__PLACEHOLDER__" }),
+          tags: argDef("array", 2, { required: false, default: "[]" }),
+          outlined: argDef("bool", 3, { required: false, default: "false" }),
+        },
+        callableArgDefs: {
+          label: argDef("string", 0),
+          color: argDef("string", 1, { required: false, default: "__PLACEHOLDER__" }),
+          tags: argDef("array", 2, { required: false, default: "[]" }),
+          outlined: argDef("bool", 3, { required: false, default: "false" }),
+        },
+      });
+
+      expect(result.error).toBeUndefined();
+      expect(result.html).toBe('<span class="badge badge-gray" data-tags="one,two">Default</span>');
+    });
   });
 
   // ---------------------------------------------------------------------------
@@ -172,6 +426,92 @@ describe.skipIf(!hasPhp)("PhpExecutor", () => {
       expect(result.html).toContain("My Card");
       expect(result.html).toContain("Card content");
       expect(result.html).toContain("card-primary");
+    });
+
+    it("casts template args using inline arg definitions", async () => {
+      const result = await executor.execute({
+        type: "template",
+        file: fixture("TypeMapTemplateDirect.php"),
+        class: null,
+        callable: null,
+        bootstrap: fixture("TypeMapTemplateBootstrap.php"),
+        publicArgDefs: {
+          title: { type: "string", required: true, position: 0, nullable: false },
+          featured: { type: "bool", required: false, position: 1, nullable: false, default: false },
+          tone: {
+            type: "App\\Templates\\SnippetTone",
+            required: true,
+            position: 2,
+            nullable: false,
+          },
+          content: {
+            type: "App\\Templates\\RenderableSnippet",
+            required: true,
+            position: 3,
+            nullable: false,
+          },
+          items: {
+            type: "App\\Templates\\SnippetList",
+            required: true,
+            position: 4,
+            nullable: false,
+            elementType: "App\\Templates\\RenderableSnippet",
+          },
+          note: {
+            type: "string",
+            required: false,
+            position: 5,
+            nullable: true,
+          },
+          footer: {
+            type: "string",
+            required: false,
+            position: 6,
+            nullable: false,
+            default: "Generated footer",
+          },
+        },
+        typeMap: {
+          bindings: {
+            "App\\Templates\\RenderableSnippet": "App\\Templates\\HtmlSnippet",
+          },
+        },
+        args: {
+          title: "Template Cast",
+          featured: 1,
+          tone: "success",
+          content: { content: "Primary body", tag: "article" },
+          items: [
+            { content: "First", tag: "p" },
+            { content: "Second", tag: "span" },
+          ],
+        },
+      });
+
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('data-featured="yes"');
+      expect(result.html).toContain('<p class="tone tone-success">SUCCESS</p>');
+      expect(result.html).toContain("<article>Primary body</article>");
+      expect(result.html).toContain("<p>First</p>");
+      expect(result.html).toContain("<span>Second</span>");
+      expect(result.html).toContain("<em>note:null</em>");
+      expect(result.html).toContain("<small>Generated footer</small>");
+    });
+
+    it("rejects missing required template args from inline definitions", async () => {
+      const result = await executor.execute({
+        type: "template",
+        file: fixture("TypeMapTemplateDirect.php"),
+        class: null,
+        callable: null,
+        bootstrap: fixture("TypeMapTemplateBootstrap.php"),
+        publicArgDefs: {
+          title: { type: "string", required: true, position: 0, nullable: false },
+        },
+        args: {},
+      });
+
+      expect(result.error).toContain("Missing required argument: title");
     });
   });
 

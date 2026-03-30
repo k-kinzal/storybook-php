@@ -1,17 +1,17 @@
 import { dirname, isAbsolute, resolve } from "node:path";
-import type {
-  AdapterMap,
-  ArgOverride,
-  FileMapTarget,
-  FrameworkOptions,
-  TypeMapConfig,
-} from "../../types.js";
+import type { AdapterMap, ArgOverride, FileMapTarget, FrameworkOptions } from "../../types.js";
 
 export const PHP_IMPORT_RE: RegExp = /\.php(?:@(\w+))?$/;
 export const VIRTUAL_PREFIX = "\0storybook-php:";
 
 export interface ResolvedFileMapTarget {
   args?: Record<string, string | ArgOverride>;
+  callables?: Record<
+    string,
+    {
+      args?: Record<string, string | ArgOverride>;
+    }
+  >;
   phpFile?: string;
   callable?: string;
   includes?: string[];
@@ -33,7 +33,6 @@ export interface ResolvedFrameworkOptions {
   typeMap?: {
     files?: ResolvedFileMap;
     bindings?: Record<string, string>;
-    args?: TypeMapConfig["args"];
   };
   adapterMap: AdapterMap | null;
 }
@@ -48,11 +47,10 @@ export function resolveFrameworkOptions(options: FrameworkOptions = {}): Resolve
   const configDir = options._configDir ?? process.cwd();
   const resolvedFiles = resolveTypeMapFiles(options.typeMap?.files, configDir);
   const resolvedTypeMap =
-    resolvedFiles || options.typeMap?.bindings || options.typeMap?.args
+    resolvedFiles || options.typeMap?.bindings
       ? {
           ...(resolvedFiles ? { files: resolvedFiles } : {}),
           ...(options.typeMap?.bindings ? { bindings: options.typeMap.bindings } : {}),
-          ...(options.typeMap?.args ? { args: options.typeMap.args } : {}),
         }
       : null;
 
@@ -166,6 +164,14 @@ function resolveTypeMapFiles(
     const resolvedTarget: ResolvedFileMapTarget = {};
 
     if (target.args !== undefined) resolvedTarget.args = target.args;
+    if (target.callables !== undefined) {
+      resolvedTarget.callables = Object.fromEntries(
+        Object.entries(target.callables).map(([callableName, callableTarget]) => [
+          callableName,
+          callableTarget.args !== undefined ? { args: callableTarget.args } : {},
+        ]),
+      );
+    }
     if (target.phpFile !== undefined) {
       resolvedTarget.phpFile = isAbsolute(target.phpFile)
         ? target.phpFile
@@ -202,6 +208,24 @@ function mergeFileMapTargets(
 
   const args = exact.args ?? pattern.args;
   if (args !== undefined) result.args = args;
+
+  const callableKeys = new Set([
+    ...Object.keys(pattern.callables ?? {}),
+    ...Object.keys(exact.callables ?? {}),
+  ]);
+  if (callableKeys.size > 0) {
+    result.callables = {};
+    for (const callableName of callableKeys) {
+      const patternCallable = pattern.callables?.[callableName];
+      const exactCallable = exact.callables?.[callableName];
+      const callableTarget: NonNullable<ResolvedFileMapTarget["callables"]>[string] = {};
+      const args = exactCallable?.args ?? patternCallable?.args;
+      if (args !== undefined) {
+        callableTarget.args = args;
+      }
+      result.callables[callableName] = callableTarget;
+    }
+  }
 
   const phpFile = exact.phpFile ?? pattern.phpFile;
   if (phpFile !== undefined) result.phpFile = phpFile;
