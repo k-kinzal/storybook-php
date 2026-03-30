@@ -762,17 +762,6 @@ final class RunnerTest extends TestCase
                 'message' => 'enumMethod requires enum class and callable.',
             ],
             [
-                'type' => 'enumMethod',
-                'file' => self::FIXTURE_FILE,
-                'class' => ExampleRenderer::class,
-                'callable' => 'render',
-                'args' => ['_case' => 'draft'],
-                'bootstrap' => null,
-                'adapter' => null,
-                'typeMap' => null,
-                'message' => 'Enum methods require PHP 8.1+. Current PHP: ' . PHP_VERSION,
-            ],
-            [
                 'type' => 'unknown',
                 'file' => self::FIXTURE_FILE,
                 'class' => null,
@@ -784,6 +773,20 @@ final class RunnerTest extends TestCase
                 'message' => 'Unknown type: unknown',
             ],
         ];
+
+        if (PHP_VERSION_ID >= 80100) {
+            $cases[] = [
+                'type' => 'enumMethod',
+                'file' => self::FIXTURE_FILE,
+                'class' => ExampleRenderer::class,
+                'callable' => 'render',
+                'args' => ['_case' => 'draft'],
+                'bootstrap' => null,
+                'adapter' => null,
+                'typeMap' => null,
+                'message' => "Enum '" . ExampleRenderer::class . "' is not available.",
+            ];
+        }
 
         foreach ($cases as $case) {
             try {

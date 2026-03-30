@@ -10,6 +10,9 @@ return RectorConfig::configure()
         __DIR__ . '/tests/php',
         __DIR__ . '/tools/php',
     ])
+    ->withSkip([
+        __DIR__ . '/tests/php/fixtures/EnumFixtures.php',
+    ])
     ->withPreparedSets(
         deadCode: true,
         codeQuality: true,

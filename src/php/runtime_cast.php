@@ -37,9 +37,9 @@ function castArrayElements(array $value, string $docType, ReflectionParameter $p
     }
 
     if (function_exists('enum_exists') && $resolved !== null && enum_exists($resolved)) {
+        assert(class_exists($resolved));
         $result = [];
         foreach ($value as $key => $item) {
-            /** @var class-string $resolved */
             try {
                 $result[$key] = resolveEnumCase($resolved, $item);
             } catch (\RuntimeException) {
@@ -213,7 +213,7 @@ function castWithNamedType(ReflectionNamedType $type, mixed $value, ReflectionPa
     }
 
     if (function_exists('enum_exists') && enum_exists($typeName)) {
-        /** @var class-string $typeName */
+        assert(class_exists($typeName));
         return resolveEnumCase($typeName, $value);
     }
 

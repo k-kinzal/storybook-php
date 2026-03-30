@@ -23,14 +23,17 @@ The PHP process runs server-side. Storybook only receives HTML.
 
 ## Internal Layering
 
-The codebase is split into four responsibilities:
+The TypeScript codebase is split into five layers:
 
-- `src/config/`: normalize `FrameworkOptions`, resolve file mappings, and turn imports into absolute PHP sources.
-- `src/component/`: parse PHP sources, apply type-map enrichments, and build shared component schemas plus declaration/module output.
-- `src/render/`: validate render requests, manage registered render plans, and merge runtime type-map overrides.
-- top-level `src/*.ts`: Storybook, Vite, preview, CLI, and executor entrypoints that compose the lower layers.
+- contracts: `src/types.ts` and `src/public-types.ts` define package-level types shared across the rest of the codebase.
+- shared: `src/shared/` holds shared constants and contracts used by multiple higher layers.
+- core: `src/core/config/`, `src/core/analysis/`, `src/core/component/`, and `src/core/typescript/` normalize framework options, analyze PHP sources, and generate shared schemas plus declaration/module output.
+- runtime: `src/runtime/render/` and `src/runtime/server/` validate render requests, manage registered render plans, and execute server-side rendering.
+- entrypoints: top-level `src/*.ts`, plus helpers under `src/cli/` and `src/ts-plugin/`, compose the lower layers for Storybook, Vite, preview, CLI, and editor integration.
 
-The dependency rule is one-way: composition entrypoints may depend on internal layers, but the lower layers should not reach back up into Storybook/Vite adapters. In particular, the PHP execution path should not depend on framework option resolution.
+`src/php/` contains the PHP-side runtime helpers and sits alongside these TypeScript layers.
+
+The dependency rule is one-way: entrypoints may depend on runtime, core, shared, and contracts; runtime may depend on core, shared, and contracts; core may depend on shared and contracts; shared may depend only on contracts. Lower layers should not reach back up into Storybook/Vite adapters.
 
 ## Supported Import Patterns
 

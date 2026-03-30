@@ -6,6 +6,7 @@ import { createRequire } from "node:module";
 import { existsSync, writeFileSync, readdirSync, statSync } from "node:fs";
 import { ensureLink } from "./cli/node-modules-link.js";
 import { loadFrameworkOptionsFile } from "./cli/framework-options-loader.js";
+import { TypegenArgsError, parseTypegenArgs } from "./cli/typegen-args.js";
 import { generateDtsOutputsForFile } from "./core/typescript/typegen.js";
 
 const [, , command, ...args] = process.argv;
@@ -21,7 +22,11 @@ switch (command) {
     runTest(args);
     break;
   case "typegen":
-    await runTypegen(args);
+    try {
+      await runTypegen(args);
+    } catch (error) {
+      reportTypegenError(error);
+    }
     break;
   default:
     printUsage();
@@ -190,6 +195,18 @@ function printUsage(): void {
   );
 }
 
+function reportTypegenError(error: unknown): never {
+  if (error instanceof TypegenArgsError) {
+    console.error(error.message);
+    console.error("");
+    printUsage();
+    process.exit(1);
+  }
+
+  console.error(error instanceof Error ? error.message : String(error));
+  process.exit(1);
+}
+
 function walkPhpFiles(dir: string, cb: (path: string) => void): void {
   for (const entry of readdirSync(dir)) {
     const full = resolve(dir, entry);
@@ -200,27 +217,4 @@ function walkPhpFiles(dir: string, cb: (path: string) => void): void {
       cb(full);
     }
   }
-}
-
-function parseTypegenArgs(rawArgs: string[]): { dirs: string[]; optionsFile?: string } {
-  const dirs: string[] = [];
-  let optionsFile: string | undefined;
-
-  for (let index = 0; index < rawArgs.length; index++) {
-    const arg = rawArgs[index]!;
-    if (arg === "--options-file") {
-      optionsFile = rawArgs[index + 1];
-      index++;
-      continue;
-    }
-
-    if (arg.startsWith("--options-file=")) {
-      optionsFile = arg.slice("--options-file=".length);
-      continue;
-    }
-
-    dirs.push(arg);
-  }
-
-  return optionsFile === undefined ? { dirs } : { dirs, optionsFile };
 }

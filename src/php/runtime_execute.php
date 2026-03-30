@@ -34,10 +34,6 @@ function executeRunnerRequest(array $__sb_request): array
 
     $__sb_adapter = loadAdapter($__sb_adapterPath);
 
-    if ($__sb_type !== 'template') {
-        require_once $__sb_file;
-    }
-
     $__sb_html = '';
     $__sb_context = [
         'type' => $__sb_type,
@@ -51,6 +47,7 @@ function executeRunnerRequest(array $__sb_request): array
             if ($__sb_class === null || $__sb_callable === null) {
                 throw new \RuntimeException('classMethod requires class and callable.');
             }
+            require_once $__sb_file;
             /** @var class-string $__sb_class */
             $__sb_ref = new ReflectionClass($__sb_class);
             $__sb_constructor = $__sb_ref->getConstructor();
@@ -70,6 +67,7 @@ function executeRunnerRequest(array $__sb_request): array
             if ($__sb_class === null || $__sb_callable === null) {
                 throw new \RuntimeException('staticMethod requires class and callable.');
             }
+            require_once $__sb_file;
             /** @var class-string $__sb_class */
             $__sb_ref = new ReflectionClass($__sb_class);
             $__sb_method = $__sb_ref->getMethod($__sb_callable);
@@ -85,6 +83,7 @@ function executeRunnerRequest(array $__sb_request): array
             if ($__sb_callable === null) {
                 throw new \RuntimeException('function render requires callable.');
             }
+            require_once $__sb_file;
             $__sb_ref = new ReflectionFunction($__sb_callable);
             ob_start();
             $__sb_result = $__sb_ref->invokeArgs(matchArgs($__sb_ref, $__sb_args, $__sb_typeMap));
@@ -106,13 +105,19 @@ function executeRunnerRequest(array $__sb_request): array
             break;
 
         case 'enumMethod':
-            if (!function_exists('enum_exists') || $__sb_class === null || $__sb_callable === null) {
+            if ($__sb_class === null || $__sb_callable === null) {
                 throw new \RuntimeException('enumMethod requires enum class and callable.');
             }
-            if (!enum_exists($__sb_class)) {
+            // @codeCoverageIgnoreStart
+            if (!function_exists('enum_exists')) {
                 throw new \RuntimeException("Enum methods require PHP 8.1+. Current PHP: " . PHP_VERSION);
             }
-            /** @var class-string $__sb_class */
+            // @codeCoverageIgnoreEnd
+            require_once $__sb_file;
+            if (!enum_exists($__sb_class)) {
+                throw new \RuntimeException("Enum '{$__sb_class}' is not available.");
+            }
+            assert(class_exists($__sb_class));
             $__sb_ref = new ReflectionClass($__sb_class);
             $__sb_caseValue = $__sb_args['_case'] ?? null;
             $__sb_enumInstance = resolveEnumCase($__sb_class, $__sb_caseValue);
