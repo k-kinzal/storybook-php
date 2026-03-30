@@ -66,6 +66,38 @@ describe.skipIf(!hasPhp)("PhpExecutor", () => {
       expect(result.html).toBe("<div>Bob is 25</div>");
     });
 
+    it("prefers reflection defaults over inherited generated defaults", async () => {
+      const result = await executor.execute({
+        type: "classMethod",
+        file: fixture("RuntimeInheritedDefaults.php"),
+        class: "App\\Components\\RuntimeInheritedDefaults",
+        callable: "render",
+        args: { name: "World" },
+        publicArgDefs: {
+          name: argDef("string", 0),
+          greeting: argDef("string", 1, { required: false, default: "__PLACEHOLDER__" }),
+          enabled: argDef("bool", 2, { required: false, default: "false" }),
+          tags: argDef("array", 3, { required: false, default: "[]" }),
+          suffix: argDef("string", 4, { required: false, default: "__PLACEHOLDER__" }),
+        },
+        constructorArgDefs: {
+          name: argDef("string", 0),
+          greeting: argDef("string", 1, { required: false, default: "__PLACEHOLDER__" }),
+          enabled: argDef("bool", 2, { required: false, default: "false" }),
+          tags: argDef("array", 3, { required: false, default: "[]" }),
+        },
+        callableArgDefs: {
+          suffix: argDef("string", 0, { required: false, default: "__PLACEHOLDER__" }),
+        },
+      });
+
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('data-greeting="Hello"');
+      expect(result.html).toContain('data-enabled="false"');
+      expect(result.html).toContain('data-tags="alpha,beta"');
+      expect(result.html).toContain("Hello, World!");
+    });
+
     it("renders EchoComponent (void return, output buffer)", async () => {
       const request: PhpRenderRequest = {
         type: "classMethod",
@@ -143,6 +175,37 @@ describe.skipIf(!hasPhp)("PhpExecutor", () => {
 
       expect(result.error).toBeUndefined();
       expect(result.html).toContain("<p>Typed from override</p>");
+    });
+
+    it("preserves PHPDoc generic casting when arg defs match reflection types", async () => {
+      const result = await executor.execute({
+        type: "classMethod",
+        file: fixture("ArrayOfObjects.php"),
+        class: "App\\Fixtures\\TagCloud",
+        callable: "render",
+        args: {
+          tags: [
+            { name: "Alpha", color: "red" },
+            { name: "Beta" },
+          ],
+        },
+        publicArgDefs: {
+          tags: argDef("array", 0),
+          title: argDef("string", 1, { required: false, default: "__PLACEHOLDER__" }),
+        },
+        constructorArgDefs: {
+          tags: argDef("array", 0),
+          title: argDef("string", 1, { required: false, default: "__PLACEHOLDER__" }),
+        },
+        callableArgDefs: {},
+      });
+
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain("<h3>Tags</h3>");
+      expect(result.html).toContain("Alpha");
+      expect(result.html).toContain("Beta");
+      expect(result.html).toContain("color: red");
+      expect(result.html).toContain("color: gray");
     });
 
     it("applies public arg defaults and nullable overrides at runtime", async () => {
@@ -320,6 +383,31 @@ describe.skipIf(!hasPhp)("PhpExecutor", () => {
       const result = await executor.execute(request);
       expect(result.error).toBeUndefined();
       expect(result.html).toBe('<span class="badge badge-gray">Default</span>');
+    });
+
+    it("prefers reflection defaults for functions over inherited generated defaults", async () => {
+      const result = await executor.execute({
+        type: "function",
+        file: fixture("RuntimeInheritedDefaults.php"),
+        class: null,
+        callable: "App\\Components\\runtimeInheritedDefaultsBadge",
+        args: { label: "Default" },
+        publicArgDefs: {
+          label: argDef("string", 0),
+          color: argDef("string", 1, { required: false, default: "__PLACEHOLDER__" }),
+          tags: argDef("array", 2, { required: false, default: "[]" }),
+          outlined: argDef("bool", 3, { required: false, default: "false" }),
+        },
+        callableArgDefs: {
+          label: argDef("string", 0),
+          color: argDef("string", 1, { required: false, default: "__PLACEHOLDER__" }),
+          tags: argDef("array", 2, { required: false, default: "[]" }),
+          outlined: argDef("bool", 3, { required: false, default: "false" }),
+        },
+      });
+
+      expect(result.error).toBeUndefined();
+      expect(result.html).toBe('<span class="badge badge-gray" data-tags="one,two">Default</span>');
     });
   });
 

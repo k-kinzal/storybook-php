@@ -558,7 +558,7 @@ function buildTargetArgDefs(?array $targetArgDefs, ?array $publicArgDefs, string
 
         /** @var array<string, mixed> $normalizedTargetArgDef */
         $normalizedTargetArgDef = $targetArgDef;
-        $effectiveArgDefs[$name] = mergeTargetArgDef(
+        $effectiveArgDefs[$name] = mergeTargetArgDefForRuntime(
             $normalizedTargetArgDef,
             resolvePublicArgDefForTarget($name, $publicArgDefs, $scope)
         );
@@ -598,13 +598,48 @@ function resolvePublicArgDefForTarget(string $name, ?array $publicArgDefs, strin
  * @param array<string, mixed>|null $publicArgDef
  * @return array<string, mixed>
  */
-function mergeTargetArgDef(array $targetArgDef, ?array $publicArgDef): array
+function mergeTargetArgDefForRuntime(array $targetArgDef, ?array $publicArgDef): array
 {
+    $runtimeTargetArgDef = stripInheritedRuntimeDefault($targetArgDef);
+
     if ($publicArgDef === null) {
-        return $targetArgDef;
+        return $runtimeTargetArgDef;
     }
 
-    return array_merge($targetArgDef, $publicArgDef);
+    $runtimePublicArgDef = $publicArgDef;
+    if (
+        array_key_exists('default', $runtimePublicArgDef)
+        && array_key_exists('default', $targetArgDef)
+        && defaultsMatchForRuntime(
+            $runtimePublicArgDef['default'],
+            $targetArgDef['default']
+        )
+    ) {
+        unset($runtimePublicArgDef['default']);
+    }
+
+    return array_merge($runtimeTargetArgDef, $runtimePublicArgDef);
+}
+
+/**
+ * @param array<string, mixed> $argDef
+ * @return array<string, mixed>
+ */
+function stripInheritedRuntimeDefault(array $argDef): array
+{
+    if (!array_key_exists('default', $argDef)) {
+        return $argDef;
+    }
+
+    $stripped = $argDef;
+    unset($stripped['default']);
+
+    return $stripped;
+}
+
+function defaultsMatchForRuntime(mixed $left, mixed $right): bool
+{
+    return json_encode($left) === json_encode($right);
 }
 
 /**

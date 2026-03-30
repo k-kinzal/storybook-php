@@ -871,11 +871,18 @@ function buildOverrideDocType(ReflectionParameter $param, array $argDef): ?strin
     $type = isset($argDef['type']) && is_string($argDef['type']) && trim($argDef['type']) !== ''
         ? trim($argDef['type'])
         : null;
+    if ($type !== null && in_array(strtolower($type), ['mixed', 'unknown'], true)) {
+        $type = null;
+    }
     $elementType = isset($argDef['elementType']) && is_string($argDef['elementType']) && trim($argDef['elementType']) !== ''
         ? trim($argDef['elementType'])
         : null;
 
     if ($type !== null) {
+        if ($elementType === null && isRedundantDocTypeOverride($param, $type)) {
+            return null;
+        }
+
         if ($elementType === null) {
             return $type;
         }
@@ -906,6 +913,37 @@ function buildOverrideDocType(ReflectionParameter $param, array $argDef): ?strin
     }
 
     return $elementType;
+}
+
+function isRedundantDocTypeOverride(ReflectionParameter $param, string $overrideType): bool
+{
+    $paramType = $param->getType();
+    if (!$paramType instanceof ReflectionNamedType) {
+        return false;
+    }
+
+    $normalizedOverride = normalizeRuntimeTypeName($overrideType, $param);
+    $normalizedParamType = normalizeRuntimeTypeName($paramType->getName(), $param);
+
+    return $normalizedOverride !== null
+        && $normalizedParamType !== null
+        && $normalizedOverride === $normalizedParamType;
+}
+
+function normalizeRuntimeTypeName(string $typeName, ReflectionParameter $param): ?string
+{
+    $normalized = ltrim(trim($typeName), '\\');
+    if ($normalized === '') {
+        return null;
+    }
+
+    $lower = strtolower($normalized);
+    return match ($lower) {
+        'integer' => 'int',
+        'double' => 'float',
+        'boolean' => 'bool',
+        default => resolveClassName($normalized, $param) ?? $lower,
+    };
 }
 
 /**

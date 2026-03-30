@@ -761,10 +761,14 @@ final class RunnerTest extends TestCase
             resolvePublicArgDefForTarget('title', ['title' => ['default' => 'flat']], 'method'),
         );
         self::assertNull(resolvePublicArgDefForTarget('missing', ['title' => ['default' => 'flat']], 'method'));
-        self::assertSame(['type' => 'string'], mergeTargetArgDef(['type' => 'string'], null));
+        self::assertSame(['type' => 'string'], mergeTargetArgDefForRuntime(['type' => 'string'], null));
         self::assertSame(
             ['type' => 'string', 'default' => 'flat'],
-            mergeTargetArgDef(['type' => 'string'], ['default' => 'flat']),
+            mergeTargetArgDefForRuntime(['type' => 'string'], ['default' => 'flat']),
+        );
+        self::assertSame(
+            ['type' => 'string'],
+            mergeTargetArgDefForRuntime(['type' => 'string', 'default' => 'base'], ['default' => 'base']),
         );
         self::assertSame(
             [
