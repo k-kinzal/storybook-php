@@ -1,13 +1,14 @@
 import { afterEach, beforeEach, describe, expect, it } from "vite-plus/test";
 import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
-import { join, resolve } from "node:path";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import { loadFrameworkOptionsFile } from "../../src/cli/framework-options-loader.js";
 
 describe("framework-options-loader", () => {
   let tempDir = "";
 
   beforeEach(() => {
-    tempDir = mkdtempSync(join(resolve(process.cwd(), "build"), "sbphp-runtime-"));
+    tempDir = mkdtempSync(join(tmpdir(), "sbphp-runtime-"));
   });
 
   afterEach(() => {
