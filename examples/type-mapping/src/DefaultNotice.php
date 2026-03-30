@@ -5,7 +5,7 @@ namespace App\Components;
 /**
  * Runtime defaults + nullable example.
  *
- * limit has no PHP default, and subtitle is untyped. typeMap.args
+ * limit has no PHP default, and subtitle is untyped. typeMap.files[*].args
  * supplies the runtime fallback behavior for missing Storybook args.
  */
 class DefaultNotice

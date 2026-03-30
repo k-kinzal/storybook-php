@@ -6,6 +6,7 @@ import type {
   PhpMethodMeta,
   PhpParamMeta,
 } from "../../types.js";
+import { buildPublicArgMap } from "./public-args.js";
 
 interface EnrichedParamMeta extends PhpParamMeta {
   options?: (string | number | boolean)[];
@@ -34,12 +35,12 @@ export interface SchemaBuildContext {
 export function buildTemplateSchema({
   sourceFile,
   executionFile,
-  allArgs,
+  publicArgs,
   adapter,
 }: {
   sourceFile: string;
   executionFile: string;
-  allArgs: PhpArgMap;
+  publicArgs: PhpArgMap;
   adapter: string | null;
 }): PhpComponentSchema {
   return {
@@ -54,7 +55,7 @@ export function buildTemplateSchema({
     },
     constructorArgs: {},
     callableArgs: {},
-    allArgs,
+    publicArgs,
   };
 }
 
@@ -87,7 +88,7 @@ export function buildSchemasFromMeta(
         },
         constructorArgs: {},
         callableArgs: paramsToArgMap(method.params),
-        allArgs: method.isStatic
+        publicArgs: method.isStatic
           ? paramsToArgMap(method.params)
           : { ...enumCaseArgMap(), ...paramsToArgMap(method.params) },
       });
@@ -113,7 +114,7 @@ export function buildSchemasFromMeta(
         },
         constructorArgs: {},
         callableArgs,
-        allArgs: callableArgs,
+        publicArgs: callableArgs,
       });
       continue;
     }
@@ -139,7 +140,7 @@ export function buildSchemasFromMeta(
         },
         constructorArgs: {},
         callableArgs,
-        allArgs: callableArgs,
+        publicArgs: callableArgs,
       });
       continue;
     }
@@ -159,7 +160,7 @@ export function buildSchemasFromMeta(
       },
       constructorArgs,
       callableArgs,
-      allArgs: { ...constructorArgs, ...callableArgs },
+      publicArgs: buildPublicArgMap(constructorArgs, callableArgs),
     });
   }
 
@@ -184,7 +185,7 @@ export function buildSchemasFromMeta(
         },
         constructorArgs: {},
         callableArgs,
-        allArgs: callableArgs,
+        publicArgs: callableArgs,
       },
     ];
   }

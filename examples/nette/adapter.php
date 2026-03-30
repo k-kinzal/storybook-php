@@ -1,10 +1,11 @@
 <?php
 
-return function (mixed $result, string $buffered, ?object $instance): string {
-    // Latte components return rendered HTML strings directly from render()
-    if (is_string($result) && $result !== '') {
-        return $result;
-    }
+return [
+    'render' => function (mixed $result, string $buffered, ?object $instance): string {
+        if (is_string($result) && $result !== '') {
+            return $result;
+        }
 
-    return resolveOutput($result, $buffered);
-};
+        return resolveOutput($result, $buffered);
+    },
+];

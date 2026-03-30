@@ -118,7 +118,7 @@ function splitUnionTypes(string $type): array
 function resolveBoundTypeName(string $typeName, ?array $typeMap = null, ?ReflectionParameter $param = null): string
 {
     $raw = ltrim($typeName, '\\');
-    $resolved = $param !== null ? resolveClassName($raw, $param) : null;
+    $resolved = $param instanceof \ReflectionParameter ? resolveClassName($raw, $param) : null;
     $candidate = $resolved ?? $raw;
 
     $bound = ltrim(resolveTypeMapBinding($candidate, $typeMap), '\\');
@@ -222,7 +222,7 @@ function scoreInlineNamedTypeMatch(string $typeName, mixed $value, ?array $typeM
     }
 
     if (interface_exists($resolved)) {
-        return is_object($value) && $value instanceof $resolved ? 3 : 0;
+        return $value instanceof $resolved ? 3 : 0;
     }
 
     if (!class_exists($resolved)) {
@@ -398,7 +398,12 @@ function castInlineDocTypeValue(mixed $value, string $docType, ?array $typeMap =
             $rankedUnionTypes[] = ['candidate' => $candidate, 'score' => $score, 'index' => $index];
         }
         usort($rankedUnionTypes, static function (array $a, array $b): int {
-            return ($b['score'] <=> $a['score']) ?: ($a['index'] <=> $b['index']);
+            $scoreComparison = $b['score'] <=> $a['score'];
+            if ($scoreComparison !== 0) {
+                return $scoreComparison;
+            }
+
+            return $a['index'] <=> $b['index'];
         });
         foreach ($rankedUnionTypes as $ranked) {
             try {
@@ -564,7 +569,12 @@ function castDocTypeValue(mixed $value, string $docType, ReflectionParameter $pa
             $rankedUnionTypes[] = ['candidate' => $candidate, 'score' => $score, 'index' => $index];
         }
         usort($rankedUnionTypes, static function (array $a, array $b): int {
-            return ($b['score'] <=> $a['score']) ?: ($a['index'] <=> $b['index']);
+            $scoreComparison = $b['score'] <=> $a['score'];
+            if ($scoreComparison !== 0) {
+                return $scoreComparison;
+            }
+
+            return $a['index'] <=> $b['index'];
         });
         foreach ($rankedUnionTypes as $ranked) {
             try {
@@ -656,7 +666,12 @@ function castArg(ReflectionParameter $param, mixed $value, ?string $docType = nu
         }
 
         usort($rankedNamedTypes, static function (array $a, array $b): int {
-            return ($b['score'] <=> $a['score']) ?: ($a['index'] <=> $b['index']);
+            $scoreComparison = $b['score'] <=> $a['score'];
+            if ($scoreComparison !== 0) {
+                return $scoreComparison;
+            }
+
+            return $a['index'] <=> $b['index'];
         });
 
         foreach ($rankedNamedTypes as $ranked) {
@@ -682,31 +697,6 @@ function castArg(ReflectionParameter $param, mixed $value, ?string $docType = nu
     }
 
     return $value;
-}
-
-/**
- * Resolve a typeMap.args override for a specific reflection parameter.
- *
- * @param array<string, mixed>|null $typeMap
- */
-function resolveParamArgOverride(
-    string $classFqn,
-    string $methodName,
-    string $name,
-    ?array $typeMap = null,
-): mixed {
-    if ($typeMap === null) {
-        return null;
-    }
-
-    $argOverrides = $typeMap['args'] ?? null;
-    if (!is_array($argOverrides)) {
-        return null;
-    }
-
-    return $argOverrides["{$classFqn}::{$methodName}::\${$name}"]
-        ?? $argOverrides["{$classFqn}::\${$name}"]
-        ?? null;
 }
 
 /**
@@ -826,33 +816,23 @@ function isListArray(array $value): bool
 }
 
 /**
- * Resolve the effective doc type for a parameter, including typeMap.args overrides.
+ * Resolve the effective doc type for a parameter using the provided arg definition.
  *
  * @param array<string, string> $docTypes
- * @param array<string, mixed>|null $typeMap
+ * @param array<string, mixed>|null $argDef
  */
 function resolveParamDocType(
     ReflectionParameter $param,
     array $docTypes,
-    string $classFqn,
-    string $methodName,
-    ?array $typeMap = null,
+    ?array $argDef = null,
 ): ?string {
     $name = $param->getName();
     $docType = $docTypes[$name] ?? null;
 
-    $override = resolveParamArgOverride($classFqn, $methodName, $name, $typeMap);
-    if ($override !== null) {
-        if (is_string($override)) {
-            return $override;
-        }
-
-        if (is_array($override)) {
-            /** @var array<string, mixed> $override */
-            $overrideDocType = buildOverrideDocType($param, $override);
-            if ($overrideDocType !== null) {
-                return $overrideDocType;
-            }
+    if ($argDef !== null) {
+        $overrideDocType = buildOverrideDocType($param, $argDef);
+        if ($overrideDocType !== null) {
+            return $overrideDocType;
         }
     }
 
@@ -860,18 +840,17 @@ function resolveParamDocType(
 }
 
 /**
- * Convert a typeMap.args object override into a doc-type string that the
- * runtime caster understands.
+ * Convert an arg definition into a doc-type string that the runtime caster understands.
  *
- * @param array<string, mixed> $override
+ * @param array<string, mixed> $argDef
  */
-function buildOverrideDocType(ReflectionParameter $param, array $override): ?string
+function buildOverrideDocType(ReflectionParameter $param, array $argDef): ?string
 {
-    $type = isset($override['type']) && is_string($override['type']) && trim($override['type']) !== ''
-        ? trim($override['type'])
+    $type = isset($argDef['type']) && is_string($argDef['type']) && trim($argDef['type']) !== ''
+        ? trim($argDef['type'])
         : null;
-    $elementType = isset($override['elementType']) && is_string($override['elementType']) && trim($override['elementType']) !== ''
-        ? trim($override['elementType'])
+    $elementType = isset($argDef['elementType']) && is_string($argDef['elementType']) && trim($argDef['elementType']) !== ''
+        ? trim($argDef['elementType'])
         : null;
 
     if ($type !== null) {
@@ -912,9 +891,10 @@ function buildOverrideDocType(ReflectionParameter $param, array $override): ?str
  *
  * @param array<array-key, mixed> $args
  * @param array<string, mixed>|null $typeMap
+ * @param array<string, mixed>|null $argDefs
  * @return list<mixed>
  */
-function matchArgs(?ReflectionFunctionAbstract $ref, array $args, ?array $typeMap = null): array
+function matchArgs(?ReflectionFunctionAbstract $ref, array $args, ?array $typeMap = null, ?array $argDefs = null): array
 {
     if (!$ref instanceof \ReflectionFunctionAbstract) {
         return [];
@@ -922,20 +902,16 @@ function matchArgs(?ReflectionFunctionAbstract $ref, array $args, ?array $typeMa
 
     $docTypes = parseDocBlockParamTypes($ref);
 
-    $classFqn = '';
-    $methodName = '';
-    if ($ref instanceof ReflectionMethod) {
-        $classFqn = $ref->getDeclaringClass()->getName();
-        $methodName = $ref->getName();
-    } elseif ($ref instanceof ReflectionFunction) {
-        $methodName = $ref->getName();
-    }
-
     $ordered = [];
     foreach ($ref->getParameters() as $param) {
         $name = $param->getName();
-        $override = resolveParamArgOverride($classFqn, $methodName, $name, $typeMap);
-        $docType = resolveParamDocType($param, $docTypes, $classFqn, $methodName, $typeMap);
+        $argDef = null;
+        if ($argDefs !== null && isset($argDefs[$name]) && is_array($argDefs[$name])) {
+            /** @var array<string, mixed> $resolvedArgDef */
+            $resolvedArgDef = $argDefs[$name];
+            $argDef = $resolvedArgDef;
+        }
+        $docType = resolveParamDocType($param, $docTypes, $argDef);
 
         if ($param->isVariadic()) {
             if (array_key_exists($name, $args)) {
@@ -950,13 +926,13 @@ function matchArgs(?ReflectionFunctionAbstract $ref, array $args, ?array $typeMa
 
         if (array_key_exists($name, $args)) {
             $ordered[] = castArg($param, $args[$name], $docType, $typeMap);
-        } elseif (is_array($override) && array_key_exists('default', $override)) {
-            $ordered[] = castArg($param, $override['default'], $docType, $typeMap);
+        } elseif (is_array($argDef) && array_key_exists('default', $argDef)) {
+            $ordered[] = castArg($param, $argDef['default'], $docType, $typeMap);
         } elseif ($param->isDefaultValueAvailable()) {
             $ordered[] = $param->getDefaultValue();
         } elseif (
-            is_array($override)
-            && (($override['nullable'] ?? false) === true)
+            is_array($argDef)
+            && (($argDef['nullable'] ?? false) === true)
             && (!$param->getType() instanceof \ReflectionType || $param->allowsNull())
         ) {
             $ordered[] = null;

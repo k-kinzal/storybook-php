@@ -8,6 +8,8 @@ use StorybookPhp\EnumFixture\UnitStatus;
 use StorybookPhp\TestFixture\ExampleRenderer;
 use StorybookPhp\TestFixture\Formatter;
 use StorybookPhp\TestFixture\FormatterInterface;
+use StorybookPhp\TestFixture\AbstractCollection;
+use StorybookPhp\TestFixture\BrokenCollection;
 use StorybookPhp\TestFixture\Item;
 use StorybookPhp\TestFixture\ListCollection;
 use StorybookPhp\TestFixture\ListCollectionContract;
@@ -25,6 +27,10 @@ final class RunnerTest extends TestCase
     private const TEMPLATE_FILE = __DIR__ . '/fixtures/Template.php';
     private const BOOTSTRAP_FILE = __DIR__ . '/fixtures/Bootstrap.php';
     private const ADAPTER_FILE = __DIR__ . '/fixtures/Adapter.php';
+    private const ARRAY_ADAPTER_FILE = __DIR__ . '/fixtures/ArrayAdapter.php';
+    private const INVALID_MAP_HOOK_ADAPTER_FILE = __DIR__ . '/fixtures/InvalidMapHookAdapter.php';
+    private const INVALID_RENDER_HOOK_ADAPTER_FILE = __DIR__ . '/fixtures/InvalidRenderHookAdapter.php';
+    private const EMPTY_HOOKS_ADAPTER_FILE = __DIR__ . '/fixtures/EmptyHooksAdapter.php';
     private const INVALID_ADAPTER_FILE = __DIR__ . '/fixtures/InvalidAdapter.php';
     private const NON_STRING_ADAPTER_FILE = __DIR__ . '/fixtures/NonStringAdapter.php';
 
@@ -266,6 +272,108 @@ final class RunnerTest extends TestCase
         } catch (RuntimeException $e) {
             self::assertSame('Missing required argument: title', $e->getMessage());
         }
+    }
+
+    public function testScoringHelpersCoverBindingAndFallbackBranches(): void
+    {
+        $formatterParameter = new ReflectionParameter('StorybookPhp\\TestFixture\\acceptsFormatter', 0);
+        self::assertSame(
+            Formatter::class,
+            resolveBoundTypeName(
+                'FormatterInterface',
+                ['bindings' => ['FormatterInterface' => Formatter::class]],
+                $formatterParameter,
+            ),
+        );
+
+        self::assertSame(2, scoreInlineNamedTypeMatch('string', new StringableValue('score')));
+        self::assertSame(1, scoreInlineNamedTypeMatch('float', '2.5'));
+        self::assertSame(1, scoreInlineNamedTypeMatch('bool', 1));
+        self::assertSame(1, scoreInlineNamedTypeMatch('bool', 'yes'));
+        self::assertSame(0, scoreInlineNamedTypeMatch('bool', new stdClass()));
+        self::assertSame(1, scoreInlineNamedTypeMatch('iterable', new ArrayIterator([])));
+        self::assertSame(3, scoreInlineNamedTypeMatch('object', new stdClass()));
+        self::assertSame(1, scoreInlineNamedTypeMatch('object', ['wrapped' => true]));
+        self::assertSame(3, scoreInlineNamedTypeMatch('callable', static fn (): string => 'ok'));
+        self::assertSame(3, scoreInlineNamedTypeMatch('null', null));
+        self::assertSame(3, scoreInlineNamedTypeMatch(FormatterInterface::class, new Formatter()));
+        self::assertSame(0, scoreInlineNamedTypeMatch('StorybookPhp\\MissingClass', ['value' => true]));
+        self::assertSame(1, scoreInlineNamedTypeMatch(Item::class, ['label' => 'array']));
+
+        if (PHP_VERSION_ID >= 80100) {
+            self::assertSame(3, scoreInlineNamedTypeMatch(Status::class, Status::Draft));
+        }
+
+        $untypedParameter = new ReflectionParameter('StorybookPhp\\TestFixture\\acceptsUntyped', 0);
+        self::assertSame(0, scoreDocTypeMatch('unknown', 'value', $untypedParameter));
+        self::assertSame(3, scoreDocTypeMatch('?int', null, $untypedParameter));
+        self::assertSame(2, scoreDocTypeMatch('?int', '4', $untypedParameter));
+        self::assertSame(3, scoreDocTypeMatch('int|string', '4', $untypedParameter));
+        self::assertSame(3, scoreDocTypeMatch('null|string', 'value', $untypedParameter));
+        self::assertSame(4, scoreDocTypeMatch('list<Item>', [['label' => 'alpha']], $untypedParameter));
+        self::assertSame(5, scoreDocTypeMatch(ListCollection::class . '<Item>', new ListCollection([]), $untypedParameter));
+        self::assertSame(0, scoreDocTypeMatch(ListCollection::class . '<Item>', 'invalid', $untypedParameter));
+    }
+
+    public function testUnionAndWrapperCastingFallbacksCoverFailureBranches(): void
+    {
+        self::assertSame(5, castInlineDocTypeValue('5', 'float|int'));
+
+        $inlineTiedUnion = castInlineDocTypeValue(['label' => 'inline'], Item::class . '|' . NoConstructorItem::class);
+        self::assertInstanceOf(Item::class, $inlineTiedUnion);
+
+        $inlineFallbackUnion = castInlineDocTypeValue(
+            ['label' => 'inline'],
+            BrokenCollection::class . '<' . Item::class . '>|' . Item::class,
+        );
+        self::assertInstanceOf(Item::class, $inlineFallbackUnion);
+
+        $inlineAbstractWrapper = castInlineDocTypeValue(
+            [['label' => 'inline-abstract']],
+            AbstractCollection::class . '<' . Item::class . '>',
+        );
+        self::assertIsArray($inlineAbstractWrapper);
+        self::assertInstanceOf(Item::class, $inlineAbstractWrapper[0]);
+
+        $untypedParameter = new ReflectionParameter('StorybookPhp\\TestFixture\\acceptsUntyped', 0);
+        self::assertSame(5, castDocTypeValue('5', 'float|int', $untypedParameter));
+
+        $docTiedUnion = castDocTypeValue(
+            ['label' => 'doc'],
+            Item::class . '|' . NoConstructorItem::class,
+            $untypedParameter,
+        );
+        self::assertInstanceOf(Item::class, $docTiedUnion);
+
+        $docFallbackUnion = castDocTypeValue(
+            ['label' => 'doc'],
+            BrokenCollection::class . '<Item>|' . Item::class,
+            $untypedParameter,
+        );
+        self::assertInstanceOf(Item::class, $docFallbackUnion);
+
+        $docAbstractWrapper = castDocTypeValue(
+            [['label' => 'doc-abstract']],
+            AbstractCollection::class . '<Item>',
+            $untypedParameter,
+        );
+        self::assertIsArray($docAbstractWrapper);
+        self::assertInstanceOf(Item::class, $docAbstractWrapper[0]);
+
+        $templateAbstractWrapper = castTemplateArgValue(
+            ['type' => AbstractCollection::class, 'elementType' => Item::class],
+            [['label' => 'template']],
+        );
+        self::assertIsArray($templateAbstractWrapper);
+        self::assertInstanceOf(Item::class, $templateAbstractWrapper[0]);
+
+        $unionParameter = (new ReflectionFunction(
+            static function (BrokenCollection|Item $value): BrokenCollection|Item {
+                return $value;
+            },
+        ))->getParameters()[0];
+        $castUnion = castArg($unionParameter, ['label' => 'named-union']);
+        self::assertInstanceOf(Item::class, $castUnion);
     }
 
     public function testScoreTypeMatchAndCastArgHandlePrimitiveAndSpecialCases(): void
@@ -540,36 +648,14 @@ final class RunnerTest extends TestCase
         $method = new ReflectionMethod(ExampleRenderer::class, 'render');
         $parameter = $method->getParameters()[1];
         $docTypes = parseDocBlockParamTypes($method);
-        self::assertNull(resolveParamArgOverride(ExampleRenderer::class, 'render', 'items'));
-        self::assertNull(resolveParamArgOverride(ExampleRenderer::class, 'render', 'items', ['args' => 'invalid']));
-        self::assertSame(
-            'list<string>',
-            resolveParamArgOverride(
-                ExampleRenderer::class,
-                'render',
-                'items',
-                ['args' => [ExampleRenderer::class . '::render::$items' => 'list<string>']],
-            ),
-        );
-        self::assertSame(
-            'list<int>',
-            resolveParamArgOverride(
-                ExampleRenderer::class,
-                'render',
-                'items',
-                ['args' => [ExampleRenderer::class . '::$items' => 'list<int>']],
-            ),
-        );
 
-        self::assertSame('list<Item>', resolveParamDocType($parameter, $docTypes, ExampleRenderer::class, 'render'));
+        self::assertSame('list<Item>', resolveParamDocType($parameter, $docTypes));
         self::assertSame(
             'list<string>',
             resolveParamDocType(
                 $parameter,
                 $docTypes,
-                ExampleRenderer::class,
-                'render',
-                ['args' => [ExampleRenderer::class . '::render::$items' => 'list<string>']],
+                ['type' => 'list<string>'],
             ),
         );
         self::assertSame(
@@ -577,9 +663,7 @@ final class RunnerTest extends TestCase
             resolveParamDocType(
                 $parameter,
                 $docTypes,
-                ExampleRenderer::class,
-                'render',
-                ['args' => [ExampleRenderer::class . '::$items' => 'list<int>']],
+                ['type' => 'list<int>'],
             ),
         );
         self::assertSame(
@@ -587,9 +671,7 @@ final class RunnerTest extends TestCase
             resolveParamDocType(
                 $parameter,
                 $docTypes,
-                ExampleRenderer::class,
-                'render',
-                ['args' => [ExampleRenderer::class . '::render::$items' => ['type' => 'list<bool>']]],
+                ['type' => 'list<bool>'],
             ),
         );
         self::assertSame(
@@ -597,9 +679,7 @@ final class RunnerTest extends TestCase
             resolveParamDocType(
                 $parameter,
                 $docTypes,
-                ExampleRenderer::class,
-                'render',
-                ['args' => [ExampleRenderer::class . '::render::$items' => ['elementType' => 'Item']]],
+                ['elementType' => 'Item'],
             ),
         );
 
@@ -609,9 +689,7 @@ final class RunnerTest extends TestCase
             resolveParamDocType(
                 $title,
                 $docTypes,
-                ExampleRenderer::class,
-                'render',
-                ['args' => [ExampleRenderer::class . '::render::$title' => ['elementType' => 'Item']]],
+                ['elementType' => 'Item'],
             ),
         );
 
@@ -653,17 +731,53 @@ final class RunnerTest extends TestCase
         self::assertInstanceOf(ReflectionMethod::class, $overrideConstructor);
         self::assertSame(
             [7, null],
-            matchArgs($overrideConstructor, [], [
-                'args' => [
-                    OverrideTarget::class . '::$limit' => ['type' => 'int', 'default' => '7'],
-                    OverrideTarget::class . '::$subtitle' => ['nullable' => true],
-                ],
+            matchArgs($overrideConstructor, [], null, [
+                'limit' => ['type' => 'int', 'default' => '7'],
+                'subtitle' => ['nullable' => true],
             ]),
         );
 
         $this->expectException(RuntimeException::class);
         $this->expectExceptionMessage('Missing required argument: title');
         matchArgs($render, ['items' => [['label' => 'missing']]]);
+    }
+
+    public function testTargetArgDefHelpersMergeScopedAndFlatPublicArgs(): void
+    {
+        self::assertNull(buildTargetArgDefs(null, null, 'method'));
+        self::assertNull(resolvePublicArgDefForTarget('title', null, 'method'));
+        self::assertSame(
+            ['default' => 'scoped'],
+            resolvePublicArgDefForTarget('title', ['method.title' => ['default' => 'scoped']], 'method'),
+        );
+        self::assertSame(
+            ['default' => 'flat'],
+            resolvePublicArgDefForTarget('title', ['title' => ['default' => 'flat']], 'method'),
+        );
+        self::assertNull(resolvePublicArgDefForTarget('missing', ['title' => ['default' => 'flat']], 'method'));
+        self::assertSame(['type' => 'string'], mergeTargetArgDef(['type' => 'string'], null));
+        self::assertSame(
+            ['type' => 'string', 'default' => 'flat'],
+            mergeTargetArgDef(['type' => 'string'], ['default' => 'flat']),
+        );
+        self::assertSame(
+            [
+                'title' => ['type' => 'string', 'default' => 'story'],
+                'count' => ['type' => 'int', 'default' => '3'],
+            ],
+            buildTargetArgDefs(
+                [
+                    'title' => ['type' => 'string'],
+                    'skip' => 'ignore-me',
+                    'count' => ['type' => 'int'],
+                ],
+                [
+                    'method.title' => ['default' => 'story'],
+                    'count' => ['default' => '3'],
+                ],
+                'method',
+            ),
+        );
     }
 
     public function testStringifyBufferAndNormalizationHelpersWork(): void
@@ -698,7 +812,9 @@ final class RunnerTest extends TestCase
             'class' => null,
             'callable' => 'StorybookPhp\\TestFixture\\renderFixture',
             'args' => ['title' => 'Hello', 'items' => []],
-            'argDefs' => ['title' => ['type' => 'string']],
+            'publicArgDefs' => ['title' => ['type' => 'string']],
+            'constructorArgDefs' => ['title' => ['type' => 'string']],
+            'callableArgDefs' => [],
             'bootstrap' => null,
             'adapter' => null,
             'typeMap' => ['bindings' => []],
@@ -708,7 +824,9 @@ final class RunnerTest extends TestCase
         self::assertSame(self::FIXTURE_FILE, $request['file']);
         self::assertSame('/stories/FixtureAlias.php', $request['sourceFile']);
         self::assertSame(['title' => 'Hello', 'items' => []], $request['args']);
-        self::assertSame(['title' => ['type' => 'string']], $request['argDefs']);
+        self::assertSame(['title' => ['type' => 'string']], $request['publicArgDefs']);
+        self::assertSame(['title' => ['type' => 'string']], $request['constructorArgDefs']);
+        self::assertSame([], $request['callableArgDefs']);
         self::assertSame(['bindings' => []], $request['typeMap']);
 
         $cases = [
@@ -719,7 +837,9 @@ final class RunnerTest extends TestCase
             [json_encode(['type' => 'function', 'file' => self::FIXTURE_FILE, 'class' => 1], JSON_THROW_ON_ERROR), 'Request field "class" must be a string or null.'],
             [json_encode(['type' => 'function', 'file' => self::FIXTURE_FILE, 'callable' => 1], JSON_THROW_ON_ERROR), 'Request field "callable" must be a string or null.'],
             [json_encode(['type' => 'function', 'file' => self::FIXTURE_FILE, 'args' => 'bad'], JSON_THROW_ON_ERROR), 'Request field "args" must be an object.'],
-            [json_encode(['type' => 'function', 'file' => self::FIXTURE_FILE, 'argDefs' => 'bad'], JSON_THROW_ON_ERROR), 'Request field "argDefs" must be an object or null.'],
+            [json_encode(['type' => 'function', 'file' => self::FIXTURE_FILE, 'publicArgDefs' => 'bad'], JSON_THROW_ON_ERROR), 'Request field "publicArgDefs" must be an object or null.'],
+            [json_encode(['type' => 'function', 'file' => self::FIXTURE_FILE, 'constructorArgDefs' => 'bad'], JSON_THROW_ON_ERROR), 'Request field "constructorArgDefs" must be an object or null.'],
+            [json_encode(['type' => 'function', 'file' => self::FIXTURE_FILE, 'callableArgDefs' => 'bad'], JSON_THROW_ON_ERROR), 'Request field "callableArgDefs" must be an object or null.'],
             [json_encode(['type' => 'function', 'file' => self::FIXTURE_FILE, 'bootstrap' => 1], JSON_THROW_ON_ERROR), 'Request field "bootstrap" must be a string or null.'],
             [json_encode(['type' => 'function', 'file' => self::FIXTURE_FILE, 'adapter' => 1], JSON_THROW_ON_ERROR), 'Request field "adapter" must be a string or null.'],
             [json_encode(['type' => 'function', 'file' => self::FIXTURE_FILE, 'typeMap' => 'bad'], JSON_THROW_ON_ERROR), 'Request field "typeMap" must be an object or null.'],
@@ -741,10 +861,10 @@ final class RunnerTest extends TestCase
         self::assertNull(loadAdapter(''));
 
         $adapter = loadAdapter(self::ADAPTER_FILE);
-        self::assertIsCallable($adapter);
+        self::assertIsArray($adapter);
         self::assertSame(
             'function|RunnerFixtures.php|buffer|none|result',
-            applyAdapter($adapter, 'result', 'buffer', null, [
+            applyAdapterRender($adapter, 'result', 'buffer', null, [
                 'type' => 'function',
                 'file' => self::FIXTURE_FILE,
                 'args' => [],
@@ -755,17 +875,151 @@ final class RunnerTest extends TestCase
             loadAdapter(self::INVALID_ADAPTER_FILE);
             self::fail('Expected invalid adapter to throw.');
         } catch (RuntimeException $e) {
-            self::assertStringContainsString('Adapter file must return a callable', $e->getMessage());
+            self::assertStringContainsString('Adapter file must return an adapter definition array or callable', $e->getMessage());
+        }
+
+        $arrayAdapter = loadAdapter(self::ARRAY_ADAPTER_FILE);
+        self::assertIsArray($arrayAdapter);
+        self::assertIsCallable($arrayAdapter['mapArgs']);
+        self::assertIsCallable($arrayAdapter['render']);
+
+        try {
+            loadAdapter(self::INVALID_MAP_HOOK_ADAPTER_FILE);
+            self::fail('Expected invalid mapArgs hook to throw.');
+        } catch (RuntimeException $e) {
+            self::assertStringContainsString("Adapter 'mapArgs' hook must be callable", $e->getMessage());
         }
 
         try {
-            /** @var callable $nonStringAdapter */
-            $nonStringAdapter = require self::NON_STRING_ADAPTER_FILE;
-            applyAdapter($nonStringAdapter, 'result', '', null, ['type' => 'function', 'file' => self::FIXTURE_FILE, 'args' => []]);
+            loadAdapter(self::INVALID_RENDER_HOOK_ADAPTER_FILE);
+            self::fail('Expected invalid render hook to throw.');
+        } catch (RuntimeException $e) {
+            self::assertStringContainsString("Adapter 'render' hook must be callable", $e->getMessage());
+        }
+
+        try {
+            loadAdapter(self::EMPTY_HOOKS_ADAPTER_FILE);
+            self::fail('Expected empty adapter hooks to throw.');
+        } catch (RuntimeException $e) {
+            self::assertStringContainsString("Adapter must define at least one of 'mapArgs' or 'render'", $e->getMessage());
+        }
+
+        try {
+            $nonStringAdapter = ['mapArgs' => null, 'render' => require self::NON_STRING_ADAPTER_FILE];
+            applyAdapterRender($nonStringAdapter, 'result', '', null, ['type' => 'function', 'file' => self::FIXTURE_FILE, 'args' => []]);
             self::fail('Expected adapter returning a non-string to throw.');
         } catch (RuntimeException $e) {
             self::assertSame('Adapter must return a string.', $e->getMessage());
         }
+
+        self::assertSame(
+            'resultbuffer',
+            applyAdapterRender(
+                ['mapArgs' => null, 'render' => null],
+                'result',
+                'buffer',
+                null,
+                ['type' => 'function', 'file' => self::FIXTURE_FILE, 'args' => []],
+            ),
+        );
+
+        self::assertSame(
+            [
+                'constructor' => ['id' => '7'],
+                'method' => ['title' => 'Story title'],
+                'template' => ['greeting' => 'hello'],
+            ],
+            mapAdapterArgs($arrayAdapter, [
+                'type' => 'classMethod',
+                'file' => self::FIXTURE_FILE,
+                'executionFile' => self::FIXTURE_FILE,
+                'storyArgs' => ['constructor.id' => '7', 'method.title' => 'Story title'],
+            ]),
+        );
+
+        try {
+            mapAdapterArgs(
+                ['mapArgs' => static fn (): string => 'invalid', 'render' => null],
+                [
+                    'type' => 'classMethod',
+                    'file' => self::FIXTURE_FILE,
+                    'executionFile' => self::FIXTURE_FILE,
+                    'storyArgs' => [],
+                ],
+            );
+            self::fail('Expected invalid adapter mapArgs payload to throw.');
+        } catch (RuntimeException $e) {
+            self::assertSame("Adapter 'mapArgs' hook must return an array.", $e->getMessage());
+        }
+
+        try {
+            mapAdapterArgs(
+                ['mapArgs' => static fn (): array => ['method' => 'invalid'], 'render' => null],
+                [
+                    'type' => 'classMethod',
+                    'file' => self::FIXTURE_FILE,
+                    'executionFile' => self::FIXTURE_FILE,
+                    'storyArgs' => [],
+                ],
+            );
+            self::fail('Expected invalid adapter mapArgs.method payload to throw.');
+        } catch (RuntimeException $e) {
+            self::assertSame("Adapter 'mapArgs.method' value must be an object.", $e->getMessage());
+        }
+
+        self::assertSame(
+            ['template' => ['greeting' => 'hello']],
+            defaultAdapterMapArgs(
+                ['greeting' => 'hello', 'constructor.title' => 'skip', 'method.title' => 'skip'],
+                ['type' => 'template'],
+            ),
+        );
+        self::assertSame(
+            [
+                'constructor' => ['id' => '1'],
+                'method' => ['title' => 'scoped'],
+            ],
+            defaultAdapterMapArgs(
+                ['constructor.id' => '1', 'title' => 'flat', 'method.title' => 'scoped'],
+                [
+                    'type' => 'classMethod',
+                    'constructorArgDefs' => ['id' => ['type' => 'int']],
+                    'callableArgDefs' => ['title' => ['type' => 'string']],
+                ],
+            ),
+        );
+        self::assertSame(
+            [
+                'constructor' => ['id' => '1', 'shared' => 'value'],
+                'method' => ['title' => 'fallback', 'shared' => 'value'],
+            ],
+            defaultAdapterMapArgs(
+                ['constructor.id' => '1', 'method.title' => 'fallback', 'shared' => 'value'],
+                ['type' => 'classMethod'],
+            ),
+        );
+        self::assertSame(
+            ['title' => 'scoped', 'count' => 2],
+            projectStoryArgsToTarget(
+                ['method.title' => 'scoped', 'title' => 'flat', 'count' => 2],
+                ['title' => ['type' => 'string'], 'count' => ['type' => 'int']],
+                'method',
+            ),
+        );
+        self::assertSame(
+            ['title' => 'ctor', 'shared' => 'value'],
+            projectStoryArgsWithoutDefinitions(
+                ['constructor.title' => 'ctor', 'method.title' => 'method', 'shared' => 'value'],
+                'constructor',
+            ),
+        );
+        self::assertSame(
+            ['title' => 'method', 'shared' => 'value'],
+            projectStoryArgsWithoutDefinitions(
+                ['constructor.title' => 'ctor', 'method.title' => 'method', 'shared' => 'value'],
+                'method',
+            ),
+        );
 
         $generator = static function (): Generator {
             yield 'A';
@@ -897,7 +1151,7 @@ final class RunnerTest extends TestCase
             'class' => null,
             'callable' => null,
             'args' => ['greeting' => 'hi', 'count' => 2],
-            'argDefs' => null,
+            'publicArgDefs' => null,
             'bootstrap' => null,
             'adapter' => null,
             'typeMap' => null,
@@ -910,7 +1164,7 @@ final class RunnerTest extends TestCase
             'class' => null,
             'callable' => null,
             'args' => ['greeting' => 'typed'],
-            'argDefs' => [
+            'publicArgDefs' => [
                 'greeting' => ['type' => 'string', 'required' => true, 'position' => 0, 'nullable' => false],
                 'count' => ['type' => 'int', 'required' => false, 'position' => 1, 'nullable' => false, 'default' => '4'],
             ],
@@ -926,7 +1180,7 @@ final class RunnerTest extends TestCase
             'class' => null,
             'callable' => null,
             'args' => ['greeting' => 'hi', 'count' => 2],
-            'argDefs' => null,
+            'publicArgDefs' => null,
             'bootstrap' => null,
             'adapter' => self::ADAPTER_FILE,
             'typeMap' => null,

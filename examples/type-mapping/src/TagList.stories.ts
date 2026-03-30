@@ -1,14 +1,12 @@
 /**
- * typeMap.args demo: Array element type
+ * typeMap.files[*].args demo: Array element type
  *
  * The $tags param is typed as `array` in PHP, so the parser can't
- * determine the element type. typeMap.args provides `elementType: "string"`
+ * determine the element type. typeMap.files[*].args provides `elementType: "string"`
  * so the system knows each element is a string.
  *
  * Config in main.ts:
- *   "App\\Components\\TagList::$tags": {
- *     elementType: "string",
- *   }
+ *   "../src/TagList.php": { args: { tags: { elementType: "string" } } }
  */
 import type { Meta, StoryObj } from "storybook-php";
 import { TagList } from "./TagList.php@render";

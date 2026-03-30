@@ -20,7 +20,7 @@ describe("module-emitter", () => {
         },
         constructorArgs: {},
         callableArgs: {},
-        allArgs: {
+        publicArgs: {
           items: {
             type: "App\\Dto\\Item[]",
             required: false,

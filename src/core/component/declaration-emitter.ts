@@ -32,7 +32,7 @@ function generateInterfaceForArgMap(interfaceName: string, argMap: PhpArgMap): s
   return `interface ${interfaceName} {\n${entries
     .map(([name, arg]) => {
       const optional = arg.required ? "" : "?";
-      return `  ${name}${optional}: ${phpTypeToTs(arg.type, arg.nullable, arg.elementType)};`;
+      return `  ${renderPropertyName(name)}${optional}: ${phpTypeToTs(arg.type, arg.nullable, arg.elementType)};`;
     })
     .join("\n")}\n}`;
 }
@@ -41,7 +41,7 @@ function declarationForSchema(schema: PhpComponentSchema): {
   typeRef: string;
   interfaceBody: string | null;
 } {
-  if (schema.exportName === "default" && Object.keys(schema.allArgs).length === 0) {
+  if (schema.exportName === "default" && Object.keys(schema.publicArgs).length === 0) {
     return {
       typeRef: "Record<string, unknown>",
       interfaceBody: null,
@@ -51,7 +51,7 @@ function declarationForSchema(schema: PhpComponentSchema): {
   const interfaceName = interfaceNameForSchema(schema);
   return {
     typeRef: interfaceName,
-    interfaceBody: generateInterfaceForArgMap(interfaceName, schema.allArgs),
+    interfaceBody: generateInterfaceForArgMap(interfaceName, schema.publicArgs),
   };
 }
 
@@ -74,4 +74,8 @@ function interfaceNameForSchema(schema: PhpComponentSchema): string {
     .replace(/^_+|_+$/g, "");
 
   return `${safeBase}_${safeCallable || "template"}_Args`;
+}
+
+function renderPropertyName(name: string): string {
+  return /^[A-Za-z_$][\w$]*$/.test(name) ? name : JSON.stringify(name);
 }

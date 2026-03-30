@@ -7,7 +7,7 @@ import type { StorybookConfig } from "storybook";
  *
  *   1. files   — Map file paths to type information sources
  *   2. bindings — DI-style type resolution (interface → concrete)
- *   3. args    — Override/supplement argument metadata (options, elementType, type)
+ *   3. files[*].args / parameters.typeMap.args — Public Storybook args surface overrides
  *
  * The stories in ../src cover:
  *   - options for string and enum controls
@@ -64,6 +64,44 @@ const config: StorybookConfig = {
             phpFile: "../src/Button.php",
             callable: "render",
           },
+          "../src/Button.php": {
+            args: {
+              variant: {
+                options: ["default", "primary", "danger", "outline"],
+              },
+            },
+          },
+          "../src/Status.php": {
+            args: {
+              _case: {
+                options: ["active", "inactive", "pending", "archived"],
+              },
+            },
+          },
+          "../src/TagList.php": {
+            args: {
+              tags: {
+                elementType: "string",
+              },
+            },
+          },
+          "../src/UntypedBlock.php": {
+            args: {
+              content: "App\\Components\\HtmlBlock",
+            },
+          },
+          "../src/DefaultNotice.php": {
+            args: {
+              limit: {
+                type: "int",
+                default: 3,
+              },
+              subtitle: {
+                type: "string",
+                nullable: true,
+              },
+            },
+          },
         },
 
         // ---------------------------------------------------------------
@@ -73,45 +111,6 @@ const config: StorybookConfig = {
         // it will instantiate HtmlBlock instead.
         bindings: {
           "App\\Components\\Renderable": "App\\Components\\HtmlBlock",
-        },
-
-        // ---------------------------------------------------------------
-        // args: Override/supplement argument metadata
-        // ---------------------------------------------------------------
-        args: {
-          // String option set: provide valid values for select control.
-          // Without this, Storybook only sees `type: 'string'` and renders
-          // a plain text input. With options, it renders a select dropdown.
-          "App\\Components\\Button::$variant": {
-            options: ["default", "primary", "danger", "outline"],
-          },
-
-          // Enum case values: provide backing values for the select control.
-          // The parser extracts case names but not backing values.
-          "App\\Components\\Status::$_case": {
-            options: ["active", "inactive", "pending", "archived"],
-          },
-
-          // Array element type: tell the system what type each array
-          // element should be, enabling proper casting at runtime.
-          "App\\Components\\TagList::$tags": {
-            elementType: "string",
-          },
-
-          // Untyped constructor parameter: tell the runner which concrete
-          // class to instantiate from Storybook args.
-          "App\\Components\\UntypedBlock::$content": "App\\Components\\HtmlBlock",
-
-          // Runtime defaults and nullable handling for parameters that
-          // don't have native defaults in the PHP signature.
-          "App\\Components\\DefaultNotice::$limit": {
-            type: "int",
-            default: 3,
-          },
-          "App\\Components\\DefaultNotice::$subtitle": {
-            type: "string",
-            nullable: true,
-          },
         },
       },
     },

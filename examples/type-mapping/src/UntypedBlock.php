@@ -3,7 +3,7 @@
 namespace App\Components;
 
 /**
- * Untyped parameter example: typeMap.args provides the concrete class
+ * Untyped parameter example: typeMap.files[*].args provides the concrete class
  * so runtime object casting still works.
  */
 class UntypedBlock

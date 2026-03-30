@@ -2,7 +2,7 @@ import { describe, it, expect } from "vite-plus/test";
 import { execSync } from "node:child_process";
 import { resolve } from "node:path";
 import { PhpExecutor } from "../../src/runtime/server/php-executor.js";
-import type { PhpRenderRequest } from "../../src/types.js";
+import type { PhpArgDef, PhpRenderRequest } from "../../src/types.js";
 
 // Check PHP version
 let phpMajor = 0;
@@ -22,6 +22,14 @@ const hasPhp81 = phpMajor > 8 || (phpMajor === 8 && phpMinor >= 1);
 
 const fixturesDir = resolve(import.meta.dirname!, "../fixtures");
 const fixture = (name: string) => resolve(fixturesDir, name);
+const argDef = (type: string, position: number, overrides: Partial<PhpArgDef> = {}): PhpArgDef => ({
+  type,
+  required:
+    overrides.required ?? (overrides.default === undefined && !(overrides.nullable ?? false)),
+  position,
+  nullable: overrides.nullable ?? false,
+  ...overrides,
+});
 
 describe.skipIf(!hasPhp)("PhpExecutor", () => {
   const executor = new PhpExecutor({ timeout: 10000 });
@@ -87,17 +95,36 @@ describe.skipIf(!hasPhp)("PhpExecutor", () => {
       expect(result.html).toBe('<div class="card">Card Title (featured)</div>');
     });
 
-    it("casts untyped constructor params via typeMap.args type overrides", async () => {
-      const typedExecutor = new PhpExecutor({
-        timeout: 10000,
-        typeMap: {
-          args: {
-            "App\\Components\\UntypedRenderer::$content": "App\\Components\\UntypedHtmlBlock",
-          },
+    it("supports constructor./method. public args for colliding parameter names", async () => {
+      const result = await executor.execute({
+        type: "classMethod",
+        file: fixture("ScopedArgsComponent.php"),
+        class: "App\\Components\\ScopedArgsComponent",
+        callable: "render",
+        args: {
+          "constructor.title": "Outer",
+          "method.title": "Inner",
+        },
+        publicArgDefs: {
+          "constructor.title": argDef("string", 0),
+          "method.title": argDef("string", 1),
+        },
+        constructorArgDefs: {
+          title: argDef("string", 0),
+        },
+        callableArgDefs: {
+          title: argDef("string", 0),
         },
       });
 
-      const result = await typedExecutor.execute({
+      expect(result.error).toBeUndefined();
+      expect(result.html).toBe(
+        '<div data-constructor="Outer" data-method="Inner">Outer|Inner</div>',
+      );
+    });
+
+    it("casts untyped constructor params via public arg type overrides", async () => {
+      const result = await executor.execute({
         type: "classMethod",
         file: fixture("TypeMapUntypedTarget.php"),
         class: "App\\Components\\UntypedRenderer",
@@ -105,30 +132,21 @@ describe.skipIf(!hasPhp)("PhpExecutor", () => {
         args: {
           content: { content: "Typed from override", tag: "p" },
         },
+        publicArgDefs: {
+          content: argDef("App\\Components\\UntypedHtmlBlock", 0),
+        },
+        constructorArgDefs: {
+          content: argDef("unknown", 0),
+        },
+        callableArgDefs: {},
       });
 
       expect(result.error).toBeUndefined();
       expect(result.html).toContain("<p>Typed from override</p>");
     });
 
-    it("applies typeMap.args default and nullable overrides at runtime", async () => {
-      const typedExecutor = new PhpExecutor({
-        timeout: 10000,
-        typeMap: {
-          args: {
-            "App\\Components\\OverrideDefaults::$limit": {
-              type: "int",
-              default: 12,
-            },
-            "App\\Components\\OverrideDefaults::$subtitle": {
-              type: "string",
-              nullable: true,
-            },
-          },
-        },
-      });
-
-      const result = await typedExecutor.execute({
+    it("applies public arg defaults and nullable overrides at runtime", async () => {
+      const result = await executor.execute({
         type: "classMethod",
         file: fixture("TypeMapOverrideRuntime.php"),
         class: "App\\Components\\OverrideDefaults",
@@ -136,6 +154,17 @@ describe.skipIf(!hasPhp)("PhpExecutor", () => {
         args: {
           title: "Defaults from typeMap",
         },
+        publicArgDefs: {
+          title: argDef("string", 0),
+          limit: argDef("int", 1, { required: false, default: 12 }),
+          subtitle: argDef("string", 2, { required: false, nullable: true }),
+        },
+        constructorArgDefs: {
+          title: argDef("string", 0),
+          limit: argDef("int", 1),
+          subtitle: argDef("unknown", 2),
+        },
+        callableArgDefs: {},
       });
 
       expect(result.error).toBeUndefined();
@@ -144,16 +173,7 @@ describe.skipIf(!hasPhp)("PhpExecutor", () => {
     });
 
     it("keeps later union candidates available for untyped overrides", async () => {
-      const typedExecutor = new PhpExecutor({
-        timeout: 10000,
-        typeMap: {
-          args: {
-            "App\\Components\\UnionOverrideRenderer::$value": "int|string",
-          },
-        },
-      });
-
-      const result = await typedExecutor.execute({
+      const result = await executor.execute({
         type: "classMethod",
         file: fixture("TypeMapUnionOverride.php"),
         class: "App\\Components\\UnionOverrideRenderer",
@@ -161,6 +181,13 @@ describe.skipIf(!hasPhp)("PhpExecutor", () => {
         args: {
           value: "draft",
         },
+        publicArgDefs: {
+          value: argDef("int|string", 0),
+        },
+        constructorArgDefs: {
+          value: argDef("unknown", 0),
+        },
+        callableArgDefs: {},
       });
 
       expect(result.error).toBeUndefined();
@@ -168,18 +195,7 @@ describe.skipIf(!hasPhp)("PhpExecutor", () => {
     });
 
     it("treats elementType-only overrides as arrays for untyped params", async () => {
-      const typedExecutor = new PhpExecutor({
-        timeout: 10000,
-        typeMap: {
-          args: {
-            "App\\Components\\ElementOnlyRenderer::$items": {
-              elementType: "App\\Components\\ElementOnlyItem",
-            },
-          },
-        },
-      });
-
-      const result = await typedExecutor.execute({
+      const result = await executor.execute({
         type: "classMethod",
         file: fixture("TypeMapElementTypeOnly.php"),
         class: "App\\Components\\ElementOnlyRenderer",
@@ -187,6 +203,15 @@ describe.skipIf(!hasPhp)("PhpExecutor", () => {
         args: {
           items: [{ label: "Alpha" }, { label: "Beta" }],
         },
+        publicArgDefs: {
+          items: argDef("unknown", 0, {
+            elementType: "App\\Components\\ElementOnlyItem",
+          }),
+        },
+        constructorArgDefs: {
+          items: argDef("unknown", 0),
+        },
+        callableArgDefs: {},
       });
 
       expect(result.error).toBeUndefined();
@@ -200,12 +225,6 @@ describe.skipIf(!hasPhp)("PhpExecutor", () => {
           bindings: {
             "App\\Components\\WrappedRenderable": "App\\Components\\WrappedHtmlBlock",
             "App\\Components\\WrappedListContract": "App\\Components\\WrappedList",
-          },
-          args: {
-            "App\\Components\\WrappedListRenderer::$items": {
-              type: "App\\Components\\WrappedListContract",
-              elementType: "App\\Components\\WrappedRenderable",
-            },
           },
         },
       });
@@ -221,6 +240,15 @@ describe.skipIf(!hasPhp)("PhpExecutor", () => {
             { content: "Second", tag: "span" },
           ],
         },
+        publicArgDefs: {
+          items: argDef("App\\Components\\WrappedListContract", 0, {
+            elementType: "App\\Components\\WrappedRenderable",
+          }),
+        },
+        constructorArgDefs: {
+          items: argDef("unknown", 0),
+        },
+        callableArgDefs: {},
       });
 
       expect(result.error).toBeUndefined();
@@ -322,7 +350,7 @@ describe.skipIf(!hasPhp)("PhpExecutor", () => {
         class: null,
         callable: null,
         bootstrap: fixture("TypeMapTemplateBootstrap.php"),
-        argDefs: {
+        publicArgDefs: {
           title: { type: "string", required: true, position: 0, nullable: false },
           featured: { type: "bool", required: false, position: 1, nullable: false, default: false },
           tone: {
@@ -392,7 +420,7 @@ describe.skipIf(!hasPhp)("PhpExecutor", () => {
         class: null,
         callable: null,
         bootstrap: fixture("TypeMapTemplateBootstrap.php"),
-        argDefs: {
+        publicArgDefs: {
           title: { type: "string", required: true, position: 0, nullable: false },
         },
         args: {},

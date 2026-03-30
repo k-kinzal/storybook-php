@@ -1,9 +1,11 @@
 import { RenderRegistry } from "./render-registry.js";
+import { mergePublicArgOverrides } from "../../core/component/public-args.js";
 import type {
   PhpCallableType,
   PhpRenderInvokeRequest,
   PhpRenderRequest,
   PhpRenderPlan,
+  RuntimeTypeMap,
   StoryTypeMap,
 } from "../../types.js";
 
@@ -29,7 +31,9 @@ interface ExecutionTarget {
   sourceFile: string | null;
   class: string | null;
   callable: string | null;
-  argDefs: PhpRenderRequest["argDefs"];
+  publicArgDefs: PhpRenderRequest["publicArgDefs"];
+  constructorArgDefs: PhpRenderRequest["constructorArgDefs"];
+  callableArgDefs: PhpRenderRequest["callableArgDefs"];
   adapter: string | null;
 }
 
@@ -85,7 +89,9 @@ function resolveRegisteredTarget(
 
 function executionTargetFromPlan(renderTarget: {
   plan: PhpRenderPlan;
-  argDefs: PhpRenderRequest["argDefs"];
+  publicArgDefs: PhpRenderRequest["publicArgDefs"];
+  constructorArgDefs: PhpRenderRequest["constructorArgDefs"];
+  callableArgDefs: PhpRenderRequest["callableArgDefs"];
 }): ExecutionTarget {
   return {
     type: renderTarget.plan.type,
@@ -93,7 +99,9 @@ function executionTargetFromPlan(renderTarget: {
     sourceFile: renderTarget.plan.sourceFile,
     class: renderTarget.plan.class,
     callable: renderTarget.plan.callable,
-    argDefs: renderTarget.argDefs ?? null,
+    publicArgDefs: renderTarget.publicArgDefs ?? null,
+    constructorArgDefs: renderTarget.constructorArgDefs ?? null,
+    callableArgDefs: renderTarget.callableArgDefs ?? null,
     adapter: renderTarget.plan.adapter ?? null,
   };
 }
@@ -113,7 +121,9 @@ function validateLegacyTarget(data: PhpRenderInvokeRequest): ExecutionTarget {
     sourceFile: nullableString(data.sourceFile),
     class: nullableString(data.class),
     callable: nullableString(data.callable),
-    argDefs: null,
+    publicArgDefs: null,
+    constructorArgDefs: null,
+    callableArgDefs: null,
     adapter: null,
   };
 }
@@ -122,18 +132,46 @@ function buildExecutionRequest(
   target: ExecutionTarget,
   data: PhpRenderInvokeRequest,
 ): PhpRenderRequest {
+  const storyTypeMap = normalizeStoryTypeMap(data.typeMap);
+
   return {
     ...target,
     args: isRecord(data.args) ? data.args : {},
-    argDefs: target.argDefs ?? null,
+    publicArgDefs: mergeStoryPublicArgDefs(target, storyTypeMap) ?? null,
+    constructorArgDefs: target.constructorArgDefs ?? null,
+    callableArgDefs: target.callableArgDefs ?? null,
     bootstrap: nullableString(data.bootstrap),
     adapter: nullableString(data.adapter) ?? target.adapter,
-    typeMap: normalizeStoryTypeMap(data.typeMap),
+    typeMap: normalizeRuntimeTypeMap(storyTypeMap),
   };
 }
 
 function normalizeStoryTypeMap(value: unknown): StoryTypeMap | null {
   return isRecord(value) ? (value as StoryTypeMap) : null;
+}
+
+function normalizeRuntimeTypeMap(storyTypeMap: StoryTypeMap | null): RuntimeTypeMap | null {
+  if (!storyTypeMap?.bindings) {
+    return null;
+  }
+
+  return { bindings: storyTypeMap.bindings };
+}
+
+function mergeStoryPublicArgDefs(
+  target: ExecutionTarget,
+  storyTypeMap: StoryTypeMap | null,
+): PhpRenderRequest["publicArgDefs"] {
+  if (!target.publicArgDefs) {
+    return null;
+  }
+
+  return mergePublicArgOverrides(
+    target.publicArgDefs,
+    target.constructorArgDefs ?? {},
+    target.callableArgDefs ?? {},
+    storyTypeMap?.args ?? null,
+  );
 }
 
 function hasComponentId(data: PhpRenderInvokeRequest): data is PhpRenderInvokeRequest & {

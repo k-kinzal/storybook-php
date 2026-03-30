@@ -30,7 +30,7 @@ export function generateDts(meta: PhpFileMeta): string {
           buildTemplateSchema({
             sourceFile: meta.filePath,
             executionFile: meta.filePath,
-            allArgs: {},
+            publicArgs: {},
             adapter: null,
           }),
         ];

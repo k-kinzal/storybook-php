@@ -3,7 +3,7 @@
 namespace App\Components;
 
 /**
- * Component with array parameter — typeMap.args provides elementType
+ * Component with array parameter — typeMap.files[*].args provides elementType
  * so the runner can cast array elements properly.
  */
 class TagList

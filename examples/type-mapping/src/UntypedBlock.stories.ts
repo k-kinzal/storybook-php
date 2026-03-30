@@ -1,7 +1,7 @@
 /**
- * typeMap.args demo: Type override for an untyped PHP parameter.
+ * typeMap.files[*].args demo: Type override for an untyped PHP parameter.
  *
- * The constructor accepts `$content` without a native type. typeMap.args
+ * The constructor accepts `$content` without a native type. typeMap.files[*].args
  * tells the runtime to instantiate HtmlBlock from the Storybook object.
  */
 import type { Meta, StoryObj } from "storybook-php";
@@ -18,7 +18,7 @@ type Story = StoryObj<typeof UntypedBlock>;
 export const Default: Story = {
   args: {
     title: "Untyped content",
-    content: { content: "Resolved through typeMap.args.type", tag: "p" },
+    content: { content: "Resolved through typeMap.files[*].args.type", tag: "p" },
   },
 };
 

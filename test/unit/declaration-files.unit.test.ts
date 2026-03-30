@@ -33,7 +33,8 @@ describe("declaration-files", () => {
       adapter: null,
       dependencies: [fixturePath("SimpleComponent.php"), "/tmp/missing.php"],
       meta: null,
-      inlineArgs: null,
+      fileArgOverrides: null,
+      callableArgOverrides: {},
       mappedCallable: null,
     });
 

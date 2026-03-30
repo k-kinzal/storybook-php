@@ -1,14 +1,12 @@
 /**
- * typeMap.args demo: String option set
+ * typeMap.files[*].args demo: String option set
  *
  * The $variant param is a plain `string` in PHP. Without typeMap,
- * Storybook renders a text input. With typeMap.args providing `options`,
+ * Storybook renders a text input. With typeMap.files[*].args providing `options`,
  * the control becomes a select dropdown automatically.
  *
  * Config in main.ts:
- *   "App\\Components\\Button::$variant": {
- *     options: ["default", "primary", "danger", "outline"],
- *   }
+ *   "../src/Button.php": { args: { variant: { options: [...] } } }
  */
 import type { Meta, StoryObj } from "storybook-php";
 import { Button } from "./Button.php@render";

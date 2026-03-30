@@ -207,7 +207,9 @@ describe("createPhpMiddleware", () => {
       class: "App\\MyClass",
       callable: "render",
       args: { name: "World" },
-      argDefs: null,
+      publicArgDefs: null,
+      constructorArgDefs: null,
+      callableArgDefs: null,
       bootstrap: null,
       adapter: null,
       typeMap: null,
@@ -328,7 +330,9 @@ describe("createPhpMiddleware", () => {
       class: "App\\RegistryComponent",
       callable: "render",
       args: { title: "Hello" },
-      argDefs: null,
+      publicArgDefs: null,
+      constructorArgDefs: null,
+      callableArgDefs: null,
       bootstrap: null,
       adapter: "/some/adapter.php",
       typeMap: null,
@@ -401,7 +405,6 @@ describe("createPhpMiddleware", () => {
 
     const typeMap = {
       bindings: { "App\\Iface": "App\\Concrete" },
-      args: { "App\\Foo::$bar": "string" },
     };
     const body = JSON.stringify({
       type: "classMethod",
@@ -445,7 +448,9 @@ describe("createPhpMiddleware", () => {
       class: null,
       callable: null,
       args: {},
-      argDefs: null,
+      publicArgDefs: null,
+      constructorArgDefs: null,
+      callableArgDefs: null,
       bootstrap: null,
       adapter: null,
       typeMap: null,

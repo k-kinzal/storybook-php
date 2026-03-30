@@ -37,6 +37,10 @@ describe("render-request", () => {
         {
           title: { type: "string", required: true, position: 0, nullable: false },
         },
+        {
+          title: { type: "string", required: true, position: 0, nullable: false },
+        },
+        {},
       );
 
       const request = resolveExecutionRequest(
@@ -59,9 +63,13 @@ describe("render-request", () => {
         class: "App\\Card",
         callable: "render",
         args: { title: "Hello" },
-        argDefs: {
+        publicArgDefs: {
           title: { type: "string", required: true, position: 0, nullable: false },
         },
+        constructorArgDefs: {
+          title: { type: "string", required: true, position: 0, nullable: false },
+        },
+        callableArgDefs: {},
         bootstrap: "/bootstrap/app.php",
         adapter: "/runtime/story-adapter.php",
         typeMap: {
@@ -92,7 +100,9 @@ describe("render-request", () => {
         class: null,
         callable: null,
         args: {},
-        argDefs: null,
+        publicArgDefs: null,
+        constructorArgDefs: null,
+        callableArgDefs: null,
         bootstrap: null,
         adapter: null,
         typeMap: null,
@@ -124,7 +134,50 @@ describe("render-request", () => {
       });
 
       expect(resolveExecutionRequest({ componentId, args: {} }, registry).adapter).toBeNull();
-      expect(resolveExecutionRequest({ componentId, args: {} }, registry).argDefs).toBeNull();
+      expect(resolveExecutionRequest({ componentId, args: {} }, registry).publicArgDefs).toBeNull();
+    });
+
+    it("merges story-level public args overrides into registry arg defs", () => {
+      const registry = new RenderRegistry();
+      const componentId = registry.register(
+        {
+          type: "classMethod",
+          file: "/runtime/Card.php",
+          sourceFile: "/stories/Card.php",
+          class: "App\\Card",
+          callable: "render",
+        },
+        {
+          title: { type: "string", required: true, position: 0, nullable: false },
+        },
+        {
+          title: { type: "string", required: true, position: 0, nullable: false },
+        },
+        {
+          title: { type: "string", required: false, position: 0, nullable: true },
+        },
+      );
+
+      const request = resolveExecutionRequest(
+        {
+          componentId,
+          args: { "method.title": "Preview" },
+          typeMap: {
+            args: {
+              "method.title": { type: "?string", default: "Preview" },
+            },
+          },
+        },
+        registry,
+      );
+
+      expect(request.publicArgDefs).toMatchObject({
+        "method.title": {
+          type: "string",
+          nullable: true,
+          default: "Preview",
+        },
+      });
     });
   });
 });

@@ -1,7 +1,9 @@
-import type { PhpComponent, PhpRenderer } from "./types.js";
+import type { PhpComponent, PhpRenderer, StoryTypeMap } from "./types.js";
 
 /** Extract the args type from a PhpComponent */
 type ArgsFromComponent<C> = C extends PhpComponent<infer A> ? A : Record<string, unknown>;
+
+type StoryParameters = { typeMap?: StoryTypeMap } & Record<string, unknown>;
 
 /** Story metadata — equivalent to Storybook's Meta */
 export interface Meta<TComponent extends PhpComponent = PhpComponent> {
@@ -11,7 +13,7 @@ export interface Meta<TComponent extends PhpComponent = PhpComponent> {
   args?: Partial<ArgsFromComponent<TComponent>>;
   argTypes?: Record<string, ArgType>;
   decorators?: Decorator[];
-  parameters?: Record<string, unknown>;
+  parameters?: StoryParameters;
   render?: (args: ArgsFromComponent<TComponent>) => string;
 }
 
@@ -20,7 +22,7 @@ export interface StoryObj<TComponent extends PhpComponent = PhpComponent> {
   args?: Partial<ArgsFromComponent<TComponent>>;
   argTypes?: Record<string, ArgType>;
   decorators?: Decorator[];
-  parameters?: Record<string, unknown>;
+  parameters?: StoryParameters;
   render?: (args: ArgsFromComponent<TComponent>) => string;
   name?: string;
   tags?: string[];

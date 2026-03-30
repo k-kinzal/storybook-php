@@ -73,6 +73,22 @@ final class NoConstructorCollection
     public array $items = [];
 }
 
+abstract class AbstractCollection
+{
+    /** @var list<Item> */
+    public array $items = [];
+}
+
+final class BrokenCollection
+{
+    /**
+     * @param list<Item> $items
+     */
+    public function __construct(public array $items, public string $name)
+    {
+    }
+}
+
 final class SelfReferencing
 {
     public function acceptsSelf(self $value): self
