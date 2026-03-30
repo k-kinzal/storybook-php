@@ -712,8 +712,14 @@ final class RunnerTest extends TestCase
             buildOverrideDocType($collectionParameter, ['elementType' => 'Item']),
         );
         $untyped = new ReflectionParameter('StorybookPhp\\TestFixture\\acceptsUntyped', 0);
+        $stringUnion = (new ReflectionFunction(static function (int|string $value): int|string {
+            return $value;
+        }))->getParameters()[0];
         self::assertSame('Item[]', buildOverrideDocType($untyped, ['elementType' => 'Item']));
         self::assertSame('Item', buildOverrideDocType($title, ['elementType' => 'Item']));
+        self::assertNull(buildOverrideDocType($parameter, ['type' => 'unknown']));
+        self::assertFalse(isRedundantDocTypeOverride($stringUnion, 'string'));
+        self::assertNull(normalizeRuntimeTypeName('   ', $parameter));
     }
 
     public function testMatchArgsHandlesDefaultsNullablesVariadicsAndErrors(): void

@@ -180,14 +180,11 @@ describe.skipIf(!hasPhp)("PhpExecutor", () => {
     it("preserves PHPDoc generic casting when arg defs match reflection types", async () => {
       const result = await executor.execute({
         type: "classMethod",
-        file: fixture("ArrayOfObjects.php"),
-        class: "App\\Fixtures\\TagCloud",
+        file: fixture("GenericArrayOfObjectsPhp80.php"),
+        class: "App\\Fixtures\\LegacyTagCloud",
         callable: "render",
         args: {
-          tags: [
-            { name: "Alpha", color: "red" },
-            { name: "Beta" },
-          ],
+          tags: [{ name: "Alpha", color: "red" }, { name: "Beta" }],
         },
         publicArgDefs: {
           tags: argDef("array", 0),
