@@ -37,18 +37,17 @@ return static function (array $context, callable $next): array {
         }
 
         if ($view instanceof ViewContract) {
-            return [...$response, 'html' => $view->with($instance->data())->render()];
+            return array_merge($response, ['html' => $view->with($instance->data())->render()]);
         }
 
         if (is_string($view)) {
-            return [...$response, 'html' => $factory->make($view, $instance->data())->render()];
+            return array_merge($response, ['html' => $factory->make($view, $instance->data())->render()]);
         }
 
-        return [...$response, 'html' => (string) $view];
+        return array_merge($response, ['html' => (string) $view]);
     }
 
-    return [
-        ...$response,
+    return array_merge($response, [
         'html' => resolveOutput($response['result'] ?? null, (string) ($response['buffered'] ?? '')),
-    ];
+    ]);
 };

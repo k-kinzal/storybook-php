@@ -17,8 +17,7 @@ return static function (array $context, callable $next): array {
         $resultText = get_class($result);
     }
 
-    return [
-        ...$response,
+    return array_merge($response, [
         'html' => implode('|', [
             (string) ($context['type'] ?? ''),
             basename((string) ($context['file'] ?? '')),
@@ -26,5 +25,5 @@ return static function (array $context, callable $next): array {
             $instance === null ? 'none' : get_class($instance),
             $resultText,
         ]),
-    ];
+    ]);
 };

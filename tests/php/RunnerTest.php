@@ -839,6 +839,7 @@ final class RunnerTest extends TestCase
             [json_encode(['type' => 'function', 'file' => self::FIXTURE_FILE, 'callableArgDefs' => 'bad'], JSON_THROW_ON_ERROR), 'Request field "callableArgDefs" must be an object or null.'],
             [json_encode(['type' => 'function', 'file' => self::FIXTURE_FILE, 'bootstrap' => 1], JSON_THROW_ON_ERROR), 'Request field "bootstrap" must be a string or null.'],
             [json_encode(['type' => 'function', 'file' => self::FIXTURE_FILE, 'adapters' => 'bad'], JSON_THROW_ON_ERROR), 'Request field "adapters" must be an array or null.'],
+            [json_encode(['type' => 'function', 'file' => self::FIXTURE_FILE, 'adapters' => ['']], JSON_THROW_ON_ERROR), "Field 'adapters' must be a list of non-empty strings."],
             [json_encode(['type' => 'function', 'file' => self::FIXTURE_FILE, 'typeMap' => 'bad'], JSON_THROW_ON_ERROR), 'Request field "typeMap" must be an object or null.'],
         ];
 
@@ -890,11 +891,11 @@ final class RunnerTest extends TestCase
                 static function (array $context, callable $next): array {
                     $context['args']['title'] = 'inner';
                     $response = $next($context);
-                    return [...$response, 'html' => '[outer]' . $response['html']];
+                    return array_merge($response, ['html' => '[outer]' . $response['html']]);
                 },
                 static function (array $context, callable $next): array {
                     $response = $next($context);
-                    return [...$response, 'html' => '[middle:' . $context['args']['title'] . ']' . $response['html']];
+                    return array_merge($response, ['html' => '[middle:' . $context['args']['title'] . ']' . $response['html']]);
                 },
             ],
             [
