@@ -20,17 +20,6 @@ class HtmlSnippet implements RenderableSnippet
     }
 }
 
-enum SnippetTone: string
-{
-    case info = 'info';
-    case success = 'success';
-
-    public function label(): string
-    {
-        return strtoupper($this->value);
-    }
-}
-
 class SnippetList
 {
     /** @param list<RenderableSnippet> $items */
