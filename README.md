@@ -68,12 +68,12 @@ npx storybook-php start
 
 ## npx storybook-php
 
-| Command                                                      | Description                                      |
-| ------------------------------------------------------------ | ------------------------------------------------ |
-| `npx storybook-php start [storybook opts]`                  | Start the Storybook dev server                   |
-| `npx storybook-php build [storybook opts]`                  | Build static Storybook output                    |
-| `npx storybook-php test [vitest opts]`                      | Run Storybook tests through `vitest run`         |
-| `npx storybook-php typegen [dirs...] [--options-file path]` | Generate declaration files for PHP import paths  |
+| Command                                                     | Description                                     |
+| ----------------------------------------------------------- | ----------------------------------------------- |
+| `npx storybook-php start [storybook opts]`                  | Start the Storybook dev server                  |
+| `npx storybook-php build [storybook opts]`                  | Build static Storybook output                   |
+| `npx storybook-php test [vitest opts]`                      | Run Storybook tests through `vitest run`        |
+| `npx storybook-php typegen [dirs...] [--options-file path]` | Generate declaration files for PHP import paths |
 
 `start` and `build` accept the same options as the `storybook` CLI (e.g. `-p 6006`).
 `test` passes arguments through to `vitest run`.
