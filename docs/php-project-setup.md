@@ -16,6 +16,7 @@ You still keep Storybook config and story files in the repository. What becomes 
 your-php-project/
   .storybook/
     main.ts
+  storybook-php.config.mjs
   src/
     Greeting.php
     Greeting.stories.ts
@@ -29,6 +30,8 @@ Only these are truly required:
 - the PHP files you want to render
 
 `bootstrap.php` is optional, but common.
+
+`storybook-php.config.mjs` is only needed when `typegen` must know about `defaultMethod` or `typeMap`.
 
 ## Minimal Storybook Config
 
@@ -95,6 +98,35 @@ npx --yes storybook-php build
 ```bash
 npx --yes storybook-php typegen
 ```
+
+It writes declaration files next to each matching source file, including exact-import outputs such as `Greeting.php@render.d.ts`.
+
+If your Storybook setup uses `defaultMethod` or `typeMap`, pass those settings explicitly because `typegen` does not evaluate `.storybook/main.ts`:
+
+```bash
+npx --yes storybook-php typegen --options-file storybook-php.config.mjs
+```
+
+Example `storybook-php.config.mjs`:
+
+```ts
+import { fileURLToPath } from "node:url";
+
+export default {
+  _configDir: fileURLToPath(new URL("./.storybook/", import.meta.url)),
+  defaultMethod: "render",
+  typeMap: {
+    files: {
+      "../src/views/components/card.blade.php": {
+        phpFile: "../src/BladeCard.php",
+        callable: "render",
+      },
+    },
+  },
+};
+```
+
+`typegen` reads `defaultMethod`, `typeMap`, and `_configDir` from that file. Storybook itself still reads `.storybook/main.ts`.
 
 ## Running Storybook Tests
 
@@ -212,6 +244,8 @@ When you do want that tooling, add:
 ```
 
 This improves completion for `.php` imports and typed story args.
+
+If you also run `typegen`, the TS plugin and generated declaration files complement each other: the plugin gives live editor support, and `typegen` writes reusable `.d.ts` files alongside the PHP import paths.
 
 ## Related Guides
 

@@ -43,6 +43,8 @@ framework: {
 }
 ```
 
+Like the rest of `framework.options`, relative `typeMap.files` paths resolve from Storybook's config directory.
+
 ## `typeMap.files`
 
 `files` is the build-time source of truth for imported components. Each entry can target:
@@ -107,6 +109,8 @@ files: {
 }
 ```
 
+When constructor and method args have the same name and compatible metadata, `storybook-php` keeps a single flat public key. It only splits them automatically when the two definitions cannot be merged safely.
+
 Flat keys stay the default. Use namespaced keys only when you need to split the public surface.
 
 ### Callable-Specific Overrides
@@ -132,6 +136,8 @@ files: {
   },
 }
 ```
+
+Callable-specific `args` are layered on top of file-level `args` for that callable. When the same public key appears in both places, the callable-level definition wins.
 
 ### Non-PHP Templates
 
@@ -187,6 +193,7 @@ Behavior:
 - the longest matching suffix wins among patterns
 - exact matches override pattern fields
 - exact and pattern matches are merged when both apply
+- merging is field-by-field, not deep structural merging. For example, exact-match `args` replace pattern `args`, and exact `callables[render].args` replace the pattern version for that callable.
 
 ## `typeMap.bindings`
 
@@ -204,6 +211,8 @@ bindings: {
   "App\\Contracts\\Renderable": "App\\View\\HtmlBlock",
 }
 ```
+
+`bindings` are runtime-only. They help the PHP runner hydrate typed objects, but they do not change generated TypeScript shapes on their own.
 
 ## Per-Story Overrides with `parameters.typeMap`
 
@@ -229,6 +238,18 @@ export const Custom = {
 ```
 
 Story-level `args` overrides are runtime-only. They affect runtime casting and adapter input mapping for that story, but they do not regenerate module types or Storybook controls.
+
+Story-level `args` overrides are merged on top of the resolved public arg surface for that component. Story-level `bindings` are merged on top of global `typeMap.bindings`, and the story-level binding wins on conflicts.
+
+## `typegen` and `typeMap`
+
+`typeMap.files` and `defaultMethod` affect declaration generation, but `typegen` does not read `.storybook/main.ts`. Pass those settings through `--options-file` instead:
+
+```bash
+npx storybook-php typegen --options-file storybook-php.config.mjs
+```
+
+That options file can export `typeMap`, `defaultMethod`, and `_configDir` so declaration generation resolves mapped files the same way Storybook does.
 
 ## When To Reach for `typeMap`
 
