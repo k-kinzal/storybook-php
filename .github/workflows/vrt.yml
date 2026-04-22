@@ -118,7 +118,7 @@ jobs:
       - name: Install Node dependencies (npm install)
         if: matrix.pkg == 'npm-install'
         working-directory: examples/${{ matrix.example }}
-        run: npm ci
+        run: npm install
 
       - name: Install Playwright browsers
         working-directory: examples/${{ matrix.example }}
