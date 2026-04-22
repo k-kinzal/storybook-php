@@ -84,21 +84,21 @@ jobs:
             composer: false
 
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
 
       - name: Setup PHP
-        uses: shivammathur/setup-php@v2
+        uses: shivammathur/setup-php@accd6127cb78bee3e8082180cb391013d204ef9f # 2.37.0
         with:
           php-version: ${{ matrix.php }}
 
       - name: Setup pnpm
         if: matrix.pkg == 'pnpm'
-        uses: pnpm/action-setup@v5
+        uses: pnpm/action-setup@fc06bc1257f339d1d5d8b3a19a8cae5388b55320 # v5.0.0
         with:
           version: 10.33.0
 
       - name: Setup Node.js
-        uses: actions/setup-node@v6
+        uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6.4.0
         with:
           node-version: 24
 
@@ -126,7 +126,7 @@ jobs:
 
       - name: Restore VRT baselines (PR)
         if: github.event_name == 'pull_request'
-        uses: actions/cache/restore@v5
+        uses: actions/cache/restore@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5.0.5
         with:
           path: examples/${{ matrix.example }}/__vis__/linux/__baselines__
           key: vrt-v2-baselines-${{ matrix.example }}-${{ github.sha }}
@@ -146,14 +146,14 @@ jobs:
 
       - name: Save VRT baselines (main)
         if: github.event_name == 'push'
-        uses: actions/cache/save@v5
+        uses: actions/cache/save@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5.0.5
         with:
           path: examples/${{ matrix.example }}/__vis__/linux/__baselines__
           key: vrt-v2-baselines-${{ matrix.example }}-${{ github.sha }}
 
       - name: Upload VRT results
         if: github.event_name == 'pull_request'
-        uses: actions/upload-artifact@v7
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: vrt-results-${{ matrix.example }}
           path: |
@@ -168,12 +168,12 @@ jobs:
     if: github.event_name == 'pull_request'
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
           sparse-checkout: .github/scripts
 
       - name: Download all VRT results
-        uses: actions/download-artifact@v8
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         with:
           pattern: vrt-results-*
           path: vrt-results
@@ -190,14 +190,14 @@ jobs:
 
       - name: Upload HTML report
         if: hashFiles('vrt-report.html') != ''
-        uses: actions/upload-artifact@v7
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: vrt-report
           path: vrt-report.html
 
       - name: Comment on PR
         if: env.HAS_DIFFS == 'true'
-        uses: actions/github-script@v8
+        uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd # v8.0.0
         with:
           script: |
             const fs = require('fs');
