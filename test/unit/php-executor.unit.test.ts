@@ -110,7 +110,7 @@ describe("php-executor", () => {
 
     expect(result).toEqual({ html: "<div>ok</div>" });
 
-    const [binary, args, spawnOpts] = spawnMock.mock.calls[0] as [
+    const [binary, args, spawnOpts] = spawnMock.mock.calls[0] as unknown as [
       string,
       string[],
       Record<string, unknown>,
@@ -118,7 +118,7 @@ describe("php-executor", () => {
     expect(binary).toBe("php");
     expect(args.slice(0, 3)).toEqual(["-d", "memory_limit=512M", "-n"]);
     expect(args[args.length - 1]).toContain("runner.php");
-    expect(spawnOpts.env).toBeUndefined();
+    expect(spawnOpts["env"]).toBeUndefined();
   });
 
   it("merges phpEnv over process.env when spawning PHP", async () => {
@@ -144,7 +144,7 @@ describe("php-executor", () => {
       spawn: spawnMock,
     }));
 
-    process.env.__STORYBOOK_PHP_TEST_KEEP__ = "keep";
+    process.env["__STORYBOOK_PHP_TEST_KEEP__"] = "keep";
 
     try {
       const { PhpExecutor } = await import("../../src/runtime/server/php-executor.js");
@@ -160,17 +160,17 @@ describe("php-executor", () => {
         args: {},
       });
 
-      const [, , spawnOpts] = spawnMock.mock.calls[0] as [
+      const [, , spawnOpts] = spawnMock.mock.calls[0] as unknown as [
         string,
         string[],
         { env?: Record<string, string> },
       ];
       expect(spawnOpts.env).toBeDefined();
-      expect(spawnOpts.env?.__STORYBOOK_PHP_TEST_KEEP__).toBe("keep");
-      expect(spawnOpts.env?.XDEBUG_MODE).toBe("off");
-      expect(spawnOpts.env?.APP_ENV).toBe("testing");
+      expect(spawnOpts.env?.["__STORYBOOK_PHP_TEST_KEEP__"]).toBe("keep");
+      expect(spawnOpts.env?.["XDEBUG_MODE"]).toBe("off");
+      expect(spawnOpts.env?.["APP_ENV"]).toBe("testing");
     } finally {
-      delete process.env.__STORYBOOK_PHP_TEST_KEEP__;
+      delete process.env["__STORYBOOK_PHP_TEST_KEEP__"];
     }
   });
 
