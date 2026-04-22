@@ -14,6 +14,8 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 
 export interface PhpExecutorOptions {
   phpBinary?: string;
+  phpOptions?: string[];
+  phpEnv?: Record<string, string>;
   timeout?: number;
   bootstrap?: string;
   adapter?: string;
@@ -24,6 +26,8 @@ export interface PhpExecutorOptions {
 
 export class PhpExecutor {
   private phpBinary: string;
+  private phpOptions: string[];
+  private phpEnv: Record<string, string> | null;
   private timeout: number;
   private bootstrap: string | null;
   private adapter: string | null;
@@ -33,6 +37,8 @@ export class PhpExecutor {
 
   constructor(options: PhpExecutorOptions = {}) {
     this.phpBinary = options.phpBinary ?? "php";
+    this.phpOptions = options.phpOptions ?? [];
+    this.phpEnv = options.phpEnv ?? null;
     this.timeout = options.timeout ?? 5000;
     this.bootstrap = options.bootstrap ?? null;
     this.adapter = options.adapter ?? null;
@@ -102,9 +108,10 @@ export class PhpExecutor {
     });
 
     return new Promise((resolvePromise) => {
-      const proc = spawn(this.phpBinary, [this.runnerPath], {
+      const proc = spawn(this.phpBinary, [...this.phpOptions, this.runnerPath], {
         stdio: ["pipe", "pipe", "pipe"],
         timeout: this.timeout,
+        ...(this.phpEnv ? { env: { ...process.env, ...this.phpEnv } } : {}),
       });
 
       let stdout = "";

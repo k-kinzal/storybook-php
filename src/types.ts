@@ -239,6 +239,10 @@ export interface FrameworkOptions {
   bootstrap?: string;
   /** PHP binary path (default: 'php') */
   phpBinary?: string;
+  /** Extra CLI options passed to the PHP binary before the runner script (e.g. ["-d", "memory_limit=512M"]) */
+  phpOptions?: string[];
+  /** Environment variables merged over process.env when spawning PHP */
+  phpEnv?: Record<string, string>;
   /** Render timeout in milliseconds (default: 5000) */
   timeout?: number;
   /** Default method name when @method is omitted from import */
