@@ -60,8 +60,7 @@
     "test:watch": "vp test",
     "lint": "vp check",
     "typecheck": "tsc --noEmit -p tsconfig.json && tsc -p tsconfig.test.json",
-    "typegen": "node dist/cli.mjs typegen",
-    "prepare": "npm run build"
+    "typegen": "node dist/cli.mjs typegen"
   },
   "devDependencies": {
     "@storybook/builder-vite": "^10.3.0",

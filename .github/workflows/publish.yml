@@ -16,6 +16,9 @@ jobs:
     name: Publish
     runs-on: ubuntu-latest
     needs: ci
+    environment:
+      name: npmjs
+      url: https://www.npmjs.com/package/storybook-php
     permissions:
       contents: read
       id-token: write
@@ -27,6 +30,7 @@ jobs:
           cache: npm
           registry-url: "https://registry.npmjs.org"
       - run: npm ci
+      - run: npm run build
       - name: Set version from tag
         run: npm version "${GITHUB_REF_NAME#v}" --no-git-tag-version
-      - run: npm publish --provenance --access public
+      - run: npm publish --provenance --access public --ignore-scripts
