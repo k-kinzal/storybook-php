@@ -8,6 +8,11 @@ const config: StorybookConfig = {
     options: {
       bootstrap: new URL("../bootstrap.php", import.meta.url).pathname,
       timeout: 5000,
+      phpOptions: ["-d", "memory_limit=256M"],
+      phpEnv: {
+        APP_ENV: "storybook",
+        XDEBUG_MODE: "off",
+      },
     },
   },
 };

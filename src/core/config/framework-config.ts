@@ -26,6 +26,8 @@ export interface ResolvedFileMap {
 export interface ResolvedFrameworkOptions {
   configDir: string;
   phpBinary: string;
+  phpOptions: string[];
+  phpEnv: Record<string, string> | null;
   timeout: number;
   bootstrap: string | null;
   adapter: string | null;
@@ -57,6 +59,8 @@ export function resolveFrameworkOptions(options: FrameworkOptions = {}): Resolve
   return {
     configDir,
     phpBinary: options.phpBinary ?? "php",
+    phpOptions: options.phpOptions ?? [],
+    phpEnv: options.phpEnv ?? null,
     timeout: options.timeout ?? 5000,
     bootstrap: options.bootstrap ?? null,
     adapter: options.adapter ?? null,

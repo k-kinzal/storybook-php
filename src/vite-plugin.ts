@@ -56,6 +56,10 @@ export function storybookPhpPlugin(options: FrameworkOptions = {}): Plugin {
       const executorOptions = {
         phpBinary: resolvedOptions.phpBinary,
         timeout: resolvedOptions.timeout,
+        ...(resolvedOptions.phpOptions.length > 0
+          ? { phpOptions: resolvedOptions.phpOptions }
+          : {}),
+        ...(resolvedOptions.phpEnv ? { phpEnv: resolvedOptions.phpEnv } : {}),
         ...(resolvedOptions.bootstrap !== null ? { bootstrap: resolvedOptions.bootstrap } : {}),
         ...(resolvedOptions.adapter !== null ? { adapter: resolvedOptions.adapter } : {}),
         ...(options.typeMap !== undefined ? { typeMap: options.typeMap } : {}),

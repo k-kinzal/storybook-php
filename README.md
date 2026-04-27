@@ -126,14 +126,16 @@ Non-PHP sources such as Blade, Twig, or Latte are supported through `framework.o
 
 Configure in `.storybook/main.ts` under `framework.options`:
 
-| Option          | Type     | Default     | Description                                                                |
-| --------------- | -------- | ----------- | -------------------------------------------------------------------------- |
-| `bootstrap`     | `string` | `undefined` | Path to a PHP file executed before each render (autoloader, config, etc.)  |
-| `phpBinary`     | `string` | `'php'`     | Path to the PHP binary                                                     |
-| `timeout`       | `number` | `5000`      | Render timeout in milliseconds                                             |
-| `defaultMethod` | `string` | `undefined` | Method name used when `@method` is omitted from the import specifier       |
-| `adapter`       | `string` | `undefined` | Path to a PHP adapter file for custom output handling (e.g. Laravel Blade) |
-| `typeMap`       | `object` | `undefined` | File mappings, callable overrides, and runtime type bindings               |
+| Option          | Type                     | Default     | Description                                                                |
+| --------------- | ------------------------ | ----------- | -------------------------------------------------------------------------- |
+| `bootstrap`     | `string`                 | `undefined` | Path to a PHP file executed before each render (autoloader, config, etc.)  |
+| `phpBinary`     | `string`                 | `'php'`     | Path to the PHP binary                                                     |
+| `phpOptions`    | `string[]`               | `[]`        | CLI options prepended to PHP (e.g. `["-d", "memory_limit=512M"]`)          |
+| `phpEnv`        | `Record<string, string>` | `undefined` | Environment variables merged over `process.env` when spawning PHP          |
+| `timeout`       | `number`                 | `5000`      | Render timeout in milliseconds                                             |
+| `defaultMethod` | `string`                 | `undefined` | Method name used when `@method` is omitted from the import specifier       |
+| `adapter`       | `string`                 | `undefined` | Path to a PHP adapter file for custom output handling (e.g. Laravel Blade) |
+| `typeMap`       | `object`                 | `undefined` | File mappings, callable overrides, and runtime type bindings               |
 
 The adapter file must return middleware compatible with `fn(array $context, callable $next): array|string`
 

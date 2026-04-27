@@ -24,16 +24,18 @@ Relative paths in these options are resolved from Storybook's config directory.
 
 ## Available Options
 
-| Option          | Type            | Default     | Description                                            |
-| --------------- | --------------- | ----------- | ------------------------------------------------------ |
-| `bootstrap`     | `string`        | `undefined` | PHP file loaded before each render                     |
-| `phpBinary`     | `string`        | `"php"`     | PHP executable path                                    |
-| `timeout`       | `number`        | `5000`      | Render timeout in milliseconds                         |
-| `defaultMethod` | `string`        | `undefined` | Method name used when `@method` is omitted             |
-| `adapter`       | `string`        | `undefined` | Global adapter middleware wrapped around PHP execution |
-| `typeMap`       | `TypeMapConfig` | `undefined` | Advanced mapping for files, bindings, and arg metadata |
+| Option          | Type                     | Default     | Description                                            |
+| --------------- | ------------------------ | ----------- | ------------------------------------------------------ |
+| `bootstrap`     | `string`                 | `undefined` | PHP file loaded before each render                     |
+| `phpBinary`     | `string`                 | `"php"`     | PHP executable path                                    |
+| `phpOptions`    | `string[]`               | `[]`        | CLI options prepended to the PHP binary invocation     |
+| `phpEnv`        | `Record<string, string>` | `undefined` | Environment variables merged over `process.env`        |
+| `timeout`       | `number`                 | `5000`      | Render timeout in milliseconds                         |
+| `defaultMethod` | `string`                 | `undefined` | Method name used when `@method` is omitted             |
+| `adapter`       | `string`                 | `undefined` | Global adapter middleware wrapped around PHP execution |
+| `typeMap`       | `TypeMapConfig`          | `undefined` | Advanced mapping for files, bindings, and arg metadata |
 
-`bootstrap`, `phpBinary`, `timeout`, and `adapter` affect runtime rendering. `defaultMethod` and `typeMap` also affect import resolution, TS plugin output, and `typegen` when you pass them through `--options-file`.
+`bootstrap`, `phpBinary`, `phpOptions`, `phpEnv`, `timeout`, and `adapter` affect runtime rendering. `defaultMethod` and `typeMap` also affect import resolution, TS plugin output, and `typegen` when you pass them through `--options-file`.
 
 ## `bootstrap`
 
@@ -233,6 +235,30 @@ options: {
 ```
 
 Raise `timeout` when your bootstrap or template engine does meaningful startup work.
+
+## `phpOptions` and `phpEnv`
+
+Use `phpOptions` to pass CLI flags to the PHP binary. The array is spread in front of the runner script, so anything accepted by the `php` command works:
+
+```ts
+options: {
+  phpOptions: ["-d", "memory_limit=512M", "-d", "error_reporting=E_ALL"],
+}
+```
+
+Use `phpEnv` to set environment variables for the spawned PHP process. Entries are merged over `process.env`, so unspecified variables (like `PATH`) are inherited from the Storybook process:
+
+```ts
+options: {
+  phpEnv: {
+    APP_ENV: "testing",
+    XDEBUG_MODE: "off",
+    PHP_INI_SCAN_DIR: "/etc/php/conf.d",
+  },
+}
+```
+
+When `phpEnv` is omitted, PHP inherits the Node default environment without any override.
 
 ## Related Guides
 
