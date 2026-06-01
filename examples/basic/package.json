@@ -15,7 +15,7 @@
   "devDependencies": {
     "@storybook/addon-vitest": "^10.3.0",
     "@storybook/builder-vite": "^10.3.0",
-    "@vitest/browser": "4.0.18",
+    "@vitest/browser": "4.1.6",
     "@vitest/browser-playwright": "4.0.18",
     "playwright": "^1.58.0",
     "storybook": "^10.3.0",
