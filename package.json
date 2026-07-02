@@ -70,7 +70,7 @@
     "storybook": "^10.3.0",
     "typescript": "^6.0.2",
     "vite": "^8.0.0",
-    "vite-plus": "^0.1.12",
+    "vite-plus": "^0.2.1",
     "vitest": "^4.1.2"
   },
   "peerDependencies": {
