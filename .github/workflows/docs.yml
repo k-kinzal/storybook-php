@@ -1,36 +1,86 @@
-name: DocGen
+name: Docs
 
 on:
   push:
-    branches: [main]
-  pull_request:
-  workflow_call:
+    branches:
+      - main
+  workflow_dispatch:
 
 concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
+  group: pages
+  cancel-in-progress: false
 
 permissions:
   contents: read
 
+env:
+  COMPOSER_NO_INTERACTION: "1"
+
 jobs:
-  docgen:
-    name: DocGen
+  build:
+    name: Generate the documentation site
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 30
     steps:
-      - name: Check out repository
+      - name: Check out the repository
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
       - name: Set up PHP
         uses: shivammathur/setup-php@f3e473d116dcccaddc5834248c87452386958240 # 2.37.2
         with:
           php-version: "8.5"
-          coverage: xdebug
-      - name: Select PHP 8.5 dependencies
+          extensions: mbstring, pcntl, gd
+          coverage: pcov
+
+      - name: Select the PHP 8.5 lock file
         run: cp composer.lock.php-8.5 composer.lock
+
       - name: Install dependencies
-        run: composer install --no-interaction --prefer-dist
-      - name: Generate coverage metadata
+        uses: ramsey/composer-install@65e4f84970763564f46a70b8a54b90d033b3bdda # 4.0.0
+        with:
+          dependency-versions: locked
+          composer-options: --prefer-dist
+
+      - name: Restore the DocGen cache
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: build/doc-gen-cache
+          key: doc-gen-${{ runner.os }}-${{ hashFiles('composer.lock') }}-${{ github.sha }}
+          restore-keys: |
+            doc-gen-${{ runner.os }}-${{ hashFiles('composer.lock') }}-
+            doc-gen-${{ runner.os }}-
+
+      - name: Generate the coverage report
         run: composer test:coverage
-      - name: Build documentation from scratch
-        run: composer doc-gen:fresh
+
+      - name: Generate the documentation
+        run: |
+          set -euo pipefail
+
+          repository="$(printf '%s' "${GITHUB_REPOSITORY}" | tr '[:upper:]' '[:lower:]')"
+          composer doc-gen -- \
+            --base-url="https://${repository%%/*}.github.io/${repository#*/}"
+
+      - name: Configure GitHub Pages
+        uses: actions/configure-pages@45bfe0192ca1faeb007ade9deae92b16b8254a0d # v6.0.0
+
+      - name: Upload the documentation site
+        uses: actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9 # v5.0.0
+        with:
+          path: build/docs
+
+  deploy:
+    name: Publish the documentation site
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy the documentation to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@cd2ce8fcbc39b97be8ca5fce6e763baed58fa128 # v5.0.0

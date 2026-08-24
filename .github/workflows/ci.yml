@@ -13,23 +13,36 @@ concurrency:
 permissions:
   contents: read
 
+env:
+  COMPOSER_NO_INTERACTION: "1"
+
 jobs:
   php-quality:
-    name: PHP Quality
+    name: PHP Quality (PHP ${{ matrix.php }})
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        php: ["8.0", "8.1", "8.2", "8.3", "8.4", "8.5"]
     steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      - uses: shivammathur/setup-php@f3e473d116dcccaddc5834248c87452386958240 # 2.37.2
+      - name: Check out the repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Set up PHP
+        uses: shivammathur/setup-php@f3e473d116dcccaddc5834248c87452386958240 # 2.37.2
         with:
-          php-version: "8.5"
+          php-version: ${{ matrix.php }}
+          extensions: mbstring
           coverage: none
-      - name: Select PHP 8.5 dependencies
-        run: cp composer.lock.php-8.5 composer.lock
-      - name: Install dependencies
-        run: composer install --no-interaction --prefer-dist
+      - name: Select PHP ${{ matrix.php }} dependencies
+        run: cp composer.lock.php-${{ matrix.php }} composer.lock
       - name: Validate Composer metadata
         run: composer validate --strict --no-check-publish
+      - name: Install dependencies
+        uses: ramsey/composer-install@65e4f84970763564f46a70b8a54b90d033b3bdda # 4.0.0
+        with:
+          dependency-versions: locked
+          composer-options: --prefer-dist
       - name: Check PHP syntax
         run: composer lint:syntax
       - name: Check formatting
@@ -56,19 +69,48 @@ jobs:
       matrix:
         php: ["8.0", "8.1", "8.2", "8.3", "8.4", "8.5"]
     steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      - uses: shivammathur/setup-php@f3e473d116dcccaddc5834248c87452386958240 # 2.37.2
+      - name: Check out the repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Set up PHP
+        uses: shivammathur/setup-php@f3e473d116dcccaddc5834248c87452386958240 # 2.37.2
         with:
           php-version: ${{ matrix.php }}
+          extensions: mbstring, pcntl
           coverage: none
       - name: Select PHP ${{ matrix.php }} dependencies
         run: cp composer.lock.php-${{ matrix.php }} composer.lock
       - name: Install dependencies
-        run: composer install --no-interaction --prefer-dist
-      - name: Run unit tests in parallel
-        run: composer test
+        uses: ramsey/composer-install@65e4f84970763564f46a70b8a54b90d033b3bdda # 4.0.0
+        with:
+          dependency-versions: locked
+          composer-options: --prefer-dist
+      - name: Run unit tests in one process
+        run: composer test:unit
       - name: Run executable documentation
         run: composer doctest
+
+  phpunit-parallel:
+    name: PHPUnit through the parallel runner
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Check out the repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Set up PHP
+        uses: shivammathur/setup-php@f3e473d116dcccaddc5834248c87452386958240 # 2.37.2
+        with:
+          php-version: "8.5"
+          extensions: mbstring, pcntl
+          coverage: none
+      - name: Select PHP 8.5 dependencies
+        run: cp composer.lock.php-8.5 composer.lock
+      - name: Install dependencies
+        uses: ramsey/composer-install@65e4f84970763564f46a70b8a54b90d033b3bdda # 4.0.0
+        with:
+          dependency-versions: locked
+          composer-options: --prefer-dist
+      - name: Run the suite under the parallel runner
+        run: composer test
 
   lint:
     name: Lint

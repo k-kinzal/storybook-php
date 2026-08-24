@@ -1,10 +1,11 @@
 {
-  "name": "storybook-php/dev-tools",
-  "description": "Development quality tooling for the storybook-php PHP runtime",
-  "homepage": "https://github.com/k-kinzal/storybook-php",
+  "name": "k-kinzal/storybook-php",
+  "description": "A Storybook framework addon for developing and previewing PHP components as stories",
+  "homepage": "https://k-kinzal.github.io/storybook-php/",
   "type": "project",
   "license": "MIT",
   "support": {
+    "docs": "https://k-kinzal.github.io/storybook-php/",
     "issues": "https://github.com/k-kinzal/storybook-php/issues",
     "source": "https://github.com/k-kinzal/storybook-php"
   },
@@ -19,8 +20,8 @@
     "php": "^8.0"
   },
   "autoload": {
-    "files": [
-      "src/php/bootstrap.php"
+    "classmap": [
+      "src/php"
     ]
   },
   "require-dev": {
@@ -58,8 +59,8 @@
     "lint:syntax": "parallel-lint --colors src/php",
     "audit:security": "composer audit --no-interaction",
     "compat": "phpcs --standard=phpcs.xml.dist -p",
-    "doc-gen": "doc-gen --packages=. --output=build/docs --title=storybook-php --coverage=build/coverage-xml",
-    "doc-gen:fresh": "@doc-gen --clear-cache",
+    "doc-gen": "doc-gen --packages=. --exclude=AGENTS.md --output=build/docs --title=storybook-php --coverage=build/coverage-xml",
+    "doc-gen:fresh": "@doc-gen --no-cache",
     "doctest": "phpunit --colors=always --configuration phpunit.xml.dist --testsuite doctest",
     "format": "php-cs-fixer fix --config=.php-cs-fixer.dist.php --ansi",
     "format:check": "php-cs-fixer fix --config=.php-cs-fixer.dist.php --dry-run --diff --ansi",
