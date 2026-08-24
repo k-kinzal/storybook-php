@@ -527,16 +527,11 @@ function ensureExecutionPlanner(array $context): array
  */
 function runnerEnumExists(string $class): bool
 {
-    if (!function_exists('enum_exists')) {
+    if (!interface_exists('UnitEnum')) {
         throw new \RuntimeException("Enum methods require PHP 8.1+. Current PHP: " . PHP_VERSION);
     }
 
-    $exists = enum_exists($class);
-    if (!is_bool($exists)) {
-        throw new \RuntimeException('enum_exists() returned an invalid result.');
-    }
-
-    return $exists;
+    return is_subclass_of($class, 'UnitEnum');
 }
 
 /**
