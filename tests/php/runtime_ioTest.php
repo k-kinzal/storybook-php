@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 use PHPUnit\Framework\TestCase;
 
-final class RuntimeIoTest extends TestCase
+final class runtime_ioTest extends TestCase
 {
     public function testInvalidJsonUsesTheRunnerExceptionContract(): void
     {

@@ -12,7 +12,7 @@ declare(strict_types=1);
  */
 function parseDocBlockParamTypes(?ReflectionFunctionAbstract $ref): array
 {
-    if (!$ref instanceof \ReflectionFunctionAbstract) {
+    if (!$ref instanceof ReflectionFunctionAbstract) {
         return [];
     }
 
@@ -24,14 +24,12 @@ function parseDocBlockParamTypes(?ReflectionFunctionAbstract $ref): array
     $types = [];
 
     if (preg_match_all('/@phpstan-param\s+(.+?)\s+\$(\w+)/m', $doc, $matches, PREG_SET_ORDER) !== false) {
-        /** @var list<array{0: string, 1: string, 2: string}> $matches */
         foreach ($matches as $match) {
             $types[$match[2]] = trim($match[1]);
         }
     }
 
     if (preg_match_all('/@psalm-param\s+(.+?)\s+\$(\w+)/m', $doc, $matches, PREG_SET_ORDER) !== false) {
-        /** @var list<array{0: string, 1: string, 2: string}> $matches */
         foreach ($matches as $match) {
             if (!isset($types[$match[2]])) {
                 $types[$match[2]] = trim($match[1]);
@@ -40,7 +38,6 @@ function parseDocBlockParamTypes(?ReflectionFunctionAbstract $ref): array
     }
 
     if (preg_match_all('/@param\s+(.+?)\s+\$(\w+)/m', $doc, $matches, PREG_SET_ORDER) !== false) {
-        /** @var list<array{0: string, 1: string, 2: string}> $matches */
         foreach ($matches as $match) {
             if (!isset($types[$match[2]])) {
                 $types[$match[2]] = trim($match[1]);

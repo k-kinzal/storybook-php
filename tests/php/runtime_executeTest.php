@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 use PHPUnit\Framework\TestCase;
 
-final class RuntimeExecuteTest extends TestCase
+final class runtime_executeTest extends TestCase
 {
     public function testOptionalRequestFieldsHaveRuntimeDefaults(): void
     {

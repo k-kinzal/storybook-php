@@ -28,7 +28,7 @@ final class VariadicConstructorFixture
     }
 }
 
-final class RuntimeCastTest extends TestCase
+final class runtime_castTest extends TestCase
 {
     public function testConstructorScoringRejectsMissingRequiredArguments(): void
     {
@@ -87,18 +87,25 @@ final class RuntimeCastTest extends TestCase
         self::assertFalse(reflectionTypeAcceptsArray($rejecting->getType()));
     }
 
-    public function testNeverAndUnknownNamedTypesKeepExplicitFailureSemantics(): void
+    public function testVoidTypeCannotAcceptAnArgumentValue(): void
     {
         $parameter = new ReflectionParameter('StorybookPhp\\TestFixture\\acceptsUntyped', 0);
         $voidType = (new ReflectionFunction(static function (): void {
         }))->getReturnType();
         self::assertInstanceOf(ReflectionNamedType::class, $voidType);
-        self::assertSame('raw', castWithNamedType($voidType, 'raw', $parameter));
 
+        $this->expectException(RuntimeException::class);
+        $this->expectExceptionMessage("Cannot provide a value for 'void' type parameter");
+        castWithNamedType($voidType, 'raw', $parameter);
+    }
+
+    public function testNeverTypeCannotAcceptAnArgumentValue(): void
+    {
         if (PHP_VERSION_ID < 80100) {
-            return;
+            self::markTestSkipped('The never type was introduced in PHP 8.1.');
         }
 
+        $parameter = new ReflectionParameter('StorybookPhp\\TestFixture\\acceptsUntyped', 0);
         $neverClosure = eval('return function (): never { throw new RuntimeException("never"); };');
         $neverType = (new ReflectionFunction($neverClosure))->getReturnType();
         self::assertInstanceOf(ReflectionNamedType::class, $neverType);
@@ -106,5 +113,17 @@ final class RuntimeCastTest extends TestCase
         $this->expectException(RuntimeException::class);
         $this->expectExceptionMessage("Cannot provide a value for 'never' type parameter");
         castWithNamedType($neverType, 'raw', $parameter);
+    }
+
+    public function testUnknownDeclaredClassFailsBeforeInvocation(): void
+    {
+        $closure = eval('return static function (\\StorybookPhp\\MissingRuntimeType $value): void {};');
+        $parameter = new ReflectionParameter($closure, 0);
+        $type = $parameter->getType();
+        self::assertInstanceOf(ReflectionNamedType::class, $type);
+
+        $this->expectException(RuntimeException::class);
+        $this->expectExceptionMessage("Class 'StorybookPhp\\MissingRuntimeType' is not available.");
+        castWithNamedType($type, [], $parameter);
     }
 }

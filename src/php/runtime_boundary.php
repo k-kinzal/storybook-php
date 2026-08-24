@@ -8,7 +8,7 @@ declare(strict_types=1);
  */
 function resolveExecutionHtml(mixed $result, string $buffered, bool $deferToAdapter): string
 {
-    $isLazyOutput = $result instanceof \Generator
+    $isLazyOutput = $result instanceof Generator
         || (is_object($result) && method_exists($result, '__toString'));
     if ($deferToAdapter && $isLazyOutput) {
         return $buffered;
@@ -20,12 +20,14 @@ function resolveExecutionHtml(mixed $result, string $buffered, bool $deferToAdap
 /**
  * Converts every runner failure into the JSON protocol's error response at
  * the process boundary.
+ *
+ * @throws JsonException when PHP cannot encode the validated protocol shape
  */
 function storybookPhpRun(?string $input = null, bool $writeOutput = true): string
 {
     try {
         $response = executeRunnerRequest(readRunnerRequest($input ?? readRunnerStdin()));
-    } catch (\Throwable $e) {
+    } catch (Throwable $e) {
         $response = buildRunnerErrorResponse($e);
     }
 

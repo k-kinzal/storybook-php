@@ -10,6 +10,16 @@ parameters:
   phpVersion:
     min: 80000
     max: 80500
+  typeAliases:
+    RenderType: "'classMethod'|'staticMethod'|'function'|'template'|'enumMethod'"
+    StringMap: 'array<string, mixed>'
+    ExecutionResponse: 'array{html: string, ...}'
+    ExecutionPlanner: 'array{type: RenderType, effectiveConstructorArgDefs: StringMap|null, effectiveCallableArgDefs: StringMap|null, ...}'
+    ExecutionContext: 'array{type: RenderType, executionFile: string, class: string|null, callable: string|null, publicArgs: StringMap, ...}'
+    HydratedExecutionContext: 'array{type: RenderType, executionFile: string, class: string|null, callable: string|null, publicArgs: StringMap, __planner: ExecutionPlanner, ...}'
+    MappedExecutionArgs: 'array{template?: StringMap, constructor?: StringMap, method?: StringMap}'
+    RunnerRequestInput: 'array{type: RenderType, file: string, sourceFile?: string|null, class?: string|null, callable?: string|null, args: StringMap, publicArgDefs?: StringMap|null, constructorArgDefs?: StringMap|null, callableArgDefs?: StringMap|null, bootstrap?: string|null, adapters?: list<string>|null, typeMap?: StringMap|null}'
+    RunnerRequest: 'array{type: RenderType, file: string, sourceFile: string|null, class: string|null, callable: string|null, args: StringMap, publicArgDefs: StringMap|null, constructorArgDefs: StringMap|null, callableArgDefs: StringMap|null, bootstrap: string|null, adapters: list<string>|null, typeMap: StringMap|null}'
   exceptions:
     implicitThrows: false
     reportUncheckedExceptionDeadCatch: false

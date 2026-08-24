@@ -16,7 +16,7 @@
 
 # Mark generated files (hide diffs on GitHub)
 package-lock.json linguist-generated
-composer.lock linguist-generated
+composer.lock* linguist-generated
 
 # Mark vendored/example PHP files so GitHub language stats show TS as primary
 examples/**/*.php linguist-vendored
@@ -30,3 +30,12 @@ AGENTS.md export-ignore
 .editorconfig export-ignore
 .gitattributes export-ignore
 .npmignore export-ignore
+.php-cs-fixer.dist.php export-ignore
+infection.json5 export-ignore
+loc.yaml export-ignore
+phpcs.xml.dist export-ignore
+phpstan.neon export-ignore
+phpunit.xml.dist export-ignore
+rector.php export-ignore
+tree.yaml export-ignore
+composer.lock.php-* export-ignore

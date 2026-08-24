@@ -6,7 +6,7 @@ use PHPUnit\Framework\TestCase;
 
 require_once __DIR__ . '/fixtures/RunnerFixtures.php';
 
-final class RuntimeDocTypesTest extends TestCase
+final class runtime_doc_typesTest extends TestCase
 {
     public function testPrefersTheMostSpecificDocumentedParameterType(): void
     {

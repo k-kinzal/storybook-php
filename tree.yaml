@@ -1,0 +1,30 @@
+paths:
+  - ".github"
+  - "src/php"
+  - "tests/php"
+  - "tools/php"
+
+exclude:
+  - ".git"
+  - ".phpstan"
+  - ".phpunit.cache"
+  - "build"
+  - "node_modules"
+  - "vendor"
+
+rules:
+  - path: "**"
+    deny_dirs: ["scripts", "Scripts"]
+  - path: "src/php/**"
+    forbid_empty: true
+    allow: ["*.php"]
+    file_case: snake
+    dir_case: snake
+    max_files: 25
+    max_dirs: 20
+
+report:
+  reporter: ai
+  order_by:
+    - path
+    - rule

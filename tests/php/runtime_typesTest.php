@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 use PHPUnit\Framework\TestCase;
 
-final class RuntimeTypesTest extends TestCase
+final class runtime_typesTest extends TestCase
 {
     public function testEnumLookupReturnsNullForAnOrdinaryMismatch(): void
     {

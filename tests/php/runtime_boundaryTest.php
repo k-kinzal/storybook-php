@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 use PHPUnit\Framework\TestCase;
 
-final class RuntimeBoundaryTest extends TestCase
+final class runtime_boundaryTest extends TestCase
 {
     public function testDefersOutputResolutionForAdapterMiddleware(): void
     {

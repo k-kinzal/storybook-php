@@ -1,0 +1,22 @@
+paths:
+  - src/php
+
+exclude: []
+
+limits:
+  max_file_lines: 500
+  max_file_ncloc: 350
+  max_class_lines: 400
+  max_trait_lines: 300
+  max_interface_lines: 200
+  max_enum_lines: 200
+  max_function_lines: 50
+  max_method_lines: 50
+  max_cyclomatic_complexity: 20
+
+report:
+  reporter: ai
+  order_by:
+    - path
+    - line
+    - rule

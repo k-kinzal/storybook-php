@@ -1,18 +1,33 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <phpunit
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:noNamespaceSchemaLocation="vendor/phpunit/phpunit/phpunit.xsd"
     bootstrap="tests/php/bootstrap.php"
+    executionOrder="depends,random"
     beStrictAboutChangesToGlobalState="true"
     beStrictAboutOutputDuringTests="true"
     cacheResult="false"
     colors="true"
+    enforceTimeLimit="true"
+    failOnEmptyTestSuite="true"
     failOnRisky="true"
     failOnWarning="true"
+    timeoutForSmallTests="1"
+    timeoutForMediumTests="10"
+    timeoutForLargeTests="60"
 >
     <testsuites>
         <testsuite name="php-runtime">
             <directory>tests/php</directory>
+            <exclude>tests/php/DoctestSuiteTest.php</exclude>
+        </testsuite>
+        <testsuite name="doctest">
+            <file>tests/php/DoctestSuiteTest.php</file>
         </testsuite>
     </testsuites>
+    <listeners>
+        <listener class="PhpAiToolkit\PhpUnit\TestReporter\Legacy\LegacyAiTestReporterListener"/>
+    </listeners>
     <coverage
         cacheDirectory=".phpunit.cache/code-coverage"
         includeUncoveredFiles="true"

@@ -5,16 +5,16 @@ declare(strict_types=1);
 use PHPUnit\Framework\TestCase;
 use StorybookPhp\EnumFixture\Status;
 use StorybookPhp\EnumFixture\UnitStatus;
+use StorybookPhp\TestFixture\AbstractCollection;
+use StorybookPhp\TestFixture\BrokenCollection;
 use StorybookPhp\TestFixture\ExampleRenderer;
 use StorybookPhp\TestFixture\Formatter;
 use StorybookPhp\TestFixture\FormatterInterface;
-use StorybookPhp\TestFixture\AbstractCollection;
-use StorybookPhp\TestFixture\BrokenCollection;
 use StorybookPhp\TestFixture\Item;
 use StorybookPhp\TestFixture\ListCollection;
 use StorybookPhp\TestFixture\ListCollectionContract;
-use StorybookPhp\TestFixture\NoConstructorItem;
 use StorybookPhp\TestFixture\NoConstructorCollection;
+use StorybookPhp\TestFixture\NoConstructorItem;
 use StorybookPhp\TestFixture\NoConstructorRenderer;
 use StorybookPhp\TestFixture\OverrideTarget;
 use StorybookPhp\TestFixture\SelfReferencing;
@@ -118,6 +118,11 @@ final class RunnerTest extends TestCase
         self::assertSame(Item::class, resolveClassName('Item', $parameter));
         self::assertSame(Item::class, resolveClassName('\\' . Item::class, $parameter));
         self::assertNull(resolveClassName('MissingType', $parameter));
+
+        $selfParameter = (new ReflectionMethod(SelfReferencing::class, 'acceptsSelf'))->getParameters()[0];
+        self::assertSame(SelfReferencing::class, resolveClassName('self', $selfParameter));
+        self::assertSame(SelfReferencing::class, resolveClassName('static', $selfParameter));
+        self::assertNull(resolveClassName('parent', $selfParameter));
     }
 
     public function testCastArrayElementsSupportsClassesEnumsAndFallbacks(): void
@@ -1031,7 +1036,7 @@ final class RunnerTest extends TestCase
             yield 'A';
             yield new StringableValue('B');
         };
-        $throwingStringable = new class {
+        $throwingStringable = new class () {
             public function __toString(): string
             {
                 throw new RuntimeException('explode');
