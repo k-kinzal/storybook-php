@@ -1,0 +1,145 @@
+{
+  $schema: "https://docs.renovatebot.com/renovate-schema.json",
+
+  // Renovate replaces the previous Dependabot setup and covers the root npm package,
+  // the root Composer dev tooling, every example under `examples/`, and GitHub Actions.
+  //
+  // Requirements outside this file:
+  //   1. The Renovate GitHub App must be installed for this repository.
+  //   2. "Allow auto-merge" must stay enabled in the repository settings (it is),
+  //      because automerge below relies on GitHub's native auto-merge.
+  //   3. `.github/workflows/renovate-auto-approve.yml` approves the PRs that carry the
+  //      `automerge` label or have auto-merge turned on. The `main` ruleset requires an
+  //      extra approval for changes that are not attributed to a signed-in user, so bot
+  //      PRs cannot merge without it.
+  extends: [
+    "config:recommended",
+    ":semanticCommitTypeAll(chore)",
+    "helpers:pinGitHubActionDigests",
+  ],
+
+  timezone: "Asia/Tokyo",
+  schedule: ["before 6am on monday"],
+  semanticCommits: "enabled",
+  labels: ["dependencies"],
+  prConcurrentLimit: 10,
+  prHourlyLimit: 4,
+  configMigration: true,
+
+  // Mirrors `.npmrc` (`min-release-age=7`) and the cooldown the Dependabot config used:
+  // a release has to be published for a week before Renovate touches it.
+  minimumReleaseAge: "7 days",
+  internalChecksFilter: "strict",
+
+  // `config:recommended` pulls in `:ignoreModulesAndTests`, which ignores `**/examples/**`.
+  // The examples are real dependency surfaces here (CI and VRT build them), so the ignore
+  // list is redeclared without that entry.
+  ignorePaths: ["**/node_modules/**", "**/vendor/**", "**/bower_components/**"],
+
+  // `main` only allows squash merges.
+  automergeStrategy: "squash",
+  platformAutomerge: true,
+
+  lockFileMaintenance: {
+    enabled: true,
+    schedule: ["before 6am on monday"],
+    automerge: true,
+    addLabels: ["automerge"],
+  },
+
+  // Vulnerability fixes skip the release-age cooldown so they show up immediately, but they
+  // are deliberately left for a human: automerging a release that is hours old is the exact
+  // supply-chain risk `min-release-age` guards against.
+  vulnerabilityAlerts: {
+    enabled: true,
+    schedule: [],
+    minimumReleaseAge: null,
+    automerge: false,
+    labels: ["dependencies", "security"],
+  },
+  osvVulnerabilityAlerts: true,
+
+  packageRules: [
+    {
+      description: "The PHP requirement tracks the supported version matrix, not releases",
+      matchManagers: ["composer"],
+      matchDepNames: ["php"],
+      enabled: false,
+    },
+    {
+      description: "php-ai-toolkit is intentionally tracked from its main branch",
+      matchDepNames: ["k-kinzal/php-ai-toolkit"],
+      enabled: false,
+    },
+    {
+      description: "storybook-php is linked into the examples from the working tree",
+      matchDepNames: ["storybook-php"],
+      enabled: false,
+    },
+
+    {
+      description: "Storybook core and addons move together",
+      matchPackageNames: ["storybook", "@storybook/**"],
+      groupName: "storybook",
+    },
+    {
+      description: "Vitest and its browser/vis integrations must stay in lockstep",
+      matchPackageNames: ["vitest", "@vitest/**", "vitest-plugin-vis", "storybook-addon-vis"],
+      groupName: "vitest",
+    },
+    {
+      description: "One PR per week for workflow actions",
+      matchManagers: ["github-actions"],
+      groupName: "github-actions",
+    },
+    {
+      description: "Root Composer tooling (PHPStan, Rector, PHPUnit, ...)",
+      matchManagers: ["composer"],
+      matchFileNames: ["composer.json"],
+      groupName: "php-dev-tools",
+    },
+    {
+      description: "Framework dependencies of the PHP examples",
+      matchManagers: ["composer"],
+      matchFileNames: ["examples/**"],
+      groupName: "php-examples",
+    },
+    {
+      description: "The pnpm version is duplicated in the VRT workflow, so bump both at once",
+      matchDepNames: ["pnpm"],
+      groupName: "pnpm",
+    },
+
+    {
+      description: "Automerge patch and digest updates",
+      matchUpdateTypes: ["patch", "digest", "pin", "pinDigest"],
+      automerge: true,
+      addLabels: ["automerge"],
+    },
+    {
+      description: "Automerge minor updates of stable packages. 0.x minors can break, so they are left out on purpose and get a normal review instead",
+      matchUpdateTypes: ["minor"],
+      matchCurrentVersion: ">=1.0.0",
+      automerge: true,
+      addLabels: ["automerge"],
+    },
+    {
+      description: "Actions are pinned to digests and every job is gated by CI, so anything below a major bump is automerged",
+      matchManagers: ["github-actions"],
+      matchUpdateTypes: ["minor", "patch", "digest", "pin", "pinDigest"],
+      automerge: true,
+      addLabels: ["automerge"],
+    },
+  ],
+
+  customManagers: [
+    {
+      customType: "regex",
+      description: "pnpm version pinned in the VRT workflow",
+      managerFilePatterns: ["/^\\.github/workflows/vrt\\.yml$/"],
+      matchStrings: [
+        '# renovate: datasource=(?<datasource>\\S+) depName=(?<depName>\\S+)\\s+version: "?(?<currentValue>[^"\\s]+)"?',
+      ],
+    },
+  ],
+}

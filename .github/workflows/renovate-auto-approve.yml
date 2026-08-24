@@ -1,0 +1,50 @@
+name: Renovate Auto Approve
+
+# The `main` ruleset requires an extra approval for changes that are not attributed to a
+# signed-in user, so Renovate cannot merge its own pull requests even when every required
+# check passes. This approves the updates Renovate flagged for automerge - either through
+# the `automerge` label or by turning on GitHub's auto-merge (see .github/renovate.json5) -
+# and auto-merge then merges them once Lint, Typecheck and Build are green. Major and 0.x
+# minor bumps carry neither signal and are therefore never approved here.
+
+on:
+  pull_request:
+    types: [opened, reopened, synchronize, labeled, auto_merge_enabled]
+
+permissions: {}
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number }}
+  cancel-in-progress: false
+
+jobs:
+  approve:
+    name: Approve
+    if: >-
+      github.event.pull_request.user.login == 'renovate[bot]'
+      && (contains(github.event.pull_request.labels.*.name, 'automerge')
+      || github.event.pull_request.auto_merge != null)
+    runs-on: ubuntu-latest
+    permissions:
+      pull-requests: write
+    steps:
+      - name: Approve pull request
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          set -euo pipefail
+
+          # Pushes dismiss stale reviews, so re-approve after a Renovate rebase, but stay
+          # quiet when the current head already carries an approval from this workflow.
+          approved=$(gh api "repos/${GH_REPO}/pulls/${PR_NUMBER}/reviews?per_page=100" \
+            --jq "[.[] | select(.user.login == \"github-actions[bot]\" and .state == \"APPROVED\" and .commit_id == \"${HEAD_SHA}\")] | length")
+          if [ "${approved}" -gt 0 ]; then
+            echo "${HEAD_SHA} is already approved."
+            exit 0
+          fi
+
+          gh pr review "${PR_NUMBER}" --approve \
+            --body "Approved automatically: Renovate marked this update for automerge. The required status checks still have to pass before it merges."
