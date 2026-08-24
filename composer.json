@@ -3,17 +3,25 @@
   "description": "Development quality tooling for the storybook-php PHP runtime",
   "type": "project",
   "license": "MIT",
+  "repositories": [
+    {
+      "type": "vcs",
+      "url": "https://github.com/k-kinzal/php-ai-toolkit.git",
+      "no-api": true
+    }
+  ],
   "require": {
     "php": "^8.0"
   },
   "require-dev": {
+    "k-kinzal/php-ai-toolkit": "dev-main",
     "php-parallel-lint/php-parallel-lint": "^1.4",
     "phpstan/extension-installer": "^1.4",
     "phpstan/phpstan": "^2.1.44",
     "phpstan/phpstan-deprecation-rules": "^2.0",
     "phpstan/phpstan-strict-rules": "^2.0.10",
     "phpunit/phpunit": "^9.6.34",
-    "rector/rector": "^2.3.9"
+    "rector/rector": "^2.6.3"
   },
   "config": {
     "allow-plugins": {
@@ -37,7 +45,7 @@
     ],
     "lint:syntax": "parallel-lint --colors src/php",
     "audit:security": "composer audit --no-interaction",
-    "phpstan": "phpstan analyse --ansi",
+    "phpstan": "phpstan analyse --memory-limit=512M --ansi",
     "rector": "rector process --dry-run --ansi",
     "test": "phpunit --colors=always --configuration phpunit.xml.dist",
     "test:coverage": [

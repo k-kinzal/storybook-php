@@ -30,12 +30,20 @@ function stringifyScalarForError(mixed $value): string
 
 function getOutputBuffer(): string
 {
-    $buffered = ob_get_clean();
-    // @codeCoverageIgnoreStart
+    return requireOutputBuffer(ob_get_clean());
+}
+
+/**
+ * Converts the engine-level output-buffer failure into the runner contract.
+ *
+ * @codeCoverageIgnore
+ * @throws RuntimeException when no output buffer is active
+ */
+function requireOutputBuffer(string|false $buffered): string
+{
     if ($buffered === false) {
         throw new \RuntimeException('Failed to collect output buffer.');
     }
-    // @codeCoverageIgnoreEnd
 
     return $buffered;
 }
@@ -115,10 +123,15 @@ function isSequentialList(array $value): bool
  *   adapters: list<string>|null,
  *   typeMap: array<string, mixed>|null
  * }
+ * @throws RuntimeException when the payload is invalid
  */
 function readRunnerRequest(string $input): array
 {
-    $decoded = json_decode($input, true, 512, JSON_THROW_ON_ERROR);
+    try {
+        $decoded = json_decode($input, true, 512, JSON_THROW_ON_ERROR);
+    } catch (\JsonException $exception) {
+        throw new \RuntimeException('Invalid JSON request payload.', 0, $exception);
+    }
     if (!is_array($decoded)) {
         throw new \RuntimeException('Invalid request payload.');
     }
@@ -203,6 +216,7 @@ function readRunnerRequest(string $input): array
 
 /**
  * @codeCoverageIgnore
+ * @throws RuntimeException when stdin cannot be read
  */
 function readRunnerStdin(): string
 {
@@ -216,6 +230,7 @@ function readRunnerStdin(): string
 
 /**
  * @return callable(array<string, mixed>, callable): mixed|null
+ * @throws RuntimeException when the adapter does not return middleware
  */
 function loadAdapter(?string $adapterPath): ?callable
 {
@@ -234,6 +249,7 @@ function loadAdapter(?string $adapterPath): ?callable
 /**
  * @param list<string>|null $adapterPaths
  * @return list<callable(array<string, mixed>, callable): mixed>
+ * @throws RuntimeException when an adapter does not return middleware
  */
 function loadAdapters(?array $adapterPaths): array
 {
@@ -265,6 +281,7 @@ function loadAdapters(?array $adapterPaths): array
  *   methodArgs?: array<string, mixed>,
  *   enumCaseValue?: mixed
  * }
+ * @throws RuntimeException when middleware returns an invalid response
  */
 function normalizeAdapterResponse(mixed $response): array
 {
@@ -310,6 +327,7 @@ function normalizeAdapterResponse(mixed $response): array
  *   methodArgs?: array<string, mixed>,
  *   enumCaseValue?: mixed
  * }
+ * @throws RuntimeException when context hydration or middleware execution fails
  */
 function runAdapterMiddleware(array $middlewares, array $context, callable $terminal): array
 {
@@ -367,10 +385,11 @@ function runAdapterMiddleware(array $middlewares, array $context, callable $term
 
 /**
  * @param array{
- *   type: string,
+ *   type: 'classMethod'|'staticMethod'|'function'|'template'|'enumMethod',
  *   publicArgs: array<string, mixed>,
  *   constructorArgDefs?: array<string, mixed>|null,
- *   callableArgDefs?: array<string, mixed>|null
+ *   callableArgDefs?: array<string, mixed>|null,
+ *   ...
  * } $context
  * @return array{constructor?: array<string, mixed>, method?: array<string, mixed>, template?: array<string, mixed>}
  */
@@ -514,5 +533,23 @@ function buildRunnerErrorResponse(\Throwable $e): array
  */
 function encodeRunnerResponse(array $response): string
 {
-    return json_encode($response, JSON_THROW_ON_ERROR);
+    return encodeJsonResponse($response);
+}
+
+/**
+ * Bridges PHP's checked JSON exception into the runner exception contract.
+ * The declared response shape and invalid UTF-8 substitution make the failure
+ * branch an engine safeguard rather than an input-dependent path.
+ *
+ * @codeCoverageIgnore
+ * @param array{html: string, error?: string, trace?: string} $response
+ * @throws RuntimeException when the protocol response cannot be encoded
+ */
+function encodeJsonResponse(array $response): string
+{
+    try {
+        return json_encode($response, JSON_THROW_ON_ERROR | JSON_INVALID_UTF8_SUBSTITUTE);
+    } catch (\JsonException $exception) {
+        throw new \RuntimeException('Failed to encode the runner response.', 0, $exception);
+    }
 }

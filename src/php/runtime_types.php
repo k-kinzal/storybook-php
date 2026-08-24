@@ -45,6 +45,7 @@ function isBackedEnumClass(string $enumClass): bool
 
 /**
  * @param class-string $enumClass
+ * @throws RuntimeException when the class is unavailable or no case matches
  */
 function resolveEnumCase(string $enumClass, mixed $value): object
 {
@@ -56,27 +57,36 @@ function resolveEnumCase(string $enumClass, mixed $value): object
         return $value;
     }
 
-    if (isBackedEnumClass($enumClass) && method_exists($enumClass, 'from')) {
-        try {
-            /** @var callable(mixed): object $from */
-            $from = [$enumClass, 'from'];
-            return $from($value);
-        } catch (\Throwable) {
-            // Fall through to name matching.
-        }
-    }
-
-    /** @var callable(): array<int, object> $cases */
-    $cases = [$enumClass, 'cases'];
-    foreach ($cases() as $case) {
-        if (property_exists($case, 'name') && is_string($case->name) && $case->name === $value) {
-            return $case;
-        }
+    $case = findEnumCase($enumClass, $value);
+    if ($case !== null) {
+        return $case;
     }
 
     throw new \RuntimeException(
         "Cannot resolve enum case '" . stringifyScalarForError($value) . "' for {$enumClass}",
     );
+}
+
+/**
+ * Finds an enum case without using exceptions for an ordinary failed match.
+ *
+ * @param class-string $enumClass
+ */
+function findEnumCase(string $enumClass, mixed $value): ?object
+{
+    /** @var callable(): array<int, object> $cases */
+    $cases = [$enumClass, 'cases'];
+    foreach ($cases() as $case) {
+        if (isBackedEnumClass($enumClass) && property_exists($case, 'value') && $case->value === $value) {
+            return $case;
+        }
+
+        if (property_exists($case, 'name') && is_string($case->name) && $case->name === $value) {
+            return $case;
+        }
+    }
+
+    return null;
 }
 
 /**

@@ -6,34 +6,34 @@ declare(strict_types=1);
  * @param array{
  *   type: 'classMethod'|'staticMethod'|'function'|'template'|'enumMethod',
  *   file: string,
- *   sourceFile: string|null,
- *   class: string|null,
- *   callable: string|null,
+ *   sourceFile?: string|null,
+ *   class?: string|null,
+ *   callable?: string|null,
  *   args: array<string, mixed>,
- *   publicArgDefs: array<string, mixed>|null,
- *   constructorArgDefs: array<string, mixed>|null,
- *   callableArgDefs: array<string, mixed>|null,
- *   suppressOutputResolutionErrors?: bool,
- *   bootstrap: string|null,
- *   adapters: list<string>|null,
- *   typeMap: array<string, mixed>|null
+ *   publicArgDefs?: array<string, mixed>|null,
+ *   constructorArgDefs?: array<string, mixed>|null,
+ *   callableArgDefs?: array<string, mixed>|null,
+ *   bootstrap?: string|null,
+ *   adapters?: list<string>|null,
+ *   typeMap?: array<string, mixed>|null
  * } $__sb_request
  * @return array{html: string}
+ * @throws RuntimeException when the request cannot be resolved or executed
  */
 function executeRunnerRequest(array $__sb_request): array
 {
     $__sb_type = $__sb_request['type'];
     $__sb_file = $__sb_request['file'];
     $__sb_sourceFile = $__sb_request['sourceFile'] ?? $__sb_file;
-    $__sb_class = $__sb_request['class'];
-    $__sb_callable = $__sb_request['callable'];
+    $__sb_class = $__sb_request['class'] ?? null;
+    $__sb_callable = $__sb_request['callable'] ?? null;
     $__sb_storyArgs = $__sb_request['args'];
     $__sb_publicArgDefs = $__sb_request['publicArgDefs'] ?? null;
     $__sb_constructorArgDefs = $__sb_request['constructorArgDefs'] ?? null;
     $__sb_callableArgDefs = $__sb_request['callableArgDefs'] ?? null;
-    $__sb_bootstrap = $__sb_request['bootstrap'];
+    $__sb_bootstrap = $__sb_request['bootstrap'] ?? null;
     $__sb_adapterPaths = $__sb_request['adapters'] ?? null;
-    $__sb_typeMap = $__sb_request['typeMap'];
+    $__sb_typeMap = $__sb_request['typeMap'] ?? null;
 
     if ($__sb_bootstrap !== null && $__sb_bootstrap !== '') {
         require_once $__sb_bootstrap;
@@ -50,7 +50,7 @@ function executeRunnerRequest(array $__sb_request): array
         'publicArgDefs' => $__sb_publicArgDefs,
         'constructorArgDefs' => $__sb_constructorArgDefs,
         'callableArgDefs' => $__sb_callableArgDefs,
-        'suppressOutputResolutionErrors' => $__sb_adapters !== [],
+        'deferOutputResolutionToAdapter' => $__sb_adapters !== [],
         'typeMap' => $__sb_typeMap,
     ];
 
@@ -75,7 +75,7 @@ function executeRunnerRequest(array $__sb_request): array
              *   constructorArgs?: array<string, mixed>,
              *   methodArgs?: array<string, mixed>,
              *   enumCaseValue?: mixed,
-             *   suppressOutputResolutionErrors?: bool,
+             *   deferOutputResolutionToAdapter?: bool,
              *   __planner?: array<string, mixed>,
              *   typeMap?: array<string, mixed>|null
              * } $adapterContext
@@ -100,6 +100,7 @@ function executeRunnerRequest(array $__sb_request): array
  *   methodArgs?: array<string, mixed>,
  *   enumCaseValue?: mixed
  * }
+ * @throws RuntimeException when the execution context cannot be resolved or invoked
  */
 function executeCoreContext(array $__sb_context): array
 {
@@ -118,7 +119,7 @@ function executeCoreContext(array $__sb_context): array
      *   constructorArgs?: array<string, mixed>,
      *   methodArgs?: array<string, mixed>,
      *   enumCaseValue?: mixed,
-     *   suppressOutputResolutionErrors?: bool,
+     *   deferOutputResolutionToAdapter?: bool,
      *   __planner: array{
      *     classReflection?: ReflectionClass<object>,
      *     constructorReflection?: ReflectionMethod|null,
@@ -134,7 +135,7 @@ function executeCoreContext(array $__sb_context): array
     $__sb_file = $__sb_context['executionFile'];
     $__sb_class = $__sb_context['class'];
     $__sb_callable = $__sb_context['callable'];
-    $__sb_suppressOutputResolutionErrors = $__sb_context['suppressOutputResolutionErrors'] ?? false;
+    $__sb_deferOutputResolutionToAdapter = $__sb_context['deferOutputResolutionToAdapter'] ?? false;
 
     switch ($__sb_type) {
         case 'classMethod':
@@ -155,7 +156,7 @@ function executeCoreContext(array $__sb_context): array
             $__sb_result = $__sb_method->invokeArgs($__sb_instance, orderResolvedArgs($__sb_method, $__sb_methodArgs));
             $__sb_buffered = getOutputBuffer();
             return buildExecutionResponse(
-                resolveExecutionHtml($__sb_result, $__sb_buffered, $__sb_suppressOutputResolutionErrors),
+                resolveExecutionHtml($__sb_result, $__sb_buffered, $__sb_deferOutputResolutionToAdapter),
                 $__sb_result,
                 $__sb_buffered,
                 $__sb_instance,
@@ -174,7 +175,7 @@ function executeCoreContext(array $__sb_context): array
             $__sb_result = $__sb_method->invokeArgs(null, orderResolvedArgs($__sb_method, $__sb_methodArgs));
             $__sb_buffered = getOutputBuffer();
             return buildExecutionResponse(
-                resolveExecutionHtml($__sb_result, $__sb_buffered, $__sb_suppressOutputResolutionErrors),
+                resolveExecutionHtml($__sb_result, $__sb_buffered, $__sb_deferOutputResolutionToAdapter),
                 $__sb_result,
                 $__sb_buffered,
                 null,
@@ -193,7 +194,7 @@ function executeCoreContext(array $__sb_context): array
             $__sb_result = $__sb_ref->invokeArgs(orderResolvedArgs($__sb_ref, $__sb_methodArgs));
             $__sb_buffered = getOutputBuffer();
             return buildExecutionResponse(
-                resolveExecutionHtml($__sb_result, $__sb_buffered, $__sb_suppressOutputResolutionErrors),
+                resolveExecutionHtml($__sb_result, $__sb_buffered, $__sb_deferOutputResolutionToAdapter),
                 $__sb_result,
                 $__sb_buffered,
                 null,
@@ -231,7 +232,7 @@ function executeCoreContext(array $__sb_context): array
             $__sb_result = $__sb_method->invokeArgs($__sb_enumInstance, orderResolvedArgs($__sb_method, $__sb_methodArgs));
             $__sb_buffered = getOutputBuffer();
             return buildExecutionResponse(
-                resolveExecutionHtml($__sb_result, $__sb_buffered, $__sb_suppressOutputResolutionErrors),
+                resolveExecutionHtml($__sb_result, $__sb_buffered, $__sb_deferOutputResolutionToAdapter),
                 $__sb_result,
                 $__sb_buffered,
                 $__sb_enumInstance,
@@ -248,6 +249,7 @@ function executeCoreContext(array $__sb_context): array
 /**
  * @param array<string, mixed> $context
  * @return array<string, mixed>
+ * @throws RuntimeException when the execution plan or arguments cannot be resolved
  */
 function hydrateExecutionContext(array $context): array
 {
@@ -385,6 +387,7 @@ function applyResolvedExecutionValue(array $context, string $field, string $snap
 /**
  * @param array<string, mixed> $context
  * @return array<string, mixed>
+ * @throws RuntimeException when the requested target cannot be reflected
  */
 function ensureExecutionPlanner(array $context): array
 {
@@ -416,106 +419,124 @@ function ensureExecutionPlanner(array $context): array
         'effectiveCallableArgDefs' => null,
     ];
 
-    switch ($type) {
-        case 'classMethod':
-            if (!is_string($class) || $class === '' || !is_string($callable) || $callable === '') {
-                throw new \RuntimeException('classMethod requires class and callable.');
-            }
-            if (!is_string($executionFile) || $executionFile === '') {
-                throw new \RuntimeException('classMethod requires an execution file.');
-            }
-            require_once $executionFile;
-            /** @var class-string $class */
-            $classReflection = new ReflectionClass($class);
-            $planner['classReflection'] = $classReflection;
-            $planner['constructorReflection'] = $classReflection->getConstructor();
-            $planner['callableReflection'] = $classReflection->getMethod($callable);
-            $planner['effectiveConstructorArgDefs'] = buildTargetArgDefs(
-                $constructorArgDefs,
-                $publicArgDefs,
-                'constructor'
-            );
-            $planner['effectiveCallableArgDefs'] = buildTargetArgDefs(
-                $callableArgDefs,
-                $publicArgDefs,
-                'method'
-            );
-            break;
+    try {
+        switch ($type) {
+            case 'classMethod':
+                if (!is_string($class) || $class === '' || !is_string($callable) || $callable === '') {
+                    throw new \RuntimeException('classMethod requires class and callable.');
+                }
+                if (!is_string($executionFile) || $executionFile === '') {
+                    throw new \RuntimeException('classMethod requires an execution file.');
+                }
+                require_once $executionFile;
+                /** @var class-string $class */
+                $classReflection = new ReflectionClass($class);
+                $planner['classReflection'] = $classReflection;
+                $planner['constructorReflection'] = $classReflection->getConstructor();
+                $planner['callableReflection'] = $classReflection->getMethod($callable);
+                $planner['effectiveConstructorArgDefs'] = buildTargetArgDefs(
+                    $constructorArgDefs,
+                    $publicArgDefs,
+                    'constructor',
+                );
+                $planner['effectiveCallableArgDefs'] = buildTargetArgDefs(
+                    $callableArgDefs,
+                    $publicArgDefs,
+                    'method',
+                );
+                break;
 
-        case 'staticMethod':
-            if (!is_string($class) || $class === '' || !is_string($callable) || $callable === '') {
-                throw new \RuntimeException('staticMethod requires class and callable.');
-            }
-            if (!is_string($executionFile) || $executionFile === '') {
-                throw new \RuntimeException('staticMethod requires an execution file.');
-            }
-            require_once $executionFile;
-            /** @var class-string $class */
-            $classReflection = new ReflectionClass($class);
-            $planner['classReflection'] = $classReflection;
-            $planner['callableReflection'] = $classReflection->getMethod($callable);
-            $planner['effectiveCallableArgDefs'] = buildTargetArgDefs(
-                $callableArgDefs,
-                $publicArgDefs,
-                'method'
-            );
-            break;
+            case 'staticMethod':
+                if (!is_string($class) || $class === '' || !is_string($callable) || $callable === '') {
+                    throw new \RuntimeException('staticMethod requires class and callable.');
+                }
+                if (!is_string($executionFile) || $executionFile === '') {
+                    throw new \RuntimeException('staticMethod requires an execution file.');
+                }
+                require_once $executionFile;
+                /** @var class-string $class */
+                $classReflection = new ReflectionClass($class);
+                $planner['classReflection'] = $classReflection;
+                $planner['callableReflection'] = $classReflection->getMethod($callable);
+                $planner['effectiveCallableArgDefs'] = buildTargetArgDefs(
+                    $callableArgDefs,
+                    $publicArgDefs,
+                    'method',
+                );
+                break;
 
-        case 'function':
-            if (!is_string($callable) || $callable === '') {
-                throw new \RuntimeException('function render requires callable.');
-            }
-            if (!is_string($executionFile) || $executionFile === '') {
-                throw new \RuntimeException('function render requires an execution file.');
-            }
-            require_once $executionFile;
-            $planner['callableReflection'] = new ReflectionFunction($callable);
-            $planner['effectiveCallableArgDefs'] = buildTargetArgDefs(
-                $callableArgDefs,
-                $publicArgDefs,
-                'method'
-            );
-            break;
+            case 'function':
+                if (!is_string($callable) || $callable === '') {
+                    throw new \RuntimeException('function render requires callable.');
+                }
+                if (!is_string($executionFile) || $executionFile === '') {
+                    throw new \RuntimeException('function render requires an execution file.');
+                }
+                require_once $executionFile;
+                $planner['callableReflection'] = new ReflectionFunction($callable);
+                $planner['effectiveCallableArgDefs'] = buildTargetArgDefs(
+                    $callableArgDefs,
+                    $publicArgDefs,
+                    'method',
+                );
+                break;
 
-        case 'template':
-            break;
+            case 'template':
+                break;
 
-        case 'enumMethod':
-            if (!is_string($class) || $class === '' || !is_string($callable) || $callable === '') {
-                throw new \RuntimeException('enumMethod requires enum class and callable.');
-            }
-            // @codeCoverageIgnoreStart
-            if (!function_exists('enum_exists')) {
-                throw new \RuntimeException("Enum methods require PHP 8.1+. Current PHP: " . PHP_VERSION);
-            }
-            // @codeCoverageIgnoreEnd
-            if (!is_string($executionFile) || $executionFile === '') {
-                throw new \RuntimeException('enumMethod requires an execution file.');
-            }
-            require_once $executionFile;
-            if (!enum_exists($class)) {
-                throw new \RuntimeException("Enum '{$class}' is not available.");
-            }
-            assert(class_exists($class));
-            $classReflection = new ReflectionClass($class);
-            $planner['classReflection'] = $classReflection;
-            $planner['callableReflection'] = $classReflection->getMethod($callable);
-            $planner['effectiveCallableArgDefs'] = buildTargetArgDefs(
-                $callableArgDefs,
-                $publicArgDefs,
-                'method'
-            );
-            break;
-
-        // @codeCoverageIgnoreStart
-        default:
-            throw new \RuntimeException("Unknown type: {$type}");
-        // @codeCoverageIgnoreEnd
+            case 'enumMethod':
+                if (!is_string($class) || $class === '' || !is_string($callable) || $callable === '') {
+                    throw new \RuntimeException('enumMethod requires enum class and callable.');
+                }
+                if (!is_string($executionFile) || $executionFile === '') {
+                    throw new \RuntimeException('enumMethod requires an execution file.');
+                }
+                require_once $executionFile;
+                if (!runnerEnumExists($class)) {
+                    throw new \RuntimeException("Enum '{$class}' is not available.");
+                }
+                assert(class_exists($class));
+                $classReflection = new ReflectionClass($class);
+                $planner['classReflection'] = $classReflection;
+                $planner['callableReflection'] = $classReflection->getMethod($callable);
+                $planner['effectiveCallableArgDefs'] = buildTargetArgDefs(
+                    $callableArgDefs,
+                    $publicArgDefs,
+                    'method',
+                );
+                break;
+        }
+    } catch (\ReflectionException $exception) {
+        throw new \RuntimeException(
+            "Unable to resolve {$type} target from the runner request.",
+            0,
+            $exception,
+        );
     }
 
     $context['__planner'] = $planner;
 
     return $context;
+}
+
+/**
+ * Checks enum availability through a PHP 8.0-compatible boundary.
+ *
+ * @codeCoverageIgnore
+ * @throws RuntimeException when enums are unavailable
+ */
+function runnerEnumExists(string $class): bool
+{
+    if (!function_exists('enum_exists')) {
+        throw new \RuntimeException("Enum methods require PHP 8.1+. Current PHP: " . PHP_VERSION);
+    }
+
+    $exists = enum_exists($class);
+    if (!is_bool($exists)) {
+        throw new \RuntimeException('enum_exists() returned an invalid result.');
+    }
+
+    return $exists;
 }
 
 /**
@@ -765,33 +786,4 @@ function buildExecutionResponse(
     }
 
     return $response;
-}
-
-function resolveExecutionHtml(mixed $result, string $buffered, bool $suppressErrors): string
-{
-    if (!$suppressErrors) {
-        return resolveOutput($result, $buffered);
-    }
-
-    try {
-        return resolveOutput($result, $buffered);
-    } catch (\Throwable) {
-        return $buffered;
-    }
-}
-
-function storybookPhpRun(?string $input = null, bool $writeOutput = true): string
-{
-    try {
-        $response = executeRunnerRequest(readRunnerRequest($input ?? readRunnerStdin()));
-    } catch (\Throwable $e) {
-        $response = buildRunnerErrorResponse($e);
-    }
-
-    $encoded = encodeRunnerResponse($response);
-    if ($writeOutput) {
-        echo $encoded;
-    }
-
-    return $encoded;
 }

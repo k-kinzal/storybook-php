@@ -36,11 +36,8 @@ function castArrayElements(array $value, string $docType, ReflectionParameter $p
         assert(class_exists($resolved));
         $result = [];
         foreach ($value as $key => $item) {
-            try {
-                $result[$key] = resolveEnumCase($resolved, $item);
-            } catch (\RuntimeException) {
-                $result[$key] = $item;
-            }
+            $case = findEnumCase($resolved, $item);
+            $result[$key] = $case ?? $item;
         }
         return $result;
     }
@@ -207,12 +204,8 @@ function scoreInlineNamedTypeMatch(string $typeName, mixed $value, ?array $typeM
         if ($value instanceof $resolved) {
             return 3;
         }
-        try {
-            resolveEnumCase($resolved, $value);
-            return 2;
-        } catch (\Throwable) {
-            return 0;
-        }
+
+        return findEnumCase($resolved, $value) !== null ? 2 : 0;
     }
 
     if (interface_exists($resolved)) {
@@ -228,7 +221,7 @@ function scoreInlineNamedTypeMatch(string $typeName, mixed $value, ?array $typeM
         return 3;
     }
 
-    return is_array($value) ? 1 : 0;
+    return is_array($value) ? scoreClassInstantiationMatch($resolved, $value) : 0;
 }
 
 /**
@@ -280,7 +273,12 @@ function scoreDocTypeMatch(string $docType, mixed $value, ?ReflectionParameter $
             return 0;
         }
 
-        return 4;
+        if ($info['wrapperClass'] === null) {
+            return 4;
+        }
+
+        $wrapper = resolveBoundTypeName($info['wrapperClass'], $typeMap, $param);
+        return class_exists($wrapper) && canInstantiateCollectionWrapper($wrapper) ? 4 : 0;
     }
 
     return scoreInlineNamedTypeMatch(resolveBoundTypeName($normalized, $typeMap, $param), $value);
@@ -327,6 +325,126 @@ function instantiateClassFromValue(string $className, mixed $value, ?array $type
     }
 
     return $ref->newInstanceArgs(matchArgs($constructor, (array) $value, $typeMap));
+}
+
+/**
+ * Scores whether an input array satisfies a class constructor's positional or
+ * named argument contract before attempting instantiation.
+ *
+ * @param class-string $className
+ * @param array<array-key, mixed> $value
+ */
+function scoreClassInstantiationMatch(string $className, array $value): int
+{
+    $reflection = new ReflectionClass($className);
+    if (!$reflection->isInstantiable()) {
+        return 0;
+    }
+
+    $constructor = $reflection->getConstructor();
+    if ($constructor === null) {
+        return 1;
+    }
+
+    $parameters = $constructor->getParameters();
+    if (isListArray($value)) {
+        $argumentCount = count($value);
+        $parameterCount = count($parameters);
+        if ($argumentCount < $constructor->getNumberOfRequiredParameters()) {
+            return 0;
+        }
+
+        $lastParameter = $parameters[$parameterCount - 1] ?? null;
+        if ($argumentCount > $parameterCount && (!$lastParameter instanceof ReflectionParameter || !$lastParameter->isVariadic())) {
+            return 0;
+        }
+
+        return 1;
+    }
+
+    foreach ($parameters as $parameter) {
+        if (
+            !$parameter->isOptional()
+            && !$parameter->isVariadic()
+            && !$parameter->allowsNull()
+            && !array_key_exists($parameter->getName(), $value)
+        ) {
+            return 0;
+        }
+    }
+
+    return 1;
+}
+
+/**
+ * Checks whether a generic collection wrapper can accept one array argument.
+ *
+ * @param class-string $className
+ */
+function canInstantiateCollectionWrapper(string $className): bool
+{
+    $reflection = new ReflectionClass($className);
+    if (!$reflection->isInstantiable()) {
+        return false;
+    }
+
+    $constructor = $reflection->getConstructor();
+    if ($constructor === null) {
+        return true;
+    }
+
+    if ($constructor->getNumberOfRequiredParameters() > 1) {
+        return false;
+    }
+
+    $parameter = $constructor->getParameters()[0] ?? null;
+    return $parameter instanceof ReflectionParameter && reflectionTypeAcceptsArray($parameter->getType());
+}
+
+/**
+ * Checks whether a reflected parameter type accepts a PHP array directly.
+ */
+function reflectionTypeAcceptsArray(?ReflectionType $type): bool
+{
+    if (!$type instanceof \ReflectionType) {
+        return true;
+    }
+
+    if ($type instanceof ReflectionNamedType) {
+        return in_array(strtolower($type->getName()), ['array', 'iterable', 'mixed'], true);
+    }
+
+    if ($type instanceof ReflectionUnionType) {
+        foreach ($type->getTypes() as $member) {
+            if ($member instanceof ReflectionNamedType && reflectionTypeAcceptsArray($member)) {
+                return true;
+            }
+        }
+    }
+
+    return false;
+}
+
+/**
+ * Wraps a cast collection when the wrapper exposes a compatible constructor;
+ * otherwise returns the cast items unchanged.
+ *
+ * @param class-string $className
+ * @param array<array-key, mixed> $items
+ * @return object|array<array-key, mixed>
+ */
+function instantiateCollectionWrapper(string $className, array $items): object|array
+{
+    if (!canInstantiateCollectionWrapper($className)) {
+        return $items;
+    }
+
+    $reflection = new ReflectionClass($className);
+    if (!$reflection->getConstructor() instanceof \ReflectionMethod) {
+        return $reflection->newInstance();
+    }
+
+    return $reflection->newInstanceArgs([$items]);
 }
 
 /**
@@ -433,11 +551,7 @@ function castInlineDocTypeValue(mixed $value, string $docType, ?array $typeMap =
             return $a['index'] <=> $b['index'];
         });
         foreach ($rankedUnionTypes as $ranked) {
-            try {
-                return castInlineDocTypeValue($value, $ranked['candidate'], $typeMap);
-            } catch (\Throwable) {
-                // try next candidate
-            }
+            return castInlineDocTypeValue($value, $ranked['candidate'], $typeMap);
         }
         return $value;
     }
@@ -460,16 +574,7 @@ function castInlineDocTypeValue(mixed $value, string $docType, ?array $typeMap =
         }
 
         /** @var class-string $wrapper */
-        $ref = new ReflectionClass($wrapper);
-        if (!$ref->isInstantiable()) {
-            return $casted;
-        }
-        $constructor = $ref->getConstructor();
-        if ($constructor !== null) {
-            return $ref->newInstanceArgs([$casted]);
-        }
-
-        return $ref->newInstance();
+        return instantiateCollectionWrapper($wrapper, $casted);
     }
 
     return castInlineNamedType($normalized, $value, $typeMap);
@@ -499,15 +604,7 @@ function castTemplateArgValue(array $argDef, mixed $value, ?array $typeMap = nul
             $wrapper = ltrim(resolveTypeMapBinding($type, $typeMap), '\\');
             if (class_exists($wrapper)) {
                 /** @var class-string $wrapper */
-                $ref = new ReflectionClass($wrapper);
-                if (!$ref->isInstantiable()) {
-                    return $casted;
-                }
-                $constructor = $ref->getConstructor();
-                if ($constructor !== null) {
-                    return $ref->newInstanceArgs([$casted]);
-                }
-                return $ref->newInstance();
+                return instantiateCollectionWrapper($wrapper, $casted);
             }
         }
 
@@ -604,11 +701,7 @@ function castDocTypeValue(mixed $value, string $docType, ReflectionParameter $pa
             return $a['index'] <=> $b['index'];
         });
         foreach ($rankedUnionTypes as $ranked) {
-            try {
-                return castDocTypeValue($value, $ranked['candidate'], $param, $typeMap);
-            } catch (\Throwable) {
-                // try next candidate
-            }
+            return castDocTypeValue($value, $ranked['candidate'], $param, $typeMap);
         }
         return $value;
     }
@@ -628,16 +721,7 @@ function castDocTypeValue(mixed $value, string $docType, ReflectionParameter $pa
         }
 
         /** @var class-string $wrapper */
-        $ref = new ReflectionClass($wrapper);
-        if (!$ref->isInstantiable()) {
-            return $casted;
-        }
-        $constructor = $ref->getConstructor();
-        if ($constructor !== null) {
-            return $ref->newInstanceArgs([$casted]);
-        }
-
-        return $ref->newInstance();
+        return instantiateCollectionWrapper($wrapper, $casted);
     }
 
     return castInlineNamedType(resolveBoundTypeName($normalized, $typeMap, $param), $value);
@@ -705,11 +789,8 @@ function castArg(ReflectionParameter $param, mixed $value, ?string $docType = nu
             if ($ranked['score'] <= 0) {
                 continue;
             }
-            try {
-                return castWithNamedType($ranked['type'], $value, $param, $docType, $typeMap);
-            } catch (\Throwable) {
-                // try next
-            }
+
+            return castWithNamedType($ranked['type'], $value, $param, $docType, $typeMap);
         }
 
         foreach ($otherTypes as $unionType) {
@@ -782,10 +863,10 @@ function castWithNamedType(ReflectionNamedType $type, mixed $value, ReflectionPa
             return false;
         case 'null':
             return null;
-        // @codeCoverageIgnoreStart
+        /** @codeCoverageIgnoreStart */
         case 'never':
             throw new \RuntimeException("Cannot provide a value for 'never' type parameter");
-        // @codeCoverageIgnoreEnd
+        /** @codeCoverageIgnoreEnd */
     }
 
     if (function_exists('enum_exists') && enum_exists($typeName)) {
@@ -814,9 +895,9 @@ function castWithNamedType(ReflectionNamedType $type, mixed $value, ReflectionPa
         return instantiateClassFromValue($typeName, $value, $typeMap);
     }
 
-    // @codeCoverageIgnoreStart
+    /** @codeCoverageIgnoreStart */
     return $value;
-    // @codeCoverageIgnoreEnd
+    /** @codeCoverageIgnoreEnd */
 }
 
 /**
@@ -996,7 +1077,7 @@ function resolveArgs(?ReflectionFunctionAbstract $ref, array $args, ?array $type
         } elseif (is_array($argDef) && array_key_exists('default', $argDef)) {
             $resolved = castArg($param, $argDef['default'], $docType, $typeMap);
         } elseif ($param->isDefaultValueAvailable()) {
-            $resolved = $param->getDefaultValue();
+            $resolved = reflectionParameterDefaultValue($param);
         } elseif (
             is_array($argDef)
             && (($argDef['nullable'] ?? false) === true)
@@ -1014,6 +1095,26 @@ function resolveArgs(?ReflectionFunctionAbstract $ref, array $args, ?array $type
     }
 
     return ['ordered' => $ordered, 'named' => $named];
+}
+
+/**
+ * Converts the engine-level reflection failure into the runner's exception
+ * contract. Reflection only fails here for internal or extension parameters.
+ *
+ * @codeCoverageIgnore
+ * @throws RuntimeException when the engine cannot expose the default value
+ */
+function reflectionParameterDefaultValue(ReflectionParameter $parameter): mixed
+{
+    try {
+        return $parameter->getDefaultValue();
+    } catch (\ReflectionException $exception) {
+        throw new \RuntimeException(
+            "Failed to read the default value for parameter '{$parameter->getName()}'.",
+            0,
+            $exception,
+        );
+    }
 }
 
 /**
