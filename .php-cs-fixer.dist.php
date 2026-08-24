@@ -10,6 +10,10 @@ $finder = (new PhpCsFixer\Finder())
         __DIR__ . '/tools/php',
     ]);
 
+if (PHP_VERSION_ID < 80100) {
+    $finder->notPath('fixtures/EnumFixtures.php');
+}
+
 return (new PhpCsFixer\Config())
     ->setRiskyAllowed(true)
     ->setRules([
