@@ -445,16 +445,17 @@ final class RunnerTest extends TestCase
             $arrayObject = new ArrayObject([1]);
             self::assertSame($arrayObject, castArg($intersectionParameter, $arrayObject));
 
-            $dnf = eval('return function (\StorybookPhp\EnumFixture\Status|(\Countable&\IteratorAggregate) $value): mixed { return $value; };');
-            $dnfParameter = (new ReflectionFunction($dnf))->getParameters()[0];
-            self::assertSame($arrayObject, castArg($dnfParameter, $arrayObject));
-
             $failingUnion = eval('return function (\StorybookPhp\EnumFixture\Status|\StorybookPhp\EnumFixture\UnitStatus $value): mixed { return $value; };');
             $failingUnionParameter = (new ReflectionFunction($failingUnion))->getParameters()[0];
             self::assertSame($arrayObject, castArg($failingUnionParameter, $arrayObject));
         }
 
         if (PHP_VERSION_ID >= 80200) {
+            $dnf = eval('return function (\StorybookPhp\EnumFixture\Status|(\Countable&\IteratorAggregate) $value): mixed { return $value; };');
+            $dnfParameter = (new ReflectionFunction($dnf))->getParameters()[0];
+            $dnfValue = new ArrayObject([1]);
+            self::assertSame($dnfValue, castArg($dnfParameter, $dnfValue));
+
             $trueType = $this->namedTypeFromClosure(eval('return function (true $value): true { return $value; };'));
             $falseType = $this->namedTypeFromClosure(eval('return function (false $value): false { return $value; };'));
             $nullType = $this->namedTypeFromClosure(eval('return function (null $value): null { return $value; };'));
