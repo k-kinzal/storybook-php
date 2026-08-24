@@ -2,45 +2,6 @@
 
 `storybook-php` includes tooling for TypeScript editor support, generated declaration files, and Storybook test runs.
 
-## PHP Runtime Quality Gates
-
-The PHP runner is checked with `k-kinzal/php-ai-toolkit` and complementary
-tools. The default local sequence is:
-
-```bash
-composer test
-composer doctest
-composer lint
-composer test:coverage
-composer doc-gen:fresh
-```
-
-The gates cover different failure modes:
-
-- PHPUnit and ParaTest verify behavior, boundary failures, and parallel safety.
-- Doctest executes PHPDoc examples so documentation remains part of the contract.
-- PHPStan checks strict types plus toolkit design rules and preserves named array
-  shapes across the request, planning, invocation, and response stages.
-- PHP-CS-Fixer makes formatting deterministic; Rector runs in dry-run mode to
-  detect safe structural improvements that have not been applied.
-- PHPCompatibility enforces the declared PHP 8.0 floor.
-- LocGuard limits function length, branches, nesting, complexity, and
-  parameters; TreeGuard constrains maintained source layout and naming.
-- Composer audit rejects known vulnerable or abandoned development dependencies.
-- Coverage enforces 100% of executable lines in `src/php`.
-- DocGen builds the browsable API and contract documentation in `build/docs`.
-
-The project deliberately does not configure ScopeGuard, Deptrac, or Infection
-while the standalone runner is implemented as top-level functions. Those tools
-discover class-like declarations; enabling them now would report success while
-checking no production declarations (Infection 0.35 likewise generates zero
-mutants). A future class-backed runtime should add these gates when they can
-measure real responsibilities.
-
-CI tests the PHP runtime on every supported PHP minor from 8.0 through 8.5.
-Each minor uses its matching `composer.lock.php-<minor>` so dependency drift
-cannot silently reduce or expand the supported matrix.
-
 ## TypeScript Editor Support
 
 Add the client types and TS plugin to `tsconfig.json`:

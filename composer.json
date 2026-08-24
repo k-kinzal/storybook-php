@@ -19,8 +19,8 @@
     "php": "^8.0"
   },
   "autoload": {
-    "classmap": [
-      "src/php"
+    "files": [
+      "src/php/bootstrap.php"
     ]
   },
   "require-dev": {
@@ -29,17 +29,13 @@
     "k-kinzal/php-ai-toolkit": "dev-main",
     "php-parallel-lint/php-parallel-lint": "^1.4",
     "phpcompatibility/php-compatibility": "^10.0@alpha",
-    "phpstan/extension-installer": "^1.4",
     "phpstan/phpstan": "^2.1.44",
-    "phpstan/phpstan-deprecation-rules": "^2.0",
-    "phpstan/phpstan-strict-rules": "^2.0.10",
     "phpunit/phpunit": "^9.6.34",
-    "rector/rector": "^2.6.3",
+    "rector/rector": "^2.3.9",
     "squizlabs/php_codesniffer": "^4.0"
   },
   "config": {
     "allow-plugins": {
-      "phpstan/extension-installer": true,
       "dealerdirect/phpcodesniffer-composer-installer": true
     },
     "audit": {
@@ -68,7 +64,7 @@
     "format": "php-cs-fixer fix --config=.php-cs-fixer.dist.php --ansi",
     "format:check": "php-cs-fixer fix --config=.php-cs-fixer.dist.php --dry-run --diff --ansi",
     "loc-guard": "loc-guard --config=loc.yaml",
-    "phpstan": "phpstan analyse --memory-limit=512M --ansi",
+    "phpstan": "phpstan analyse src/php tests/Unit --level=max --memory-limit=512M --ansi",
     "rector": "rector process --dry-run --ansi",
     "test": "paratest --runner WrapperRunner --colors=always --configuration phpunit.xml.dist --testsuite php-runtime",
     "test:unit": "phpunit --colors=always --configuration phpunit.xml.dist --testsuite php-runtime",

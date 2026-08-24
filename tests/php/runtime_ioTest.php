@@ -9,7 +9,7 @@ final class runtime_ioTest extends TestCase
     public function testInvalidJsonUsesTheRunnerExceptionContract(): void
     {
         try {
-            readRunnerRequest('{');
+            \StorybookPhp\Runtime\Transport\readRunnerRequest('{');
             self::fail('Expected invalid JSON to fail.');
         } catch (RuntimeException $exception) {
             self::assertSame('Invalid JSON request payload.', $exception->getMessage());
@@ -21,7 +21,7 @@ final class runtime_ioTest extends TestCase
     {
         self::assertSame(
             '{"html":"\\ufffd1"}',
-            encodeRunnerResponse(['html' => "\xB1\x31"]),
+            \StorybookPhp\Runtime\Transport\encodeRunnerResponse(['html' => "\xB1\x31"]),
         );
     }
 }

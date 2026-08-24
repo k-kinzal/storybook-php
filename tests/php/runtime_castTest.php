@@ -32,19 +32,19 @@ final class runtime_castTest extends TestCase
 {
     public function testConstructorScoringRejectsMissingRequiredArguments(): void
     {
-        self::assertSame(0, scoreClassInstantiationMatch(AbstractCollection::class, []));
-        self::assertSame(1, scoreClassInstantiationMatch(NoConstructorItem::class, []));
-        self::assertSame(0, scoreClassInstantiationMatch(BrokenCollection::class, ['label' => 'item']));
-        self::assertSame(1, scoreClassInstantiationMatch(Item::class, ['label' => 'item']));
-        self::assertSame(0, scoreClassInstantiationMatch(Item::class, []));
-        self::assertSame(1, scoreClassInstantiationMatch(Item::class, ['item']));
-        self::assertSame(0, scoreClassInstantiationMatch(Item::class, ['item', 'extra']));
-        self::assertSame(1, scoreClassInstantiationMatch(VariadicConstructorFixture::class, ['one', 'two']));
+        self::assertSame(0, \StorybookPhp\Runtime\Casting\scoreClassInstantiationMatch(AbstractCollection::class, []));
+        self::assertSame(1, \StorybookPhp\Runtime\Casting\scoreClassInstantiationMatch(NoConstructorItem::class, []));
+        self::assertSame(0, \StorybookPhp\Runtime\Casting\scoreClassInstantiationMatch(BrokenCollection::class, ['label' => 'item']));
+        self::assertSame(1, \StorybookPhp\Runtime\Casting\scoreClassInstantiationMatch(Item::class, ['label' => 'item']));
+        self::assertSame(0, \StorybookPhp\Runtime\Casting\scoreClassInstantiationMatch(Item::class, []));
+        self::assertSame(1, \StorybookPhp\Runtime\Casting\scoreClassInstantiationMatch(Item::class, ['item']));
+        self::assertSame(0, \StorybookPhp\Runtime\Casting\scoreClassInstantiationMatch(Item::class, ['item', 'extra']));
+        self::assertSame(1, \StorybookPhp\Runtime\Casting\scoreClassInstantiationMatch(VariadicConstructorFixture::class, ['one', 'two']));
     }
 
     public function testUnionSelectionUsesTheCompatibleConstructorContract(): void
     {
-        $result = castInlineDocTypeValue(
+        $result = \StorybookPhp\Runtime\Casting\castInlineDocTypeValue(
             ['label' => 'item'],
             BrokenCollection::class . '<' . Item::class . '>|' . Item::class,
         );
@@ -55,7 +55,7 @@ final class runtime_castTest extends TestCase
     public function testUnionConversionDoesNotHideProgrammingErrors(): void
     {
         $this->expectException(TypeError::class);
-        castInlineDocTypeValue(
+        \StorybookPhp\Runtime\Casting\castInlineDocTypeValue(
             ['label' => 'item'],
             FailingConstructor::class . '|' . Item::class,
         );
@@ -63,28 +63,28 @@ final class runtime_castTest extends TestCase
 
     public function testScalarInstantiationUsesTheSingleParameterContract(): void
     {
-        $item = instantiateClassFromValue(Item::class, 'label');
+        $item = \StorybookPhp\Runtime\Casting\instantiateClassFromValue(Item::class, 'label');
 
         self::assertSame('label', $item->label);
     }
 
     public function testArrayAcceptanceCoversUntypedAndUnionParameters(): void
     {
-        self::assertTrue(reflectionTypeAcceptsArray(null));
+        self::assertTrue(\StorybookPhp\Runtime\Casting\reflectionTypeAcceptsArray(null));
 
         $accepting = new ReflectionParameter(
             static function (array|string $value): void {
             },
             0,
         );
-        self::assertTrue(reflectionTypeAcceptsArray($accepting->getType()));
+        self::assertTrue(\StorybookPhp\Runtime\Casting\reflectionTypeAcceptsArray($accepting->getType()));
 
         $rejecting = new ReflectionParameter(
             static function (int|string $value): void {
             },
             0,
         );
-        self::assertFalse(reflectionTypeAcceptsArray($rejecting->getType()));
+        self::assertFalse(\StorybookPhp\Runtime\Casting\reflectionTypeAcceptsArray($rejecting->getType()));
     }
 
     public function testVoidTypeCannotAcceptAnArgumentValue(): void
@@ -96,7 +96,7 @@ final class runtime_castTest extends TestCase
 
         $this->expectException(RuntimeException::class);
         $this->expectExceptionMessage("Cannot provide a value for 'void' type parameter");
-        castWithNamedType($voidType, 'raw', $parameter);
+        \StorybookPhp\Runtime\Casting\castWithNamedType($voidType, 'raw', $parameter);
     }
 
     public function testNeverTypeCannotAcceptAnArgumentValue(): void
@@ -112,7 +112,7 @@ final class runtime_castTest extends TestCase
 
         $this->expectException(RuntimeException::class);
         $this->expectExceptionMessage("Cannot provide a value for 'never' type parameter");
-        castWithNamedType($neverType, 'raw', $parameter);
+        \StorybookPhp\Runtime\Casting\castWithNamedType($neverType, 'raw', $parameter);
     }
 
     public function testUnknownDeclaredClassFailsBeforeInvocation(): void
@@ -124,6 +124,6 @@ final class runtime_castTest extends TestCase
 
         $this->expectException(RuntimeException::class);
         $this->expectExceptionMessage("Class 'StorybookPhp\\MissingRuntimeType' is not available.");
-        castWithNamedType($type, [], $parameter);
+        \StorybookPhp\Runtime\Casting\castWithNamedType($type, [], $parameter);
     }
 }

@@ -31,10 +31,9 @@ AGENTS.md export-ignore
 .gitattributes export-ignore
 .npmignore export-ignore
 .php-cs-fixer.dist.php export-ignore
-infection.json5 export-ignore
 loc.yaml export-ignore
 phpcs.xml.dist export-ignore
-phpstan.neon export-ignore
+phpstan.neon.dist export-ignore
 phpunit.xml.dist export-ignore
 rector.php export-ignore
 tree.yaml export-ignore

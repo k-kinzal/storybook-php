@@ -19,6 +19,7 @@
     <testsuites>
         <testsuite name="php-runtime">
             <directory>tests/php</directory>
+            <directory>tests/Unit</directory>
             <exclude>tests/php/DoctestSuiteTest.php</exclude>
         </testsuite>
         <testsuite name="doctest">

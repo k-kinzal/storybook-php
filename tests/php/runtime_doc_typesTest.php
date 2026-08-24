@@ -12,6 +12,6 @@ final class runtime_doc_typesTest extends TestCase
     {
         $reflection = new ReflectionFunction('StorybookPhp\\TestFixture\\docPriority');
 
-        self::assertSame(['values' => 'list<float>'], parseDocBlockParamTypes($reflection));
+        self::assertSame(['values' => 'list<float>'], \StorybookPhp\Runtime\Contract\parseDocBlockParamTypes($reflection));
     }
 }

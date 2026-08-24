@@ -6,6 +6,7 @@ $finder = (new PhpCsFixer\Finder())
     ->in([
         __DIR__ . '/src/php',
         __DIR__ . '/tests/php',
+        __DIR__ . '/tests/Unit',
         __DIR__ . '/tools/php',
     ]);
 

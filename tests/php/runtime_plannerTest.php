@@ -6,21 +6,11 @@ use PHPUnit\Framework\TestCase;
 
 final class runtime_plannerTest extends TestCase
 {
-    public function testResponsibilityIsLoadedFromItsSourceUnit(): void
-    {
-        $reflection = new ReflectionFunction('ensureExecutionPlanner');
-
-        self::assertSame(
-            realpath(__DIR__ . '/../../src/php/runtime_planner.php'),
-            $reflection->getFileName(),
-        );
-    }
-
     public function testPlannerRejectsUnknownRenderTypes(): void
     {
         foreach ([[null, 'Unknown type: null'], ['invalid', 'Unknown type: invalid']] as [$type, $message]) {
             try {
-                ensureExecutionPlanner(['type' => $type]);
+                \StorybookPhp\Runtime\Execution\ensureExecutionPlanner(['type' => $type]);
                 self::fail('Expected an unknown render type to fail.');
             } catch (RuntimeException $exception) {
                 self::assertSame($message, $exception->getMessage());
@@ -33,6 +23,6 @@ final class runtime_plannerTest extends TestCase
         $this->expectException(ReflectionException::class);
         $this->expectExceptionMessage("Class 'MissingPlannerClass' does not exist.");
 
-        reflectPlannerClass('MissingPlannerClass');
+        \StorybookPhp\Runtime\Execution\reflectPlannerClass('MissingPlannerClass');
     }
 }

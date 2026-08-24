@@ -8,7 +8,7 @@ final class runtime_executeTest extends TestCase
 {
     public function testOptionalRequestFieldsHaveRuntimeDefaults(): void
     {
-        $response = executeRunnerRequest([
+        $response = \StorybookPhp\Runtime\Execution\executeRunnerRequest([
             'type' => 'template',
             'file' => __DIR__ . '/fixtures/Template.php',
             'args' => ['greeting' => 'hello', 'count' => 2],
@@ -20,7 +20,7 @@ final class runtime_executeTest extends TestCase
     public function testReflectionFailuresUseTheRunnerExceptionContract(): void
     {
         try {
-            executeRunnerRequest([
+            \StorybookPhp\Runtime\Execution\executeRunnerRequest([
                 'type' => 'classMethod',
                 'file' => __DIR__ . '/fixtures/RunnerFixtures.php',
                 'class' => 'StorybookPhp\\TestFixture\\Item',

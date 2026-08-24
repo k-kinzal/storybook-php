@@ -14,13 +14,13 @@ final class runtime_boundaryTest extends TestCase
             yield '';
         })();
 
-        self::assertSame('buffered', resolveExecutionHtml($result, 'buffered', true));
+        self::assertSame('buffered', \StorybookPhp\Runtime\resolveExecutionHtml($result, 'buffered', true));
         self::assertFalse($resolved);
     }
 
     public function testKeepsMaterializedCoreOutputForAdapterMiddleware(): void
     {
-        self::assertSame('rendered', resolveExecutionHtml('rendered', '', true));
+        self::assertSame('rendered', \StorybookPhp\Runtime\resolveExecutionHtml('rendered', '', true));
     }
 
     public function testProgrammingErrorsSurfaceWithoutAnAdapter(): void
@@ -31,12 +31,17 @@ final class runtime_boundaryTest extends TestCase
         })();
 
         $this->expectException(TypeError::class);
-        resolveExecutionHtml($result, 'buffered', false);
+        \StorybookPhp\Runtime\resolveExecutionHtml($result, 'buffered', false);
     }
 
     public function testConvertsRequestFailuresToTheJsonProtocol(): void
     {
-        $response = json_decode(storybookPhpRun('{', false), true, 512, JSON_THROW_ON_ERROR);
+        $response = json_decode(
+            \StorybookPhp\Runtime\failure(new RuntimeException('Invalid JSON request payload.')),
+            true,
+            512,
+            JSON_THROW_ON_ERROR,
+        );
 
         self::assertSame('', $response['html']);
         self::assertSame('Invalid JSON request payload.', $response['error']);

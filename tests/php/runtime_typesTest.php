@@ -15,7 +15,7 @@ final class runtime_typesTest extends TestCase
         require_once __DIR__ . '/fixtures/EnumFixtures.php';
         $enumClass = 'StorybookPhp\\EnumFixture\\Status';
 
-        self::assertSame('Draft', findEnumCase($enumClass, 'draft')->name);
-        self::assertNull(findEnumCase($enumClass, 'missing'));
+        self::assertSame('Draft', \StorybookPhp\Runtime\Contract\findEnumCase($enumClass, 'draft')->name);
+        self::assertNull(\StorybookPhp\Runtime\Contract\findEnumCase($enumClass, 'missing'));
     }
 }

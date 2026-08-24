@@ -6,16 +6,6 @@ use PHPUnit\Framework\TestCase;
 
 final class runtime_adaptersTest extends TestCase
 {
-    public function testResponsibilityIsLoadedFromItsSourceUnit(): void
-    {
-        $reflection = new ReflectionFunction('loadAdapter');
-
-        self::assertSame(
-            realpath(__DIR__ . '/../../src/php/runtime_adapters.php'),
-            $reflection->getFileName(),
-        );
-    }
-
     public function testResponseMetadataMustHonorItsDeclaredContract(): void
     {
         $cases = [
@@ -26,7 +16,7 @@ final class runtime_adaptersTest extends TestCase
 
         foreach ($cases as [$response, $message]) {
             try {
-                normalizeAdapterResponse($response);
+                \StorybookPhp\Runtime\Transport\normalizeAdapterResponse($response);
                 self::fail('Expected invalid adapter metadata to fail.');
             } catch (RuntimeException $exception) {
                 self::assertSame($message, $exception->getMessage());

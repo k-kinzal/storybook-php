@@ -2,6 +2,7 @@ paths:
   - ".github"
   - "src/php"
   - "tests/php"
+  - "tests/Unit"
   - "tools/php"
 
 exclude:
@@ -15,12 +16,24 @@ exclude:
 rules:
   - path: "**"
     deny_dirs: ["scripts", "Scripts"]
-  - path: "src/php/**"
+    max_files: 15
+    max_dirs: 20
+  - path: "src/php"
     forbid_empty: true
     allow: ["*.php"]
     file_case: snake
-    dir_case: snake
-    max_files: 25
+    dir_case: pascal
+  - path: "src/php/Runtime/**"
+    forbid_empty: true
+    allow: ["*.php"]
+    file_case: pascal
+    dir_case: pascal
+  - path: "tests/Unit/php/Runtime/**"
+    forbid_empty: true
+    allow: ["*Test.php"]
+    file_case: pascal
+    dir_case: pascal
+  - path: "tests/php"
     max_dirs: 20
 
 report:

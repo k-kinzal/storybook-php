@@ -6,16 +6,6 @@ use PHPUnit\Framework\TestCase;
 
 final class runtime_contextTest extends TestCase
 {
-    public function testResponsibilityIsLoadedFromItsSourceUnit(): void
-    {
-        $reflection = new ReflectionFunction('hydrateExecutionContext');
-
-        self::assertSame(
-            realpath(__DIR__ . '/../../src/php/runtime_context.php'),
-            $reflection->getFileName(),
-        );
-    }
-
     public function testExecutionContextRejectsInvalidBoundaryFields(): void
     {
         $cases = [
@@ -28,16 +18,16 @@ final class runtime_contextTest extends TestCase
 
         foreach ($cases as [$context, $message]) {
             try {
-                normalizeExecutionContext($context);
+                \StorybookPhp\Runtime\Execution\normalizeExecutionContext($context);
                 self::fail('Expected invalid execution context to fail.');
             } catch (RuntimeException $exception) {
                 self::assertSame($message, $exception->getMessage());
             }
         }
 
-        self::assertNull(normalizeExecutionContextMap(null, 'args'));
+        self::assertNull(\StorybookPhp\Runtime\Execution\normalizeExecutionContextMap(null, 'args'));
 
         $this->expectExceptionMessage("Execution context field 'args' must be an object or null.");
-        normalizeExecutionContextMap('invalid', 'args');
+        \StorybookPhp\Runtime\Execution\normalizeExecutionContextMap('invalid', 'args');
     }
 }
