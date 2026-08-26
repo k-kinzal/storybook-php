@@ -1,0 +1,11 @@
+<?xml version="1.0"?>
+<ruleset name="storybook-php-compatibility">
+    <description>
+        Cross-version PHP compatibility gate for the production runtime.
+        Code style is owned by PHP-CS-Fixer.
+    </description>
+
+    <file>src/php</file>
+    <config name="testVersion" value="8.0-"/>
+    <rule ref="PHPCompatibility"/>
+</ruleset>

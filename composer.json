@@ -1,49 +1,74 @@
 {
-  "name": "storybook-php/dev-tools",
-  "description": "Development quality tooling for the storybook-php PHP runtime",
+  "name": "k-kinzal/storybook-php",
+  "description": "A Storybook framework addon for developing and previewing PHP components as stories",
+  "homepage": "https://k-kinzal.github.io/storybook-php/",
   "type": "project",
   "license": "MIT",
+  "support": {
+    "docs": "https://k-kinzal.github.io/storybook-php/",
+    "issues": "https://github.com/k-kinzal/storybook-php/issues",
+    "source": "https://github.com/k-kinzal/storybook-php"
+  },
+  "repositories": [
+    {
+      "type": "vcs",
+      "url": "https://github.com/k-kinzal/php-ai-toolkit.git",
+      "no-api": true
+    }
+  ],
   "require": {
     "php": "^8.0"
   },
   "require-dev": {
+    "brianium/paratest": "^6.11 || ^7",
+    "friendsofphp/php-cs-fixer": "^3.4",
+    "k-kinzal/php-ai-toolkit": "dev-main",
     "php-parallel-lint/php-parallel-lint": "^1.4",
-    "phpstan/extension-installer": "^1.4",
+    "phpcompatibility/php-compatibility": "^10.0@alpha",
     "phpstan/phpstan": "^2.1.44",
-    "phpstan/phpstan-deprecation-rules": "^2.0",
-    "phpstan/phpstan-strict-rules": "^2.0.10",
     "phpunit/phpunit": "^9.6.34",
-    "rector/rector": "^2.3.9"
+    "rector/rector": "^2.3.9",
+    "squizlabs/php_codesniffer": "^4.0"
   },
   "config": {
     "allow-plugins": {
-      "phpstan/extension-installer": true
+      "dealerdirect/phpcodesniffer-composer-installer": true
     },
     "audit": {
       "abandoned": "fail"
-    },
-    "platform": {
-      "php": "8.0.0"
     },
     "sort-packages": true
   },
   "scripts": {
     "lint": [
-      "composer validate --strict",
+      "composer validate --strict --no-check-publish",
       "@lint:syntax",
+      "@format:check",
       "@phpstan",
+      "@compat",
+      "@loc-guard",
+      "@tree-guard",
       "@audit:security",
       "@rector"
     ],
     "lint:syntax": "parallel-lint --colors src/php",
     "audit:security": "composer audit --no-interaction",
-    "phpstan": "phpstan analyse --ansi",
+    "compat": "phpcs --standard=phpcs.xml.dist -p",
+    "docgen": "docgen --packages=. --exclude=AGENTS.md --output=build/docs --title=storybook-php --public-api --coverage=build/coverage-xml",
+    "docgen:fresh": "@docgen --no-cache",
+    "doctest": "phpunit --colors=always --configuration phpunit.xml.dist --testsuite doctest",
+    "format": "php-cs-fixer fix --config=.php-cs-fixer.dist.php --allow-risky=yes --ansi",
+    "format:check": "php-cs-fixer fix --config=.php-cs-fixer.dist.php --allow-risky=yes --dry-run --diff --ansi",
+    "loc-guard": "loc-guard --config=loc.yaml",
+    "phpstan": "phpstan analyse src/php tests/Unit --memory-limit=512M --ansi",
     "rector": "rector process --dry-run --ansi",
-    "test": "phpunit --colors=always --configuration phpunit.xml.dist",
+    "test": "paratest --runner WrapperRunner --colors=always --configuration phpunit.xml.dist --testsuite php-runtime",
+    "test:unit": "phpunit --colors=always --configuration phpunit.xml.dist --testsuite php-runtime",
     "test:coverage": [
       "@php -r \"is_dir('build/coverage') || mkdir('build/coverage', 0777, true);\"",
-      "@php -d xdebug.mode=coverage ./vendor/bin/phpunit --colors=always --configuration phpunit.xml.dist --coverage-clover build/coverage/clover.xml --coverage-text",
+      "@php -d xdebug.mode=coverage ./vendor/bin/phpunit --colors=always --configuration phpunit.xml.dist --testsuite php-runtime --coverage-clover build/coverage/clover.xml --coverage-xml build/coverage-xml --log-junit build/coverage-xml/junit.xml --coverage-text",
       "@php tools/php/assert-coverage.php build/coverage/clover.xml src/php 100"
-    ]
+    ],
+    "tree-guard": "@php -d memory_limit=512M vendor/bin/tree-guard --config=tree.yaml"
   }
 }

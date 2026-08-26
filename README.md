@@ -2,6 +2,7 @@
 
 [![MIT License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 [![npm version](https://img.shields.io/npm/v/storybook-php.svg)](https://www.npmjs.com/package/storybook-php)
+[![docs](https://img.shields.io/badge/docs-storybook--php-0969da?logo=php&logoColor=white)](https://k-kinzal.github.io/storybook-php/)
 
 A Storybook framework addon for developing and previewing PHP components as stories.
 

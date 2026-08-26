@@ -1,22 +1,50 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <phpunit
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:noNamespaceSchemaLocation="vendor/phpunit/phpunit/phpunit.xsd"
     bootstrap="tests/php/bootstrap.php"
+    executionOrder="depends,random"
+    cacheResultFile=".phpunit.result.cache"
+    verbose="true"
+    forceCoversAnnotation="true"
+    beStrictAboutCoversAnnotation="true"
+    convertDeprecationsToExceptions="true"
+    convertErrorsToExceptions="true"
+    convertNoticesToExceptions="true"
+    convertWarningsToExceptions="true"
     beStrictAboutChangesToGlobalState="true"
     beStrictAboutOutputDuringTests="true"
-    cacheResult="false"
+    beStrictAboutResourceUsageDuringSmallTests="true"
+    beStrictAboutTestsThatDoNotTestAnything="true"
     colors="true"
+    enforceTimeLimit="true"
+    failOnEmptyTestSuite="true"
+    failOnIncomplete="true"
     failOnRisky="true"
+    failOnSkipped="true"
     failOnWarning="true"
+    beStrictAboutTodoAnnotatedTests="true"
+    timeoutForSmallTests="1"
+    timeoutForMediumTests="10"
+    timeoutForLargeTests="60"
 >
     <testsuites>
         <testsuite name="php-runtime">
             <directory>tests/php</directory>
+            <directory>tests/Unit</directory>
+        </testsuite>
+        <testsuite name="doctest">
+            <directory>tests/Doctest</directory>
         </testsuite>
     </testsuites>
+    <listeners>
+        <listener class="Toolkit\PhpUnit\TestReporter\Legacy\LegacyAiTestReporterListener"/>
+    </listeners>
     <coverage
         cacheDirectory=".phpunit.cache/code-coverage"
         includeUncoveredFiles="true"
         processUncoveredFiles="true"
+        disableCodeCoverageIgnore="true"
     >
         <include>
             <directory suffix=".php">src/php</directory>

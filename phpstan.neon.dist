@@ -1,11 +1,7 @@
 includes:
-  - vendor/phpstan/phpstan/conf/bleedingEdge.neon
+  - vendor/phpstan/phpstan-strict-rules/rules.neon
+  - vendor/k-kinzal/php-ai-toolkit/extension.neon
+  - vendor/k-kinzal/php-ai-toolkit/rules.neon
 
 parameters:
   level: max
-  paths:
-    - src/php
-  tmpDir: .phpstan/cache
-  phpVersion:
-    min: 80000
-    max: 80500
