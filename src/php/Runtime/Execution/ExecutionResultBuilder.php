@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace StorybookPhp\Runtime\Execution;
 
+use ReflectionException;
 use ReflectionFunctionAbstract;
 
 /**
@@ -12,6 +13,7 @@ use ReflectionFunctionAbstract;
  * @param array<string, mixed> $context
  * @param array<string, mixed>|null $templateInput
  * @return array<string, mixed>
+ * @throws ReflectionException when reflection cannot expose a parameter default
  */
 function resolveTemplateContextArgs(array $context, ?array $templateInput = null): array
 {

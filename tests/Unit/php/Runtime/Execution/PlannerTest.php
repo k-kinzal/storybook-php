@@ -6,6 +6,9 @@ namespace Tests\Unit\StorybookPhp\Runtime\Execution;
 
 use PHPUnit\Framework\TestCase;
 
+/**
+ * @covers \StorybookPhp\Runtime\Execution\baseExecutionPlanner
+ */
 final class PlannerTest extends TestCase
 {
     public function testCreatesAnEmptyPlanForTemplateRendering(): void

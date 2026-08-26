@@ -6,6 +6,7 @@ namespace StorybookPhp\Runtime\Execution;
 
 use LogicException;
 use ReflectionClass;
+use ReflectionException;
 use ReflectionFunction;
 use ReflectionFunctionAbstract;
 use ReflectionMethod;
@@ -16,6 +17,7 @@ use RuntimeException;
  *
  * @param array<string, mixed> $__sb_context
  * @return array{html: string, ...}
+ * @throws ReflectionException when reflection cannot expose a parameter default
  * @throws RuntimeException when the execution context cannot be resolved or invoked
  */
 function executeCoreContext(array $__sb_context): array

@@ -1,2 +1,7 @@
 includes:
+  - vendor/phpstan/phpstan-strict-rules/rules.neon
   - vendor/k-kinzal/php-ai-toolkit/extension.neon
+  - vendor/k-kinzal/php-ai-toolkit/rules.neon
+
+parameters:
+  level: max

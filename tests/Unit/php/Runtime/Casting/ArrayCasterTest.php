@@ -6,6 +6,9 @@ namespace Tests\Unit\StorybookPhp\Runtime\Casting;
 
 use PHPUnit\Framework\TestCase;
 
+/**
+ * @covers \StorybookPhp\Runtime\Casting\splitUnionTypes
+ */
 final class ArrayCasterTest extends TestCase
 {
     public function testKeepsNestedGenericAndIntersectionTypesIntact(): void

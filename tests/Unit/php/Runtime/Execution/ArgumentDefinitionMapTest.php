@@ -6,6 +6,9 @@ namespace Tests\Unit\StorybookPhp\Runtime\Execution;
 
 use PHPUnit\Framework\TestCase;
 
+/**
+ * @covers \StorybookPhp\Runtime\Execution\defaultsMatchForRuntime
+ */
 final class ArgumentDefinitionMapTest extends TestCase
 {
     public function testComparesDefaultsByTheirProtocolRepresentation(): void

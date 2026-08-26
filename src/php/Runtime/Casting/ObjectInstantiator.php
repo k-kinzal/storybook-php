@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace StorybookPhp\Runtime\Casting;
 
 use ReflectionClass;
+use ReflectionException;
 use ReflectionMethod;
 use ReflectionNamedType;
 use ReflectionParameter;
@@ -19,6 +20,7 @@ use ReflectionUnionType;
  *
  * @param class-string $className
  * @param array<string, mixed>|null $typeMap
+ * @throws ReflectionException when reflection cannot expose a parameter default
  */
 function instantiateClassFromValue(string $className, mixed $value, ?array $typeMap = null): object
 {

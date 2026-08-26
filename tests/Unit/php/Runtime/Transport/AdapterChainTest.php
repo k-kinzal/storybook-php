@@ -6,6 +6,9 @@ namespace Tests\Unit\StorybookPhp\Runtime\Transport;
 
 use PHPUnit\Framework\TestCase;
 
+/**
+ * @covers \StorybookPhp\Runtime\Transport\normalizeAdapterResponse
+ */
 final class AdapterChainTest extends TestCase
 {
     public function testNormalizesHtmlStringsToTheAdapterResponseContract(): void

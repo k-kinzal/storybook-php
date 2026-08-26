@@ -6,6 +6,9 @@ namespace Tests\Unit\StorybookPhp\Runtime\Script;
 
 use PHPUnit\Framework\TestCase;
 
+/**
+ * @coversNothing
+ */
 final class RunnerTest extends TestCase
 {
     public function testTheStandaloneEntrypointLoadsWithoutExecutingInProcess(): void

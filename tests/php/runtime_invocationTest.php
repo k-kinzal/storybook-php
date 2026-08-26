@@ -4,6 +4,17 @@ declare(strict_types=1);
 
 use PHPUnit\Framework\TestCase;
 
+/**
+ * @covers \StorybookPhp\Runtime\Execution\executeEnumMethodContext
+ * @covers \StorybookPhp\Runtime\Execution\executionPlanner
+ * @covers \StorybookPhp\Runtime\Execution\plannerCallableReflection
+ * @covers \StorybookPhp\Runtime\Execution\plannerClassReflection
+ * @covers \StorybookPhp\Runtime\Execution\plannerConstructorReflection
+ * @covers \StorybookPhp\Runtime\Execution\plannerFunctionReflection
+ * @covers \StorybookPhp\Runtime\Execution\plannerMethodReflection
+ * @covers \StorybookPhp\Runtime\Contract\isRenderType
+ * @covers \StorybookPhp\Runtime\Execution\baseExecutionPlanner
+ */
 final class runtime_invocationTest extends TestCase
 {
     public function testInvocationRejectsBrokenInternalContracts(): void

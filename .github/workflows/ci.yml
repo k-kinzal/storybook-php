@@ -43,6 +43,9 @@ jobs:
         with:
           dependency-versions: locked
           composer-options: --prefer-dist
+          require-lock-file: true
+      - name: Check installed platform requirements
+        run: composer check-platform-reqs
       - name: Check PHP syntax
         run: composer lint:syntax
       - name: Check formatting
@@ -84,6 +87,9 @@ jobs:
         with:
           dependency-versions: locked
           composer-options: --prefer-dist
+          require-lock-file: true
+      - name: Check installed platform requirements
+        run: composer check-platform-reqs
       - name: Run unit tests in one process
         run: composer test:unit
       - name: Run executable documentation
@@ -109,6 +115,9 @@ jobs:
         with:
           dependency-versions: locked
           composer-options: --prefer-dist
+          require-lock-file: true
+      - name: Check installed platform requirements
+        run: composer check-platform-reqs
       - name: Run the suite under the parallel runner
         run: composer test
 

@@ -6,6 +6,7 @@ namespace StorybookPhp\Runtime\Casting;
 
 use LogicException;
 use ReflectionClass;
+use ReflectionException;
 use ReflectionNamedType;
 use ReflectionParameter;
 use ReflectionUnionType;
@@ -15,6 +16,7 @@ use RuntimeException;
  * Casts a value using a PHPDoc type string when the reflection parameter is untyped.
  *
  * @param array<string, mixed>|null $typeMap
+ * @throws ReflectionException when reflection cannot expose a parameter default
  */
 function castDocTypeValue(mixed $value, string $docType, ReflectionParameter $param, ?array $typeMap = null): mixed
 {
@@ -48,6 +50,7 @@ function castDocTypeValue(mixed $value, string $docType, ReflectionParameter $pa
 
 /**
  * @param array<string, mixed>|null $typeMap
+ * @throws ReflectionException when reflection cannot expose a parameter default
  */
 function castReflectedGenericValue(
     mixed $value,
@@ -85,6 +88,7 @@ function scoreTypeMatch(ReflectionNamedType $type, mixed $value): int
  * Cast a value to match the expected type of a reflection parameter.
  *
  * @param array<string, mixed>|null $typeMap
+ * @throws ReflectionException when reflection cannot expose a parameter default
  */
 function castArg(ReflectionParameter $param, mixed $value, ?string $docType = null, ?array $typeMap = null): mixed
 {
@@ -114,6 +118,7 @@ function castArg(ReflectionParameter $param, mixed $value, ?string $docType = nu
 
 /**
  * @param array<string, mixed>|null $typeMap
+ * @throws ReflectionException when reflection cannot expose a parameter default
  */
 function castUnionArg(
     ReflectionUnionType $union,
@@ -146,6 +151,7 @@ function castUnionArg(
  * Cast a value using a specific ReflectionNamedType.
  *
  * @param array<string, mixed>|null $typeMap
+ * @throws ReflectionException when reflection cannot expose a parameter default
  */
 function castWithNamedType(ReflectionNamedType $type, mixed $value, ReflectionParameter $param, ?string $docType = null, ?array $typeMap = null): mixed
 {
@@ -175,6 +181,7 @@ function isReflectionBuiltinType(string $typeName): bool
 
 /**
  * @param array<string, mixed>|null $typeMap
+ * @throws ReflectionException when reflection cannot expose a parameter default
  * @throws RuntimeException when a void or never parameter receives a value
  * @throws LogicException when Reflection returns an unsupported builtin type
  */
@@ -205,6 +212,7 @@ function castReflectionBuiltinType(
 
 /**
  * @param array<string, mixed>|null $typeMap
+ * @throws ReflectionException when reflection cannot expose a parameter default
  */
 function castDeclaredNamedType(
     string $typeName,
@@ -235,6 +243,7 @@ function castDeclaredNamedType(
  * @param class-string $className
  * @param array<array-key, mixed> $value
  * @param array<string, mixed>|null $typeMap
+ * @throws ReflectionException when reflection cannot expose a parameter default
  */
 function castNamedCollectionWrapper(
     string $className,

@@ -6,6 +6,9 @@ namespace Tests\Unit\StorybookPhp\Runtime\Execution;
 
 use PHPUnit\Framework\TestCase;
 
+/**
+ * @covers \StorybookPhp\Runtime\Execution\projectNamespacedPublicArgs
+ */
 final class PublicArgumentMapperTest extends TestCase
 {
     public function testProjectsOnlyTheRequestedNamespacedArguments(): void

@@ -19,11 +19,6 @@
   "require": {
     "php": "^8.0"
   },
-  "autoload": {
-    "classmap": [
-      "src/php"
-    ]
-  },
   "require-dev": {
     "brianium/paratest": "^6.11 || ^7",
     "friendsofphp/php-cs-fixer": "^3.4",
@@ -59,13 +54,13 @@
     "lint:syntax": "parallel-lint --colors src/php",
     "audit:security": "composer audit --no-interaction",
     "compat": "phpcs --standard=phpcs.xml.dist -p",
-    "doc-gen": "doc-gen --packages=. --exclude=AGENTS.md --output=build/docs --title=storybook-php --coverage=build/coverage-xml",
-    "doc-gen:fresh": "@doc-gen --no-cache",
+    "docgen": "docgen --packages=. --exclude=AGENTS.md --output=build/docs --title=storybook-php --public-api --coverage=build/coverage-xml",
+    "docgen:fresh": "@docgen --no-cache",
     "doctest": "phpunit --colors=always --configuration phpunit.xml.dist --testsuite doctest",
-    "format": "php-cs-fixer fix --config=.php-cs-fixer.dist.php --ansi",
-    "format:check": "php-cs-fixer fix --config=.php-cs-fixer.dist.php --dry-run --diff --ansi",
+    "format": "php-cs-fixer fix --config=.php-cs-fixer.dist.php --allow-risky=yes --ansi",
+    "format:check": "php-cs-fixer fix --config=.php-cs-fixer.dist.php --allow-risky=yes --dry-run --diff --ansi",
     "loc-guard": "loc-guard --config=loc.yaml",
-    "phpstan": "phpstan analyse src/php tests/Unit --level=max --memory-limit=512M --ansi",
+    "phpstan": "phpstan analyse src/php tests/Unit --memory-limit=512M --ansi",
     "rector": "rector process --dry-run --ansi",
     "test": "paratest --runner WrapperRunner --colors=always --configuration phpunit.xml.dist --testsuite php-runtime",
     "test:unit": "phpunit --colors=always --configuration phpunit.xml.dist --testsuite php-runtime",

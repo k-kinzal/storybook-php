@@ -6,6 +6,9 @@ namespace Tests\Unit\StorybookPhp\Runtime\Contract;
 
 use PHPUnit\Framework\TestCase;
 
+/**
+ * @covers \StorybookPhp\Runtime\Contract\splitGenericArgs
+ */
 final class DocTypeParserTest extends TestCase
 {
     public function testSplitsOnlyTopLevelGenericArguments(): void

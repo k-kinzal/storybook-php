@@ -1,39 +1,57 @@
 paths:
-  - ".github"
-  - "src/php"
-  - "tests/php"
-  - "tests/Unit"
-  - "tools/php"
+  - "."
 
 exclude:
+  - ".claude"
   - ".git"
+  - ".idea"
   - ".phpstan"
   - ".phpunit.cache"
+  - ".storybook-out"
   - "build"
+  - "*/build"
+  - "coverage"
+  - "*/coverage"
+  - "dist"
+  - "*/dist"
   - "node_modules"
+  - "*/node_modules"
+  - "storybook-static"
+  - "var"
+  - "*/var"
   - "vendor"
+  - "*/vendor"
 
 rules:
   - path: "**"
     deny_dirs: ["scripts", "Scripts"]
-    max_files: 15
-    max_dirs: 20
   - path: "src/php"
     forbid_empty: true
     allow: ["*.php"]
     file_case: snake
     dir_case: pascal
+    max_files: 15
+    max_dirs: 20
   - path: "src/php/Runtime/**"
     forbid_empty: true
     allow: ["*.php"]
     file_case: pascal
     dir_case: pascal
+    max_files: 15
+    max_dirs: 20
+  - path: "tests/Unit/php"
+    forbid_empty: true
+    allow: ["*Test.php"]
+    file_case: camel
+    dir_case: pascal
+    max_files: 15
+    max_dirs: 20
   - path: "tests/Unit/php/Runtime/**"
     forbid_empty: true
     allow: ["*Test.php"]
     file_case: pascal
     dir_case: pascal
-  - path: "tests/php"
+    max_files: 15
     max_dirs: 20
 
 report:

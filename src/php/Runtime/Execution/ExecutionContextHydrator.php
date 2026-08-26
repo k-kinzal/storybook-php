@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace StorybookPhp\Runtime\Execution;
 
+use ReflectionException;
 use RuntimeException;
 
 /**
@@ -11,6 +12,7 @@ use RuntimeException;
  *
  * @param array<string, mixed> $context
  * @return array{type: 'classMethod'|'staticMethod'|'function'|'template'|'enumMethod', executionFile: string, class: string|null, callable: string|null, publicArgs: array<string, mixed>, __planner: array{type: 'classMethod'|'staticMethod'|'function'|'template'|'enumMethod', effectiveConstructorArgDefs: array<string, mixed>|null, effectiveCallableArgDefs: array<string, mixed>|null, ...}, ...}
+ * @throws ReflectionException when reflection cannot expose a parameter default
  * @throws RuntimeException when the execution plan or arguments cannot be resolved
  */
 function hydrateExecutionContext(array $context): array
@@ -108,6 +110,7 @@ function requireHydratedExecutionContext(array $context): array
  * @param array{type: 'classMethod'|'staticMethod'|'function'|'template'|'enumMethod', executionFile: string, class: string|null, callable: string|null, publicArgs: array<string, mixed>, __planner: array{type: 'classMethod'|'staticMethod'|'function'|'template'|'enumMethod', effectiveConstructorArgDefs: array<string, mixed>|null, effectiveCallableArgDefs: array<string, mixed>|null, ...}, ...} $context
  * @param array{template?: array<string, mixed>, constructor?: array<string, mixed>, method?: array<string, mixed>} $mappedArgs
  * @return array{type: 'classMethod'|'staticMethod'|'function'|'template'|'enumMethod', executionFile: string, class: string|null, callable: string|null, publicArgs: array<string, mixed>, __planner: array{type: 'classMethod'|'staticMethod'|'function'|'template'|'enumMethod', effectiveConstructorArgDefs: array<string, mixed>|null, effectiveCallableArgDefs: array<string, mixed>|null, ...}, ...}
+ * @throws ReflectionException when reflection cannot expose a parameter default
  */
 function hydrateTemplateExecutionContext(array $context, array $mappedArgs): array
 {
@@ -125,6 +128,7 @@ function hydrateTemplateExecutionContext(array $context, array $mappedArgs): arr
  * @param array{type: 'classMethod'|'staticMethod'|'function'|'template'|'enumMethod', effectiveConstructorArgDefs: array<string, mixed>|null, effectiveCallableArgDefs: array<string, mixed>|null, ...} $planner
  * @param array<string, mixed>|null $typeMap
  * @return array{type: 'classMethod'|'staticMethod'|'function'|'template'|'enumMethod', executionFile: string, class: string|null, callable: string|null, publicArgs: array<string, mixed>, __planner: array{type: 'classMethod'|'staticMethod'|'function'|'template'|'enumMethod', effectiveConstructorArgDefs: array<string, mixed>|null, effectiveCallableArgDefs: array<string, mixed>|null, ...}, ...}
+ * @throws ReflectionException when reflection cannot expose a parameter default
  */
 function hydrateClassExecutionContext(array $context, array $mappedArgs, array $planner, ?array $typeMap): array
 {
@@ -153,6 +157,7 @@ function hydrateClassExecutionContext(array $context, array $mappedArgs, array $
  * @param array{type: 'classMethod'|'staticMethod'|'function'|'template'|'enumMethod', effectiveConstructorArgDefs: array<string, mixed>|null, effectiveCallableArgDefs: array<string, mixed>|null, ...} $planner
  * @param array<string, mixed>|null $typeMap
  * @return array{type: 'classMethod'|'staticMethod'|'function'|'template'|'enumMethod', executionFile: string, class: string|null, callable: string|null, publicArgs: array<string, mixed>, __planner: array{type: 'classMethod'|'staticMethod'|'function'|'template'|'enumMethod', effectiveConstructorArgDefs: array<string, mixed>|null, effectiveCallableArgDefs: array<string, mixed>|null, ...}, ...}
+ * @throws ReflectionException when reflection cannot expose a parameter default
  */
 function hydrateCallableExecutionContext(array $context, array $mappedArgs, array $planner, ?array $typeMap): array
 {
@@ -174,6 +179,7 @@ function hydrateCallableExecutionContext(array $context, array $mappedArgs, arra
  * @param array{type: 'classMethod'|'staticMethod'|'function'|'template'|'enumMethod', effectiveConstructorArgDefs: array<string, mixed>|null, effectiveCallableArgDefs: array<string, mixed>|null, ...} $planner
  * @param array<string, mixed>|null $typeMap
  * @return array{type: 'classMethod'|'staticMethod'|'function'|'template'|'enumMethod', executionFile: string, class: string|null, callable: string|null, publicArgs: array<string, mixed>, __planner: array{type: 'classMethod'|'staticMethod'|'function'|'template'|'enumMethod', effectiveConstructorArgDefs: array<string, mixed>|null, effectiveCallableArgDefs: array<string, mixed>|null, ...}, ...}
+ * @throws ReflectionException when reflection cannot expose a parameter default
  */
 function hydrateEnumExecutionContext(array $context, array $mappedArgs, array $planner, ?array $typeMap): array
 {

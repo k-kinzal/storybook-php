@@ -28,6 +28,43 @@ final class VariadicConstructorFixture
     }
 }
 
+/**
+ * @covers \StorybookPhp\Runtime\Casting\castInlineDocTypeValue
+ * @covers \StorybookPhp\Runtime\Casting\castWithNamedType
+ * @covers \StorybookPhp\Runtime\Casting\instantiateClassFromValue
+ * @covers \StorybookPhp\Runtime\Casting\reflectionTypeAcceptsArray
+ * @covers \StorybookPhp\Runtime\Casting\scoreClassInstantiationMatch
+ * @covers \StorybookPhp\Runtime\Casting\canInstantiateCollectionWrapper
+ * @covers \StorybookPhp\Runtime\Casting\castArg
+ * @covers \StorybookPhp\Runtime\Casting\castDeclaredNamedType
+ * @covers \StorybookPhp\Runtime\Casting\castInlineNamedType
+ * @covers \StorybookPhp\Runtime\Casting\castReflectionBuiltinType
+ * @covers \StorybookPhp\Runtime\Casting\isInlineBuiltinType
+ * @covers \StorybookPhp\Runtime\Casting\isListArray
+ * @covers \StorybookPhp\Runtime\Casting\isReflectionBuiltinType
+ * @covers \StorybookPhp\Runtime\Casting\rankDocTypeCandidates
+ * @covers \StorybookPhp\Runtime\Casting\resolveBoundTypeName
+ * @covers \StorybookPhp\Runtime\Casting\scoreDeclaredTypeMatch
+ * @covers \StorybookPhp\Runtime\Casting\scoreDocTypeMatch
+ * @covers \StorybookPhp\Runtime\Casting\scoreGenericDocTypeMatch
+ * @covers \StorybookPhp\Runtime\Casting\scoreInlineNamedTypeMatch
+ * @covers \StorybookPhp\Runtime\Casting\scoreNativeTypeMatch
+ * @covers \StorybookPhp\Runtime\Casting\splitUnionTypes
+ * @covers \StorybookPhp\Runtime\Contract\enumTypeExists
+ * @covers \StorybookPhp\Runtime\Contract\extractGenericValueType
+ * @covers \StorybookPhp\Runtime\Contract\parseDocBlockParamTypes
+ * @covers \StorybookPhp\Runtime\Contract\requireExistingClass
+ * @covers \StorybookPhp\Runtime\Contract\resolveClassName
+ * @covers \StorybookPhp\Runtime\Contract\resolveTypeMapBinding
+ * @covers \StorybookPhp\Runtime\Contract\splitGenericArgs
+ * @covers \StorybookPhp\Runtime\Contract\typeExists
+ * @covers \StorybookPhp\Runtime\Execution\matchArgs
+ * @covers \StorybookPhp\Runtime\Execution\resolveArgs
+ * @covers \StorybookPhp\Runtime\Execution\resolveParamDocType
+ * @covers \StorybookPhp\Runtime\Execution\resolveParameterArgDef
+ * @covers \StorybookPhp\Runtime\Execution\resolveParameterArgValue
+ * @covers \StorybookPhp\Runtime\Transport\stringifyOutputValue
+ */
 final class runtime_castTest extends TestCase
 {
     public function testConstructorScoringRejectsMissingRequiredArguments(): void
@@ -102,7 +139,9 @@ final class runtime_castTest extends TestCase
     public function testNeverTypeCannotAcceptAnArgumentValue(): void
     {
         if (PHP_VERSION_ID < 80100) {
-            self::markTestSkipped('The never type was introduced in PHP 8.1.');
+            self::assertTrue(\StorybookPhp\Runtime\Casting\isReflectionBuiltinType('never'));
+
+            return;
         }
 
         $parameter = new ReflectionParameter('StorybookPhp\\TestFixture\\acceptsUntyped', 0);

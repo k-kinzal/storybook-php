@@ -4,6 +4,12 @@ declare(strict_types=1);
 
 use PHPUnit\Framework\TestCase;
 
+/**
+ * @covers \StorybookPhp\Runtime\Execution\normalizeExecutionContext
+ * @covers \StorybookPhp\Runtime\Execution\normalizeExecutionContextMap
+ * @covers \StorybookPhp\Runtime\Contract\isRenderType
+ * @covers \StorybookPhp\Runtime\Execution\normalizeExecutionContextString
+ */
 final class runtime_contextTest extends TestCase
 {
     public function testExecutionContextRejectsInvalidBoundaryFields(): void

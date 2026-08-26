@@ -6,6 +6,9 @@ namespace Tests\Unit\StorybookPhp\Runtime\Transport;
 
 use PHPUnit\Framework\TestCase;
 
+/**
+ * @covers \StorybookPhp\Runtime\Transport\stringifyOutputValue
+ */
 final class OutputNormalizerTest extends TestCase
 {
     public function testRejectsImplicitMixedStringCasts(): void

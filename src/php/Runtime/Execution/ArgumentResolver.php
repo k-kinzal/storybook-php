@@ -132,6 +132,7 @@ function normalizeRuntimeTypeName(string $typeName, ReflectionParameter $param):
  * @param array<string, mixed>|null $typeMap
  * @param array<string, mixed>|null $argDefs
  * @return array{ordered: list<mixed>, named: array<string, mixed>}
+ * @throws ReflectionException when reflection cannot expose a parameter default
  */
 function resolveArgs(?ReflectionFunctionAbstract $ref, array $args, ?array $typeMap = null, ?array $argDefs = null): array
 {
@@ -182,6 +183,7 @@ function resolveParameterArgDef(string $name, ?array $argDefs): ?array
 /**
  * @param array<string, mixed>|null $typeMap
  * @return list<mixed>
+ * @throws ReflectionException when reflection cannot expose a parameter default
  */
 function resolveVariadicArgValues(
     ReflectionParameter $param,
@@ -191,10 +193,12 @@ function resolveVariadicArgValues(
 ): array {
     $values = is_array($value) && \StorybookPhp\Runtime\Casting\isListArray($value) ? $value : [$value];
 
-    return array_values(array_map(
-        static fn (mixed $item): mixed => \StorybookPhp\Runtime\Casting\castArg($param, $item, $docType, $typeMap),
-        $values,
-    ));
+    $resolved = [];
+    foreach ($values as $item) {
+        $resolved[] = \StorybookPhp\Runtime\Casting\castArg($param, $item, $docType, $typeMap);
+    }
+
+    return $resolved;
 }
 
 /**
@@ -202,6 +206,7 @@ function resolveVariadicArgValues(
  * @param array<string, mixed>|null $argDef
  * @param array<string, mixed>|null $typeMap
  * @throws RuntimeException when a required argument has no supplied or declared default
+ * @throws ReflectionException when reflection cannot expose a parameter default
  */
 function resolveParameterArgValue(
     ReflectionParameter $param,
@@ -218,7 +223,7 @@ function resolveParameterArgValue(
         return \StorybookPhp\Runtime\Casting\castArg($param, $argDef['default'], $docType, $typeMap);
     }
     if ($param->isDefaultValueAvailable()) {
-        return \StorybookPhp\Runtime\Execution\reflectionParameterDefaultValue($param);
+        return $param->getDefaultValue();
     }
     $type = $param->getType();
     if (($argDef['nullable'] ?? false) === true && ($type === null || $param->allowsNull())) {
@@ -232,33 +237,13 @@ function resolveParameterArgValue(
 }
 
 /**
- * Converts an engine-level reflection failure into the runner exception
- * contract. The failure cannot be triggered by a user-defined parameter after
- * isDefaultValueAvailable() has succeeded.
- *
- * @codeCoverageIgnore
- * @throws RuntimeException when the engine cannot expose the default value
- */
-function reflectionParameterDefaultValue(ReflectionParameter $parameter): mixed
-{
-    try {
-        return $parameter->getDefaultValue();
-    } catch (ReflectionException $exception) {
-        throw new RuntimeException(
-            "Failed to read the default value for parameter '{$parameter->getName()}'.",
-            0,
-            $exception,
-        );
-    }
-}
-
-/**
  * Match arguments from an associative array to the parameter order expected by reflection.
  *
  * @param array<array-key, mixed> $args
  * @param array<string, mixed>|null $typeMap
  * @param array<string, mixed>|null $argDefs
  * @return list<mixed>
+ * @throws ReflectionException when reflection cannot expose a parameter default
  */
 function matchArgs(?ReflectionFunctionAbstract $ref, array $args, ?array $typeMap = null, ?array $argDefs = null): array
 {
@@ -272,6 +257,7 @@ function matchArgs(?ReflectionFunctionAbstract $ref, array $args, ?array $typeMa
  * @param array<string, mixed>|null $typeMap
  * @param array<string, mixed>|null $argDefs
  * @return array<string, mixed>
+ * @throws ReflectionException when reflection cannot expose a parameter default
  */
 function resolveNamedArgs(?ReflectionFunctionAbstract $ref, array $args, ?array $typeMap = null, ?array $argDefs = null): array
 {

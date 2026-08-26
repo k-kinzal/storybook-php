@@ -6,6 +6,9 @@ namespace Tests\Unit\StorybookPhp\Runtime\Casting;
 
 use PHPUnit\Framework\TestCase;
 
+/**
+ * @covers \StorybookPhp\Runtime\Casting\scoreIntTypeMatch
+ */
 final class TypeScorerTest extends TestCase
 {
     public function testPrefersExactIntegersToConvertibleStrings(): void

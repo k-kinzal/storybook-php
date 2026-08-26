@@ -132,12 +132,21 @@ function runnerListField(array $decoded, string $field): ?array
 }
 
 /**
- * @codeCoverageIgnore
+ * @param non-empty-string $streamUri
  * @throws RuntimeException when stdin cannot be read
  */
-function readRunnerStdin(): string
+function readRunnerStdin(string $streamUri = 'php://stdin'): string
 {
-    $input = file_get_contents('php://stdin');
+    return \StorybookPhp\Runtime\Transport\requireRunnerInput(file_get_contents($streamUri));
+}
+
+/**
+ * Narrows the stream read result to the runner's string input contract.
+ *
+ * @throws RuntimeException when stdin cannot be read
+ */
+function requireRunnerInput(string|false $input): string
+{
     if ($input === false) {
         throw new RuntimeException('Failed to read request from stdin.');
     }

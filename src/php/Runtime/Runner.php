@@ -6,6 +6,7 @@ namespace StorybookPhp\Runtime;
 
 use Generator;
 use JsonException;
+use ReflectionException;
 use Throwable;
 
 /**
@@ -27,6 +28,7 @@ function resolveExecutionHtml(mixed $result, string $buffered, bool $deferToAdap
  * Executes one validated stdin payload and returns its encoded response.
  *
  * @throws JsonException when PHP cannot encode the validated protocol shape
+ * @throws ReflectionException when reflection cannot expose a parameter default
  */
 function run(?string $input = null, bool $writeOutput = true): string
 {

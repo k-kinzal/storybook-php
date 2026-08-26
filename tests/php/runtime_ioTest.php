@@ -4,6 +4,12 @@ declare(strict_types=1);
 
 use PHPUnit\Framework\TestCase;
 
+/**
+ * @covers \StorybookPhp\Runtime\Transport\encodeRunnerResponse
+ * @covers \StorybookPhp\Runtime\Transport\readRunnerRequest
+ * @covers \StorybookPhp\Runtime\Transport\decodeRunnerRequest
+ * @covers \StorybookPhp\Runtime\Transport\encodeJsonResponse
+ */
 final class runtime_ioTest extends TestCase
 {
     public function testInvalidJsonUsesTheRunnerExceptionContract(): void

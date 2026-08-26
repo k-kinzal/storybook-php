@@ -4,6 +4,9 @@ declare(strict_types=1);
 
 use PHPUnit\Framework\TestCase;
 
+/**
+ * @covers \StorybookPhp\Runtime\Transport\normalizeAdapterResponse
+ */
 final class runtime_adaptersTest extends TestCase
 {
     public function testResponseMetadataMustHonorItsDeclaredContract(): void

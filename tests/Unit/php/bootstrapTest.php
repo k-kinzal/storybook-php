@@ -6,6 +6,9 @@ namespace Tests\Unit\StorybookPhp\Runtime;
 
 use PHPUnit\Framework\TestCase;
 
+/**
+ * @coversNothing
+ */
 final class BootstrapTest extends TestCase
 {
     public function testTheDistributedBootstrapLoadsEveryRuntimeModule(): void

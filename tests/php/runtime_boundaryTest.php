@@ -4,6 +4,14 @@ declare(strict_types=1);
 
 use PHPUnit\Framework\TestCase;
 
+/**
+ * @covers \StorybookPhp\Runtime\resolveExecutionHtml
+ * @covers \StorybookPhp\Runtime\failure
+ * @covers \StorybookPhp\Runtime\Transport\buildRunnerErrorResponse
+ * @covers \StorybookPhp\Runtime\Transport\encodeJsonResponse
+ * @covers \StorybookPhp\Runtime\Transport\encodeRunnerResponse
+ * @covers \StorybookPhp\Runtime\Transport\resolveOutput
+ */
 final class runtime_boundaryTest extends TestCase
 {
     public function testDefersOutputResolutionForAdapterMiddleware(): void

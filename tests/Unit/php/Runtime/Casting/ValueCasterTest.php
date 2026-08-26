@@ -6,6 +6,9 @@ namespace Tests\Unit\StorybookPhp\Runtime\Casting;
 
 use PHPUnit\Framework\TestCase;
 
+/**
+ * @covers \StorybookPhp\Runtime\Casting\isListArray
+ */
 final class ValueCasterTest extends TestCase
 {
     public function testDistinguishesListsFromProtocolObjects(): void

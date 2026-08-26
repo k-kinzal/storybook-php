@@ -40,15 +40,19 @@ jobs:
         with:
           dependency-versions: locked
           composer-options: --prefer-dist
+          require-lock-file: true
+
+      - name: Check installed platform requirements
+        run: composer check-platform-reqs
 
       - name: Restore the DocGen cache
         uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
-          path: build/doc-gen-cache
-          key: doc-gen-${{ runner.os }}-${{ hashFiles('composer.lock') }}-${{ github.sha }}
+          path: build/docgen-cache
+          key: docgen-${{ runner.os }}-${{ hashFiles('composer.lock') }}-${{ github.sha }}
           restore-keys: |
-            doc-gen-${{ runner.os }}-${{ hashFiles('composer.lock') }}-
-            doc-gen-${{ runner.os }}-
+            docgen-${{ runner.os }}-${{ hashFiles('composer.lock') }}-
+            docgen-${{ runner.os }}-
 
       - name: Generate the coverage report
         run: composer test:coverage
@@ -58,7 +62,7 @@ jobs:
           set -euo pipefail
 
           repository="$(printf '%s' "${GITHUB_REPOSITORY}" | tr '[:upper:]' '[:lower:]')"
-          composer doc-gen -- \
+          composer docgen -- \
             --base-url="https://${repository%%/*}.github.io/${repository#*/}"
 
       - name: Configure GitHub Pages

@@ -895,12 +895,12 @@
             "source": {
                 "type": "git",
                 "url": "https://github.com/k-kinzal/php-ai-toolkit.git",
-                "reference": "e2fbca454da4935db5ae786be942fcbfc9fd4352"
+                "reference": "d1f14aede0bd0b1ea2c85a8fac87a11770c79d1b"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/k-kinzal/php-ai-toolkit/zipball/e2fbca454da4935db5ae786be942fcbfc9fd4352",
-                "reference": "e2fbca454da4935db5ae786be942fcbfc9fd4352",
+                "url": "https://api.github.com/repos/k-kinzal/php-ai-toolkit/zipball/d1f14aede0bd0b1ea2c85a8fac87a11770c79d1b",
+                "reference": "d1f14aede0bd0b1ea2c85a8fac87a11770c79d1b",
                 "shasum": ""
             },
             "require": {
@@ -908,6 +908,7 @@
                 "php": "^8.0",
                 "phpstan/phpdoc-parser": "^1.33 || ^2.0",
                 "phpstan/phpstan": "^1.12 || ^2.0",
+                "phpstan/phpstan-strict-rules": "^1.6 || ^2.0",
                 "symfony/yaml": "^5.4 || ^6.4 || ^7.4 || ^8.0"
             },
             "require-dev": {
@@ -916,7 +917,6 @@
                 "friendsofphp/php-cs-fixer": "^3.4",
                 "infection/infection": "^0.26.19 || ^0.27 || ^0.28 || ^0.29 || ^0.30 || ^0.31 || ^0.32 || ^0.33 || ^0.34 || ^0.35",
                 "phpcompatibility/php-compatibility": "^10.0@alpha",
-                "phpstan/phpstan-strict-rules": "^1.6 || ^2.0",
                 "phpunit/phpunit": "^9.6 || ^10.5 || ^11 || ^12 || ^13",
                 "squizlabs/php_codesniffer": "^4.0"
             },
@@ -928,8 +928,7 @@
                 "bin/php-ai-toolkit",
                 "bin/loc-guard",
                 "bin/tree-guard",
-                "bin/scope-guard",
-                "bin/doc-gen"
+                "bin/docgen"
             ],
             "type": "phpstan-extension",
             "extra": {
@@ -941,8 +940,11 @@
             },
             "autoload": {
                 "psr-4": {
-                    "PhpAiToolkit\\": "src/"
-                }
+                    "Toolkit\\": "src/"
+                },
+                "files": [
+                    "src/Compatibility/ClassAliases.php"
+                ]
             },
             "autoload-dev": {
                 "psr-4": {
@@ -957,10 +959,25 @@
                     "paratest --processes=auto"
                 ],
                 "test:unit": [
+                    "@test:unit:13"
+                ],
+                "test:unit:9": [
+                    "@php -d memory_limit=512M vendor/bin/phpunit --configuration phpunit9.xml.dist"
+                ],
+                "test:unit:10": [
+                    "@php -d memory_limit=512M vendor/bin/phpunit --configuration phpunit10.xml.dist"
+                ],
+                "test:unit:11": [
+                    "@php -d memory_limit=512M vendor/bin/phpunit --configuration phpunit11.xml.dist"
+                ],
+                "test:unit:12": [
+                    "@php -d memory_limit=512M vendor/bin/phpunit --configuration phpunit12.xml.dist"
+                ],
+                "test:unit:13": [
                     "@php -d memory_limit=512M vendor/bin/phpunit --configuration phpunit.xml.dist"
                 ],
                 "test:unit:legacy": [
-                    "@php -d memory_limit=512M vendor/bin/phpunit --configuration phpunit9.xml.dist"
+                    "@test:unit:9"
                 ],
                 "test:coverage": [
                     "@php -d memory_limit=1G -d xdebug.mode=coverage vendor/bin/phpunit --configuration phpunit.xml.dist --coverage-xml build/coverage-xml"
@@ -971,7 +988,6 @@
                     "@compat",
                     "@loc-guard",
                     "@tree-guard",
-                    "@scope-guard",
                     "@deptrac"
                 ],
                 "phpstan": [
@@ -986,11 +1002,8 @@
                 "tree-guard": [
                     "@php bin/tree-guard --config=tree.yaml"
                 ],
-                "scope-guard": [
-                    "@php bin/scope-guard --config=scope.yaml"
-                ],
-                "doc-gen": [
-                    "@php bin/doc-gen --packages=. --exclude='tests/Fixture/*' --coverage=build/coverage-xml"
+                "docgen": [
+                    "@php bin/docgen --packages=. --exclude='tests/Fixture/*' --coverage=build/coverage-xml"
                 ],
                 "doctest": [
                     "@php -d memory_limit=512M vendor/bin/phpunit --configuration phpunit.xml.dist --testsuite doctest"
@@ -1024,7 +1037,7 @@
                 "issues": "https://github.com/k-kinzal/php-ai-toolkit/issues",
                 "docs": "https://k-kinzal.github.io/php-ai-toolkit/"
             },
-            "time": "2026-08-24T10:37:43+00:00"
+            "time": "2026-08-26T02:47:23+00:00"
         },
         {
             "name": "myclabs/deep-copy",
@@ -1615,6 +1628,58 @@
                 }
             ],
             "time": "2026-08-22T07:38:16+00:00"
+        },
+        {
+            "name": "phpstan/phpstan-strict-rules",
+            "version": "2.0.12",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/phpstan/phpstan-strict-rules.git",
+                "reference": "2bc5ae19ae965663b62ac907ee6342c3903ec93b"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/phpstan/phpstan-strict-rules/zipball/2bc5ae19ae965663b62ac907ee6342c3903ec93b",
+                "reference": "2bc5ae19ae965663b62ac907ee6342c3903ec93b",
+                "shasum": ""
+            },
+            "require": {
+                "php": "^7.4 || ^8.0",
+                "phpstan/phpstan": "^2.1.52"
+            },
+            "require-dev": {
+                "php-parallel-lint/php-parallel-lint": "^1.2",
+                "phpstan/phpstan-deprecation-rules": "^2.0",
+                "phpstan/phpstan-phpunit": "^2.0",
+                "phpunit/phpunit": "^9.6",
+                "shipmonk/name-collision-detector": "^2.1"
+            },
+            "type": "phpstan-extension",
+            "extra": {
+                "phpstan": {
+                    "includes": [
+                        "rules.neon"
+                    ]
+                }
+            },
+            "autoload": {
+                "psr-4": {
+                    "PHPStan\\": "src/"
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "MIT"
+            ],
+            "description": "Extra strict and opinionated rules for PHPStan",
+            "keywords": [
+                "static analysis"
+            ],
+            "support": {
+                "issues": "https://github.com/phpstan/phpstan-strict-rules/issues",
+                "source": "https://github.com/phpstan/phpstan-strict-rules/tree/2.0.12"
+            },
+            "time": "2026-07-19T07:24:06+00:00"
         },
         {
             "name": "phpunit/php-code-coverage",
@@ -5434,5 +5499,8 @@
         "php": "^8.0"
     },
     "platform-dev": {},
+    "platform-overrides": {
+        "php": "8.2.0"
+    },
     "plugin-api-version": "2.9.0"
 }

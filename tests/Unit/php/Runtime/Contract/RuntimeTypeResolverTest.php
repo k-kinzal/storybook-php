@@ -6,6 +6,9 @@ namespace Tests\Unit\StorybookPhp\Runtime\Contract;
 
 use PHPUnit\Framework\TestCase;
 
+/**
+ * @covers \StorybookPhp\Runtime\Contract\isRenderType
+ */
 final class RuntimeTypeResolverTest extends TestCase
 {
     public function testNarrowsOnlySupportedRenderTypes(): void

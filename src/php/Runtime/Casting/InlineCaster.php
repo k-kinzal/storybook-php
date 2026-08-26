@@ -5,12 +5,14 @@ declare(strict_types=1);
 namespace StorybookPhp\Runtime\Casting;
 
 use LogicException;
+use ReflectionException;
 use RuntimeException;
 
 /**
  * Casts a value described by inline Storybook argument metadata.
  *
  * @param array<string, mixed>|null $typeMap
+ * @throws ReflectionException when reflection cannot expose a parameter default
  */
 function castInlineNamedType(string $typeName, mixed $value, ?array $typeMap = null): mixed
 {
@@ -82,6 +84,7 @@ function castValueToObject(mixed $value): object
 
 /**
  * @param array<string, mixed>|null $typeMap
+ * @throws ReflectionException when reflection cannot expose a parameter default
  */
 function castInlineDocTypeValue(mixed $value, string $docType, ?array $typeMap = null): mixed
 {
@@ -115,6 +118,7 @@ function castInlineDocTypeValue(mixed $value, string $docType, ?array $typeMap =
 
 /**
  * @param array<string, mixed>|null $typeMap
+ * @throws ReflectionException when reflection cannot expose a parameter default
  */
 function castInlineGenericValue(mixed $value, string $valueType, ?string $wrapperClass, ?array $typeMap): mixed
 {
@@ -136,6 +140,7 @@ function castInlineGenericValue(mixed $value, string $valueType, ?string $wrappe
 /**
  * @param array<string, mixed> $argDef
  * @param array<string, mixed>|null $typeMap
+ * @throws ReflectionException when reflection cannot expose a parameter default
  */
 function castTemplateArgValue(array $argDef, mixed $value, ?array $typeMap = null): mixed
 {
@@ -177,6 +182,7 @@ function castTemplateArgValue(array $argDef, mixed $value, ?array $typeMap = nul
  * @param array<string, mixed> $argDefs
  * @param array<string, mixed>|null $typeMap
  * @return array<string, mixed>
+ * @throws ReflectionException when reflection cannot expose a parameter default
  * @throws RuntimeException when a required template argument is missing
  */
 function castTemplateArgs(array $args, array $argDefs, ?array $typeMap = null): array

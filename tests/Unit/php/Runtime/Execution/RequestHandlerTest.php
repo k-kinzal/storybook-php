@@ -6,6 +6,9 @@ namespace Tests\Unit\StorybookPhp\Runtime\Execution;
 
 use PHPUnit\Framework\TestCase;
 
+/**
+ * @covers \StorybookPhp\Runtime\Execution\buildRunnerExecutionContext
+ */
 final class RequestHandlerTest extends TestCase
 {
     public function testBuildsAnExecutionContextWithoutRunningUserCode(): void

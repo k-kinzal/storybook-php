@@ -7,6 +7,7 @@ dist/
 .phpstan/
 .php-cs-fixer.cache
 .phpunit.cache/
+.phpunit.result.cache
 .storybook-out/
 storybook-static/
 coverage/

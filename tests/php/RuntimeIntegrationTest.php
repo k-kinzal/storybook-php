@@ -20,6 +20,150 @@ use StorybookPhp\TestFixture\OverrideTarget;
 use StorybookPhp\TestFixture\SelfReferencing;
 use StorybookPhp\TestFixture\StringableValue;
 
+/**
+ * @covers \StorybookPhp\Runtime\Casting\castArrayElements
+ * @covers \StorybookPhp\Runtime\Casting\splitUnionTypes
+ * @covers \StorybookPhp\Runtime\Casting\resolveBoundTypeName
+ * @covers \StorybookPhp\Runtime\Casting\castInlineNamedType
+ * @covers \StorybookPhp\Runtime\Casting\isInlineBuiltinType
+ * @covers \StorybookPhp\Runtime\Casting\castInlineBuiltinType
+ * @covers \StorybookPhp\Runtime\Casting\castValueToObject
+ * @covers \StorybookPhp\Runtime\Casting\castInlineDocTypeValue
+ * @covers \StorybookPhp\Runtime\Casting\castInlineGenericValue
+ * @covers \StorybookPhp\Runtime\Casting\castTemplateArgValue
+ * @covers \StorybookPhp\Runtime\Casting\castTemplateArgs
+ * @covers \StorybookPhp\Runtime\Casting\instantiateClassFromValue
+ * @covers \StorybookPhp\Runtime\Casting\scoreClassInstantiationMatch
+ * @covers \StorybookPhp\Runtime\Casting\canInstantiateCollectionWrapper
+ * @covers \StorybookPhp\Runtime\Casting\reflectionTypeAcceptsArray
+ * @covers \StorybookPhp\Runtime\Casting\instantiateCollectionWrapper
+ * @covers \StorybookPhp\Runtime\Casting\scoreInlineNamedTypeMatch
+ * @covers \StorybookPhp\Runtime\Casting\scoreNativeTypeMatch
+ * @covers \StorybookPhp\Runtime\Casting\scoreLiteralTypeMatch
+ * @covers \StorybookPhp\Runtime\Casting\scoreStringTypeMatch
+ * @covers \StorybookPhp\Runtime\Casting\scoreIntTypeMatch
+ * @covers \StorybookPhp\Runtime\Casting\scoreFloatTypeMatch
+ * @covers \StorybookPhp\Runtime\Casting\scoreBoolTypeMatch
+ * @covers \StorybookPhp\Runtime\Casting\scoreDeclaredTypeMatch
+ * @covers \StorybookPhp\Runtime\Casting\scoreDocTypeMatch
+ * @covers \StorybookPhp\Runtime\Casting\scoreDocUnionTypeMatch
+ * @covers \StorybookPhp\Runtime\Casting\scoreGenericDocTypeMatch
+ * @covers \StorybookPhp\Runtime\Casting\rankDocTypeCandidates
+ * @covers \StorybookPhp\Runtime\Casting\castDocTypeValue
+ * @covers \StorybookPhp\Runtime\Casting\castReflectedGenericValue
+ * @covers \StorybookPhp\Runtime\Casting\scoreTypeMatch
+ * @covers \StorybookPhp\Runtime\Casting\castArg
+ * @covers \StorybookPhp\Runtime\Casting\castUnionArg
+ * @covers \StorybookPhp\Runtime\Casting\castWithNamedType
+ * @covers \StorybookPhp\Runtime\Casting\isReflectionBuiltinType
+ * @covers \StorybookPhp\Runtime\Casting\castReflectionBuiltinType
+ * @covers \StorybookPhp\Runtime\Casting\castDeclaredNamedType
+ * @covers \StorybookPhp\Runtime\Casting\castNamedCollectionWrapper
+ * @covers \StorybookPhp\Runtime\Casting\isListArray
+ * @covers \StorybookPhp\Runtime\Contract\parseDocBlockParamTypes
+ * @covers \StorybookPhp\Runtime\Contract\splitGenericArgs
+ * @covers \StorybookPhp\Runtime\Contract\extractGenericValueType
+ * @covers \StorybookPhp\Runtime\Contract\isArrayLikeType
+ * @covers \StorybookPhp\Runtime\Contract\isRenderType
+ * @covers \StorybookPhp\Runtime\Contract\typeExists
+ * @covers \StorybookPhp\Runtime\Contract\enumTypeExists
+ * @covers \StorybookPhp\Runtime\Contract\requireExistingClass
+ * @covers \StorybookPhp\Runtime\Contract\resolveTypeMapBinding
+ * @covers \StorybookPhp\Runtime\Contract\isBackedEnumClass
+ * @covers \StorybookPhp\Runtime\Contract\resolveEnumCase
+ * @covers \StorybookPhp\Runtime\Contract\findEnumCase
+ * @covers \StorybookPhp\Runtime\Contract\resolveClassName
+ * @covers \StorybookPhp\Runtime\Execution\normalizeNamedArgDefMap
+ * @covers \StorybookPhp\Runtime\Execution\buildTargetArgDefs
+ * @covers \StorybookPhp\Runtime\Execution\resolvePublicArgDefForTarget
+ * @covers \StorybookPhp\Runtime\Execution\mergeTargetArgDefForRuntime
+ * @covers \StorybookPhp\Runtime\Execution\stripInheritedRuntimeDefault
+ * @covers \StorybookPhp\Runtime\Execution\defaultsMatchForRuntime
+ * @covers \StorybookPhp\Runtime\Execution\resolveParamDocType
+ * @covers \StorybookPhp\Runtime\Execution\buildOverrideDocType
+ * @covers \StorybookPhp\Runtime\Execution\isRedundantDocTypeOverride
+ * @covers \StorybookPhp\Runtime\Execution\normalizeRuntimeTypeName
+ * @covers \StorybookPhp\Runtime\Execution\resolveArgs
+ * @covers \StorybookPhp\Runtime\Execution\resolveParameterArgDef
+ * @covers \StorybookPhp\Runtime\Execution\resolveVariadicArgValues
+ * @covers \StorybookPhp\Runtime\Execution\resolveParameterArgValue
+ * @covers \StorybookPhp\Runtime\Execution\matchArgs
+ * @covers \StorybookPhp\Runtime\Execution\resolveNamedArgs
+ * @covers \StorybookPhp\Runtime\Execution\hydrateExecutionContext
+ * @covers \StorybookPhp\Runtime\Execution\normalizeExecutionContext
+ * @covers \StorybookPhp\Runtime\Execution\normalizeExecutionContextString
+ * @covers \StorybookPhp\Runtime\Execution\normalizeExecutionContextMap
+ * @covers \StorybookPhp\Runtime\Execution\requireHydratedExecutionContext
+ * @covers \StorybookPhp\Runtime\Execution\hydrateTemplateExecutionContext
+ * @covers \StorybookPhp\Runtime\Execution\hydrateClassExecutionContext
+ * @covers \StorybookPhp\Runtime\Execution\hydrateCallableExecutionContext
+ * @covers \StorybookPhp\Runtime\Execution\hydrateEnumExecutionContext
+ * @covers \StorybookPhp\Runtime\Execution\applyResolvedExecutionArgs
+ * @covers \StorybookPhp\Runtime\Execution\applyResolvedExecutionValue
+ * @covers \StorybookPhp\Runtime\Execution\resolveTemplateContextArgs
+ * @covers \StorybookPhp\Runtime\Execution\orderResolvedArgs
+ * @covers \StorybookPhp\Runtime\Execution\buildExecutionResponse
+ * @covers \StorybookPhp\Runtime\Execution\executeCoreContext
+ * @covers \StorybookPhp\Runtime\Execution\executeClassMethodContext
+ * @covers \StorybookPhp\Runtime\Execution\executeStaticMethodContext
+ * @covers \StorybookPhp\Runtime\Execution\executeFunctionContext
+ * @covers \StorybookPhp\Runtime\Execution\executeTemplateContext
+ * @covers \StorybookPhp\Runtime\Execution\executeEnumMethodContext
+ * @covers \StorybookPhp\Runtime\Execution\executionPlanner
+ * @covers \StorybookPhp\Runtime\Execution\plannerClassReflection
+ * @covers \StorybookPhp\Runtime\Execution\plannerMethodReflection
+ * @covers \StorybookPhp\Runtime\Execution\plannerFunctionReflection
+ * @covers \StorybookPhp\Runtime\Execution\plannerCallableReflection
+ * @covers \StorybookPhp\Runtime\Execution\plannerConstructorReflection
+ * @covers \StorybookPhp\Runtime\Execution\executionContextArgs
+ * @covers \StorybookPhp\Runtime\Execution\deferExecutionOutput
+ * @covers \StorybookPhp\Runtime\Execution\ensureExecutionPlanner
+ * @covers \StorybookPhp\Runtime\Execution\buildExecutionPlanner
+ * @covers \StorybookPhp\Runtime\Execution\baseExecutionPlanner
+ * @covers \StorybookPhp\Runtime\Execution\buildClassMethodPlanner
+ * @covers \StorybookPhp\Runtime\Execution\buildStaticMethodPlanner
+ * @covers \StorybookPhp\Runtime\Execution\buildFunctionPlanner
+ * @covers \StorybookPhp\Runtime\Execution\buildEnumMethodPlanner
+ * @covers \StorybookPhp\Runtime\Execution\requirePlannerTargetPair
+ * @covers \StorybookPhp\Runtime\Execution\requirePlannerExecutionFile
+ * @covers \StorybookPhp\Runtime\Execution\reflectPlannerClass
+ * @covers \StorybookPhp\Runtime\Execution\runnerEnumExists
+ * @covers \StorybookPhp\Runtime\Execution\mapPublicArgsToExecutionTargets
+ * @covers \StorybookPhp\Runtime\Execution\projectPublicArgsToTarget
+ * @covers \StorybookPhp\Runtime\Execution\projectNamespacedPublicArgs
+ * @covers \StorybookPhp\Runtime\Execution\executeRunnerRequest
+ * @covers \StorybookPhp\Runtime\Execution\executeAdapterTerminal
+ * @covers \StorybookPhp\Runtime\Execution\buildRunnerExecutionContext
+ * @covers \StorybookPhp\Runtime\resolveExecutionHtml
+ * @covers \StorybookPhp\Runtime\run
+ * @covers \StorybookPhp\Runtime\failure
+ * @covers \StorybookPhp\Runtime\Transport\loadAdapter
+ * @covers \StorybookPhp\Runtime\Transport\loadAdapters
+ * @covers \StorybookPhp\Runtime\Transport\normalizeAdapterResponse
+ * @covers \StorybookPhp\Runtime\Transport\runAdapterMiddleware
+ * @covers \StorybookPhp\Runtime\Transport\wrapAdapterMiddleware
+ * @covers \StorybookPhp\Runtime\Transport\createAdapterTerminal
+ * @covers \StorybookPhp\Runtime\Transport\stringifyOutputValue
+ * @covers \StorybookPhp\Runtime\Transport\stringifyScalarForError
+ * @covers \StorybookPhp\Runtime\Transport\getOutputBuffer
+ * @covers \StorybookPhp\Runtime\Transport\requireOutputBuffer
+ * @covers \StorybookPhp\Runtime\Transport\normalizeStringKeyArray
+ * @covers \StorybookPhp\Runtime\Transport\normalizeStringList
+ * @covers \StorybookPhp\Runtime\Transport\isSequentialList
+ * @covers \StorybookPhp\Runtime\Transport\readRunnerRequest
+ * @covers \StorybookPhp\Runtime\Transport\decodeRunnerRequest
+ * @covers \StorybookPhp\Runtime\Transport\requireRunnerRenderType
+ * @covers \StorybookPhp\Runtime\Transport\requireRunnerStringField
+ * @covers \StorybookPhp\Runtime\Transport\runnerOptionalStringField
+ * @covers \StorybookPhp\Runtime\Transport\runnerObjectField
+ * @covers \StorybookPhp\Runtime\Transport\runnerListField
+ * @covers \StorybookPhp\Runtime\Transport\readRunnerStdin
+ * @covers \StorybookPhp\Runtime\Transport\requireRunnerInput
+ * @covers \StorybookPhp\Runtime\Transport\resolveOutput
+ * @covers \StorybookPhp\Runtime\Transport\buildRunnerErrorResponse
+ * @covers \StorybookPhp\Runtime\Transport\encodeRunnerResponse
+ * @covers \StorybookPhp\Runtime\Transport\encodeJsonResponse
+ */
 final class RuntimeIntegrationTest extends TestCase
 {
     private const FIXTURE_FILE = __DIR__ . '/fixtures/RunnerFixtures.php';
@@ -91,7 +235,9 @@ final class RuntimeIntegrationTest extends TestCase
     public function testEnumHelpersResolveBackedAndNamedCases(): void
     {
         if (PHP_VERSION_ID < 80100) {
-            self::markTestSkipped('Enums require PHP 8.1+.');
+            self::assertFalse(\StorybookPhp\Runtime\Contract\enumTypeExists(Status::class));
+
+            return;
         }
 
         self::assertTrue(\StorybookPhp\Runtime\Contract\isBackedEnumClass(Status::class));

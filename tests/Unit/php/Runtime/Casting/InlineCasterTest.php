@@ -6,6 +6,10 @@ namespace Tests\Unit\StorybookPhp\Runtime\Casting;
 
 use PHPUnit\Framework\TestCase;
 
+/**
+ * @covers \StorybookPhp\Runtime\Casting\castInlineBuiltinType
+ * @covers \StorybookPhp\Runtime\Casting\isInlineBuiltinType
+ */
 final class InlineCasterTest extends TestCase
 {
     public function testCastsOnlyTheSupportedInlineBuiltinContract(): void

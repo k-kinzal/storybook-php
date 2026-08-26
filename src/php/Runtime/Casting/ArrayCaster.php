@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace StorybookPhp\Runtime\Casting;
 
+use ReflectionException;
 use ReflectionParameter;
 
 /**
@@ -12,6 +13,7 @@ use ReflectionParameter;
  * @param array<array-key, mixed> $value
  * @param array<string, mixed>|null $typeMap
  * @return array<array-key, mixed>
+ * @throws ReflectionException when reflection cannot expose a parameter default
  */
 function castArrayElements(array $value, string $docType, ReflectionParameter $param, ?array $typeMap = null): array
 {
