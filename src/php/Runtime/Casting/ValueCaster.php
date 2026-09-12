@@ -195,7 +195,7 @@ function castReflectionBuiltinType(
     $items = is_array($value) ? $value : (array) $value;
 
     return match ($typeName) {
-        'string' => \StorybookPhp\Runtime\Transport\stringifyOutputValue($value),
+        'string' => \StorybookPhp\Runtime\Contract\stringifyOutputValue($value),
         'int' => is_int($value) ? $value : (is_numeric($value) ? (int) $value : 0),
         'float' => is_float($value) ? $value : (is_numeric($value) ? (float) $value : 0.0),
         'bool' => is_bool($value) ? $value : !in_array($value, [null, 0, 0.0, '', '0', []], true),

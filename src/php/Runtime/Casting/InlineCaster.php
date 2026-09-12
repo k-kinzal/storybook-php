@@ -54,7 +54,7 @@ function isInlineBuiltinType(string $typeName): bool
 function castInlineBuiltinType(string $typeName, mixed $value): mixed
 {
     return match ($typeName) {
-        'string' => \StorybookPhp\Runtime\Transport\stringifyOutputValue($value),
+        'string' => \StorybookPhp\Runtime\Contract\stringifyOutputValue($value),
         'int', 'integer' => is_int($value) ? $value : (is_numeric($value) ? (int) $value : 0),
         'float', 'double' => is_float($value) ? $value : (is_numeric($value) ? (float) $value : 0.0),
         'bool', 'boolean' => is_bool($value) ? $value : !in_array($value, [null, 0, 0.0, '', '0', []], true),
@@ -187,13 +187,13 @@ function castTemplateArgValue(array $argDef, mixed $value, ?array $typeMap = nul
  */
 function castTemplateArgs(array $args, array $argDefs, ?array $typeMap = null): array
 {
-    $casted = $args;
+    $casted = [];
 
     foreach ($argDefs as $name => $argDef) {
         if (!is_array($argDef)) {
             continue;
         }
-        $argDef = \StorybookPhp\Runtime\Transport\normalizeStringKeyArray($argDef, "argDefs.{$name}");
+        $argDef = \StorybookPhp\Runtime\Contract\normalizeStringKeyArray($argDef, "argDefs.{$name}");
 
         if (array_key_exists($name, $args)) {
             $casted[$name] = \StorybookPhp\Runtime\Casting\castTemplateArgValue($argDef, $args[$name], $typeMap);
@@ -215,5 +215,5 @@ function castTemplateArgs(array $args, array $argDefs, ?array $typeMap = null): 
         }
     }
 
-    return $casted;
+    return array_replace($args, $casted);
 }

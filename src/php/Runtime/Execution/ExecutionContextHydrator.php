@@ -17,19 +17,19 @@ use RuntimeException;
  */
 function hydrateExecutionContext(array $context): array
 {
-    $context = \StorybookPhp\Runtime\Execution\normalizeExecutionContext($context);
-    $context = \StorybookPhp\Runtime\Execution\ensureExecutionPlanner($context);
-    $context = \StorybookPhp\Runtime\Execution\requireHydratedExecutionContext($context);
-    $type = $context['type'];
-    $mappedArgs = \StorybookPhp\Runtime\Execution\mapPublicArgsToExecutionTargets($context);
-    $planner = \StorybookPhp\Runtime\Execution\executionPlanner($context);
-    $typeMap = \StorybookPhp\Runtime\Execution\normalizeNamedArgDefMap($context['typeMap'] ?? null);
+    $normalized = \StorybookPhp\Runtime\Execution\normalizeExecutionContext($context);
+    $planned = \StorybookPhp\Runtime\Execution\ensureExecutionPlanner($normalized);
+    $hydrated = \StorybookPhp\Runtime\Execution\requireHydratedExecutionContext($planned);
+    $type = $hydrated['type'];
+    $mappedArgs = \StorybookPhp\Runtime\Execution\mapPublicArgsToExecutionTargets($hydrated);
+    $planner = \StorybookPhp\Runtime\Execution\executionPlanner($hydrated);
+    $typeMap = \StorybookPhp\Runtime\Execution\normalizeNamedArgDefMap($hydrated['typeMap'] ?? null);
 
     return match ($type) {
-        'template' => \StorybookPhp\Runtime\Execution\hydrateTemplateExecutionContext($context, $mappedArgs),
-        'classMethod' => \StorybookPhp\Runtime\Execution\hydrateClassExecutionContext($context, $mappedArgs, $planner, $typeMap),
-        'staticMethod', 'function' => \StorybookPhp\Runtime\Execution\hydrateCallableExecutionContext($context, $mappedArgs, $planner, $typeMap),
-        'enumMethod' => \StorybookPhp\Runtime\Execution\hydrateEnumExecutionContext($context, $mappedArgs, $planner, $typeMap),
+        'template' => \StorybookPhp\Runtime\Execution\hydrateTemplateExecutionContext($hydrated, $mappedArgs),
+        'classMethod' => \StorybookPhp\Runtime\Execution\hydrateClassExecutionContext($hydrated, $mappedArgs, $planner, $typeMap),
+        'staticMethod', 'function' => \StorybookPhp\Runtime\Execution\hydrateCallableExecutionContext($hydrated, $mappedArgs, $planner, $typeMap),
+        'enumMethod' => \StorybookPhp\Runtime\Execution\hydrateEnumExecutionContext($hydrated, $mappedArgs, $planner, $typeMap),
     };
 }
 
@@ -91,7 +91,7 @@ function normalizeExecutionContextMap(mixed $value, string $field): ?array
         throw new RuntimeException("Execution context field '{$field}' must be an object or null.");
     }
 
-    return \StorybookPhp\Runtime\Transport\normalizeStringKeyArray($value, $field);
+    return \StorybookPhp\Runtime\Contract\normalizeStringKeyArray($value, $field);
 }
 
 /**
@@ -116,10 +116,10 @@ function hydrateTemplateExecutionContext(array $context, array $mappedArgs): arr
 {
     $publicArgs = \StorybookPhp\Runtime\Execution\executionContextArgs($context, 'publicArgs');
     $computed = \StorybookPhp\Runtime\Execution\resolveTemplateContextArgs($context, $mappedArgs['template'] ?? $publicArgs);
-    $context = \StorybookPhp\Runtime\Execution\applyResolvedExecutionArgs($context, 'templateArgs', '__computedTemplateArgs', $computed);
-    unset($context['constructorArgs'], $context['methodArgs'], $context['enumCaseValue']);
+    $resolved = \StorybookPhp\Runtime\Execution\applyResolvedExecutionArgs($context, 'templateArgs', '__computedTemplateArgs', $computed);
+    unset($resolved['constructorArgs'], $resolved['methodArgs'], $resolved['enumCaseValue']);
 
-    return \StorybookPhp\Runtime\Execution\requireHydratedExecutionContext($context);
+    return \StorybookPhp\Runtime\Execution\requireHydratedExecutionContext($resolved);
 }
 
 /**
@@ -132,23 +132,23 @@ function hydrateTemplateExecutionContext(array $context, array $mappedArgs): arr
  */
 function hydrateClassExecutionContext(array $context, array $mappedArgs, array $planner, ?array $typeMap): array
 {
-    $constructorArgs = \StorybookPhp\Runtime\Execution\resolveNamedArgs(
+    $constructorArgs = \StorybookPhp\Runtime\Casting\resolveNamedArgs(
         \StorybookPhp\Runtime\Execution\plannerConstructorReflection($planner),
         $mappedArgs['constructor'] ?? [],
         $typeMap,
         $planner['effectiveConstructorArgDefs'],
     );
-    $methodArgs = \StorybookPhp\Runtime\Execution\resolveNamedArgs(
+    $methodArgs = \StorybookPhp\Runtime\Casting\resolveNamedArgs(
         \StorybookPhp\Runtime\Execution\plannerCallableReflection($planner),
         $mappedArgs['method'] ?? [],
         $typeMap,
         $planner['effectiveCallableArgDefs'],
     );
-    $context = \StorybookPhp\Runtime\Execution\applyResolvedExecutionArgs($context, 'constructorArgs', '__computedConstructorArgs', $constructorArgs);
-    $context = \StorybookPhp\Runtime\Execution\applyResolvedExecutionArgs($context, 'methodArgs', '__computedMethodArgs', $methodArgs);
-    unset($context['templateArgs'], $context['enumCaseValue']);
+    $constructed = \StorybookPhp\Runtime\Execution\applyResolvedExecutionArgs($context, 'constructorArgs', '__computedConstructorArgs', $constructorArgs);
+    $resolved = \StorybookPhp\Runtime\Execution\applyResolvedExecutionArgs($constructed, 'methodArgs', '__computedMethodArgs', $methodArgs);
+    unset($resolved['templateArgs'], $resolved['enumCaseValue']);
 
-    return \StorybookPhp\Runtime\Execution\requireHydratedExecutionContext($context);
+    return \StorybookPhp\Runtime\Execution\requireHydratedExecutionContext($resolved);
 }
 
 /**
@@ -161,16 +161,16 @@ function hydrateClassExecutionContext(array $context, array $mappedArgs, array $
  */
 function hydrateCallableExecutionContext(array $context, array $mappedArgs, array $planner, ?array $typeMap): array
 {
-    $methodArgs = \StorybookPhp\Runtime\Execution\resolveNamedArgs(
+    $methodArgs = \StorybookPhp\Runtime\Casting\resolveNamedArgs(
         \StorybookPhp\Runtime\Execution\plannerCallableReflection($planner),
         $mappedArgs['method'] ?? [],
         $typeMap,
         $planner['effectiveCallableArgDefs'],
     );
-    $context = \StorybookPhp\Runtime\Execution\applyResolvedExecutionArgs($context, 'methodArgs', '__computedMethodArgs', $methodArgs);
-    unset($context['templateArgs'], $context['constructorArgs'], $context['enumCaseValue']);
+    $resolved = \StorybookPhp\Runtime\Execution\applyResolvedExecutionArgs($context, 'methodArgs', '__computedMethodArgs', $methodArgs);
+    unset($resolved['templateArgs'], $resolved['constructorArgs'], $resolved['enumCaseValue']);
 
-    return \StorybookPhp\Runtime\Execution\requireHydratedExecutionContext($context);
+    return \StorybookPhp\Runtime\Execution\requireHydratedExecutionContext($resolved);
 }
 
 /**
@@ -186,18 +186,18 @@ function hydrateEnumExecutionContext(array $context, array $mappedArgs, array $p
     $methodInput = $mappedArgs['method'] ?? [];
     $publicArgs = \StorybookPhp\Runtime\Execution\executionContextArgs($context, 'publicArgs');
     $caseValue = $methodInput['_case'] ?? $publicArgs['_case'] ?? null;
-    $context = \StorybookPhp\Runtime\Execution\applyResolvedExecutionValue($context, 'enumCaseValue', '__computedEnumCaseValue', $caseValue);
+    $selected = \StorybookPhp\Runtime\Execution\applyResolvedExecutionValue($context, 'enumCaseValue', '__computedEnumCaseValue', $caseValue);
     unset($methodInput['_case']);
-    $methodArgs = \StorybookPhp\Runtime\Execution\resolveNamedArgs(
+    $methodArgs = \StorybookPhp\Runtime\Casting\resolveNamedArgs(
         \StorybookPhp\Runtime\Execution\plannerCallableReflection($planner),
         $methodInput,
         $typeMap,
         $planner['effectiveCallableArgDefs'],
     );
-    $context = \StorybookPhp\Runtime\Execution\applyResolvedExecutionArgs($context, 'methodArgs', '__computedMethodArgs', $methodArgs);
-    unset($context['templateArgs'], $context['constructorArgs']);
+    $resolved = \StorybookPhp\Runtime\Execution\applyResolvedExecutionArgs($selected, 'methodArgs', '__computedMethodArgs', $methodArgs);
+    unset($resolved['templateArgs'], $resolved['constructorArgs']);
 
-    return \StorybookPhp\Runtime\Execution\requireHydratedExecutionContext($context);
+    return \StorybookPhp\Runtime\Execution\requireHydratedExecutionContext($resolved);
 }
 
 /**
@@ -211,16 +211,10 @@ function applyResolvedExecutionArgs(array $context, string $field, string $snaps
     $previousComputedArgs = $context[$snapshotField] ?? null;
 
     if (!is_array($existingArgs) || !is_array($previousComputedArgs) || $existingArgs === $previousComputedArgs) {
-        $context[$field] = $computedArgs;
-        $context[$snapshotField] = $computedArgs;
-
-        return $context;
+        return array_replace($context, [$field => $computedArgs, $snapshotField => $computedArgs]);
     }
 
-    $context[$field] = array_merge($computedArgs, $existingArgs);
-    $context[$snapshotField] = $computedArgs;
-
-    return $context;
+    return array_replace($context, [$field => array_merge($computedArgs, $existingArgs), $snapshotField => $computedArgs]);
 }
 
 /**
@@ -233,13 +227,8 @@ function applyResolvedExecutionValue(array $context, string $field, string $snap
     $previousComputedValue = $context[$snapshotField] ?? null;
 
     if (!array_key_exists($field, $context) || $existingValue === $previousComputedValue) {
-        $context[$field] = $computedValue;
-        $context[$snapshotField] = $computedValue;
-
-        return $context;
+        return array_replace($context, [$field => $computedValue, $snapshotField => $computedValue]);
     }
 
-    $context[$snapshotField] = $computedValue;
-
-    return $context;
+    return array_replace($context, [$snapshotField => $computedValue]);
 }

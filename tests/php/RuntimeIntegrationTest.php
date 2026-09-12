@@ -79,16 +79,16 @@ use StorybookPhp\TestFixture\StringableValue;
  * @covers \StorybookPhp\Runtime\Execution\mergeTargetArgDefForRuntime
  * @covers \StorybookPhp\Runtime\Execution\stripInheritedRuntimeDefault
  * @covers \StorybookPhp\Runtime\Execution\defaultsMatchForRuntime
- * @covers \StorybookPhp\Runtime\Execution\resolveParamDocType
- * @covers \StorybookPhp\Runtime\Execution\buildOverrideDocType
- * @covers \StorybookPhp\Runtime\Execution\isRedundantDocTypeOverride
- * @covers \StorybookPhp\Runtime\Execution\normalizeRuntimeTypeName
- * @covers \StorybookPhp\Runtime\Execution\resolveArgs
- * @covers \StorybookPhp\Runtime\Execution\resolveParameterArgDef
- * @covers \StorybookPhp\Runtime\Execution\resolveVariadicArgValues
- * @covers \StorybookPhp\Runtime\Execution\resolveParameterArgValue
- * @covers \StorybookPhp\Runtime\Execution\matchArgs
- * @covers \StorybookPhp\Runtime\Execution\resolveNamedArgs
+ * @covers \StorybookPhp\Runtime\Casting\resolveParamDocType
+ * @covers \StorybookPhp\Runtime\Casting\buildOverrideDocType
+ * @covers \StorybookPhp\Runtime\Casting\isRedundantDocTypeOverride
+ * @covers \StorybookPhp\Runtime\Casting\normalizeRuntimeTypeName
+ * @covers \StorybookPhp\Runtime\Casting\resolveArgs
+ * @covers \StorybookPhp\Runtime\Casting\resolveParameterArgDef
+ * @covers \StorybookPhp\Runtime\Casting\resolveVariadicArgValues
+ * @covers \StorybookPhp\Runtime\Casting\resolveParameterArgValue
+ * @covers \StorybookPhp\Runtime\Casting\matchArgs
+ * @covers \StorybookPhp\Runtime\Casting\resolveNamedArgs
  * @covers \StorybookPhp\Runtime\Execution\hydrateExecutionContext
  * @covers \StorybookPhp\Runtime\Execution\normalizeExecutionContext
  * @covers \StorybookPhp\Runtime\Execution\normalizeExecutionContextString
@@ -134,22 +134,22 @@ use StorybookPhp\TestFixture\StringableValue;
  * @covers \StorybookPhp\Runtime\Execution\executeRunnerRequest
  * @covers \StorybookPhp\Runtime\Execution\executeAdapterTerminal
  * @covers \StorybookPhp\Runtime\Execution\buildRunnerExecutionContext
- * @covers \StorybookPhp\Runtime\resolveExecutionHtml
+ * @covers \StorybookPhp\Runtime\Transport\resolveExecutionHtml
  * @covers \StorybookPhp\Runtime\run
  * @covers \StorybookPhp\Runtime\failure
- * @covers \StorybookPhp\Runtime\Transport\loadAdapter
- * @covers \StorybookPhp\Runtime\Transport\loadAdapters
- * @covers \StorybookPhp\Runtime\Transport\normalizeAdapterResponse
- * @covers \StorybookPhp\Runtime\Transport\runAdapterMiddleware
- * @covers \StorybookPhp\Runtime\Transport\wrapAdapterMiddleware
- * @covers \StorybookPhp\Runtime\Transport\createAdapterTerminal
- * @covers \StorybookPhp\Runtime\Transport\stringifyOutputValue
- * @covers \StorybookPhp\Runtime\Transport\stringifyScalarForError
+ * @covers \StorybookPhp\Runtime\Execution\loadAdapter
+ * @covers \StorybookPhp\Runtime\Execution\loadAdapters
+ * @covers \StorybookPhp\Runtime\Execution\normalizeAdapterResponse
+ * @covers \StorybookPhp\Runtime\Execution\runAdapterMiddleware
+ * @covers \StorybookPhp\Runtime\Execution\wrapAdapterMiddleware
+ * @covers \StorybookPhp\Runtime\Execution\createAdapterTerminal
+ * @covers \StorybookPhp\Runtime\Contract\stringifyOutputValue
+ * @covers \StorybookPhp\Runtime\Contract\stringifyScalarForError
  * @covers \StorybookPhp\Runtime\Transport\getOutputBuffer
  * @covers \StorybookPhp\Runtime\Transport\requireOutputBuffer
- * @covers \StorybookPhp\Runtime\Transport\normalizeStringKeyArray
- * @covers \StorybookPhp\Runtime\Transport\normalizeStringList
- * @covers \StorybookPhp\Runtime\Transport\isSequentialList
+ * @covers \StorybookPhp\Runtime\Contract\normalizeStringKeyArray
+ * @covers \StorybookPhp\Runtime\Contract\normalizeStringList
+ * @covers \StorybookPhp\Runtime\Contract\isSequentialList
  * @covers \StorybookPhp\Runtime\Transport\readRunnerRequest
  * @covers \StorybookPhp\Runtime\Transport\decodeRunnerRequest
  * @covers \StorybookPhp\Runtime\Transport\requireRunnerRenderType
@@ -807,10 +807,10 @@ final class RuntimeIntegrationTest extends TestCase
         $parameter = $method->getParameters()[1];
         $docTypes = \StorybookPhp\Runtime\Contract\parseDocBlockParamTypes($method);
 
-        self::assertSame('list<Item>', \StorybookPhp\Runtime\Execution\resolveParamDocType($parameter, $docTypes));
+        self::assertSame('list<Item>', \StorybookPhp\Runtime\Casting\resolveParamDocType($parameter, $docTypes));
         self::assertSame(
             'list<string>',
-            \StorybookPhp\Runtime\Execution\resolveParamDocType(
+            \StorybookPhp\Runtime\Casting\resolveParamDocType(
                 $parameter,
                 $docTypes,
                 ['type' => 'list<string>'],
@@ -818,7 +818,7 @@ final class RuntimeIntegrationTest extends TestCase
         );
         self::assertSame(
             'list<int>',
-            \StorybookPhp\Runtime\Execution\resolveParamDocType(
+            \StorybookPhp\Runtime\Casting\resolveParamDocType(
                 $parameter,
                 $docTypes,
                 ['type' => 'list<int>'],
@@ -826,7 +826,7 @@ final class RuntimeIntegrationTest extends TestCase
         );
         self::assertSame(
             'list<bool>',
-            \StorybookPhp\Runtime\Execution\resolveParamDocType(
+            \StorybookPhp\Runtime\Casting\resolveParamDocType(
                 $parameter,
                 $docTypes,
                 ['type' => 'list<bool>'],
@@ -834,7 +834,7 @@ final class RuntimeIntegrationTest extends TestCase
         );
         self::assertSame(
             'Item[]',
-            \StorybookPhp\Runtime\Execution\resolveParamDocType(
+            \StorybookPhp\Runtime\Casting\resolveParamDocType(
                 $parameter,
                 $docTypes,
                 ['elementType' => 'Item'],
@@ -844,7 +844,7 @@ final class RuntimeIntegrationTest extends TestCase
         $title = $method->getParameters()[0];
         self::assertSame(
             'Item',
-            \StorybookPhp\Runtime\Execution\resolveParamDocType(
+            \StorybookPhp\Runtime\Casting\resolveParamDocType(
                 $title,
                 $docTypes,
                 ['elementType' => 'Item'],
@@ -852,50 +852,50 @@ final class RuntimeIntegrationTest extends TestCase
         );
 
         $collectionParameter = new ReflectionParameter('StorybookPhp\\TestFixture\\acceptsCollection', 0);
-        self::assertSame('int', \StorybookPhp\Runtime\Execution\buildOverrideDocType($parameter, ['type' => 'int']));
-        self::assertSame('Item[]', \StorybookPhp\Runtime\Execution\buildOverrideDocType($parameter, ['type' => 'array', 'elementType' => 'Item']));
+        self::assertSame('int', \StorybookPhp\Runtime\Casting\buildOverrideDocType($parameter, ['type' => 'int']));
+        self::assertSame('Item[]', \StorybookPhp\Runtime\Casting\buildOverrideDocType($parameter, ['type' => 'array', 'elementType' => 'Item']));
         self::assertSame(
             ListCollection::class . '<Item>',
-            \StorybookPhp\Runtime\Execution\buildOverrideDocType($collectionParameter, ['type' => ListCollection::class, 'elementType' => 'Item']),
+            \StorybookPhp\Runtime\Casting\buildOverrideDocType($collectionParameter, ['type' => ListCollection::class, 'elementType' => 'Item']),
         );
-        self::assertNull(\StorybookPhp\Runtime\Execution\buildOverrideDocType($parameter, []));
+        self::assertNull(\StorybookPhp\Runtime\Casting\buildOverrideDocType($parameter, []));
         self::assertSame(
             ListCollection::class . '<Item>',
-            \StorybookPhp\Runtime\Execution\buildOverrideDocType($collectionParameter, ['elementType' => 'Item']),
+            \StorybookPhp\Runtime\Casting\buildOverrideDocType($collectionParameter, ['elementType' => 'Item']),
         );
         $untyped = new ReflectionParameter('StorybookPhp\\TestFixture\\acceptsUntyped', 0);
         $stringUnion = (new ReflectionFunction(static function (int|string $value): int|string {
             return $value;
         }))->getParameters()[0];
-        self::assertSame('Item[]', \StorybookPhp\Runtime\Execution\buildOverrideDocType($untyped, ['elementType' => 'Item']));
-        self::assertSame('Item', \StorybookPhp\Runtime\Execution\buildOverrideDocType($title, ['elementType' => 'Item']));
-        self::assertNull(\StorybookPhp\Runtime\Execution\buildOverrideDocType($parameter, ['type' => 'unknown']));
-        self::assertFalse(\StorybookPhp\Runtime\Execution\isRedundantDocTypeOverride($stringUnion, 'string'));
-        self::assertNull(\StorybookPhp\Runtime\Execution\normalizeRuntimeTypeName('   ', $parameter));
+        self::assertSame('Item[]', \StorybookPhp\Runtime\Casting\buildOverrideDocType($untyped, ['elementType' => 'Item']));
+        self::assertSame('Item', \StorybookPhp\Runtime\Casting\buildOverrideDocType($title, ['elementType' => 'Item']));
+        self::assertNull(\StorybookPhp\Runtime\Casting\buildOverrideDocType($parameter, ['type' => 'unknown']));
+        self::assertFalse(\StorybookPhp\Runtime\Casting\isRedundantDocTypeOverride($stringUnion, 'string'));
+        self::assertNull(\StorybookPhp\Runtime\Casting\normalizeRuntimeTypeName('   ', $parameter));
     }
 
     public function testMatchArgsHandlesDefaultsNullablesVariadicsAndErrors(): void
     {
-        self::assertSame([], \StorybookPhp\Runtime\Execution\matchArgs(null, []));
+        self::assertSame([], \StorybookPhp\Runtime\Casting\matchArgs(null, []));
 
         $render = new ReflectionMethod(ExampleRenderer::class, 'render');
-        $matched = \StorybookPhp\Runtime\Execution\matchArgs($render, ['title' => 'Hello', 'items' => [['label' => 'one']], 'count' => '2']);
+        $matched = \StorybookPhp\Runtime\Casting\matchArgs($render, ['title' => 'Hello', 'items' => [['label' => 'one']], 'count' => '2']);
         self::assertSame('Hello', $matched[0]);
         self::assertInstanceOf(Item::class, $matched[1][0]);
         self::assertSame(2, $matched[2]);
 
         $defaults = new ReflectionFunction('StorybookPhp\\TestFixture\\acceptsDefault');
-        self::assertSame(['fallback', null, 1, 2], \StorybookPhp\Runtime\Execution\matchArgs($defaults, ['numbers' => ['1', '2']]));
-        self::assertSame(['fallback', null, 3], \StorybookPhp\Runtime\Execution\matchArgs($defaults, ['numbers' => '3']));
+        self::assertSame(['fallback', null, 1, 2], \StorybookPhp\Runtime\Casting\matchArgs($defaults, ['numbers' => ['1', '2']]));
+        self::assertSame(['fallback', null, 3], \StorybookPhp\Runtime\Casting\matchArgs($defaults, ['numbers' => '3']));
 
         $nullable = new ReflectionFunction('StorybookPhp\\TestFixture\\acceptsNullableNoDefault');
-        self::assertSame([null], \StorybookPhp\Runtime\Execution\matchArgs($nullable, []));
+        self::assertSame([null], \StorybookPhp\Runtime\Casting\matchArgs($nullable, []));
 
         $overrideConstructor = (new ReflectionClass(OverrideTarget::class))->getConstructor();
         self::assertInstanceOf(ReflectionMethod::class, $overrideConstructor);
         self::assertSame(
             [7, null],
-            \StorybookPhp\Runtime\Execution\matchArgs($overrideConstructor, [], null, [
+            \StorybookPhp\Runtime\Casting\matchArgs($overrideConstructor, [], null, [
                 'limit' => ['type' => 'int', 'default' => '7'],
                 'subtitle' => ['nullable' => true],
             ]),
@@ -903,7 +903,7 @@ final class RuntimeIntegrationTest extends TestCase
 
         $this->expectException(RuntimeException::class);
         $this->expectExceptionMessage('Missing required argument: title');
-        \StorybookPhp\Runtime\Execution\matchArgs($render, ['items' => [['label' => 'missing']]]);
+        \StorybookPhp\Runtime\Casting\matchArgs($render, ['items' => [['label' => 'missing']]]);
     }
 
     public function testTargetArgDefHelpersMergeScopedAndFlatPublicArgs(): void
@@ -950,31 +950,31 @@ final class RuntimeIntegrationTest extends TestCase
 
     public function testStringifyBufferAndNormalizationHelpersWork(): void
     {
-        self::assertSame('value', \StorybookPhp\Runtime\Transport\stringifyOutputValue('value'));
-        self::assertSame('1', \StorybookPhp\Runtime\Transport\stringifyOutputValue(true));
-        self::assertSame('stringable', \StorybookPhp\Runtime\Transport\stringifyOutputValue(new StringableValue('stringable')));
-        self::assertSame('', \StorybookPhp\Runtime\Transport\stringifyOutputValue(['not' => 'scalar']));
-        self::assertSame('value', \StorybookPhp\Runtime\Transport\stringifyScalarForError('value'));
-        self::assertSame('array', \StorybookPhp\Runtime\Transport\stringifyScalarForError(['not' => 'scalar']));
+        self::assertSame('value', \StorybookPhp\Runtime\Contract\stringifyOutputValue('value'));
+        self::assertSame('1', \StorybookPhp\Runtime\Contract\stringifyOutputValue(true));
+        self::assertSame('stringable', \StorybookPhp\Runtime\Contract\stringifyOutputValue(new StringableValue('stringable')));
+        self::assertSame('', \StorybookPhp\Runtime\Contract\stringifyOutputValue(['not' => 'scalar']));
+        self::assertSame('value', \StorybookPhp\Runtime\Contract\stringifyScalarForError('value'));
+        self::assertSame('array', \StorybookPhp\Runtime\Contract\stringifyScalarForError(['not' => 'scalar']));
 
         ob_start();
         echo 'buffered';
         self::assertSame('buffered', \StorybookPhp\Runtime\Transport\getOutputBuffer());
 
-        self::assertSame(['alpha' => 1], \StorybookPhp\Runtime\Transport\normalizeStringKeyArray(['alpha' => 1], 'args'));
-        self::assertSame(['adapter.php'], \StorybookPhp\Runtime\Transport\normalizeStringList(['adapter.php'], 'adapters'));
-        self::assertTrue(\StorybookPhp\Runtime\Transport\isSequentialList(['a', 'b']));
-        self::assertFalse(\StorybookPhp\Runtime\Transport\isSequentialList(['first' => 'a']));
+        self::assertSame(['alpha' => 1], \StorybookPhp\Runtime\Contract\normalizeStringKeyArray(['alpha' => 1], 'args'));
+        self::assertSame(['adapter.php'], \StorybookPhp\Runtime\Contract\normalizeStringList(['adapter.php'], 'adapters'));
+        self::assertTrue(\StorybookPhp\Runtime\Contract\isSequentialList(['a', 'b']));
+        self::assertFalse(\StorybookPhp\Runtime\Contract\isSequentialList(['first' => 'a']));
 
         try {
-            \StorybookPhp\Runtime\Transport\normalizeStringKeyArray([0 => 'bad'], 'args');
+            \StorybookPhp\Runtime\Contract\normalizeStringKeyArray([0 => 'bad'], 'args');
             self::fail('Expected non-string keys to throw.');
         } catch (RuntimeException $e) {
             self::assertSame("Field 'args' must use string keys.", $e->getMessage());
         }
 
         try {
-            \StorybookPhp\Runtime\Transport\normalizeStringList(['named' => 'adapter.php'], 'adapters');
+            \StorybookPhp\Runtime\Contract\normalizeStringList(['named' => 'adapter.php'], 'adapters');
             self::fail('Expected non-list adapter array to throw.');
         } catch (RuntimeException $e) {
             self::assertSame("Field 'adapters' must be a list of non-empty strings.", $e->getMessage());
@@ -1038,38 +1038,38 @@ final class RuntimeIntegrationTest extends TestCase
 
     public function testMiddlewareHelpersAndResolveOutputHandleSupportedPaths(): void
     {
-        self::assertNull(\StorybookPhp\Runtime\Transport\loadAdapter(null));
-        self::assertNull(\StorybookPhp\Runtime\Transport\loadAdapter(''));
+        self::assertNull(\StorybookPhp\Runtime\Execution\loadAdapter(null));
+        self::assertNull(\StorybookPhp\Runtime\Execution\loadAdapter(''));
 
-        $adapter = \StorybookPhp\Runtime\Transport\loadAdapter(self::ADAPTER_FILE);
+        $adapter = \StorybookPhp\Runtime\Execution\loadAdapter(self::ADAPTER_FILE);
         self::assertIsCallable($adapter);
-        self::assertCount(1, \StorybookPhp\Runtime\Transport\loadAdapters([self::ADAPTER_FILE]));
+        self::assertCount(1, \StorybookPhp\Runtime\Execution\loadAdapters([self::ADAPTER_FILE]));
 
         try {
-            \StorybookPhp\Runtime\Transport\loadAdapter(self::INVALID_ADAPTER_FILE);
+            \StorybookPhp\Runtime\Execution\loadAdapter(self::INVALID_ADAPTER_FILE);
             self::fail('Expected invalid adapter to throw.');
         } catch (RuntimeException $e) {
             self::assertStringContainsString('Adapter file must return a callable middleware', $e->getMessage());
         }
 
         try {
-            \StorybookPhp\Runtime\Transport\normalizeAdapterResponse((require self::NON_STRING_ADAPTER_FILE)([], static fn (): array => ['html' => 'ok']));
+            \StorybookPhp\Runtime\Execution\normalizeAdapterResponse((require self::NON_STRING_ADAPTER_FILE)([], static fn (): array => ['html' => 'ok']));
             self::fail('Expected adapter returning an invalid response to throw.');
         } catch (RuntimeException $e) {
             self::assertSame('Adapter middleware must return a response array or HTML string.', $e->getMessage());
         }
 
-        self::assertSame(['html' => 'done'], \StorybookPhp\Runtime\Transport\normalizeAdapterResponse('done'));
-        self::assertSame(['html' => 'done'], \StorybookPhp\Runtime\Transport\normalizeAdapterResponse(['html' => 'done']));
+        self::assertSame(['html' => 'done'], \StorybookPhp\Runtime\Execution\normalizeAdapterResponse('done'));
+        self::assertSame(['html' => 'done'], \StorybookPhp\Runtime\Execution\normalizeAdapterResponse(['html' => 'done']));
 
         try {
-            \StorybookPhp\Runtime\Transport\normalizeAdapterResponse(['html' => 123]);
+            \StorybookPhp\Runtime\Execution\normalizeAdapterResponse(['html' => 123]);
             self::fail('Expected invalid html field to throw.');
         } catch (RuntimeException $e) {
             self::assertSame("Adapter middleware responses must include a string 'html' field.", $e->getMessage());
         }
 
-        $chainResponse = \StorybookPhp\Runtime\Transport\runAdapterMiddleware(
+        $chainResponse = \StorybookPhp\Runtime\Execution\runAdapterMiddleware(
             [
                 static function (array $context, callable $next): array {
                     self::assertSame('1.5', $context['publicArgs']['amount']);
@@ -1097,7 +1097,7 @@ final class RuntimeIntegrationTest extends TestCase
         );
         self::assertSame('[outer][middle:2.5][core:2.5]', $chainResponse['html']);
 
-        $templateResponse = \StorybookPhp\Runtime\Transport\runAdapterMiddleware(
+        $templateResponse = \StorybookPhp\Runtime\Execution\runAdapterMiddleware(
             [
                 static function (array $context, callable $next): array {
                     self::assertSame(['greeting' => 'hello'], $context['publicArgs']);
@@ -1197,10 +1197,10 @@ final class RuntimeIntegrationTest extends TestCase
         self::assertSame('buffer', \StorybookPhp\Runtime\Transport\resolveOutput('', 'buffer'));
         self::assertSame('123', \StorybookPhp\Runtime\Transport\resolveOutput(123, ''));
         self::assertSame('', \StorybookPhp\Runtime\Transport\resolveOutput([], ''));
-        self::assertSame('buffer', \StorybookPhp\Runtime\resolveExecutionHtml($throwingStringable, 'buffer', true));
+        self::assertSame('buffer', \StorybookPhp\Runtime\Transport\resolveExecutionHtml($throwingStringable, 'buffer', true));
 
         try {
-            \StorybookPhp\Runtime\resolveExecutionHtml($throwingStringable, 'buffer', false);
+            \StorybookPhp\Runtime\Transport\resolveExecutionHtml($throwingStringable, 'buffer', false);
             self::fail('Expected output resolution failure to bubble when suppression is disabled.');
         } catch (RuntimeException $e) {
             self::assertSame('explode', $e->getMessage());

@@ -9,7 +9,7 @@ use RuntimeException;
 
 /**
  * @covers \StorybookPhp\Runtime\Transport\decodeRunnerRequest
- * @covers \StorybookPhp\Runtime\Transport\normalizeStringKeyArray
+ * @covers \StorybookPhp\Runtime\Contract\normalizeStringKeyArray
  * @covers \StorybookPhp\Runtime\Transport\readRunnerStdin
  * @covers \StorybookPhp\Runtime\Transport\requireRunnerInput
  */

@@ -2,13 +2,13 @@
 
 declare(strict_types=1);
 
-namespace Tests\Unit\StorybookPhp\Runtime\Execution;
+namespace Tests\Unit\StorybookPhp\Runtime\Casting;
 
 use PHPUnit\Framework\TestCase;
 use ReflectionException;
 
 /**
- * @covers \StorybookPhp\Runtime\Execution\resolveArgs
+ * @covers \StorybookPhp\Runtime\Casting\resolveArgs
  */
 final class ArgumentResolverTest extends TestCase
 {
@@ -17,6 +17,6 @@ final class ArgumentResolverTest extends TestCase
      */
     public function testAnAbsentCallableHasNoResolvedArguments(): void
     {
-        self::assertSame(['ordered' => [], 'named' => []], \StorybookPhp\Runtime\Execution\resolveArgs(null, ['ignored' => true]));
+        self::assertSame(['ordered' => [], 'named' => []], \StorybookPhp\Runtime\Casting\resolveArgs(null, ['ignored' => true]));
     }
 }

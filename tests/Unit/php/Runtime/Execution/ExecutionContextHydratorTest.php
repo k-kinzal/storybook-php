@@ -11,7 +11,7 @@ use PHPUnit\Framework\TestCase;
  * @covers \StorybookPhp\Runtime\Contract\isRenderType
  * @covers \StorybookPhp\Runtime\Execution\normalizeExecutionContextMap
  * @covers \StorybookPhp\Runtime\Execution\normalizeExecutionContextString
- * @covers \StorybookPhp\Runtime\Transport\normalizeStringKeyArray
+ * @covers \StorybookPhp\Runtime\Contract\normalizeStringKeyArray
  */
 final class ExecutionContextHydratorTest extends TestCase
 {

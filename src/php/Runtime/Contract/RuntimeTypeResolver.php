@@ -108,7 +108,7 @@ function resolveEnumCase(string $enumClass, mixed $value): object
     }
 
     throw new RuntimeException(
-        "Cannot resolve enum case '" . \StorybookPhp\Runtime\Transport\stringifyScalarForError($value) . "' for {$enumClass}",
+        "Cannot resolve enum case '" . \StorybookPhp\Runtime\Contract\stringifyScalarForError($value) . "' for {$enumClass}",
     );
 }
 

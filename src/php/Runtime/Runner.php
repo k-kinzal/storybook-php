@@ -4,25 +4,9 @@ declare(strict_types=1);
 
 namespace StorybookPhp\Runtime;
 
-use Generator;
 use JsonException;
 use ReflectionException;
 use Throwable;
-
-/**
- * Defers lazy output values when adapter middleware owns their render
- * lifecycle, while preserving already-materialized core output.
- */
-function resolveExecutionHtml(mixed $result, string $buffered, bool $deferToAdapter): string
-{
-    $isLazyOutput = $result instanceof Generator
-        || (is_object($result) && method_exists($result, '__toString'));
-    if ($deferToAdapter && $isLazyOutput) {
-        return $buffered;
-    }
-
-    return \StorybookPhp\Runtime\Transport\resolveOutput($result, $buffered);
-}
 
 /**
  * Executes one validated stdin payload and returns its encoded response.

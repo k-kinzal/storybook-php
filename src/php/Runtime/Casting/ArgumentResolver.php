@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace StorybookPhp\Runtime\Execution;
+namespace StorybookPhp\Runtime\Casting;
 
 use ReflectionException;
 use ReflectionFunctionAbstract;
@@ -25,7 +25,7 @@ function resolveParamDocType(
     $docType = $docTypes[$name] ?? null;
 
     if ($argDef !== null) {
-        $overrideDocType = \StorybookPhp\Runtime\Execution\buildOverrideDocType($param, $argDef);
+        $overrideDocType = \StorybookPhp\Runtime\Casting\buildOverrideDocType($param, $argDef);
         if ($overrideDocType !== null) {
             return $overrideDocType;
         }
@@ -52,7 +52,7 @@ function buildOverrideDocType(ReflectionParameter $param, array $argDef): ?strin
         : null;
 
     if ($type !== null) {
-        if ($elementType === null && \StorybookPhp\Runtime\Execution\isRedundantDocTypeOverride($param, $type)) {
+        if ($elementType === null && \StorybookPhp\Runtime\Casting\isRedundantDocTypeOverride($param, $type)) {
             return null;
         }
 
@@ -98,8 +98,8 @@ function isRedundantDocTypeOverride(ReflectionParameter $param, string $override
         return false;
     }
 
-    $normalizedOverride = \StorybookPhp\Runtime\Execution\normalizeRuntimeTypeName($overrideType, $param);
-    $normalizedParamType = \StorybookPhp\Runtime\Execution\normalizeRuntimeTypeName($paramType->getName(), $param);
+    $normalizedOverride = \StorybookPhp\Runtime\Casting\normalizeRuntimeTypeName($overrideType, $param);
+    $normalizedParamType = \StorybookPhp\Runtime\Casting\normalizeRuntimeTypeName($paramType->getName(), $param);
 
     return $normalizedOverride !== null
         && $normalizedParamType !== null
@@ -146,19 +146,19 @@ function resolveArgs(?ReflectionFunctionAbstract $ref, array $args, ?array $type
     $named = [];
     foreach ($ref->getParameters() as $param) {
         $name = $param->getName();
-        $argDef = \StorybookPhp\Runtime\Execution\resolveParameterArgDef($name, $argDefs);
-        $docType = \StorybookPhp\Runtime\Execution\resolveParamDocType($param, $docTypes, $argDef);
+        $argDef = \StorybookPhp\Runtime\Casting\resolveParameterArgDef($name, $argDefs);
+        $docType = \StorybookPhp\Runtime\Casting\resolveParamDocType($param, $docTypes, $argDef);
 
         if ($param->isVariadic()) {
             if (array_key_exists($name, $args)) {
-                $variadicValues = \StorybookPhp\Runtime\Execution\resolveVariadicArgValues($param, $args[$name], $docType, $typeMap);
+                $variadicValues = \StorybookPhp\Runtime\Casting\resolveVariadicArgValues($param, $args[$name], $docType, $typeMap);
                 array_push($ordered, ...$variadicValues);
                 $named[$name] = $variadicValues;
             }
             continue;
         }
 
-        $resolved = \StorybookPhp\Runtime\Execution\resolveParameterArgValue($param, $args, $argDef, $docType, $typeMap);
+        $resolved = \StorybookPhp\Runtime\Casting\resolveParameterArgValue($param, $args, $argDef, $docType, $typeMap);
         $ordered[] = $resolved;
         $named[$name] = $resolved;
     }
@@ -177,7 +177,7 @@ function resolveParameterArgDef(string $name, ?array $argDefs): ?array
         return null;
     }
 
-    return \StorybookPhp\Runtime\Transport\normalizeStringKeyArray($argDef, "argument definition '{$name}'");
+    return \StorybookPhp\Runtime\Contract\normalizeStringKeyArray($argDef, "argument definition '{$name}'");
 }
 
 /**
@@ -247,7 +247,7 @@ function resolveParameterArgValue(
  */
 function matchArgs(?ReflectionFunctionAbstract $ref, array $args, ?array $typeMap = null, ?array $argDefs = null): array
 {
-    return \StorybookPhp\Runtime\Execution\resolveArgs($ref, $args, $typeMap, $argDefs)['ordered'];
+    return \StorybookPhp\Runtime\Casting\resolveArgs($ref, $args, $typeMap, $argDefs)['ordered'];
 }
 
 /**
@@ -261,5 +261,5 @@ function matchArgs(?ReflectionFunctionAbstract $ref, array $args, ?array $typeMa
  */
 function resolveNamedArgs(?ReflectionFunctionAbstract $ref, array $args, ?array $typeMap = null, ?array $argDefs = null): array
 {
-    return \StorybookPhp\Runtime\Execution\resolveArgs($ref, $args, $typeMap, $argDefs)['named'];
+    return \StorybookPhp\Runtime\Casting\resolveArgs($ref, $args, $typeMap, $argDefs)['named'];
 }

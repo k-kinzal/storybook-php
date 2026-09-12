@@ -26,12 +26,12 @@ function readRunnerRequest(string $input): array
         'sourceFile' => \StorybookPhp\Runtime\Transport\runnerOptionalStringField($decoded, 'sourceFile'),
         'class' => \StorybookPhp\Runtime\Transport\runnerOptionalStringField($decoded, 'class'),
         'callable' => \StorybookPhp\Runtime\Transport\runnerOptionalStringField($decoded, 'callable'),
-        'args' => \StorybookPhp\Runtime\Transport\normalizeStringKeyArray($args, 'args'),
+        'args' => \StorybookPhp\Runtime\Contract\normalizeStringKeyArray($args, 'args'),
         'publicArgDefs' => \StorybookPhp\Runtime\Transport\runnerObjectField($decoded, 'publicArgDefs'),
         'constructorArgDefs' => \StorybookPhp\Runtime\Transport\runnerObjectField($decoded, 'constructorArgDefs'),
         'callableArgDefs' => \StorybookPhp\Runtime\Transport\runnerObjectField($decoded, 'callableArgDefs'),
         'bootstrap' => \StorybookPhp\Runtime\Transport\runnerOptionalStringField($decoded, 'bootstrap'),
-        'adapters' => $adapters === null ? null : \StorybookPhp\Runtime\Transport\normalizeStringList($adapters, 'adapters'),
+        'adapters' => $adapters === null ? null : \StorybookPhp\Runtime\Contract\normalizeStringList($adapters, 'adapters'),
         'typeMap' => \StorybookPhp\Runtime\Transport\runnerObjectField($decoded, 'typeMap'),
     ];
 }
@@ -51,7 +51,7 @@ function decodeRunnerRequest(string $input): array
         throw new RuntimeException('Invalid request payload.');
     }
 
-    return \StorybookPhp\Runtime\Transport\normalizeStringKeyArray($decoded, 'request');
+    return \StorybookPhp\Runtime\Contract\normalizeStringKeyArray($decoded, 'request');
 }
 
 /**
@@ -113,7 +113,7 @@ function runnerObjectField(array $decoded, string $field, bool $nullable = true)
         throw new RuntimeException("Request field \"{$field}\" must be an object{$suffix}.");
     }
 
-    return \StorybookPhp\Runtime\Transport\normalizeStringKeyArray($value, $field);
+    return \StorybookPhp\Runtime\Contract\normalizeStringKeyArray($value, $field);
 }
 
 /**

@@ -1,18 +1,32 @@
-paths:
-  - src/php
+scan:
+  roots:
+    - src/php
+  exclude: []
 
-exclude: []
+policies:
+  standard:
+    limits:
+      file:
+        lines: 500
+        ncloc: 350
+      class:
+        lines: 400
+      trait:
+        lines: 300
+      interface:
+        lines: 200
+      enum:
+        lines: 200
+      function:
+        lines: 50
+        cyclomatic_complexity: 20
+      method:
+        lines: 50
+        cyclomatic_complexity: 20
 
-limits:
-  max_file_lines: 500
-  max_file_ncloc: 350
-  max_class_lines: 400
-  max_trait_lines: 300
-  max_interface_lines: 200
-  max_enum_lines: 200
-  max_function_lines: 50
-  max_method_lines: 50
-  max_cyclomatic_complexity: 20
+apply:
+  default: standard
+  rules: []
 
 report:
   reporter: ai

@@ -44,7 +44,7 @@ function buildTargetArgDefs(?array $targetArgDefs, ?array $publicArgDefs, string
             continue;
         }
 
-        $normalizedTargetArgDef = \StorybookPhp\Runtime\Transport\normalizeStringKeyArray($targetArgDef, "targetArgDefs.{$name}");
+        $normalizedTargetArgDef = \StorybookPhp\Runtime\Contract\normalizeStringKeyArray($targetArgDef, "targetArgDefs.{$name}");
         $effectiveArgDefs[$name] = \StorybookPhp\Runtime\Execution\mergeTargetArgDefForRuntime(
             $normalizedTargetArgDef,
             \StorybookPhp\Runtime\Execution\resolvePublicArgDefForTarget($name, $publicArgDefs, $scope)
@@ -66,11 +66,11 @@ function resolvePublicArgDefForTarget(string $name, ?array $publicArgDefs, strin
 
     $scopedKey = $scope . '.' . $name;
     if (isset($publicArgDefs[$scopedKey]) && is_array($publicArgDefs[$scopedKey])) {
-        return \StorybookPhp\Runtime\Transport\normalizeStringKeyArray($publicArgDefs[$scopedKey], "publicArgDefs.{$scopedKey}");
+        return \StorybookPhp\Runtime\Contract\normalizeStringKeyArray($publicArgDefs[$scopedKey], "publicArgDefs.{$scopedKey}");
     }
 
     if (isset($publicArgDefs[$name]) && is_array($publicArgDefs[$name])) {
-        return \StorybookPhp\Runtime\Transport\normalizeStringKeyArray($publicArgDefs[$name], "publicArgDefs.{$name}");
+        return \StorybookPhp\Runtime\Contract\normalizeStringKeyArray($publicArgDefs[$name], "publicArgDefs.{$name}");
     }
 
     return null;
@@ -89,17 +89,16 @@ function mergeTargetArgDefForRuntime(array $targetArgDef, ?array $publicArgDef):
         return $runtimeTargetArgDef;
     }
 
-    $runtimePublicArgDef = $publicArgDef;
-    if (
-        array_key_exists('default', $runtimePublicArgDef)
+    $inheritsDefault =
+        array_key_exists('default', $publicArgDef)
         && array_key_exists('default', $targetArgDef)
         && \StorybookPhp\Runtime\Execution\defaultsMatchForRuntime(
-            $runtimePublicArgDef['default'],
+            $publicArgDef['default'],
             $targetArgDef['default']
-        )
-    ) {
-        unset($runtimePublicArgDef['default']);
-    }
+        );
+    $runtimePublicArgDef = $inheritsDefault
+        ? \StorybookPhp\Runtime\Execution\stripInheritedRuntimeDefault($publicArgDef)
+        : $publicArgDef;
 
     return array_merge($runtimeTargetArgDef, $runtimePublicArgDef);
 }
@@ -110,14 +109,7 @@ function mergeTargetArgDefForRuntime(array $targetArgDef, ?array $publicArgDef):
  */
 function stripInheritedRuntimeDefault(array $argDef): array
 {
-    if (!array_key_exists('default', $argDef)) {
-        return $argDef;
-    }
-
-    $stripped = $argDef;
-    unset($stripped['default']);
-
-    return $stripped;
+    return array_diff_key($argDef, ['default' => true]);
 }
 
 /**

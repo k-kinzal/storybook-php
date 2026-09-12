@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace StorybookPhp\Runtime\Transport;
+namespace StorybookPhp\Runtime\Execution;
 
 use RuntimeException;
 
@@ -39,7 +39,7 @@ function loadAdapters(?array $adapterPaths): array
 
     $middlewares = [];
     foreach ($adapterPaths as $adapterPath) {
-        $middleware = \StorybookPhp\Runtime\Transport\loadAdapter($adapterPath);
+        $middleware = \StorybookPhp\Runtime\Execution\loadAdapter($adapterPath);
         if ($middleware !== null) {
             $middlewares[] = $middleware;
         }
@@ -71,7 +71,7 @@ function normalizeAdapterResponse(mixed $response): array
             if (!is_array($response[$field])) {
                 throw new RuntimeException("Adapter response field '{$field}' must be an object.");
             }
-            $response[$field] = \StorybookPhp\Runtime\Transport\normalizeStringKeyArray($response[$field], $field);
+            \StorybookPhp\Runtime\Contract\normalizeStringKeyArray($response[$field], $field);
         }
     }
     if (array_key_exists('buffered', $response) && !is_string($response['buffered'])) {
@@ -92,9 +92,9 @@ function normalizeAdapterResponse(mixed $response): array
  */
 function runAdapterMiddleware(array $middlewares, array $context, callable $terminal): array
 {
-    $runner = \StorybookPhp\Runtime\Transport\createAdapterTerminal($terminal);
+    $runner = \StorybookPhp\Runtime\Execution\createAdapterTerminal($terminal);
     foreach (array_reverse($middlewares) as $middleware) {
-        $runner = \StorybookPhp\Runtime\Transport\wrapAdapterMiddleware($runner, $middleware);
+        $runner = \StorybookPhp\Runtime\Execution\wrapAdapterMiddleware($runner, $middleware);
     }
 
     return $runner($context);
@@ -108,9 +108,9 @@ function runAdapterMiddleware(array $middlewares, array $context, callable $term
 function wrapAdapterMiddleware(callable $next, callable $middleware): callable
 {
     return static function (array $context) use ($middleware, $next): array {
-        $normalizedContext = \StorybookPhp\Runtime\Transport\normalizeStringKeyArray($context, 'adapterContext');
+        $normalizedContext = \StorybookPhp\Runtime\Contract\normalizeStringKeyArray($context, 'adapterContext');
 
-        return \StorybookPhp\Runtime\Transport\normalizeAdapterResponse($middleware(\StorybookPhp\Runtime\Execution\hydrateExecutionContext($normalizedContext), $next));
+        return \StorybookPhp\Runtime\Execution\normalizeAdapterResponse($middleware(\StorybookPhp\Runtime\Execution\hydrateExecutionContext($normalizedContext), $next));
     };
 }
 
@@ -121,8 +121,8 @@ function wrapAdapterMiddleware(callable $next, callable $middleware): callable
 function createAdapterTerminal(callable $terminal): callable
 {
     return static function (array $context) use ($terminal): array {
-        $normalizedContext = \StorybookPhp\Runtime\Transport\normalizeStringKeyArray($context, 'adapterContext');
+        $normalizedContext = \StorybookPhp\Runtime\Contract\normalizeStringKeyArray($context, 'adapterContext');
 
-        return \StorybookPhp\Runtime\Transport\normalizeAdapterResponse($terminal(\StorybookPhp\Runtime\Execution\hydrateExecutionContext($normalizedContext)));
+        return \StorybookPhp\Runtime\Execution\normalizeAdapterResponse($terminal(\StorybookPhp\Runtime\Execution\hydrateExecutionContext($normalizedContext)));
     };
 }

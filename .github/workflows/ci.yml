@@ -7,7 +7,7 @@ on:
   workflow_call:
 
 concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
+  group: ${{ github.workflow }}-${{ github.event_name }}-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: true
 
 permissions:
@@ -18,28 +18,25 @@ env:
 
 jobs:
   php-quality:
-    name: PHP Quality (PHP ${{ matrix.php }})
+    name: PHP Quality
     runs-on: ubuntu-latest
     timeout-minutes: 15
-    strategy:
-      fail-fast: false
-      matrix:
-        php: ["8.0", "8.1", "8.2", "8.3", "8.4", "8.5"]
     steps:
       - name: Check out the repository
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
       - name: Set up PHP
-        uses: shivammathur/setup-php@f3e473d116dcccaddc5834248c87452386958240 # 2.37.2
+        uses: shivammathur/setup-php@f3e473d116dcccaddc5834248c87452386958240
         with:
-          php-version: ${{ matrix.php }}
-          extensions: mbstring
+          php-version: "8.5"
+          extensions: dom, mbstring, pcntl, simplexml, xml, xmlwriter
+          tools: composer, deptrac/deptrac:4.7.1
           coverage: none
-      - name: Select PHP ${{ matrix.php }} dependencies
-        run: cp composer.lock.php-${{ matrix.php }} composer.lock
+      - name: Select PHP 8.5 dependencies
+        run: cp composer.lock.php-8.5 composer.lock
       - name: Validate Composer metadata
         run: composer validate --strict --no-check-publish
       - name: Install dependencies
-        uses: ramsey/composer-install@65e4f84970763564f46a70b8a54b90d033b3bdda # 4.0.0
+        uses: ramsey/composer-install@65e4f84970763564f46a70b8a54b90d033b3bdda
         with:
           dependency-versions: locked
           composer-options: --prefer-dist
@@ -58,6 +55,8 @@ jobs:
         run: composer loc-guard
       - name: Check repository structure
         run: composer tree-guard
+      - name: Check architecture boundaries
+        run: composer deptrac
       - name: Audit dependencies
         run: composer audit:security
       - name: Check automated refactors
@@ -73,52 +72,26 @@ jobs:
         php: ["8.0", "8.1", "8.2", "8.3", "8.4", "8.5"]
     steps:
       - name: Check out the repository
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
       - name: Set up PHP
-        uses: shivammathur/setup-php@f3e473d116dcccaddc5834248c87452386958240 # 2.37.2
+        uses: shivammathur/setup-php@f3e473d116dcccaddc5834248c87452386958240
         with:
           php-version: ${{ matrix.php }}
-          extensions: mbstring, pcntl
+          extensions: dom, mbstring, pcntl, simplexml, xml, xmlwriter
           coverage: none
       - name: Select PHP ${{ matrix.php }} dependencies
         run: cp composer.lock.php-${{ matrix.php }} composer.lock
+      - name: Validate Composer metadata
+        run: composer validate --strict --no-check-publish
       - name: Install dependencies
-        uses: ramsey/composer-install@65e4f84970763564f46a70b8a54b90d033b3bdda # 4.0.0
+        uses: ramsey/composer-install@65e4f84970763564f46a70b8a54b90d033b3bdda
         with:
           dependency-versions: locked
           composer-options: --prefer-dist
           require-lock-file: true
       - name: Check installed platform requirements
         run: composer check-platform-reqs
-      - name: Run unit tests in one process
-        run: composer test:unit
-      - name: Run executable documentation
-        run: composer doctest
-
-  phpunit-parallel:
-    name: PHPUnit through the parallel runner
-    runs-on: ubuntu-latest
-    timeout-minutes: 15
-    steps:
-      - name: Check out the repository
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      - name: Set up PHP
-        uses: shivammathur/setup-php@f3e473d116dcccaddc5834248c87452386958240 # 2.37.2
-        with:
-          php-version: "8.5"
-          extensions: mbstring, pcntl
-          coverage: none
-      - name: Select PHP 8.5 dependencies
-        run: cp composer.lock.php-8.5 composer.lock
-      - name: Install dependencies
-        uses: ramsey/composer-install@65e4f84970763564f46a70b8a54b90d033b3bdda # 4.0.0
-        with:
-          dependency-versions: locked
-          composer-options: --prefer-dist
-          require-lock-file: true
-      - name: Check installed platform requirements
-        run: composer check-platform-reqs
-      - name: Run the suite under the parallel runner
+      - name: Run runtime, unit and executable documentation tests in parallel
         run: composer test
 
   lint:
@@ -126,39 +99,51 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+      - name: Check out the repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+      - name: Set up Node.js
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020
         with:
           node-version: 24
           cache: npm
-      - run: npm ci
-      - run: npm run lint
+      - name: Install Node.js dependencies
+        run: npm ci
+      - name: Check TypeScript and configuration formatting
+        run: npm run lint
 
   typecheck:
     name: Typecheck
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+      - name: Check out the repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+      - name: Set up Node.js
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020
         with:
           node-version: 24
           cache: npm
-      - run: npm ci
-      - run: npm run typecheck
+      - name: Install Node.js dependencies
+        run: npm ci
+      - name: Check TypeScript types
+        run: npm run typecheck
 
   build:
     name: Build
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+      - name: Check out the repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+      - name: Set up Node.js
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020
         with:
           node-version: 24
           cache: npm
-      - run: npm ci
-      - run: npm run build
+      - name: Install Node.js dependencies
+        run: npm ci
+      - name: Build the addon
+        run: npm run build
 
   test:
     name: Test (PHP ${{ matrix.php }})
@@ -170,15 +155,19 @@ jobs:
       matrix:
         php: ["8.0", "8.1", "8.2", "8.3", "8.4", "8.5"]
     steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+      - name: Check out the repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+      - name: Set up Node.js
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020
         with:
           node-version: 24
           cache: npm
-      - uses: shivammathur/setup-php@f3e473d116dcccaddc5834248c87452386958240 # 2.37.2
+      - name: Set up PHP
+        uses: shivammathur/setup-php@f3e473d116dcccaddc5834248c87452386958240
         with:
           php-version: ${{ matrix.php }}
-      - run: npm ci
+      - name: Install Node.js dependencies
+        run: npm ci
       - name: Install Laravel example dependencies
         if: matrix.php >= '8.2'
         run: composer install --no-interaction --prefer-dist --working-dir=examples/laravel
@@ -197,4 +186,5 @@ jobs:
       - name: Install Advanced patterns example dependencies
         if: matrix.php >= '8.2'
         run: composer install --no-interaction --prefer-dist --working-dir=examples/advanced-patterns
-      - run: npm test
+      - name: Test the addon and PHP integration
+        run: npm test

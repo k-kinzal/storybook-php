@@ -22,8 +22,8 @@ function executeRunnerRequest(array $__sb_request): array
         require_once $__sb_bootstrap;
     }
 
-    $__sb_adapters = \StorybookPhp\Runtime\Transport\loadAdapters($__sb_request['adapters'] ?? null);
-    $__sb_response = \StorybookPhp\Runtime\Transport\runAdapterMiddleware(
+    $__sb_adapters = \StorybookPhp\Runtime\Execution\loadAdapters($__sb_request['adapters'] ?? null);
+    $__sb_response = \StorybookPhp\Runtime\Execution\runAdapterMiddleware(
         $__sb_adapters,
         \StorybookPhp\Runtime\Execution\buildRunnerExecutionContext($__sb_request, $__sb_adapters !== []),
         __NAMESPACE__ . '\\executeAdapterTerminal',

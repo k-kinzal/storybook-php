@@ -40,9 +40,7 @@ function ensureExecutionPlanner(array $context): array
         );
     }
 
-    $context['__planner'] = $planner;
-
-    return $context;
+    return array_replace($context, ['__planner' => $planner]);
 }
 
 /**

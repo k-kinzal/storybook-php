@@ -40,20 +40,20 @@ function instantiateClassFromValue(string $className, mixed $value, ?array $type
             return $ref->newInstanceArgs($value);
         }
 
-        return $ref->newInstanceArgs(\StorybookPhp\Runtime\Execution\matchArgs($constructor, $value, $typeMap));
+        return $ref->newInstanceArgs(\StorybookPhp\Runtime\Casting\matchArgs($constructor, $value, $typeMap));
     }
 
     $parameters = $constructor->getParameters();
     if (count($parameters) === 1 && !$parameters[0]->isVariadic()) {
         $parameter = $parameters[0];
-        $docType = \StorybookPhp\Runtime\Execution\resolveParamDocType($parameter, \StorybookPhp\Runtime\Contract\parseDocBlockParamTypes($constructor));
+        $docType = \StorybookPhp\Runtime\Casting\resolveParamDocType($parameter, \StorybookPhp\Runtime\Contract\parseDocBlockParamTypes($constructor));
 
         return $ref->newInstanceArgs([
             \StorybookPhp\Runtime\Casting\castArg($parameter, $value, $docType, $typeMap),
         ]);
     }
 
-    return $ref->newInstanceArgs(\StorybookPhp\Runtime\Execution\matchArgs($constructor, (array) $value, $typeMap));
+    return $ref->newInstanceArgs(\StorybookPhp\Runtime\Casting\matchArgs($constructor, (array) $value, $typeMap));
 }
 
 /**

@@ -5,7 +5,7 @@ declare(strict_types=1);
 use PHPUnit\Framework\TestCase;
 
 /**
- * @covers \StorybookPhp\Runtime\Transport\normalizeAdapterResponse
+ * @covers \StorybookPhp\Runtime\Execution\normalizeAdapterResponse
  */
 final class runtime_adaptersTest extends TestCase
 {
@@ -19,7 +19,7 @@ final class runtime_adaptersTest extends TestCase
 
         foreach ($cases as [$response, $message]) {
             try {
-                \StorybookPhp\Runtime\Transport\normalizeAdapterResponse($response);
+                \StorybookPhp\Runtime\Execution\normalizeAdapterResponse($response);
                 self::fail('Expected invalid adapter metadata to fail.');
             } catch (RuntimeException $exception) {
                 self::assertSame($message, $exception->getMessage());

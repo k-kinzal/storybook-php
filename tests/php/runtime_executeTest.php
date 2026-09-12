@@ -31,13 +31,13 @@ use PHPUnit\Framework\TestCase;
  * @covers \StorybookPhp\Runtime\Execution\requirePlannerExecutionFile
  * @covers \StorybookPhp\Runtime\Execution\requirePlannerTargetPair
  * @covers \StorybookPhp\Runtime\Execution\resolveTemplateContextArgs
- * @covers \StorybookPhp\Runtime\Transport\createAdapterTerminal
+ * @covers \StorybookPhp\Runtime\Execution\createAdapterTerminal
  * @covers \StorybookPhp\Runtime\Transport\getOutputBuffer
- * @covers \StorybookPhp\Runtime\Transport\loadAdapters
- * @covers \StorybookPhp\Runtime\Transport\normalizeAdapterResponse
- * @covers \StorybookPhp\Runtime\Transport\normalizeStringKeyArray
+ * @covers \StorybookPhp\Runtime\Execution\loadAdapters
+ * @covers \StorybookPhp\Runtime\Execution\normalizeAdapterResponse
+ * @covers \StorybookPhp\Runtime\Contract\normalizeStringKeyArray
  * @covers \StorybookPhp\Runtime\Transport\requireOutputBuffer
- * @covers \StorybookPhp\Runtime\Transport\runAdapterMiddleware
+ * @covers \StorybookPhp\Runtime\Execution\runAdapterMiddleware
  */
 final class runtime_executeTest extends TestCase
 {

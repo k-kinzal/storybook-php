@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace StorybookPhp\Runtime\Transport;
+namespace StorybookPhp\Runtime\Contract;
 
 use RuntimeException;
 
@@ -31,30 +31,8 @@ function stringifyOutputValue(mixed $value): string
  */
 function stringifyScalarForError(mixed $value): string
 {
-    $stringValue = \StorybookPhp\Runtime\Transport\stringifyOutputValue($value);
+    $stringValue = \StorybookPhp\Runtime\Contract\stringifyOutputValue($value);
     return $stringValue !== '' ? $stringValue : get_debug_type($value);
-}
-
-/**
- * Closes the active output buffer and returns its validated contents.
- */
-function getOutputBuffer(): string
-{
-    return \StorybookPhp\Runtime\Transport\requireOutputBuffer(ob_get_clean());
-}
-
-/**
- * Converts the engine-level output-buffer failure into the runner contract.
- *
- * @throws RuntimeException when no output buffer is active
- */
-function requireOutputBuffer(string|false $buffered): string
-{
-    if ($buffered === false) {
-        throw new RuntimeException('Failed to collect output buffer.');
-    }
-
-    return $buffered;
 }
 
 /**
@@ -84,7 +62,7 @@ function normalizeStringKeyArray(array $value, string $fieldName): array
  */
 function normalizeStringList(array $value, string $fieldName): array
 {
-    if (!\StorybookPhp\Runtime\Transport\isSequentialList($value)) {
+    if (!\StorybookPhp\Runtime\Contract\isSequentialList($value)) {
         throw new RuntimeException("Field '{$fieldName}' must be a list of non-empty strings.");
     }
 

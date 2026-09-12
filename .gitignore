@@ -8,6 +8,7 @@ dist/
 .php-cs-fixer.cache
 .phpunit.cache/
 .phpunit.result.cache
+.deptrac.cache
 .storybook-out/
 storybook-static/
 coverage/

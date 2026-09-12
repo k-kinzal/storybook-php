@@ -32,6 +32,7 @@ AGENTS.md export-ignore
 .npmignore export-ignore
 .php-cs-fixer.dist.php export-ignore
 loc.yaml export-ignore
+deptrac.yaml export-ignore
 phpcs.xml.dist export-ignore
 phpstan.neon.dist export-ignore
 phpunit.xml.dist export-ignore

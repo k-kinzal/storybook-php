@@ -5,3 +5,18 @@ includes:
 
 parameters:
   level: max
+  paths:
+    - src/php
+    - tests/Unit
+  toolkit:
+    mutation:
+      enabled: true
+    forbiddenTermsByPath:
+      'src/php/Runtime/*':
+        - Illuminate
+        - Laravel
+        - Symfony
+        - CakePHP
+        - 'Cake\'
+        - CodeIgniter
+        - Nette

@@ -22,15 +22,15 @@ use RuntimeException;
  */
 function executeCoreContext(array $__sb_context): array
 {
-    $__sb_context = \StorybookPhp\Runtime\Execution\hydrateExecutionContext($__sb_context);
-    $type = $__sb_context['type'];
+    $hydrated = \StorybookPhp\Runtime\Execution\hydrateExecutionContext($__sb_context);
+    $type = $hydrated['type'];
 
     return match ($type) {
-        'classMethod' => \StorybookPhp\Runtime\Execution\executeClassMethodContext($__sb_context),
-        'staticMethod' => \StorybookPhp\Runtime\Execution\executeStaticMethodContext($__sb_context),
-        'function' => \StorybookPhp\Runtime\Execution\executeFunctionContext($__sb_context),
-        'template' => \StorybookPhp\Runtime\Execution\executeTemplateContext($__sb_context),
-        'enumMethod' => \StorybookPhp\Runtime\Execution\executeEnumMethodContext($__sb_context),
+        'classMethod' => \StorybookPhp\Runtime\Execution\executeClassMethodContext($hydrated),
+        'staticMethod' => \StorybookPhp\Runtime\Execution\executeStaticMethodContext($hydrated),
+        'function' => \StorybookPhp\Runtime\Execution\executeFunctionContext($hydrated),
+        'template' => \StorybookPhp\Runtime\Execution\executeTemplateContext($hydrated),
+        'enumMethod' => \StorybookPhp\Runtime\Execution\executeEnumMethodContext($hydrated),
     };
 }
 
@@ -54,7 +54,7 @@ function executeClassMethodContext(array $context): array
     $buffered = \StorybookPhp\Runtime\Transport\getOutputBuffer();
 
     return \StorybookPhp\Runtime\Execution\buildExecutionResponse(
-        \StorybookPhp\Runtime\resolveExecutionHtml($result, $buffered, \StorybookPhp\Runtime\Execution\deferExecutionOutput($context)),
+        \StorybookPhp\Runtime\Transport\resolveExecutionHtml($result, $buffered, \StorybookPhp\Runtime\Execution\deferExecutionOutput($context)),
         $result,
         $buffered,
         $instance,
@@ -78,7 +78,7 @@ function executeStaticMethodContext(array $context): array
     $buffered = \StorybookPhp\Runtime\Transport\getOutputBuffer();
 
     return \StorybookPhp\Runtime\Execution\buildExecutionResponse(
-        \StorybookPhp\Runtime\resolveExecutionHtml($result, $buffered, \StorybookPhp\Runtime\Execution\deferExecutionOutput($context)),
+        \StorybookPhp\Runtime\Transport\resolveExecutionHtml($result, $buffered, \StorybookPhp\Runtime\Execution\deferExecutionOutput($context)),
         $result,
         $buffered,
         null,
@@ -102,7 +102,7 @@ function executeFunctionContext(array $context): array
     $buffered = \StorybookPhp\Runtime\Transport\getOutputBuffer();
 
     return \StorybookPhp\Runtime\Execution\buildExecutionResponse(
-        \StorybookPhp\Runtime\resolveExecutionHtml($result, $buffered, \StorybookPhp\Runtime\Execution\deferExecutionOutput($context)),
+        \StorybookPhp\Runtime\Transport\resolveExecutionHtml($result, $buffered, \StorybookPhp\Runtime\Execution\deferExecutionOutput($context)),
         $result,
         $buffered,
         null,
@@ -146,9 +146,9 @@ function executeEnumMethodContext(array $context): array
     if ($class === null || $class === '' || !\StorybookPhp\Runtime\Contract\enumTypeExists($class)) {
         throw new LogicException('Enum execution context has no valid enum class.');
     }
-    $class = \StorybookPhp\Runtime\Contract\requireExistingClass($class);
+    $className = \StorybookPhp\Runtime\Contract\requireExistingClass($class);
     $caseValue = $context['enumCaseValue'] ?? \StorybookPhp\Runtime\Execution\executionContextArgs($context, 'publicArgs')['_case'] ?? null;
-    $instance = \StorybookPhp\Runtime\Contract\resolveEnumCase($class, $caseValue);
+    $instance = \StorybookPhp\Runtime\Contract\resolveEnumCase($className, $caseValue);
     $method = \StorybookPhp\Runtime\Execution\plannerMethodReflection(\StorybookPhp\Runtime\Execution\executionPlanner($context));
     $methodArgs = \StorybookPhp\Runtime\Execution\executionContextArgs($context, 'methodArgs');
     ob_start();
@@ -156,7 +156,7 @@ function executeEnumMethodContext(array $context): array
     $buffered = \StorybookPhp\Runtime\Transport\getOutputBuffer();
 
     return \StorybookPhp\Runtime\Execution\buildExecutionResponse(
-        \StorybookPhp\Runtime\resolveExecutionHtml($result, $buffered, \StorybookPhp\Runtime\Execution\deferExecutionOutput($context)),
+        \StorybookPhp\Runtime\Transport\resolveExecutionHtml($result, $buffered, \StorybookPhp\Runtime\Execution\deferExecutionOutput($context)),
         $result,
         $buffered,
         $instance,
@@ -272,7 +272,7 @@ function executionContextArgs(array $context, string $field): array
 {
     $args = $context[$field] ?? [];
 
-    return is_array($args) ? \StorybookPhp\Runtime\Transport\normalizeStringKeyArray($args, $field) : [];
+    return is_array($args) ? \StorybookPhp\Runtime\Contract\normalizeStringKeyArray($args, $field) : [];
 }
 
 /**

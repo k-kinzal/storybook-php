@@ -36,6 +36,9 @@
         <testsuite name="doctest">
             <directory>tests/Doctest</directory>
         </testsuite>
+        <testsuite name="properties">
+            <directory>tests/Property</directory>
+        </testsuite>
     </testsuites>
     <listeners>
         <listener class="Toolkit\PhpUnit\TestReporter\Legacy\LegacyAiTestReporterListener"/>

@@ -58,12 +58,12 @@ final class VariadicConstructorFixture
  * @covers \StorybookPhp\Runtime\Contract\resolveTypeMapBinding
  * @covers \StorybookPhp\Runtime\Contract\splitGenericArgs
  * @covers \StorybookPhp\Runtime\Contract\typeExists
- * @covers \StorybookPhp\Runtime\Execution\matchArgs
- * @covers \StorybookPhp\Runtime\Execution\resolveArgs
- * @covers \StorybookPhp\Runtime\Execution\resolveParamDocType
- * @covers \StorybookPhp\Runtime\Execution\resolveParameterArgDef
- * @covers \StorybookPhp\Runtime\Execution\resolveParameterArgValue
- * @covers \StorybookPhp\Runtime\Transport\stringifyOutputValue
+ * @covers \StorybookPhp\Runtime\Casting\matchArgs
+ * @covers \StorybookPhp\Runtime\Casting\resolveArgs
+ * @covers \StorybookPhp\Runtime\Casting\resolveParamDocType
+ * @covers \StorybookPhp\Runtime\Casting\resolveParameterArgDef
+ * @covers \StorybookPhp\Runtime\Casting\resolveParameterArgValue
+ * @covers \StorybookPhp\Runtime\Contract\stringifyOutputValue
  */
 final class runtime_castTest extends TestCase
 {

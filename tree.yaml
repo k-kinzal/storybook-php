@@ -53,6 +53,20 @@ rules:
     dir_case: pascal
     max_files: 15
     max_dirs: 20
+  - path: "tests/Property"
+    forbid_empty: true
+    allow: ["*Test.php"]
+    file_case: pascal
+    dir_case: pascal
+    max_files: 15
+    max_dirs: 20
+  - path: "tests/Doctest"
+    forbid_empty: true
+    allow: ["*Test.php"]
+    file_case: pascal
+    dir_case: pascal
+    max_files: 15
+    max_dirs: 20
 
 report:
   reporter: ai

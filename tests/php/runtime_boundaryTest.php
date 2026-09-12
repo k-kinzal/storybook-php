@@ -5,7 +5,7 @@ declare(strict_types=1);
 use PHPUnit\Framework\TestCase;
 
 /**
- * @covers \StorybookPhp\Runtime\resolveExecutionHtml
+ * @covers \StorybookPhp\Runtime\Transport\resolveExecutionHtml
  * @covers \StorybookPhp\Runtime\failure
  * @covers \StorybookPhp\Runtime\Transport\buildRunnerErrorResponse
  * @covers \StorybookPhp\Runtime\Transport\encodeJsonResponse
@@ -22,13 +22,13 @@ final class runtime_boundaryTest extends TestCase
             yield '';
         })();
 
-        self::assertSame('buffered', \StorybookPhp\Runtime\resolveExecutionHtml($result, 'buffered', true));
+        self::assertSame('buffered', \StorybookPhp\Runtime\Transport\resolveExecutionHtml($result, 'buffered', true));
         self::assertFalse($resolved);
     }
 
     public function testKeepsMaterializedCoreOutputForAdapterMiddleware(): void
     {
-        self::assertSame('rendered', \StorybookPhp\Runtime\resolveExecutionHtml('rendered', '', true));
+        self::assertSame('rendered', \StorybookPhp\Runtime\Transport\resolveExecutionHtml('rendered', '', true));
     }
 
     public function testProgrammingErrorsSurfaceWithoutAnAdapter(): void
@@ -39,7 +39,7 @@ final class runtime_boundaryTest extends TestCase
         })();
 
         $this->expectException(TypeError::class);
-        \StorybookPhp\Runtime\resolveExecutionHtml($result, 'buffered', false);
+        \StorybookPhp\Runtime\Transport\resolveExecutionHtml($result, 'buffered', false);
     }
 
     public function testConvertsRequestFailuresToTheJsonProtocol(): void
