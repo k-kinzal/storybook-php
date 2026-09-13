@@ -6,12 +6,12 @@
   //
   // Requirements outside this file:
   //   1. The Renovate GitHub App must be installed for this repository.
-  //   2. "Allow auto-merge" must stay enabled in the repository settings (it is),
+  //   2. The Renovate Approve GitHub App (renovate-approve) must be installed as well. The
+  //      `main` ruleset requires an extra approval for changes that are not attributed to a
+  //      signed-in user, so Renovate cannot merge its own PRs; the helper app approves the
+  //      PRs that have automerge enabled below and leaves every other PR alone.
+  //   3. "Allow auto-merge" must stay enabled in the repository settings (it is),
   //      because automerge below relies on GitHub's native auto-merge.
-  //   3. `.github/workflows/renovate-auto-approve.yml` approves the PRs that carry the
-  //      `automerge` label or have auto-merge turned on. The `main` ruleset requires an
-  //      extra approval for changes that are not attributed to a signed-in user, so bot
-  //      PRs cannot merge without it.
   extends: [
     "config:recommended",
     ":semanticCommitTypeAll(chore)",
@@ -44,7 +44,6 @@
     enabled: true,
     schedule: ["before 6am on monday"],
     automerge: true,
-    addLabels: ["automerge"],
   },
 
   // Vulnerability fixes skip the release-age cooldown so they show up immediately, but they
@@ -114,21 +113,18 @@
       description: "Automerge patch and digest updates",
       matchUpdateTypes: ["patch", "digest", "pin", "pinDigest"],
       automerge: true,
-      addLabels: ["automerge"],
     },
     {
       description: "Automerge minor updates of stable packages. 0.x minors can break, so they are left out on purpose and get a normal review instead",
       matchUpdateTypes: ["minor"],
       matchCurrentVersion: ">=1.0.0",
       automerge: true,
-      addLabels: ["automerge"],
     },
     {
       description: "Actions are pinned to digests and every job is gated by CI, so anything below a major bump is automerged",
       matchManagers: ["github-actions"],
       matchUpdateTypes: ["minor", "patch", "digest", "pin", "pinDigest"],
       automerge: true,
-      addLabels: ["automerge"],
     },
   ],
 
