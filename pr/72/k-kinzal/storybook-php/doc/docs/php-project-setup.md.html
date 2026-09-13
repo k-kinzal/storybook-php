@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>PHP Project Setup — storybook-php</title>
+<link rel="canonical" href="https://k-kinzal.github.io/storybook-php/pr/72/k-kinzal/storybook-php/doc/docs/php-project-setup.md.html">
+<meta name="description" content="PHP Project Setup, a document of the k-kinzal/storybook-php package.">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="storybook-php">
+<meta property="og:title" content="PHP Project Setup — storybook-php">
+<meta property="og:description" content="PHP Project Setup, a document of the k-kinzal/storybook-php package.">
+<meta property="og:url" content="https://k-kinzal.github.io/storybook-php/pr/72/k-kinzal/storybook-php/doc/docs/php-project-setup.md.html">
+<meta property="og:image" content="https://k-kinzal.github.io/storybook-php/pr/72/assets/og-image.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="storybook-php">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="stylesheet" href="../../../../assets/style.css">
+<script>try{var t=localStorage.getItem("docgen-theme");if(t){document.documentElement.dataset.theme=t}document.documentElement.dataset.diffMode=localStorage.getItem("docgen-diff-mode")||"inline"}catch(e){}</script>
+</head>
+<body data-root="../../../../">
+<nav class="sidebar" id="sidebar"><div class="sb-head"><a class="sb-site" href="../../../../index.html">storybook-php</a></div><div class="sb-pkg"><a href="../../../../k-kinzal/storybook-php/index.html">k-kinzal/storybook-php</a></div><nav class="sb-block"><div class="sb-title">Package</div><ul class="sb-list"><li data-diff="same"><a href="../../../../k-kinzal/storybook-php/all-items.html">All items</a></li><li data-diff="same"><a href="../../../../k-kinzal/storybook-php/index.html#documents">Documents</a></li></ul></nav></nav>
+<div class="page">
+<header class="topbar">
+<button class="nav-toggle" id="nav-toggle" title="Toggle navigation">☰</button>
+<nav class="crumbs"><a href="../../../../k-kinzal/storybook-php/index.html">k-kinzal/storybook-php</a><span class="crumb-sep">::</span><span class="crumb-current">docs/php-project-setup.md</span></nav>
+<div class="topbar-tools">
+<input type="search" id="search" placeholder="Search… ( / )" autocomplete="off" spellcheck="false">
+<span class="diff-range" title="Comparing 64c8568 to working tree">64c8568 <span class="diff-arrow">→</span> working tree</span><div class="diff-modes" id="diff-modes" role="group" aria-label="Diff display mode"><button type="button" class="diff-mode" data-diff-mode="off" title="Documentation of the head revision, without diff marks">Off</button><button type="button" class="diff-mode" data-diff-mode="inline" title="Every page with additions and removals marked">Diff</button><button type="button" class="diff-mode" data-diff-mode="changes" title="Only what the head revision added, changed, or removed">Changes</button></div><a class="repo-link" href="https://github.com/k-kinzal/storybook-php" title="Repository: https://github.com/k-kinzal/storybook-php" rel="noreferrer">github.com</a>
+<button id="theme-toggle" title="Toggle theme">◐</button>
+</div>
+</header>
+<div class="search-results" id="search-results" hidden></div>
+<main class="content">
+<p class="diff-empty" id="diff-empty" data-changes="Nothing on this page changed between 64c8568 and working tree." data-off="This page documents what 64c8568 had and working tree no longer has. Switch to Diff to read it." hidden></p>
+<div class="symbol-head"><h1><span class="chip chip-kind k-document">document</span>PHP Project Setup</h1><div class="symbol-meta"><span class="src-link">docs/php-project-setup.md</span></div></div>
+<section class="readme" data-diff="same"><div class="doc-block" data-diff="same"><h2>PHP Project Setup</h2>
+</div><div class="doc-block" data-diff="same"><p>One of the goals of <code>storybook-php</code> is that you can run Storybook inside a PHP project without turning the repository into a full Node-managed app.</p>
+</div><div class="doc-block" data-diff="same"><p>In practice, that means:</p>
+</div><div class="doc-block" data-diff="same"><ul><li>you can keep using a PHP-first project layout</li><li>you do not need to commit a local <code>package.json</code> just to start Storybook</li><li>you can run the tooling through <code>npx</code></li></ul>
+</div><div class="doc-block" data-diff="same"><p>You still keep Storybook config and story files in the repository. What becomes optional is a project-local Node package manifest.</p>
+</div><div class="doc-block" data-diff="same"><h3>Minimal Project Layout</h3>
+</div><div class="doc-block" data-diff="same"><pre class="code-block"><code>your-php-project/
+  .storybook/
+    main.ts
+  storybook-php.config.mjs
+  src/
+    Greeting.php
+    Greeting.stories.ts
+  bootstrap.php</code></pre>
+</div><div class="doc-block" data-diff="same"><p>Only these are truly required:</p>
+</div><div class="doc-block" data-diff="same"><ul><li><code>.storybook/main.ts</code></li><li>one or more <code>*.stories.ts</code> files</li><li>the PHP files you want to render</li></ul>
+</div><div class="doc-block" data-diff="same"><p><code>bootstrap.php</code> is optional, but common.</p>
+</div><div class="doc-block" data-diff="same"><p><code>storybook-php.config.mjs</code> is only needed when <code>typegen</code> must know about <code>defaultMethod</code> or <code>typeMap</code>.</p>
+</div><div class="doc-block" data-diff="same"><h3>Minimal Storybook Config</h3>
+</div><div class="doc-block" data-diff="same"><pre class="code-block"><code>import type { StorybookConfig } from &quot;storybook&quot;;
+
+const config: StorybookConfig = {
+  stories: [&quot;../src/**/*.stories.ts&quot;],
+  framework: {
+    name: &quot;storybook-php&quot;,
+    options: {
+      bootstrap: new URL(&quot;../bootstrap.php&quot;, import.meta.url).pathname,
+    },
+  },
+};
+
+export default config;</code></pre>
+</div><div class="doc-block" data-diff="same"><p>If you do not need bootstrap logic yet, you can omit <code>bootstrap</code>.</p>
+</div><div class="doc-block" data-diff="same"><h3>Starting Storybook With <code>npx</code></h3>
+</div><div class="doc-block" data-diff="same"><p>For a PHP project with no local <code>package.json</code>, the normal start command is enough:</p>
+</div><div class="doc-block" data-diff="same"><pre class="code-block"><code>npx --yes storybook-php start</code></pre>
+</div><div class="doc-block" data-diff="same"><p>With current npm, this installs <code>storybook-php</code> and resolves the required Storybook/Vite peers for the command.</p>
+</div><div class="doc-block" data-diff="same"><h3>Using Composer Scripts</h3>
+</div><div class="doc-block" data-diff="same"><p>In a PHP-first repository, it is often convenient to expose these commands through <code>composer.json</code>:</p>
+</div><div class="doc-block" data-diff="same"><pre class="code-block"><code>{
+  &quot;scripts&quot;: {
+    &quot;storybook&quot;: &quot;npx --yes storybook-php start&quot;,
+    &quot;storybook:build&quot;: &quot;npx --yes storybook-php build&quot;,
+    &quot;storybook:typegen&quot;: &quot;npx --yes storybook-php typegen&quot;
+  }
+}</code></pre>
+</div><div class="doc-block" data-diff="same"><p>Then you can run:</p>
+</div><div class="doc-block" data-diff="same"><pre class="code-block"><code>composer storybook
+composer storybook:build
+composer storybook:typegen</code></pre>
+</div><div class="doc-block" data-diff="same"><h3>Building Static Output</h3>
+</div><div class="doc-block" data-diff="same"><pre class="code-block"><code>npx --yes storybook-php build</code></pre>
+</div><div class="doc-block" data-diff="same"><h3>Generating Types</h3>
+</div><div class="doc-block" data-diff="same"><p><code>typegen</code> only needs <code>storybook-php</code> itself:</p>
+</div><div class="doc-block" data-diff="same"><pre class="code-block"><code>npx --yes storybook-php typegen</code></pre>
+</div><div class="doc-block" data-diff="same"><p>It writes declaration files next to each matching source file, including exact-import outputs such as <code>Greeting.php@render.d.ts</code>.</p>
+</div><div class="doc-block" data-diff="same"><p>If your Storybook setup uses <code>defaultMethod</code> or <code>typeMap</code>, pass those settings explicitly because <code>typegen</code> does not evaluate <code>.storybook/main.ts</code>:</p>
+</div><div class="doc-block" data-diff="same"><pre class="code-block"><code>npx --yes storybook-php typegen --options-file storybook-php.config.mjs</code></pre>
+</div><div class="doc-block" data-diff="same"><p>Example <code>storybook-php.config.mjs</code>:</p>
+</div><div class="doc-block" data-diff="same"><pre class="code-block"><code>import { fileURLToPath } from &quot;node:url&quot;;
+
+export default {
+  _configDir: fileURLToPath(new URL(&quot;./.storybook/&quot;, import.meta.url)),
+  defaultMethod: &quot;render&quot;,
+  typeMap: {
+    files: {
+      &quot;../src/views/components/card.blade.php&quot;: {
+        phpFile: &quot;../src/BladeCard.php&quot;,
+        callable: &quot;render&quot;,
+      },
+    },
+  },
+};</code></pre>
+</div><div class="doc-block" data-diff="same"><p><code>typegen</code> reads <code>defaultMethod</code>, <code>typeMap</code>, and <code>_configDir</code> from that file. Storybook itself still reads <code>.storybook/main.ts</code>.</p>
+</div><div class="doc-block" data-diff="same"><h3>Running Storybook Tests</h3>
+</div><div class="doc-block" data-diff="same"><p>For the bundled test config, <code>test</code> needs these extra test packages:</p>
+</div><div class="doc-block" data-diff="same"><pre class="code-block"><code>npx --yes \
+  --package=storybook-php \
+  --package=vitest \
+  --package=@storybook/addon-vitest \
+  --package=@vitest/browser-playwright \
+  storybook-php test</code></pre>
+</div><div class="doc-block" data-diff="same"><p>Also enable <code>@storybook/addon-vitest</code> in <code>.storybook/main.ts</code>.</p>
+</div><div class="doc-block" data-diff="same"><p>If you provide your own <code>vitest.config.*</code>, the required ephemeral packages depend on that config instead.</p>
+</div><div class="doc-block" data-diff="same"><p>In pure <code>npx</code> setups, keep two troubleshooting points in mind:</p>
+</div><div class="doc-block" data-diff="same"><ul><li>If npm reports <code>ERESOLVE</code>, pin <code>vitest</code> and <code>@vitest/browser-playwright</code> to the same version instead of relying on floating latest tags.</li><li>If browser-mode Vitest cannot import <code>@storybook/addon-vitest</code> setup files from npm&#039;s cache, add a custom <code>vitest.config.mjs</code> that allows the resolved addon directory through Vite&#039;s file-system allowlist.</li></ul>
+</div><div class="doc-block" data-diff="same"><p>Fallback example using <code>vitest.config.ts</code>:</p>
+</div><div class="doc-block" data-diff="same"><pre class="code-block"><code>import path from &quot;node:path&quot;;
+import { fileURLToPath } from &quot;node:url&quot;;
+import { defineConfig } from &quot;vitest/config&quot;;
+import { storybookTest } from &quot;@storybook/addon-vitest/vitest-plugin&quot;;
+import { playwright } from &quot;@vitest/browser-playwright&quot;;
+import { searchForWorkspaceRoot } from &quot;vite&quot;;
+
+const addonVitestDir = path.dirname(
+  fileURLToPath(import.meta.resolve(&quot;@storybook/addon-vitest/package.json&quot;)),
+);
+
+export default defineConfig({
+  plugins: [storybookTest({ configDir: path.resolve(&quot;.storybook&quot;) })],
+  server: {
+    fs: {
+      allow: [searchForWorkspaceRoot(process.cwd()), addonVitestDir],
+    },
+  },
+  test: {
+    browser: {
+      enabled: true,
+      provider: playwright(),
+      instances: [{ browser: &quot;chromium&quot; }],
+    },
+  },
+});</code></pre>
+</div><div class="doc-block" data-diff="same"><h3>When To Use <code>--package</code></h3>
+</div><div class="doc-block" data-diff="same"><p><code>--package</code> is not required for normal <code>start</code>, <code>build</code>, or <code>typegen</code> usage.</p>
+</div><div class="doc-block" data-diff="same"><p>Use it when:</p>
+</div><div class="doc-block" data-diff="same"><ul><li>you want to be fully explicit about which ephemeral packages are installed</li><li>your environment has unusual npm behavior and you want to avoid peer-resolution surprises</li><li>you are running <code>test</code>, which needs extra test packages</li></ul>
+</div><div class="doc-block" data-diff="same"><p>Example:</p>
+</div><div class="doc-block" data-diff="same"><pre class="code-block"><code>npx --yes \
+  --package=storybook-php \
+  --package=storybook \
+  --package=@storybook/builder-vite \
+  --package=vite \
+  storybook-php start</code></pre>
+</div><div class="doc-block" data-diff="same"><h3>How This Works</h3>
+</div><div class="doc-block" data-diff="same"><p>When <code>storybook-php</code> runs from <code>npx</code>, the CLI temporarily exposes the cached <code>node_modules</code> to the current project so Storybook can resolve its packages as if they were installed locally.</p>
+</div><div class="doc-block" data-diff="same"><p>That is why this workflow works even when:</p>
+</div><div class="doc-block" data-diff="same"><ul><li>the current PHP project has no <code>package.json</code></li><li>the current PHP project has no real <code>node_modules</code></li></ul>
+</div><div class="doc-block" data-diff="same"><h3>When To Use This Style</h3>
+</div><div class="doc-block" data-diff="same"><p>This setup is a good fit when:</p>
+</div><div class="doc-block" data-diff="same"><ul><li>the repository is primarily a PHP application or library</li><li>Storybook is only used as a component preview tool</li><li>you want to avoid introducing a full frontend dependency management layer</li></ul>
+</div><div class="doc-block" data-diff="same"><p>If the repo already has a substantial frontend toolchain, a normal local <code>package.json</code> install is usually simpler.</p>
+</div><div class="doc-block" data-diff="same"><h3>When To Add <code>tsconfig.json</code></h3>
+</div><div class="doc-block" data-diff="same"><p>You only need <code>tsconfig.json</code> when you want TypeScript-specific tooling, especially:</p>
+</div><div class="doc-block" data-diff="same"><ul><li>editor completion for <code>.php</code> imports</li><li>typed <code>args</code> in stories</li><li>the <code>storybook-php/client</code> types</li><li>the <code>storybook-php/ts-plugin</code></li></ul>
+</div><div class="doc-block" data-diff="same"><p>If you are keeping the setup minimal, or you only need Storybook to run, you can skip it.</p>
+</div><div class="doc-block" data-diff="same"><p>When you do want that tooling, add:</p>
+</div><div class="doc-block" data-diff="same"><pre class="code-block"><code>{
+  &quot;compilerOptions&quot;: {
+    &quot;types&quot;: [&quot;storybook-php/client&quot;],
+    &quot;plugins&quot;: [{ &quot;name&quot;: &quot;storybook-php/ts-plugin&quot; }]
+  }
+}</code></pre>
+</div><div class="doc-block" data-diff="same"><p>This improves completion for <code>.php</code> imports and typed story args.</p>
+</div><div class="doc-block" data-diff="same"><p>If you also run <code>typegen</code>, the TS plugin and generated declaration files complement each other: the plugin gives live editor support, and <code>typegen</code> writes reusable <code>.d.ts</code> files alongside the PHP import paths.</p>
+</div><div class="doc-block" data-diff="same"><h3>Related Guides</h3>
+</div><div class="doc-block" data-diff="same"><ul><li><a href="../../../../k-kinzal/storybook-php/doc/docs/getting-started.md.html">Getting Started</a></li><li><a href="../../../../k-kinzal/storybook-php/doc/docs/framework-options.md.html">Framework Options</a></li><li><a href="../../../../k-kinzal/storybook-php/doc/docs/testing-and-types.md.html">Testing and Types</a></li></ul>
+</div></section>
+</main>
+<footer class="site-footer">Generated by <a href="https://github.com/k-kinzal/php-ai-toolkit">php-ai-toolkit</a> docgen</footer>
+</div>
+<script src="../../../../assets/search-index.js" defer></script>
+<script src="../../../../assets/app.js" defer></script>
+</body>
+</html>
