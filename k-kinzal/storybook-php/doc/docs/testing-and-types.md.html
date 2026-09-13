@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Testing and Types — storybook-php</title>
+<link rel="canonical" href="https://k-kinzal.github.io/storybook-php/k-kinzal/storybook-php/doc/docs/testing-and-types.md.html">
+<meta name="description" content="Testing and Types, a document of the k-kinzal/storybook-php package.">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="storybook-php">
+<meta property="og:title" content="Testing and Types — storybook-php">
+<meta property="og:description" content="Testing and Types, a document of the k-kinzal/storybook-php package.">
+<meta property="og:url" content="https://k-kinzal.github.io/storybook-php/k-kinzal/storybook-php/doc/docs/testing-and-types.md.html">
+<meta property="og:image" content="https://k-kinzal.github.io/storybook-php/assets/og-image.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="storybook-php">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="stylesheet" href="../../../../assets/style.css">
+<script>try{var t=localStorage.getItem("docgen-theme");if(t){document.documentElement.dataset.theme=t}}catch(e){}</script>
+</head>
+<body data-root="../../../../">
+<nav class="sidebar" id="sidebar"><div class="sb-head"><a class="sb-site" href="../../../../index.html">storybook-php</a></div><div class="sb-pkg"><a href="../../../../k-kinzal/storybook-php/index.html">k-kinzal/storybook-php</a></div><nav class="sb-block"><div class="sb-title">Package</div><ul class="sb-list"><li><a href="../../../../k-kinzal/storybook-php/all-items.html">All items</a></li><li><a href="../../../../k-kinzal/storybook-php/index.html#documents">Documents</a></li></ul></nav></nav>
+<div class="page">
+<header class="topbar">
+<button class="nav-toggle" id="nav-toggle" title="Toggle navigation">☰</button>
+<nav class="crumbs"><a href="../../../../k-kinzal/storybook-php/index.html">k-kinzal/storybook-php</a><span class="crumb-sep">::</span><span class="crumb-current">docs/testing-and-types.md</span></nav>
+<div class="topbar-tools">
+<input type="search" id="search" placeholder="Search… ( / )" autocomplete="off" spellcheck="false">
+<a class="repo-link" href="https://github.com/k-kinzal/storybook-php" title="Repository: https://github.com/k-kinzal/storybook-php" rel="noreferrer">github.com</a>
+<button id="theme-toggle" title="Toggle theme">◐</button>
+</div>
+</header>
+<div class="search-results" id="search-results" hidden></div>
+<main class="content">
+<div class="symbol-head"><h1><span class="chip chip-kind k-document">document</span>Testing and Types</h1><div class="symbol-meta"><span class="src-link">docs/testing-and-types.md</span></div></div>
+<section class="readme"><h2>Testing and Types</h2>
+<p><code>storybook-php</code> includes tooling for TypeScript editor support, generated declaration files, and Storybook test runs.</p>
+<h3>TypeScript Editor Support</h3>
+<p>Add the client types and TS plugin to <code>tsconfig.json</code>:</p>
+<pre class="code-block"><code>{
+  &quot;compilerOptions&quot;: {
+    &quot;types&quot;: [&quot;storybook-php/client&quot;],
+    &quot;plugins&quot;: [{ &quot;name&quot;: &quot;storybook-php/ts-plugin&quot; }]
+  }
+}</code></pre>
+<p>This gives you:</p>
+<ul><li>typed <code>Meta</code> and <code>StoryObj</code> helpers from <code>storybook-php</code></li><li>IDE support for <code>.php</code> imports</li><li>inferred <code>args</code> shapes from parsed PHP signatures</li><li>suppression of &quot;cannot find module&quot; diagnostics for <code>.php</code> imports</li></ul>
+<p>If you rely on <code>defaultMethod</code>, pass the same setting to the TS plugin:</p>
+<pre class="code-block"><code>{
+  &quot;compilerOptions&quot;: {
+    &quot;plugins&quot;: [{ &quot;name&quot;: &quot;storybook-php/ts-plugin&quot;, &quot;defaultMethod&quot;: &quot;render&quot; }]
+  }
+}</code></pre>
+<h3><code>typegen</code></h3>
+<p>Generate <code>.d.ts</code> files next to your source files:</p>
+<pre class="code-block"><code>npx storybook-php typegen</code></pre>
+<p>When no directories are passed, <code>typegen</code> scans <code>src</code>.</p>
+<p>You can also target specific directories:</p>
+<pre class="code-block"><code>npx storybook-php typegen src components templates</code></pre>
+<p><code>typegen</code> writes both bare-import and exact-import declaration modules whenever they resolve:</p>
+<ul><li><code>Button.php.d.ts</code></li><li><code>Button.php@render.d.ts</code></li></ul>
+<p>For a callable-backed file without <code>defaultMethod</code>, the bare <code>.php.d.ts</code> output stays template-shaped. When <code>defaultMethod</code> resolves, the bare output mirrors that callable instead.</p>
+<p>What <code>typegen</code> generates inside those files:</p>
+<ul><li>class exports for parsed class methods</li><li>function exports for standalone functions</li><li>enum exports with <code>_case</code></li><li>default exports for template-only PHP files</li></ul>
+<p>Output notes:</p>
+<ul><li>scalar PHP types map to regular TypeScript primitives</li><li><code>array</code> becomes <code>unknown[]</code></li><li><code>object</code> and <code>mixed</code> become <code>unknown</code></li><li>class-like types become <code>Record&lt;string, unknown&gt;</code></li><li>optional PHP parameters become optional TS properties</li></ul>
+<h3><code>typegen --options-file</code></h3>
+<p><code>typegen</code> does not read <code>.storybook/main.ts</code>. If declaration generation depends on <code>defaultMethod</code> or <code>typeMap</code>, pass them through a separate JSON or JS module:</p>
+<pre class="code-block"><code>npx storybook-php typegen --options-file storybook-php.config.mjs</code></pre>
+<p>Example options file:</p>
+<pre class="code-block"><code>import { fileURLToPath } from &quot;node:url&quot;;
+
+export default {
+  _configDir: fileURLToPath(new URL(&quot;./.storybook/&quot;, import.meta.url)),
+  defaultMethod: &quot;render&quot;,
+  typeMap: {
+    files: {
+      &quot;../src/views/components/card.blade.php&quot;: {
+        phpFile: &quot;../src/BladeCard.php&quot;,
+        callable: &quot;render&quot;,
+      },
+    },
+  },
+};</code></pre>
+<p><code>typegen</code> reads <code>defaultMethod</code>, <code>typeMap</code>, and <code>_configDir</code> from this file. <code>_configDir</code> is useful when relative <code>typeMap.files</code> entries should resolve the same way they do from your Storybook config directory.</p>
+<h3>Storybook Tests</h3>
+<p>Run Storybook tests with:</p>
+<pre class="code-block"><code>npx storybook-php test</code></pre>
+<p><code>storybook-php test</code> runs <code>vitest run</code>. If your project does not define <code>vitest.config.*</code> and you do not pass <code>--config</code>, it automatically falls back to the bundled Vitest config.</p>
+<h3>Required Test Dependencies</h3>
+<p>Install these when using <code>storybook-php test</code>:</p>
+<pre class="code-block"><code>npm install -D vitest @storybook/addon-vitest @vitest/browser-playwright</code></pre>
+<p>Also enable the addon in <code>.storybook/main.ts</code>:</p>
+<pre class="code-block"><code>const config = {
+  addons: [&quot;@storybook/addon-vitest&quot;],
+};</code></pre>
+<p>If you prefer ephemeral installs, this also works:</p>
+<pre class="code-block"><code>npx --package=storybook-php --package=vitest \
+    --package=@storybook/addon-vitest \
+    --package=@vitest/browser-playwright \
+    storybook-php test</code></pre>
+<p>If npm reports a peer-resolution error in a pure <code>npx</code> setup, pin <code>vitest</code> and <code>@vitest/browser-playwright</code> to the same version.</p>
+<h3>Custom Vitest Config</h3>
+<p>When you provide your own <code>vitest.config.*</code> or pass <code>--config</code>, <code>storybook-php</code> uses that instead of the bundled template.</p>
+<p>This is the right choice when you need custom browser settings, aliases, reporters, or workspace-level Vitest configuration.</p>
+<p>It can also be used as a fallback in package-less <code>npx</code> environments to add <code>server.fs.allow</code> entries for packages resolved from npm&#039;s cache.</p>
+<h3>Editor Support vs Generated Files</h3>
+<p>Use the TS plugin when you want live editor support without writing files to disk.</p>
+<p>Use <code>typegen</code> when you want <code>.d.ts</code> files checked into the repo, consumed by tooling outside the TS plugin, or shared across editors and CI.</p>
+<p>It is normal to use both together.</p>
+<h3>Related Guides</h3>
+<ul><li><a href="../../../../k-kinzal/storybook-php/doc/docs/getting-started.md.html">Getting Started</a></li><li><a href="../../../../k-kinzal/storybook-php/doc/docs/framework-options.md.html">Framework Options</a></li><li><a href="../../../../k-kinzal/storybook-php/doc/docs/type-mapping.md.html">Type Mapping</a></li></ul>
+</section>
+</main>
+<footer class="site-footer">Generated by <a href="https://github.com/k-kinzal/php-ai-toolkit">php-ai-toolkit</a> docgen</footer>
+</div>
+<script src="../../../../assets/search-index.js" defer></script>
+<script src="../../../../assets/app.js" defer></script>
+</body>
+</html>

@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>k-kinzal/storybook-php — storybook-php</title>
+<link rel="canonical" href="https://k-kinzal.github.io/storybook-php/k-kinzal/storybook-php/">
+<meta name="description" content="A Storybook framework addon for developing and previewing PHP components as stories">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="storybook-php">
+<meta property="og:title" content="k-kinzal/storybook-php — storybook-php">
+<meta property="og:description" content="A Storybook framework addon for developing and previewing PHP components as stories">
+<meta property="og:url" content="https://k-kinzal.github.io/storybook-php/k-kinzal/storybook-php/">
+<meta property="og:image" content="https://k-kinzal.github.io/storybook-php/assets/og-image.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="storybook-php">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="stylesheet" href="../../assets/style.css">
+<script>try{var t=localStorage.getItem("docgen-theme");if(t){document.documentElement.dataset.theme=t}}catch(e){}</script>
+</head>
+<body data-root="../../">
+<nav class="sidebar" id="sidebar"><div class="sb-head"><a class="sb-site" href="../../index.html">storybook-php</a></div><div class="sb-pkg"><a href="../../k-kinzal/storybook-php/index.html">k-kinzal/storybook-php</a></div><nav class="sb-block"><div class="sb-title">On this page</div><ul class="sb-list"><li><a href="#documents">Documents</a></li><li><a href="#readme">README</a></li></ul></nav><nav class="sb-block"><div class="sb-title">Package</div><ul class="sb-list"><li><a href="../../k-kinzal/storybook-php/all-items.html">All items</a></li><li><a href="../../k-kinzal/storybook-php/index.html#documents">Documents</a></li></ul></nav></nav>
+<div class="page">
+<header class="topbar">
+<button class="nav-toggle" id="nav-toggle" title="Toggle navigation">☰</button>
+<nav class="crumbs"><span class="crumb-current">k-kinzal/storybook-php</span></nav>
+<div class="topbar-tools">
+<input type="search" id="search" placeholder="Search… ( / )" autocomplete="off" spellcheck="false">
+<a class="repo-link" href="https://github.com/k-kinzal/storybook-php" title="Repository: https://github.com/k-kinzal/storybook-php" rel="noreferrer">github.com</a>
+<button id="theme-toggle" title="Toggle theme">◐</button>
+</div>
+</header>
+<div class="search-results" id="search-results" hidden></div>
+<main class="content">
+<div class="symbol-head"><h1><span class="chip chip-kind k-package">package</span>k-kinzal/storybook-php</h1></div>
+<p class="lede">A Storybook framework addon for developing and previewing PHP components as stories</p>
+<div class="relation-row"><span class="relation-label">Repository</span> <a class="repo-link" href="https://github.com/k-kinzal/storybook-php" title="Repository: https://github.com/k-kinzal/storybook-php" rel="noreferrer">github.com/k-kinzal/storybook-php</a></div>
+<section><h2 id="documents">Documents <span class="count">8</span><a class="anchor" href="#documents">§</a></h2><div class="table-wrap"><table class="symbol-table"><tr><td><a href="../../k-kinzal/storybook-php/doc/README.md.html">storybook-php</a></td><td class="item-ns">README.md</td></tr><tr><td><a href="../../k-kinzal/storybook-php/doc/SECURITY.md.html">Security Policy</a></td><td class="item-ns">SECURITY.md</td></tr><tr><td><a href="../../k-kinzal/storybook-php/doc/docs/framework-options.md.html">Framework Options</a></td><td class="item-ns">docs/framework-options.md</td></tr><tr><td><a href="../../k-kinzal/storybook-php/doc/docs/getting-started.md.html">Getting Started</a></td><td class="item-ns">docs/getting-started.md</td></tr><tr><td><a href="../../k-kinzal/storybook-php/doc/docs/php-project-setup.md.html">PHP Project Setup</a></td><td class="item-ns">docs/php-project-setup.md</td></tr><tr><td><a href="../../k-kinzal/storybook-php/doc/docs/rendering-model.md.html">Rendering Model</a></td><td class="item-ns">docs/rendering-model.md</td></tr><tr><td><a href="../../k-kinzal/storybook-php/doc/docs/testing-and-types.md.html">Testing and Types</a></td><td class="item-ns">docs/testing-and-types.md</td></tr><tr><td><a href="../../k-kinzal/storybook-php/doc/docs/type-mapping.md.html">Type Mapping</a></td><td class="item-ns">docs/type-mapping.md</td></tr></table></div></section>
+<section class="readme"><h2 id="readme">README<a class="anchor" href="#readme">§</a></h2><h2>storybook-php</h2>
+<p><span class="md-target" title="LICENSE"><span class="md-target" title="https://img.shields.io/badge/license-MIT-blue.svg">MIT License</span></span> <a href="https://www.npmjs.com/package/storybook-php"><span class="md-target" title="https://img.shields.io/npm/v/storybook-php.svg">npm version</span></a> <a href="https://k-kinzal.github.io/storybook-php/"><span class="md-target" title="https://img.shields.io/badge/docs-storybook--php-0969da?logo=php&amp;logoColor=white">docs</span></a></p>
+<p>A Storybook framework addon for developing and previewing PHP components as stories.</p>
+<h3>Supported Versions</h3>
+<ul><li>PHP 8.0-8.5</li><li>Storybook 10.x</li><li>Vite 5.x-8.x</li><li>Node.js 20.19+</li></ul>
+<h3>Quick Start</h3>
+<p><code>.storybook/main.ts</code>:</p>
+<pre class="code-block"><code>import type { StorybookConfig } from &quot;storybook&quot;;
+
+const config: StorybookConfig = {
+  stories: [&quot;../src/**/*.stories.ts&quot;],
+  framework: {
+    name: &quot;storybook-php&quot;,
+    options: {},
+  },
+};
+
+export default config;</code></pre>
+<p><code>src/Greeting.php</code>:</p>
+<pre class="code-block"><code>&lt;?<span class="tok-id">php</span>
+<span class="tok-kw">class</span> <span class="tok-id">Greeting</span> {
+    <span class="tok-kw">public</span> <span class="tok-kw">function</span> <span class="tok-id">__construct</span>(<span class="tok-kw">private</span> <span class="tok-id">string</span> <span class="tok-var">$name</span>, <span class="tok-kw">private</span> <span class="tok-id">string</span> <span class="tok-var">$greeting</span> = <span class="tok-str">&#039;Hello&#039;</span>) {}
+
+    <span class="tok-kw">public</span> <span class="tok-kw">function</span> <span class="tok-id">render</span>(): <span class="tok-id">string</span> {
+        <span class="tok-kw">return</span> &quot;<span class="tok-str">&lt;h2&gt;</span>{<span class="tok-var">$this</span>-&gt;<span class="tok-id">greeting</span>}<span class="tok-str">, </span>{<span class="tok-var">$this</span>-&gt;<span class="tok-id">name</span>}<span class="tok-str">!&lt;/h2&gt;</span>&quot;;
+    }
+}</code></pre>
+<p><code>src/Greeting.stories.ts</code>:</p>
+<pre class="code-block"><code>import type { Meta, StoryObj } from &quot;storybook-php&quot;;
+import { Greeting } from &quot;./Greeting.php@render&quot;;
+
+const meta: Meta&lt;typeof Greeting&gt; = {
+  component: Greeting,
+  title: &quot;Components/Greeting&quot;,
+};
+
+export default meta;
+type Story = StoryObj&lt;typeof Greeting&gt;;
+
+export const Default: Story = {
+  args: { name: &quot;World&quot; },
+};</code></pre>
+<pre class="code-block"><code>npx storybook-php start</code></pre>
+<h3>npx storybook-php</h3>
+<div class="table-wrap"><table><thead><tr><th>Command</th><th>Description</th></tr></thead><tbody><tr><td><code>npx storybook-php start [storybook opts]</code></td><td>Start the Storybook dev server</td></tr><tr><td><code>npx storybook-php build [storybook opts]</code></td><td>Build static Storybook output</td></tr><tr><td><code>npx storybook-php test [vitest opts]</code></td><td>Run Storybook tests through <code>vitest run</code></td></tr><tr><td><code>npx storybook-php typegen [dirs...] [--options-file path]</code></td><td>Generate declaration files for PHP import paths</td></tr></tbody></table></div>
+<p><code>start</code> and <code>build</code> accept the same options as the <code>storybook</code> CLI (e.g. <code>-p 6006</code>). <code>test</code> passes arguments through to <code>vitest run</code>.</p>
+<p><code>typegen</code> defaults to the <code>src</code> directory when no directories are specified. It writes declaration files next to the source import path, including exact-import outputs such as <code>Button.php@render.d.ts</code>. When <code>defaultMethod</code> resolves, the bare <code>Button.php.d.ts</code> output mirrors that callable; otherwise a bare import remains template-shaped.</p>
+<p>If your type generation depends on <code>defaultMethod</code> or <code>typeMap</code>, pass them through <code>--options-file</code> because <code>typegen</code> does not read <code>.storybook/main.ts</code>. The options file can be JSON or a JS module and may also provide <code>_configDir</code> for relative path resolution.</p>
+<p>For PHP-first repositories that do not want to add a local <code>package.json</code>, see <a href="../../k-kinzal/storybook-php/doc/docs/php-project-setup.md.html">PHP Project Setup</a> for the <code>npx</code>-based setup.</p>
+<h3>Testing</h3>
+<pre class="code-block"><code>npx --package=storybook-php --package=vitest \
+    --package=@storybook/addon-vitest \
+    --package=@vitest/browser-playwright \
+    storybook-php test</code></pre>
+<p>Add <code>@storybook/addon-vitest</code> to <code>.storybook/main.ts</code>:</p>
+<pre class="code-block"><code>const config: StorybookConfig = {
+  addons: [&quot;@storybook/addon-vitest&quot;],
+  // ...
+};</code></pre>
+<p>If your project does not define <code>vitest.config.*</code> and you do not pass <code>--config</code>, the bundled Vitest config is used automatically. To customize, create your own <code>vitest.config.*</code>.</p>
+<h3>Import Syntax</h3>
+<p>PHP components are imported with the <code>./File.php@method</code> specifier. The <code>@method</code> suffix tells storybook-php which callable to invoke. Constructor parameters and method parameters are merged into the story&#039;s args.</p>
+<div class="table-wrap"><table><thead><tr><th>Pattern</th><th>Import Syntax</th><th>Args Source</th></tr></thead><tbody><tr><td>Class instance method</td><td><code>./File.php@render</code></td><td>Constructor params + method params</td></tr><tr><td>Static method</td><td><code>./File.php@danger</code></td><td>Method params only</td></tr><tr><td>Standalone function</td><td><code>./file.php@funcName</code></td><td>Function params</td></tr><tr><td>Invocable class</td><td><code>./File.php@__invoke</code></td><td>Constructor params + <code>__invoke</code> params</td></tr><tr><td>Enum method</td><td><code>./File.php@swatch</code></td><td><code>_case</code> + method params</td></tr><tr><td>Template file</td><td><code>./file.php</code> (default import)</td><td>Template variables from args</td></tr><tr><td>Mapped non-PHP import source</td><td><code>./card.blade.php</code></td><td><code>typeMap.files</code> decides the public API</td></tr></tbody></table></div>
+<p>Methods that use <code>echo</code> instead of returning a string are captured via output buffering automatically.</p>
+<p>Non-PHP sources such as Blade, Twig, or Latte are supported through <code>framework.options.typeMap.files</code>. Those mappings can provide public args, redirect execution to a PHP file, select a callable, include extra files for analysis, and attach adapter middleware.</p>
+<h3>Configuration</h3>
+<p>Configure in <code>.storybook/main.ts</code> under <code>framework.options</code>:</p>
+<div class="table-wrap"><table><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td><code>bootstrap</code></td><td><code>string</code></td><td><code>undefined</code></td><td>Path to a PHP file executed before each render (autoloader, config, etc.)</td></tr><tr><td><code>phpBinary</code></td><td><code>string</code></td><td><code>&#039;php&#039;</code></td><td>Path to the PHP binary</td></tr><tr><td><code>phpOptions</code></td><td><code>string[]</code></td><td><code>[]</code></td><td>CLI options prepended to PHP (e.g. <code>[&quot;-d&quot;, &quot;memory_limit=512M&quot;]</code>)</td></tr><tr><td><code>phpEnv</code></td><td><code>Record&lt;string, string&gt;</code></td><td><code>undefined</code></td><td>Environment variables merged over <code>process.env</code> when spawning PHP</td></tr><tr><td><code>timeout</code></td><td><code>number</code></td><td><code>5000</code></td><td>Render timeout in milliseconds</td></tr><tr><td><code>defaultMethod</code></td><td><code>string</code></td><td><code>undefined</code></td><td>Method name used when <code>@method</code> is omitted from the import specifier</td></tr><tr><td><code>adapter</code></td><td><code>string</code></td><td><code>undefined</code></td><td>Path to a PHP adapter file for custom output handling (e.g. Laravel Blade)</td></tr><tr><td><code>typeMap</code></td><td><code>object</code></td><td><code>undefined</code></td><td>File mappings, callable overrides, and runtime type bindings</td></tr></tbody></table></div>
+<p>The adapter file must return middleware compatible with <code>fn(array $context, callable $next): array|string</code></p>
+<p>Relative option paths are resolved from Storybook&#039;s config directory. <code>defaultMethod</code> and <code>typeMap</code> also affect module resolution, TS plugin output, and <code>typegen</code> when you pass them through <code>--options-file</code>.</p>
+<h3>TypeScript Support</h3>
+<p>Add to <code>tsconfig.json</code> for type support on <code>.php</code> imports and IDE integration:</p>
+<pre class="code-block"><code>{
+  &quot;compilerOptions&quot;: {
+    &quot;types&quot;: [&quot;storybook-php/client&quot;],
+    &quot;plugins&quot;: [{ &quot;name&quot;: &quot;storybook-php/ts-plugin&quot; }]
+  }
+}</code></pre>
+<p>This gives editor support for <code>.php</code> imports without requiring generated files.</p>
+<p>To generate declaration files on disk:</p>
+<pre class="code-block"><code>npx storybook-php typegen</code></pre>
+<p><code>typegen</code> writes both bare-import and exact-import declarations when they resolve:</p>
+<ul><li><code>Button.php.d.ts</code></li><li><code>Button.php@render.d.ts</code></li></ul>
+<p>For advanced setups, load <code>defaultMethod</code> and <code>typeMap</code> from a separate file:</p>
+<pre class="code-block"><code>npx storybook-php typegen --options-file storybook-php.config.mjs</code></pre>
+<h3>Documentation</h3>
+<ul><li><a href="../../k-kinzal/storybook-php/doc/docs/getting-started.md.html">Getting Started</a></li><li><a href="../../k-kinzal/storybook-php/doc/docs/php-project-setup.md.html">PHP Project Setup</a></li><li><a href="../../k-kinzal/storybook-php/doc/docs/rendering-model.md.html">Rendering Model</a></li><li><a href="../../k-kinzal/storybook-php/doc/docs/framework-options.md.html">Framework Options</a></li><li><a href="../../k-kinzal/storybook-php/doc/docs/type-mapping.md.html">Type Mapping</a></li><li><a href="../../k-kinzal/storybook-php/doc/docs/testing-and-types.md.html">Testing and Types</a></li></ul>
+<h3>License</h3>
+<p><span class="md-target" title="LICENSE">MIT</span></p>
+</section>
+</main>
+<footer class="site-footer">Generated by <a href="https://github.com/k-kinzal/php-ai-toolkit">php-ai-toolkit</a> docgen</footer>
+</div>
+<script src="../../assets/search-index.js" defer></script>
+<script src="../../assets/app.js" defer></script>
+</body>
+</html>
