@@ -4,11 +4,10 @@ on:
   push:
     branches:
       - main
-  pull_request:
   workflow_dispatch:
 
 concurrency:
-  group: pages-${{ github.event.pull_request.number || 'publish' }}
+  group: ${{ github.workflow }}-${{ github.event_name }}-${{ github.ref }}
   cancel-in-progress: false
 
 permissions:
@@ -69,15 +68,13 @@ jobs:
           composer docgen -- \
             --base-url="https://${repository%%/*}.github.io/${repository#*/}"
 
-      - name: Configure GitHub Pages
-        if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
-        uses: actions/configure-pages@45bfe0192ca1faeb007ade9deae92b16b8254a0d
-
       - name: Upload the documentation site
-        if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
-        uses: actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
         with:
+          name: documentation
           path: build/docs
+          include-hidden-files: true
+          if-no-files-found: error
 
   deploy:
     name: Publish the documentation site
@@ -85,13 +82,52 @@ jobs:
     needs: build
     runs-on: ubuntu-latest
     timeout-minutes: 10
+    concurrency:
+      group: docs-gh-pages
+      cancel-in-progress: false
     permissions:
+      contents: write
       pages: write
-      id-token: write
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
     steps:
-      - name: Deploy the documentation to GitHub Pages
-        id: deployment
-        uses: actions/deploy-pages@368f82528645a54fb793d4d04e342629a3f51346
+      - name: Check out the documentation branch
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          ref: gh-pages
+          path: .docs-branch
+
+      - name: Download the documentation site
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c
+        with:
+          name: documentation
+          path: build/docs
+
+      - name: Publish the site without removing pull request previews
+        working-directory: .docs-branch
+        run: |
+          set -euo pipefail
+          rsync -a --checksum --delete --exclude '/.git/' --exclude '/pr/' --exclude '/CNAME' ../build/docs/ ./
+          touch .nojekyll
+          git add --all
+          if ! git diff --cached --quiet; then
+            git -c user.name='github-actions[bot]' \
+              -c user.email='41898282+github-actions[bot]@users.noreply.github.com' \
+              commit --message "docs: generate from ${GITHUB_SHA}"
+            git push origin HEAD:gh-pages
+          fi
+
+      - name: Request and verify GitHub Pages publication
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          build_url="$(gh api --method POST "repos/${GITHUB_REPOSITORY}/pages/builds" --jq .url)"
+          for attempt in {1..60}; do
+            status="$(gh api "${build_url}" --jq .status)"
+            case "${status}" in
+              built) exit 0 ;;
+              errored) gh api "${build_url}"; exit 1 ;;
+            esac
+            sleep 5
+          done
+          echo 'GitHub Pages publication timed out.' >&2
+          exit 1

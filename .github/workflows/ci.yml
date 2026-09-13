@@ -55,7 +55,7 @@ jobs:
         run: composer loc-guard
       - name: Check repository structure
         run: composer tree-guard
-      - name: Check architecture boundaries
+      - name: Check architecture boundaries and reject unassigned tokens
         run: composer deptrac
       - name: Audit dependencies
         run: composer audit:security

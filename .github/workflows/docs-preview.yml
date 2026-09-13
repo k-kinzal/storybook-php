@@ -1,0 +1,233 @@
+name: Docs Preview
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, closed]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event_name }}-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+env:
+  COMPOSER_NO_INTERACTION: "1"
+
+jobs:
+  build:
+    name: Generate the documentation diff
+    if: github.event.action != 'closed'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Check out the pull request with its base history
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Set up PHP
+        uses: shivammathur/setup-php@f3e473d116dcccaddc5834248c87452386958240
+        with:
+          php-version: "8.5"
+          extensions: dom, mbstring, pcntl, simplexml, xml, xmlwriter, gd
+          coverage: pcov
+
+      - name: Select the PHP 8.5 lock file
+        run: cp composer.lock.php-8.5 composer.lock
+
+      - name: Validate Composer metadata
+        run: composer validate --strict --no-check-publish
+
+      - name: Install dependencies
+        uses: ramsey/composer-install@65e4f84970763564f46a70b8a54b90d033b3bdda
+        with:
+          dependency-versions: locked
+          composer-options: --prefer-dist
+          require-lock-file: true
+
+      - name: Check installed platform requirements
+        run: composer check-platform-reqs
+
+      - name: Restore the DocGen cache
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
+        with:
+          path: build/docgen-cache
+          key: docgen-${{ runner.os }}-${{ hashFiles('composer.lock') }}-${{ github.sha }}
+          restore-keys: |
+            docgen-${{ runner.os }}-${{ hashFiles('composer.lock') }}-
+            docgen-${{ runner.os }}-
+
+      - name: Generate the coverage report
+        run: composer test:coverage
+
+      - name: Generate the documentation against the pull request base
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+        run: |
+          set -euo pipefail
+          repository="$(printf '%s' "${GITHUB_REPOSITORY}" | tr '[:upper:]' '[:lower:]')"
+          composer docgen -- --diff="${BASE_SHA}" \
+            --base-url="https://${repository%%/*}.github.io/${repository#*/}/pr/${PR_NUMBER}"
+
+      - name: Upload the documentation diff
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        with:
+          name: documentation-preview
+          path: build/docs
+          include-hidden-files: true
+          if-no-files-found: error
+
+  publish:
+    name: Publish the documentation diff
+    needs: build
+    if: "!github.event.pull_request.head.repo.fork"
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    concurrency:
+      group: docs-gh-pages
+      cancel-in-progress: false
+    permissions:
+      contents: write
+      pages: write
+      pull-requests: write
+    steps:
+      - name: Check out the documentation branch
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          ref: gh-pages
+          path: .docs-branch
+
+      - name: Download the documentation diff
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c
+        with:
+          name: documentation-preview
+          path: build/docs
+
+      - name: Publish this pull request preview
+        working-directory: .docs-branch
+        env:
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          set -euo pipefail
+          [[ "${PR_NUMBER}" =~ ^[1-9][0-9]*$ ]]
+          mkdir -p "pr/${PR_NUMBER}"
+          rsync -a --checksum --delete ../build/docs/ "pr/${PR_NUMBER}/"
+          touch .nojekyll
+          git add --all
+          if ! git diff --cached --quiet; then
+            git -c user.name='github-actions[bot]' \
+              -c user.email='41898282+github-actions[bot]@users.noreply.github.com' \
+              commit --message "docs: preview pull request #${PR_NUMBER} at ${HEAD_SHA}"
+            git push origin HEAD:gh-pages
+          fi
+
+      - name: Request and verify GitHub Pages publication
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+        run: |
+          set -euo pipefail
+          build_url="$(gh api --method POST "repos/${GITHUB_REPOSITORY}/pages/builds" --jq .url)"
+          for attempt in {1..60}; do
+            status="$(gh api "${build_url}" --jq .status)"
+            case "${status}" in
+              built)
+                repository="$(printf '%s' "${GITHUB_REPOSITORY}" | tr '[:upper:]' '[:lower:]')"
+                curl --fail --silent --show-error --retry 5 --retry-all-errors \
+                  --output /dev/null "https://${repository%%/*}.github.io/${repository#*/}/pr/${PR_NUMBER}/"
+                exit 0
+                ;;
+              errored) gh api "${build_url}"; exit 1 ;;
+            esac
+            sleep 5
+          done
+          echo 'GitHub Pages publication timed out.' >&2
+          exit 1
+
+      - name: Comment the published preview link
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          set -euo pipefail
+          repository="$(printf '%s' "${GITHUB_REPOSITORY}" | tr '[:upper:]' '[:lower:]')"
+          body="<!-- docgen-preview -->
+          Documentation diff: https://${repository%%/*}.github.io/${repository#*/}/pr/${PR_NUMBER}/
+
+          Base: ${BASE_SHA}; head: ${HEAD_SHA}. Use the display-mode switch to see plain documentation, marked changes, or changes only. This preview is removed when the pull request closes."
+          comment_id="$(gh api --paginate "repos/${GITHUB_REPOSITORY}/issues/${PR_NUMBER}/comments" \
+            --jq '.[] | select(.user.login == "github-actions[bot]" and (.body | startswith("<!-- docgen-preview -->"))) | .id' | head -n 1)"
+          if [[ -n "${comment_id}" ]]; then
+            gh api --method PATCH "repos/${GITHUB_REPOSITORY}/issues/comments/${comment_id}" -f body="${body}"
+          else
+            gh api --method POST "repos/${GITHUB_REPOSITORY}/issues/${PR_NUMBER}/comments" -f body="${body}"
+          fi
+
+  cleanup:
+    name: Remove the closed pull request preview
+    if: github.event.action == 'closed' && !github.event.pull_request.head.repo.fork
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    concurrency:
+      group: docs-gh-pages
+      cancel-in-progress: false
+    permissions:
+      contents: write
+      pages: write
+      pull-requests: write
+    steps:
+      - name: Check out the documentation branch
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          ref: gh-pages
+
+      - name: Remove only this pull request preview
+        env:
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+        run: |
+          set -euo pipefail
+          [[ "${PR_NUMBER}" =~ ^[1-9][0-9]*$ ]]
+          git rm -r --ignore-unmatch -- "pr/${PR_NUMBER}"
+          if ! git diff --cached --quiet; then
+            git -c user.name='github-actions[bot]' \
+              -c user.email='41898282+github-actions[bot]@users.noreply.github.com' \
+              commit --message "docs: remove preview for pull request #${PR_NUMBER}"
+            git push origin HEAD:gh-pages
+          fi
+
+      - name: Publish and verify preview removal
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          build_url="$(gh api --method POST "repos/${GITHUB_REPOSITORY}/pages/builds" --jq .url)"
+          for attempt in {1..60}; do
+            status="$(gh api "${build_url}" --jq .status)"
+            case "${status}" in
+              built) exit 0 ;;
+              errored) gh api "${build_url}"; exit 1 ;;
+            esac
+            sleep 5
+          done
+          echo 'GitHub Pages publication timed out.' >&2
+          exit 1
+
+      - name: Mark the preview comment as removed
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+        run: |
+          set -euo pipefail
+          comment_id="$(gh api --paginate "repos/${GITHUB_REPOSITORY}/issues/${PR_NUMBER}/comments" \
+            --jq '.[] | select(.user.login == "github-actions[bot]" and (.body | startswith("<!-- docgen-preview -->"))) | .id' | head -n 1)"
+          if [[ -n "${comment_id}" ]]; then
+            gh api --method PATCH "repos/${GITHUB_REPOSITORY}/issues/comments/${comment_id}" \
+              -f body='<!-- docgen-preview -->
+          The documentation preview has been removed because this pull request is closed.'
+          fi

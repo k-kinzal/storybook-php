@@ -59,7 +59,11 @@
     "docgen": "docgen --packages=. --exclude=AGENTS.md --output=build/docs --title=storybook-php --public-api --coverage=build/coverage-xml",
     "docgen:fresh": "@docgen --no-cache",
     "doctest": "phpunit --colors=always --configuration phpunit.xml.dist --testsuite doctest --exclude-group=pbt",
-    "deptrac": "deptrac analyse --config-file=deptrac.yaml",
+    "deptrac": [
+      "deptrac analyse --config-file=deptrac.yaml",
+      "@deptrac:unassigned"
+    ],
+    "deptrac:unassigned": "deptrac debug:unassigned --config-file=deptrac.yaml",
     "format": "php-cs-fixer fix --config=.php-cs-fixer.dist.php --allow-risky=yes --ansi",
     "format:check": "php-cs-fixer fix --config=.php-cs-fixer.dist.php --allow-risky=yes --dry-run --diff --ansi",
     "loc-guard": "loc-guard --config=loc.yaml",

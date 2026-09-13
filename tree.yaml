@@ -25,48 +25,43 @@ exclude:
 rules:
   - path: "**"
     deny_dirs: ["scripts", "Scripts"]
-  - path: "src/php"
+  - path: "src/php/**"
     forbid_empty: true
     allow: ["*.php"]
+    max_files: 15
+    max_dirs: 20
+  - path: "tests/**"
+    forbid_empty: true
+    allow: ["*.php"]
+    max_files: 15
+    max_dirs: 20
+  - path: "src/php"
     file_case: snake
     dir_case: pascal
-    max_files: 15
-    max_dirs: 20
-  - path: "src/php/Runtime/**"
-    forbid_empty: true
-    allow: ["*.php"]
+  - path: "src/php/*/**"
     file_case: pascal
     dir_case: pascal
-    max_files: 15
-    max_dirs: 20
   - path: "tests/Unit/php"
-    forbid_empty: true
     allow: ["*Test.php"]
     file_case: camel
     dir_case: pascal
-    max_files: 15
-    max_dirs: 20
   - path: "tests/Unit/php/Runtime/**"
-    forbid_empty: true
     allow: ["*Test.php"]
     file_case: pascal
     dir_case: pascal
-    max_files: 15
-    max_dirs: 20
-  - path: "tests/Property"
-    forbid_empty: true
+  - path: "tests/php"
+    allow: ["*Test.php", "bootstrap.php"]
+  - path: "tests/php/*/**"
+    file_case: pascal
+    dir_case: pascal
+  - path: "tests/Property/**"
     allow: ["*Test.php"]
     file_case: pascal
     dir_case: pascal
-    max_files: 15
-    max_dirs: 20
-  - path: "tests/Doctest"
-    forbid_empty: true
+  - path: "tests/Doctest/**"
     allow: ["*Test.php"]
     file_case: pascal
     dir_case: pascal
-    max_files: 15
-    max_dirs: 20
 
 report:
   reporter: ai
