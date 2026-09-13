@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Getting Started — storybook-php</title>
+<link rel="canonical" href="https://k-kinzal.github.io/storybook-php/pr/70/storybook-php/dev-tools/doc/docs/getting-started.md.html">
+<meta name="description" content="Getting Started, a document of the storybook-php/dev-tools package.">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="storybook-php">
+<meta property="og:title" content="Getting Started — storybook-php">
+<meta property="og:description" content="Getting Started, a document of the storybook-php/dev-tools package.">
+<meta property="og:url" content="https://k-kinzal.github.io/storybook-php/pr/70/storybook-php/dev-tools/doc/docs/getting-started.md.html">
+<meta property="og:image" content="https://k-kinzal.github.io/storybook-php/pr/70/assets/og-image.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="storybook-php">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="stylesheet" href="../../../../assets/style.css">
+<script>try{var t=localStorage.getItem("docgen-theme");if(t){document.documentElement.dataset.theme=t}document.documentElement.dataset.diffMode=localStorage.getItem("docgen-diff-mode")||"inline"}catch(e){}</script>
+</head>
+<body data-root="../../../../">
+<nav class="sidebar" id="sidebar"><div class="sb-head"><a class="sb-site" href="../../../../index.html">storybook-php</a></div><div class="sb-pkg"><a href="../../../../storybook-php/dev-tools/index.html">storybook-php/dev-tools</a></div><nav class="sb-block"><div class="sb-title">Package</div><ul class="sb-list"><li data-diff="same"><a href="../../../../storybook-php/dev-tools/all-items.html">All items</a></li><li data-diff="removed"><a href="../../../../storybook-php/dev-tools/index.html#documents">Documents</a></li></ul></nav></nav>
+<div class="page">
+<header class="topbar">
+<button class="nav-toggle" id="nav-toggle" title="Toggle navigation">☰</button>
+<nav class="crumbs"><a href="../../../../storybook-php/dev-tools/index.html">storybook-php/dev-tools</a><span class="crumb-sep">::</span><span class="crumb-current">docs/getting-started.md</span></nav>
+<div class="topbar-tools">
+<input type="search" id="search" placeholder="Search… ( / )" autocomplete="off" spellcheck="false">
+<span class="diff-range" title="Comparing 52591a9 to working tree">52591a9 <span class="diff-arrow">→</span> working tree</span><div class="diff-modes" id="diff-modes" role="group" aria-label="Diff display mode"><button type="button" class="diff-mode" data-diff-mode="off" title="Documentation of the head revision, without diff marks">Off</button><button type="button" class="diff-mode" data-diff-mode="inline" title="Every page with additions and removals marked">Diff</button><button type="button" class="diff-mode" data-diff-mode="changes" title="Only what the head revision added, changed, or removed">Changes</button></div><a class="repo-link" href="https://github.com/k-kinzal/storybook-php" title="Repository: https://github.com/k-kinzal/storybook-php" rel="noreferrer">github.com</a>
+<button id="theme-toggle" title="Toggle theme">◐</button>
+</div>
+</header>
+<div class="search-results" id="search-results" hidden></div>
+<main class="content">
+<p class="diff-empty" id="diff-empty" data-changes="Nothing on this page changed between 52591a9 and working tree." data-off="This page documents what 52591a9 had and working tree no longer has. Switch to Diff to read it." hidden></p>
+<div class="symbol-head"><h1><span class="chip chip-kind k-document">document</span>Getting Started</h1><div class="symbol-meta"><span class="src-link">docs/getting-started.md</span></div></div>
+<div class="notice diff-banner" data-diff="removed">Removed in working tree, compared to 52591a9.</div>
+<section class="readme" data-diff="removed"><div class="doc-block" data-diff="same"><h2>Getting Started</h2>
+</div><div class="doc-block" data-diff="same"><p>This guide explains how to install and use <code>storybook-php</code> to preview PHP-rendered UI pieces inside Storybook.</p>
+</div><div class="doc-block" data-diff="same"><h3>Requirements</h3>
+</div><div class="doc-block" data-diff="same"><ul><li>PHP 8.0-8.5</li><li>Node.js 20.19+</li><li>Storybook 10.x</li><li>Vite 5.x-8.x</li><li>A <code>php</code> binary available on your <code>PATH</code>, or a custom <code>phpBinary</code> configured in Storybook</li></ul>
+</div><div class="doc-block" data-diff="same"><h3>Installation</h3>
+</div><div class="doc-block" data-diff="same"><p>Install the framework addon and its required Storybook/Vite packages:</p>
+</div><div class="doc-block" data-diff="same"><pre class="code-block"><code>npm install -D storybook storybook-php @storybook/builder-vite vite</code></pre>
+</div><div class="doc-block" data-diff="same"><p>If your project already has Storybook 10 with the Vite builder, add <code>storybook-php</code> on top of that setup.</p>
+</div><div class="doc-block" data-diff="same"><h3>Storybook Configuration</h3>
+</div><div class="doc-block" data-diff="same"><p>Add the framework to <code>.storybook/main.ts</code>:</p>
+</div><div class="doc-block" data-diff="same"><pre class="code-block"><code>import type { StorybookConfig } from &quot;storybook&quot;;
+
+const config: StorybookConfig = {
+  stories: [&quot;../src/**/*.stories.ts&quot;],
+  framework: {
+    name: &quot;storybook-php&quot;,
+    options: {
+      bootstrap: new URL(&quot;../bootstrap.php&quot;, import.meta.url).pathname,
+    },
+  },
+};
+
+export default config;</code></pre>
+</div><div class="doc-block" data-diff="same"><p><code>bootstrap</code> is optional, but most real projects use it to load Composer autoloaders, framework containers, template engines, or application config.</p>
+</div><div class="doc-block" data-diff="same"><h3>First Component</h3>
+</div><div class="doc-block" data-diff="same"><p>Create a PHP component:</p>
+</div><div class="doc-block" data-diff="same"><pre class="code-block"><code>&lt;?<span class="tok-id">php</span>
+
+<span class="tok-kw">class</span> <span class="tok-id">Greeting</span>
+{
+    <span class="tok-kw">public</span> <span class="tok-kw">function</span> <span class="tok-id">__construct</span>(
+        <span class="tok-kw">private</span> <span class="tok-id">string</span> <span class="tok-var">$name</span>,
+        <span class="tok-kw">private</span> <span class="tok-id">string</span> <span class="tok-var">$greeting</span> = <span class="tok-str">&quot;Hello&quot;</span>,
+    ) {}
+
+    <span class="tok-kw">public</span> <span class="tok-kw">function</span> <span class="tok-id">render</span>(): <span class="tok-id">string</span>
+    {
+        <span class="tok-kw">return</span> &quot;<span class="tok-str">&lt;h2&gt;</span>{<span class="tok-var">$this</span>-&gt;<span class="tok-id">greeting</span>}<span class="tok-str">, </span>{<span class="tok-var">$this</span>-&gt;<span class="tok-id">name</span>}<span class="tok-str">!&lt;/h2&gt;</span>&quot;;
+    }
+}</code></pre>
+</div><div class="doc-block" data-diff="same"><p>Create the story:</p>
+</div><div class="doc-block" data-diff="same"><pre class="code-block"><code>import type { Meta, StoryObj } from &quot;storybook-php&quot;;
+import { Greeting } from &quot;./Greeting.php@render&quot;;
+
+const meta: Meta&lt;typeof Greeting&gt; = {
+  component: Greeting,
+  title: &quot;Components/Greeting&quot;,
+};
+
+export default meta;
+type Story = StoryObj&lt;typeof Greeting&gt;;
+
+export const Default: Story = {
+  args: { name: &quot;World&quot; },
+};</code></pre>
+</div><div class="doc-block" data-diff="same"><p>The import suffix <code>@render</code> tells <code>storybook-php</code> which PHP callable to execute. Constructor parameters and method parameters are merged into a single Storybook args object.</p>
+</div><div class="doc-block" data-diff="same"><h3>Running Storybook</h3>
+</div><div class="doc-block" data-diff="same"><p>Start the dev server:</p>
+</div><div class="doc-block" data-diff="same"><pre class="code-block"><code>npx storybook-php start</code></pre>
+</div><div class="doc-block" data-diff="same"><p>Other supported commands:</p>
+</div><div class="doc-block" data-diff="same"><ul><li><code>npx storybook-php build</code></li><li><code>npx storybook-php test</code></li><li><code>npx storybook-php typegen</code></li><li><code>npx storybook-php typegen --options-file storybook-php.config.mjs</code></li></ul>
+</div><div class="doc-block" data-diff="same"><p><code>start</code> and <code>build</code> accept the same options as the regular Storybook CLI. <code>test</code> passes arguments through to <code>vitest run</code>.</p>
+</div><div class="doc-block" data-diff="same"><p>If you want to use <code>storybook-php</code> from a PHP-first repository without a local <code>package.json</code>, see <a href="../../../../storybook-php/dev-tools/doc/docs/php-project-setup.md.html">PHP Project Setup</a>.</p>
+</div><div class="doc-block" data-diff="same"><h3>TypeScript Support</h3>
+</div><div class="doc-block" data-diff="same"><p>If you want richer TypeScript editor support, add the client types and TS plugin to <code>tsconfig.json</code>:</p>
+</div><div class="doc-block" data-diff="same"><pre class="code-block"><code>{
+  &quot;compilerOptions&quot;: {
+    &quot;types&quot;: [&quot;storybook-php/client&quot;],
+    &quot;plugins&quot;: [{ &quot;name&quot;: &quot;storybook-php/ts-plugin&quot; }]
+  }
+}</code></pre>
+</div><div class="doc-block" data-diff="same"><p>This is optional. It improves IDE support for <code>.php</code> imports and gives your stories typed <code>args</code> based on parsed PHP signatures.</p>
+</div><div class="doc-block" data-diff="same"><p>If you want declaration files on disk, run:</p>
+</div><div class="doc-block" data-diff="same"><pre class="code-block"><code>npx storybook-php typegen</code></pre>
+</div><div class="doc-block" data-diff="same"><p>That command writes bare-import and exact-import declarations next to the source file, for example:</p>
+</div><div class="doc-block" data-diff="same"><ul><li><code>Greeting.php.d.ts</code></li><li><code>Greeting.php@render.d.ts</code></li></ul>
+</div><div class="doc-block" data-diff="same"><p>If your setup relies on <code>defaultMethod</code> or <code>typeMap</code>, pass those settings to <code>typegen</code> with <code>--options-file</code>. The CLI does not read <code>.storybook/main.ts</code>.</p>
+</div><div class="doc-block" data-diff="same"><h3>Next Steps</h3>
+</div><div class="doc-block" data-diff="same"><ul><li><a href="../../../../storybook-php/dev-tools/doc/docs/rendering-model.md.html">Rendering Model</a>: import patterns, args, and runtime behavior</li><li><a href="../../../../storybook-php/dev-tools/doc/docs/php-project-setup.md.html">PHP Project Setup</a>: running from a PHP project via <code>npx</code> without a local <code>package.json</code></li><li><a href="../../../../storybook-php/dev-tools/doc/docs/framework-options.md.html">Framework Options</a>: bootstrap, adapters, default methods, and runtime configuration</li><li><a href="../../../../storybook-php/dev-tools/doc/docs/type-mapping.md.html">Type Mapping</a>: advanced metadata for templates, interfaces, and controls</li><li><a href="../../../../storybook-php/dev-tools/doc/docs/testing-and-types.md.html">Testing and Types</a>: <code>typegen</code>, Vitest integration, and editor support</li></ul>
+</div></section>
+</main>
+<footer class="site-footer">Generated by <a href="https://github.com/k-kinzal/php-ai-toolkit">php-ai-toolkit</a> docgen</footer>
+</div>
+<script src="../../../../assets/search-index.js" defer></script>
+<script src="../../../../assets/app.js" defer></script>
+</body>
+</html>

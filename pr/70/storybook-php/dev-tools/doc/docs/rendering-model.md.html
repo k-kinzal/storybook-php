@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Rendering Model — storybook-php</title>
+<link rel="canonical" href="https://k-kinzal.github.io/storybook-php/pr/70/storybook-php/dev-tools/doc/docs/rendering-model.md.html">
+<meta name="description" content="Rendering Model, a document of the storybook-php/dev-tools package.">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="storybook-php">
+<meta property="og:title" content="Rendering Model — storybook-php">
+<meta property="og:description" content="Rendering Model, a document of the storybook-php/dev-tools package.">
+<meta property="og:url" content="https://k-kinzal.github.io/storybook-php/pr/70/storybook-php/dev-tools/doc/docs/rendering-model.md.html">
+<meta property="og:image" content="https://k-kinzal.github.io/storybook-php/pr/70/assets/og-image.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="storybook-php">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="stylesheet" href="../../../../assets/style.css">
+<script>try{var t=localStorage.getItem("docgen-theme");if(t){document.documentElement.dataset.theme=t}document.documentElement.dataset.diffMode=localStorage.getItem("docgen-diff-mode")||"inline"}catch(e){}</script>
+</head>
+<body data-root="../../../../">
+<nav class="sidebar" id="sidebar"><div class="sb-head"><a class="sb-site" href="../../../../index.html">storybook-php</a></div><div class="sb-pkg"><a href="../../../../storybook-php/dev-tools/index.html">storybook-php/dev-tools</a></div><nav class="sb-block"><div class="sb-title">Package</div><ul class="sb-list"><li data-diff="same"><a href="../../../../storybook-php/dev-tools/all-items.html">All items</a></li><li data-diff="removed"><a href="../../../../storybook-php/dev-tools/index.html#documents">Documents</a></li></ul></nav></nav>
+<div class="page">
+<header class="topbar">
+<button class="nav-toggle" id="nav-toggle" title="Toggle navigation">☰</button>
+<nav class="crumbs"><a href="../../../../storybook-php/dev-tools/index.html">storybook-php/dev-tools</a><span class="crumb-sep">::</span><span class="crumb-current">docs/rendering-model.md</span></nav>
+<div class="topbar-tools">
+<input type="search" id="search" placeholder="Search… ( / )" autocomplete="off" spellcheck="false">
+<span class="diff-range" title="Comparing 52591a9 to working tree">52591a9 <span class="diff-arrow">→</span> working tree</span><div class="diff-modes" id="diff-modes" role="group" aria-label="Diff display mode"><button type="button" class="diff-mode" data-diff-mode="off" title="Documentation of the head revision, without diff marks">Off</button><button type="button" class="diff-mode" data-diff-mode="inline" title="Every page with additions and removals marked">Diff</button><button type="button" class="diff-mode" data-diff-mode="changes" title="Only what the head revision added, changed, or removed">Changes</button></div><a class="repo-link" href="https://github.com/k-kinzal/storybook-php" title="Repository: https://github.com/k-kinzal/storybook-php" rel="noreferrer">github.com</a>
+<button id="theme-toggle" title="Toggle theme">◐</button>
+</div>
+</header>
+<div class="search-results" id="search-results" hidden></div>
+<main class="content">
+<p class="diff-empty" id="diff-empty" data-changes="Nothing on this page changed between 52591a9 and working tree." data-off="This page documents what 52591a9 had and working tree no longer has. Switch to Diff to read it." hidden></p>
+<div class="symbol-head"><h1><span class="chip chip-kind k-document">document</span>Rendering Model</h1><div class="symbol-meta"><span class="src-link">docs/rendering-model.md</span></div></div>
+<div class="notice diff-banner" data-diff="removed">Removed in working tree, compared to 52591a9.</div>
+<section class="readme" data-diff="removed"><div class="doc-block" data-diff="same"><h2>Rendering Model</h2>
+</div><div class="doc-block" data-diff="same"><p><code>storybook-php</code> turns PHP callables and templates into Storybook components by combining a Vite plugin, a browser-side preview renderer, and a small PHP runner.</p>
+</div><div class="doc-block" data-diff="same"><h3>Request Flow</h3>
+</div><div class="doc-block" data-diff="same"><pre class="code-block"><code>Story (.stories.ts)
+  -&gt; import &quot;./Foo.php@render&quot;
+Vite plugin
+  -&gt; resolves the import to a virtual JS module
+Preview renderer
+  -&gt; POST /__storybook_php/render with args
+Dev middleware
+  -&gt; validates the request and invokes PhpExecutor
+PHP runner
+  -&gt; runs adapter middleware around the core executor
+Storybook canvas
+  -&gt; injects the returned HTML</code></pre>
+</div><div class="doc-block" data-diff="same"><p>The PHP process runs server-side. Storybook only receives HTML.</p>
+</div><div class="doc-block" data-diff="same"><p>Behind that request flow, each imported component is registered server-side as a render plan. The browser only sends <code>componentId</code>, story <code>args</code>, and optional <code>parameters.typeMap</code> overrides to <code>/__storybook_php/render</code>.</p>
+</div><div class="doc-block" data-diff="same"><h3>Internal Layering</h3>
+</div><div class="doc-block" data-diff="same"><p>The TypeScript codebase is split into five layers:</p>
+</div><div class="doc-block" data-diff="same"><ul><li>contracts: <code>src/types.ts</code> and <code>src/public-types.ts</code> define package-level types shared across the rest of the codebase.</li><li>shared: <code>src/shared/</code> holds shared constants and contracts used by multiple higher layers.</li><li>core: <code>src/core/config/</code>, <code>src/core/analysis/</code>, <code>src/core/component/</code>, and <code>src/core/typescript/</code> normalize framework options, analyze PHP sources, and generate shared schemas plus declaration/module output.</li><li>runtime: <code>src/runtime/render/</code> and <code>src/runtime/server/</code> validate render requests, manage registered render plans, and execute server-side rendering.</li><li>entrypoints: top-level <code>src/*.ts</code>, plus helpers under <code>src/cli/</code> and <code>src/ts-plugin/</code>, compose the lower layers for Storybook, Vite, preview, CLI, and editor integration.</li></ul>
+</div><div class="doc-block" data-diff="same"><p><code>src/php/</code> contains the PHP-side runtime helpers and sits alongside these TypeScript layers.</p>
+</div><div class="doc-block" data-diff="same"><p>The dependency rule is one-way: entrypoints may depend on runtime, core, shared, and contracts; runtime may depend on core, shared, and contracts; core may depend on shared and contracts; shared may depend only on contracts. Lower layers should not reach back up into Storybook/Vite adapters.</p>
+</div><div class="doc-block" data-diff="same"><h3>Supported Import Patterns</h3>
+</div><div class="doc-block" data-diff="same"><div class="table-wrap"><table><thead><tr><th>Pattern</th><th>Import syntax</th><th>Args source</th></tr></thead><tbody><tr><td>Instance method</td><td><code>./File.php@render</code></td><td>Constructor params + method params</td></tr><tr><td>Static method</td><td><code>./File.php@danger</code></td><td>Method params</td></tr><tr><td>Standalone function</td><td><code>./file.php@renderBadge</code></td><td>Function params</td></tr><tr><td>Invocable class</td><td><code>./File.php@__invoke</code></td><td>Constructor params + <code>__invoke</code> params</td></tr><tr><td>Enum instance method</td><td><code>./File.php@badge</code></td><td><code>_case</code> + method params</td></tr><tr><td>Template file</td><td><code>./file.php</code></td><td>Story args become template variables</td></tr><tr><td>Mapped non-PHP import source</td><td><code>./card.blade.php</code></td><td><code>typeMap.files</code> defines the contract</td></tr></tbody></table></div>
+</div><div class="doc-block" data-diff="same"><p>If <code>framework.options.defaultMethod</code> is set, you can omit <code>@render</code> and import <code>./File.php</code> directly. Bare <code>.php</code> imports only mean template mode when <code>defaultMethod</code> is not set.</p>
+</div><div class="doc-block" data-diff="same"><p>Non-PHP imports are resolved only when they match <code>typeMap.files</code>. Those mappings can keep template mode, redirect execution with <code>phpFile</code>, force a callable with <code>callable</code>, and attach adapters.</p>
+</div><div class="doc-block" data-diff="same"><h3>Build-Time Resolution</h3>
+</div><div class="doc-block" data-diff="same"><p>At import time, <code>storybook-php</code> resolves three related concepts:</p>
+</div><div class="doc-block" data-diff="same"><ul><li><code>sourceFile</code>: the file you imported in the story</li><li><code>executionFile</code>: the PHP file that will actually be parsed and executed</li><li><code>adapter</code>: the middleware chain chosen from global options, file mappings, and request overrides</li></ul>
+</div><div class="doc-block" data-diff="same"><p>For plain <code>.php</code> imports, <code>sourceFile</code> and <code>executionFile</code> are the same file. For mapped files such as Blade or Twig templates, <code>typeMap.files[*].phpFile</code> can redirect execution to a separate PHP file while preserving the original import path as <code>sourceFile</code>.</p>
+</div><div class="doc-block" data-diff="same"><h3>How Args Are Matched</h3>
+</div><div class="doc-block" data-diff="same"><p><code>storybook-php</code> uses PHP reflection to match Storybook args to the target callable.</p>
+</div><div class="doc-block" data-diff="same"><ul><li>Class instance methods receive constructor args and method args from one merged object.</li><li>Static methods and standalone functions only receive callable args.</li><li>Enum methods reserve <code>_case</code> to select the enum case before the method runs.</li><li>Template files receive all story args as local template variables.</li><li>If constructor and method parameters share a name but cannot be merged safely, the public surface splits into <code>constructor.name</code> and <code>method.name</code>. <code>typeMap</code> can also introduce those namespaced keys explicitly.</li></ul>
+</div><div class="doc-block" data-diff="same"><p>Parameters are matched by name, not just position, so Storybook controls map naturally to PHP parameter names.</p>
+</div><div class="doc-block" data-diff="same"><h3>Output Resolution</h3>
+</div><div class="doc-block" data-diff="same"><p>The runner converts PHP output into final HTML using these rules:</p>
+</div><div class="doc-block" data-diff="same"><ul><li>A non-empty returned string is used as HTML.</li><li>Buffered <code>echo</code> output is captured automatically.</li><li>If both a string return value and buffered output exist, they are concatenated.</li><li><code>Generator</code> results are consumed and joined.</li><li>Objects with <code>__toString()</code> are stringified.</li><li>Arrays with an <code>html</code> key use that value as the HTML payload.</li><li>Non-empty scalars are converted to strings.</li><li>If nothing produces content, the result is an empty string.</li></ul>
+</div><div class="doc-block" data-diff="same"><p>This means components that <code>return</code>, <code>echo</code>, or mix both styles all work.</p>
+</div><div class="doc-block" data-diff="same"><h3>Adapter Middleware</h3>
+</div><div class="doc-block" data-diff="same"><p>Adapters sit around the core executor as middleware.</p>
+</div><div class="doc-block" data-diff="same"><ul><li>They receive the public Storybook <code>args</code> surface in <code>$context[&#039;publicArgs&#039;]</code>.</li><li>They also receive hydrated execution inputs in <code>$context[&#039;templateArgs&#039;]</code>, <code>$context[&#039;constructorArgs&#039;]</code>, and <code>$context[&#039;methodArgs&#039;]</code> when those targets exist.</li><li>They may rewrite <code>publicArgs</code> before calling <code>next($context)</code>.</li><li>Inner adapters and the core executor will then receive freshly re-hydrated execution inputs.</li><li>They may wrap or replace the returned HTML response after <code>next(...)</code>.</li><li>They may terminate the chain entirely by returning HTML without calling <code>next</code>.</li></ul>
+</div><div class="doc-block" data-diff="same"><p>The runtime composes adapters from least specific to most specific:</p>
+</div><div class="doc-block" data-diff="same"><ol><li>global <code>framework.options.adapter</code></li><li>matching <code>typeMap.files</code> pattern adapters</li><li>exact file adapters</li><li>per-request adapter overrides</li><li>core executor</li></ol>
+</div><div class="doc-block" data-diff="same"><p>This keeps cross-cutting adapters on the outside while file-specific adapters stay closest to the target runtime.</p>
+</div><div class="doc-block" data-diff="same"><h3>Templates</h3>
+</div><div class="doc-block" data-diff="same"><p>When you import a PHP file without a callable suffix, <code>storybook-php</code> treats it as a template:</p>
+</div><div class="doc-block" data-diff="same"><pre class="code-block"><code>import CardTemplate from &quot;./card.php&quot;;</code></pre>
+</div><div class="doc-block" data-diff="same"><p>Without an adapter, the runner:</p>
+</div><div class="doc-block" data-diff="same"><ol><li>Extracts story args into local variables.</li><li>Includes the template file inside an output buffer.</li><li>Returns the buffered HTML.</li></ol>
+</div><div class="doc-block" data-diff="same"><p>For Blade, Twig, Latte, and other engines that need their own rendering pipeline, use a terminal adapter middleware instead of raw <code>include</code>. Those adapters can read <code>$context[&#039;templateArgs&#039;]</code> directly and return HTML without calling <code>next</code>.</p>
+</div><div class="doc-block" data-diff="same"><h3>Decorators and Script Tags</h3>
+</div><div class="doc-block" data-diff="same"><p>The preview renderer returns a placeholder string first so Storybook decorators can wrap it. Once PHP rendering completes, the placeholder is replaced with the HTML response.</p>
+</div><div class="doc-block" data-diff="same"><p>If the rendered HTML contains <code>&lt;script&gt;</code> tags, <code>storybook-php</code> recreates them after injection so inline scripts execute inside the preview canvas.</p>
+</div><div class="doc-block" data-diff="same"><h3>Errors and Reloading</h3>
+</div><div class="doc-block" data-diff="same"><ul><li>PHP exceptions are returned to Storybook and shown as <code>PHP Render Error</code>.</li><li>Changes to PHP files invalidate the generated virtual modules.</li><li>Changes to redirected execution files and <code>typeMap.files[*].includes</code> dependencies also trigger reloads.</li></ul>
+</div><div class="doc-block" data-diff="same"><p>For configuration-driven cases such as Blade or cross-file inheritance, see <a href="../../../../storybook-php/dev-tools/doc/docs/framework-options.md.html">Framework Options</a> and <a href="../../../../storybook-php/dev-tools/doc/docs/type-mapping.md.html">Type Mapping</a>.</p>
+</div></section>
+</main>
+<footer class="site-footer">Generated by <a href="https://github.com/k-kinzal/php-ai-toolkit">php-ai-toolkit</a> docgen</footer>
+</div>
+<script src="../../../../assets/search-index.js" defer></script>
+<script src="../../../../assets/app.js" defer></script>
+</body>
+</html>
