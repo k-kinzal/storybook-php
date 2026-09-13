@@ -1,0 +1,36 @@
+scan:
+  roots:
+    - src/php
+  exclude: []
+
+policies:
+  standard:
+    limits:
+      file:
+        lines: 500
+        ncloc: 350
+      class:
+        lines: 400
+      trait:
+        lines: 300
+      interface:
+        lines: 200
+      enum:
+        lines: 200
+      function:
+        lines: 50
+        cyclomatic_complexity: 20
+      method:
+        lines: 50
+        cyclomatic_complexity: 20
+
+apply:
+  default: standard
+  rules: []
+
+report:
+  reporter: ai
+  order_by:
+    - path
+    - line
+    - rule

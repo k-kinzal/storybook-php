@@ -164,7 +164,7 @@ function renderFixture(string $title, array $items, ?FormatterInterface $formatt
 {
     echo 'func:';
 
-    $formatted = $formatter instanceof \StorybookPhp\TestFixture\FormatterInterface ? $formatter->format($title) : $title;
+    $formatted = $formatter instanceof FormatterInterface ? $formatter->format($title) : $title;
 
     return $formatted . ':' . $items[0]->label . ':' . implode(',', $numbers);
 }

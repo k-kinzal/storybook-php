@@ -1,0 +1,37 @@
+# NOTE: You do not have permission to overwrite this file. Please ask a human operator to perform the changes for you.
+deptrac:
+  paths:
+    - src/php
+  analyser:
+    types:
+      - class
+      - function
+      - function_call
+      - file
+  layers:
+    - name: Entrypoint
+      collectors:
+        - type: directory
+          value: 'src/php/(runner|bootstrap)\.php$|src/php/Runtime/Runner\.php$'
+    - name: Execution
+      collectors:
+        - type: directory
+          value: "src/php/Runtime/Execution/.*"
+    - name: Transport
+      collectors:
+        - type: directory
+          value: "src/php/Runtime/Transport/.*"
+    - name: Casting
+      collectors:
+        - type: directory
+          value: "src/php/Runtime/Casting/.*"
+    - name: Contract
+      collectors:
+        - type: directory
+          value: "src/php/Runtime/Contract/.*"
+  ruleset:
+    Entrypoint: [Execution, Transport]
+    Execution: [Casting, Contract, Transport]
+    Transport: [Contract]
+    Casting: [Contract]
+    Contract: []

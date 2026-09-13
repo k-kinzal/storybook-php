@@ -5,10 +5,14 @@ dist/
 .DS_Store
 *.php.d.ts
 .phpstan/
+.php-cs-fixer.cache
 .phpunit.cache/
+.phpunit.result.cache
+.deptrac.cache
 .storybook-out/
 storybook-static/
 coverage/
+build/
 .claude/
 .idea/
 *.log

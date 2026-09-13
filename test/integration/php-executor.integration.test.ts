@@ -602,19 +602,17 @@ describe.skipIf(!hasPhp)("PhpExecutor", () => {
     it("returns error when PHP process times out", async () => {
       const slowExecutor = new PhpExecutor({ timeout: 500 });
 
-      // Create an inline PHP script that sleeps
       const request: PhpRenderRequest = {
         type: "function",
-        file: fixture("StandaloneFunctions.php"),
+        file: fixture("SlowFunction.php"),
         class: null,
-        callable: "badge",
-        args: { label: "test" },
+        callable: "waitForTimeout",
+        args: {},
       };
 
-      // This should work fine with a normal executor—just verify we can set timeout
       const result = await slowExecutor.execute(request);
-      // The fast fixture should complete within 500ms
-      expect(result.html).toContain("badge");
+      expect(result.html).toBe("");
+      expect(result.error).toBe("PHP process exited with code null");
     });
   });
 
