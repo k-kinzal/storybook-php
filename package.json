@@ -70,8 +70,8 @@
     "storybook": "^10.3.0",
     "typescript": "^6.0.2",
     "vite": "^8.0.0",
-    "vite-plus": "^0.1.12",
-    "vitest": "^4.1.2"
+    "vite-plus": "^0.3.3",
+    "vitest": "^5.0.2"
   },
   "peerDependencies": {
     "@storybook/addon-vitest": "^10.0.0",
