@@ -94,7 +94,7 @@ import { Card as CardExplicit } from &quot;./Card.php@render&quot;;</code></pre>
     <span class="tok-var">$response</span> = <span class="tok-var">$next</span>(<span class="tok-var">$context</span>);
 
     <span class="tok-kw">return</span> <span class="tok-id">array_merge</span>(<span class="tok-var">$response</span>, [
-        <span class="tok-str">&#039;html&#039;</span> =&gt; <span class="tok-id">resolveOutput</span>(<span class="tok-var">$response</span>[<span class="tok-str">&#039;result&#039;</span>] ?? <span class="tok-id">null</span>, (string) (<span class="tok-var">$response</span>[<span class="tok-str">&#039;buffered&#039;</span>] ?? <span class="tok-str">&#039;&#039;</span>)),
+        <span class="tok-str">&#039;html&#039;</span> =&gt; <span class="tok-id">\StorybookPhp\Runtime\Transport\resolveOutput</span>(<span class="tok-var">$response</span>[<span class="tok-str">&#039;result&#039;</span>] ?? <span class="tok-id">null</span>, (string) (<span class="tok-var">$response</span>[<span class="tok-str">&#039;buffered&#039;</span>] ?? <span class="tok-str">&#039;&#039;</span>)),
     ]);
 };</code></pre>
 <p><code>$context</code> contains:</p>
