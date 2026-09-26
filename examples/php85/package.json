@@ -21,7 +21,7 @@
     "storybook": "^10.3.0",
     "storybook-addon-vis": "3.0.0",
     "vite": "^8.0.0",
-    "vitest": "4.0.18",
+    "vitest": "4.1.11",
     "vitest-plugin-vis": "4.0.0"
   }
 }
