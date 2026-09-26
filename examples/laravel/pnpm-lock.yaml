@@ -1248,8 +1248,8 @@ packages:
     engines: {node: '>=8'}
     hasBin: true
 
-  ws@8.20.0:
-    resolution: {integrity: sha512-sAt8BhgNbzCtgGbt2OxmpuryO63ZoDk/sqaB/znQm94T4fCEsy/yV+7CdC1kJhOU9lboAEU7R3kquuycDoibVA==}
+  ws@8.22.0:
+    resolution: {integrity: sha512-Ydggc987+RO0AnWtZ/7Wq9FtNvcrL1b/RO0ud9mWjUPgDrsAAwQSF51sm2hm1XofbU/4jkpGEsLFsZZxU+1DOg==}
     engines: {node: '>=10.0.0'}
     peerDependencies:
       bufferutil: ^4.0.1
@@ -1636,7 +1636,7 @@ snapshots:
       sirv: 3.0.2
       tinyrainbow: 3.1.0
       vitest: 4.1.11(@vitest/browser-playwright@4.1.11)(vite@8.0.16(esbuild@0.27.4))
-      ws: 8.20.0
+      ws: 8.22.0
     transitivePeerDependencies:
       - bufferutil
       - msw
@@ -2124,7 +2124,7 @@ snapshots:
       recast: 0.23.11
       semver: 7.7.4
       use-sync-external-store: 1.6.0(react@19.2.4)
-      ws: 8.20.0
+      ws: 8.22.0
     transitivePeerDependencies:
       - '@testing-library/dom'
       - bufferutil
@@ -2247,7 +2247,7 @@ snapshots:
       siginfo: 2.0.0
       stackback: 0.0.2
 
-  ws@8.20.0: {}
+  ws@8.22.0: {}
 
   wsl-utils@0.1.0:
     dependencies:
