@@ -24,5 +24,5 @@
     "vitest": "4.0.18",
     "vitest-plugin-vis": "4.0.0"
   },
-  "packageManager": "pnpm@10.33.0"
+  "packageManager": "pnpm@10.34.5"
 }
