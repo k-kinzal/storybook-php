@@ -46,14 +46,14 @@
     automerge: true,
   },
 
-  // Vulnerability fixes skip the release-age cooldown so they show up immediately, but they
-  // are deliberately left for a human: automerging a release that is hours old is the exact
-  // supply-chain risk `min-release-age` guards against.
+  // Vulnerability fixes skip the schedule and the release-age cooldown so they show up
+  // immediately, and they are automerged regardless of update type: a known-vulnerable
+  // dependency left open is worse than any bump that CI accepts.
   vulnerabilityAlerts: {
     enabled: true,
     schedule: [],
     minimumReleaseAge: null,
-    automerge: false,
+    automerge: true,
     labels: ["dependencies", "security"],
   },
   osvVulnerabilityAlerts: true,
