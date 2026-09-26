@@ -20,7 +20,7 @@
     "playwright": "^1.58.0",
     "storybook": "^10.3.0",
     "storybook-addon-vis": "3.0.0",
-    "vite": "^8.0.0",
+    "vite": "^8.0.16",
     "vitest": "4.0.18",
     "vitest-plugin-vis": "4.0.0"
   }
