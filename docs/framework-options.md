@@ -110,7 +110,7 @@ return static function (array $context, callable $next): array|string {
     $response = $next($context);
 
     return array_merge($response, [
-        'html' => resolveOutput($response['result'] ?? null, (string) ($response['buffered'] ?? '')),
+        'html' => \StorybookPhp\Runtime\Transport\resolveOutput($response['result'] ?? null, (string) ($response['buffered'] ?? '')),
     ]);
 };
 ```
