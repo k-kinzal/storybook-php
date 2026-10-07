@@ -35,10 +35,10 @@
 <main class="content">
 <div class="symbol-head"><h1><span class="chip chip-kind k-document">document</span>Type Mapping</h1><div class="symbol-meta"><span class="src-link">docs/type-mapping.md</span></div></div>
 <section class="readme"><h2>Type Mapping</h2>
-<p><code>typeMap</code> fills in the parts that static PHP parsing cannot infer on its own. Use it to define the public Storybook args surface, redirect non-PHP imports to PHP type sources, and resolve runtime bindings for interfaces and abstract types.</p>
+<p><code>typeMap</code> fills in the parts that static PHP parsing cannot infer on its own. Use it to define the public Storybook args surface, redirect non-PHP imports to PHP type sources, resolve runtime bindings for interfaces and abstract types, and describe constructor types of nested classes.</p>
 <h3>Overview</h3>
-<p><code>typeMap</code> now has two build-time/runtime sections:</p>
-<ul><li><code>files</code>: file- or pattern-scoped component metadata</li><li><code>bindings</code>: runtime PHP type bindings</li></ul>
+<p><code>typeMap</code> has three build-time/runtime sections:</p>
+<ul><li><code>files</code>: file- or pattern-scoped component metadata</li><li><code>bindings</code>: runtime PHP type bindings</li><li><code>classes</code>: runtime constructor parameter types, keyed by PHP class</li></ul>
 <p>Per-story overrides live in <code>parameters.typeMap</code> and use the same public <code>args</code> shape as <code>typeMap.files[*].args</code>.</p>
 <pre class="code-block"><code>framework: {
   name: &quot;storybook-php&quot;,
@@ -65,6 +65,11 @@
       },
       bindings: {
         &quot;App\\Contracts\\Renderable&quot;: &quot;App\\View\\HtmlBlock&quot;,
+      },
+      classes: {
+        &quot;App\\View\\Menu&quot;: {
+          args: { sections: &quot;App\\View\\MenuSection[]&quot; },
+        },
       },
     },
   },
@@ -173,6 +178,35 @@
   &quot;App\\Contracts\\Renderable&quot;: &quot;App\\View\\HtmlBlock&quot;,
 }</code></pre>
 <p><code>bindings</code> are runtime-only. They help the PHP runner hydrate typed objects, but they do not change generated TypeScript shapes on their own.</p>
+<h3><code>typeMap.classes</code></h3>
+<p><code>classes</code> describes constructor parameters of PHP classes that the runner instantiates. Use it when an untyped or plain <code>array</code> parameter actually expects objects and the class has no PHPDoc that says so.</p>
+<p><code>files[*].args</code> only reaches the parameters of the imported component itself. <code>classes</code> applies wherever the runner builds an instance of that class — at the top level and, most importantly, for nested objects hydrated from story args:</p>
+<pre class="code-block"><code><span class="tok-kw">class</span> <span class="tok-id">Component</span>
+{
+    <span class="tok-kw">public</span> <span class="tok-kw">function</span> <span class="tok-id">__construct</span>(<span class="tok-kw">array</span> <span class="tok-var">$foo</span>) {}  <span class="tok-com">// expects Foo[]</span>
+}
+
+<span class="tok-kw">class</span> <span class="tok-id">Foo</span>
+{
+    <span class="tok-kw">public</span> <span class="tok-kw">function</span> <span class="tok-id">__construct</span>(<span class="tok-kw">array</span> <span class="tok-var">$bar</span>) {}  <span class="tok-com">// expects Bar[]</span>
+}
+
+<span class="tok-kw">class</span> <span class="tok-id">Bar</span>
+{
+    <span class="tok-kw">public</span> <span class="tok-kw">function</span> <span class="tok-id">__construct</span>(<span class="tok-kw">array</span> <span class="tok-var">$buz</span>) {}
+}</code></pre>
+<pre class="code-block"><code>classes: {
+  &quot;App\\Component&quot;: {
+    args: { foo: &quot;Foo[]&quot; },
+  },
+  &quot;App\\Foo&quot;: {
+    args: { bar: { type: &quot;array&quot;, elementType: &quot;App\\Bar&quot; } },
+  },
+}</code></pre>
+<p>With that mapping, story args such as <code>{ foo: [{ bar: [{ buz: [&quot;x&quot;] }] }] }</code> are hydrated into <code>Component(Foo[](Bar[]))</code> without an adapter.</p>
+<p>Behavior:</p>
+<ul><li>keys are PHP class names; a leading <code>\</code> and letter case are ignored</li><li>each <code>args</code> entry accepts the same string shorthand or object form as <code>files[*].args</code>; <code>type</code>, <code>elementType</code>, <code>nullable</code>, and <code>default</code> are honored at runtime</li><li>short class names inside types resolve against the namespace of the class that declares the constructor, and <code>bindings</code> still apply to them</li><li>a class without its own constructor can be described directly; entries on the class win over entries on the ancestor that declares the constructor</li><li>explicit types from <code>files[*].args</code>, story <code>parameters.typeMap.args</code>, or PHPDoc-derived metadata take precedence for the imported component; <code>classes</code> only fills parameters whose type would otherwise be plain <code>array</code>, untyped, or <code>mixed</code></li></ul>
+<p><code>classes</code> is runtime-only. It changes how the runner casts arguments, but it does not change generated TypeScript shapes or Storybook controls.</p>
 <h3>Per-Story Overrides with <code>parameters.typeMap</code></h3>
 <p>Per-story overrides use the same public <code>args</code> shape as <code>typeMap.files[*].args</code>.</p>
 <pre class="code-block"><code>export const Custom = {
@@ -188,18 +222,23 @@
       bindings: {
         &quot;App\\Contracts\\Renderable&quot;: &quot;App\\View\\PlainTextBlock&quot;,
       },
+      classes: {
+        &quot;App\\View\\MenuItem&quot;: {
+          args: { href: { type: &quot;string&quot;, default: &quot;/preview&quot; } },
+        },
+      },
     },
   },
 };</code></pre>
 <p>Story-level <code>args</code> overrides are runtime-only. They affect runtime casting and adapter input mapping for that story, but they do not regenerate module types or Storybook controls.</p>
-<p>Story-level <code>args</code> overrides are merged on top of the resolved public arg surface for that component. Story-level <code>bindings</code> are merged on top of global <code>typeMap.bindings</code>, and the story-level binding wins on conflicts.</p>
+<p>Story-level <code>args</code> overrides are merged on top of the resolved public arg surface for that component. Story-level <code>bindings</code> are merged on top of global <code>typeMap.bindings</code>, and the story-level binding wins on conflicts. Story-level <code>classes</code> are merged on top of global <code>typeMap.classes</code> per constructor parameter, so a story can refine one parameter without restating the rest of the class.</p>
 <h3><code>typegen</code> and <code>typeMap</code></h3>
 <p><code>typeMap.files</code> and <code>defaultMethod</code> affect declaration generation, but <code>typegen</code> does not read <code>.storybook/main.ts</code>. Pass those settings through <code>--options-file</code> instead:</p>
 <pre class="code-block"><code>npx storybook-php typegen --options-file storybook-php.config.mjs</code></pre>
 <p>That options file can export <code>typeMap</code>, <code>defaultMethod</code>, and <code>_configDir</code> so declaration generation resolves mapped files the same way Storybook does.</p>
 <h3>When To Reach for <code>typeMap</code></h3>
 <p>Use <code>typeMap</code> when:</p>
-<ul><li>your component comes from Blade, Twig, Latte, or another non-PHP file</li><li>inheritance or traits live outside the imported file</li><li>Storybook controls need options, defaults, element types, or nullable hints</li><li>runtime object construction needs interface-to-concrete bindings</li><li>one PHP file exposes multiple callable stories with different public args</li></ul>
+<ul><li>your component comes from Blade, Twig, Latte, or another non-PHP file</li><li>inheritance or traits live outside the imported file</li><li>Storybook controls need options, defaults, element types, or nullable hints</li><li>runtime object construction needs interface-to-concrete bindings</li><li>nested objects built from story args have untyped or plain <code>array</code> constructor parameters</li><li>one PHP file exposes multiple callable stories with different public args</li></ul>
 <p>For general runtime setup, see <a href="../../../../k-kinzal/storybook-php/doc/docs/framework-options.md.html">Framework Options</a>.</p>
 </section>
 </main>
