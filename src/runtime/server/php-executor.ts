@@ -6,6 +6,7 @@ import type {
   PhpRenderRequest,
   PhpRenderResponse,
   AdapterMap,
+  ClassMapTarget,
   RuntimeTypeMap,
   TypeMapConfig,
 } from "../../types.js";
@@ -44,7 +45,7 @@ export class PhpExecutor {
     this.adapter = options.adapter ?? null;
     this.adapterMap = options.adapterMap ?? null;
     this.runnerPath = this.resolveRunnerPath();
-    this.runtimeTypeMap = options.typeMap?.bindings ? { bindings: options.typeMap.bindings } : null;
+    this.runtimeTypeMap = mergeRuntimeTypeMaps(null, options.typeMap);
   }
 
   /**
@@ -166,10 +167,30 @@ function mergeRuntimeTypeMaps(
     ...base?.bindings,
     ...override?.bindings,
   };
+  const classes = mergeClassMaps(base?.classes, override?.classes);
+  const hasBindings = Object.keys(bindings).length > 0;
+  const hasClasses = Object.keys(classes).length > 0;
 
-  if (Object.keys(bindings).length === 0) {
+  if (!hasBindings && !hasClasses) {
     return null;
   }
 
-  return { bindings };
+  return {
+    ...(hasBindings ? { bindings } : {}),
+    ...(hasClasses ? { classes } : {}),
+  };
+}
+
+/** Story-level class args are layered over global ones per constructor parameter. */
+function mergeClassMaps(
+  base: Record<string, ClassMapTarget> | undefined,
+  override: Record<string, ClassMapTarget> | undefined,
+): Record<string, ClassMapTarget> {
+  const merged: Record<string, ClassMapTarget> = { ...base };
+
+  for (const [className, target] of Object.entries(override ?? {})) {
+    merged[className] = { args: { ...merged[className]?.args, ...target.args } };
+  }
+
+  return merged;
 }

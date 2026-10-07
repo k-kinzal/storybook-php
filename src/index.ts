@@ -28,5 +28,6 @@ export type {
   TypeMapConfig,
   ArgOverride,
   FileMapTarget,
+  ClassMapTarget,
   StoryTypeMap,
 } from "./types.js";

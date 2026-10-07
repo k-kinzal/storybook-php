@@ -136,7 +136,7 @@ Configure in `.storybook/main.ts` under `framework.options`:
 | `timeout`       | `number`                 | `5000`      | Render timeout in milliseconds                                             |
 | `defaultMethod` | `string`                 | `undefined` | Method name used when `@method` is omitted from the import specifier       |
 | `adapter`       | `string`                 | `undefined` | Path to a PHP adapter file for custom output handling (e.g. Laravel Blade) |
-| `typeMap`       | `object`                 | `undefined` | File mappings, callable overrides, and runtime type bindings               |
+| `typeMap`       | `object`                 | `undefined` | File mappings, callable overrides, runtime type bindings, and class types  |
 
 The adapter file must return middleware compatible with `fn(array $context, callable $next): array|string`
 

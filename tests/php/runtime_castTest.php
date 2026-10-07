@@ -56,6 +56,8 @@ final class VariadicConstructorFixture
  * @covers \StorybookPhp\Runtime\Contract\requireExistingClass
  * @covers \StorybookPhp\Runtime\Contract\resolveClassName
  * @covers \StorybookPhp\Runtime\Contract\resolveTypeMapBinding
+ * @covers \StorybookPhp\Runtime\Contract\resolveTypeMapClassArgDefs
+ * @covers \StorybookPhp\Runtime\Casting\resolveConstructorArgDefs
  * @covers \StorybookPhp\Runtime\Contract\splitGenericArgs
  * @covers \StorybookPhp\Runtime\Contract\typeExists
  * @covers \StorybookPhp\Runtime\Casting\matchArgs

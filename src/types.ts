@@ -209,12 +209,23 @@ export interface FileMapTarget {
   adapter?: string;
 }
 
+/** Runtime constructor contract for a PHP class */
+export interface ClassMapTarget {
+  /**
+   * Constructor parameter types used whenever the runner instantiates this class,
+   * including nested instances built from story args (e.g. `"App\\Item[]"`).
+   */
+  args?: Record<string, string | ArgOverride>;
+}
+
 /** Static type mapping configuration */
 export interface TypeMapConfig {
   /** Map file paths to type information sources */
   files?: Record<string, FileMapTarget>;
   /** Map PHP type → PHP type (interface/abstract → concrete, DI-style) */
   bindings?: Record<string, string>;
+  /** Map PHP class → constructor parameter types the runner cannot infer */
+  classes?: Record<string, ClassMapTarget>;
 }
 
 /**
@@ -224,6 +235,8 @@ export interface TypeMapConfig {
 export interface StoryTypeMap {
   /** Map PHP type → PHP type (interface/abstract → concrete, DI-style) */
   bindings?: Record<string, string>;
+  /** Map PHP class → constructor parameter types for the current story */
+  classes?: Record<string, ClassMapTarget>;
   /** Override the public Storybook args surface for the current story */
   args?: Record<string, string | ArgOverride>;
 }
@@ -231,6 +244,7 @@ export interface StoryTypeMap {
 /** Runtime type information sent to the PHP runner */
 export interface RuntimeTypeMap {
   bindings?: Record<string, string>;
+  classes?: Record<string, ClassMapTarget>;
 }
 
 /** Framework options for storybook-php */

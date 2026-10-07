@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace StorybookPhp\Runtime\Casting;
 
+use ReflectionClass;
 use ReflectionException;
 use ReflectionFunctionAbstract;
 use ReflectionNamedType;
@@ -178,6 +179,76 @@ function resolveParameterArgDef(string $name, ?array $argDefs): ?array
     }
 
     return \StorybookPhp\Runtime\Contract\normalizeStringKeyArray($argDef, "argument definition '{$name}'");
+}
+
+/**
+ * Layers explicit constructor arg definitions over `typeMap.classes` entries.
+ *
+ * Explicit definitions keep precedence whenever they carry an effective type;
+ * otherwise the class-level type contract fills the gap that reflection and
+ * PHPDoc could not describe.
+ *
+ * @param ReflectionClass<object> $class
+ * @param array<string, mixed>|null $argDefs
+ * @param array<string, mixed>|null $typeMap
+ * @return array<string, mixed>|null
+ */
+function resolveConstructorArgDefs(ReflectionClass $class, ?array $argDefs, ?array $typeMap): ?array
+{
+    $constructor = $class->getConstructor();
+    if ($constructor === null) {
+        return $argDefs;
+    }
+    $classArgDefs = \StorybookPhp\Runtime\Contract\resolveTypeMapClassArgDefs($class, $typeMap);
+    if ($classArgDefs === null) {
+        return $argDefs;
+    }
+
+    $resolved = $argDefs ?? [];
+    foreach ($constructor->getParameters() as $param) {
+        $name = $param->getName();
+        if (isset($classArgDefs[$name])) {
+            $resolved[$name] = \StorybookPhp\Runtime\Casting\layerClassArgDef(
+                $param,
+                $classArgDefs[$name],
+                \StorybookPhp\Runtime\Casting\resolveParameterArgDef($name, $argDefs),
+            );
+        }
+    }
+
+    return $resolved;
+}
+
+/**
+ * @param array<string, mixed> $classArgDef
+ * @param array<string, mixed>|null $argDef
+ * @return array<string, mixed>
+ */
+function layerClassArgDef(ReflectionParameter $param, array $classArgDef, ?array $argDef): array
+{
+    if ($argDef === null) {
+        return $classArgDef;
+    }
+    $overrideDocType = \StorybookPhp\Runtime\Casting\buildOverrideDocType($param, $argDef);
+    if ($overrideDocType !== null && !\StorybookPhp\Runtime\Casting\isPlainArrayDocType($overrideDocType)) {
+        return array_merge($classArgDef, $argDef);
+    }
+
+    return array_merge($classArgDef, array_diff_key($argDef, ['type' => true, 'elementType' => true]));
+}
+
+/**
+ * Reports whether a doc type names a native array without describing its elements.
+ */
+function isPlainArrayDocType(string $docType): bool
+{
+    $members = array_values(array_filter(
+        \StorybookPhp\Runtime\Casting\splitUnionTypes(ltrim(trim($docType), '?')),
+        static fn (string $member): bool => strtolower($member) !== 'null',
+    ));
+
+    return count($members) === 1
+        && in_array(strtolower($members[0]), \StorybookPhp\Runtime\Contract\NATIVE_ARRAY_TYPES, true);
 }
 
 /**

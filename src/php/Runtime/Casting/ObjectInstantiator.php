@@ -16,7 +16,8 @@ use ReflectionUnionType;
  * Instantiates a class from Storybook input using the constructor shape when possible.
  *
  * Associative arrays are treated as named args, lists as positional args, and
- * scalars fall back to single-parameter constructors.
+ * scalars fall back to single-parameter constructors. Constructor parameters
+ * described by `typeMap.classes` are cast with that contract.
  *
  * @param class-string $className
  * @param array<string, mixed>|null $typeMap
@@ -35,25 +36,31 @@ function instantiateClassFromValue(string $className, mixed $value, ?array $type
         return $ref->newInstance();
     }
 
+    $argDefs = \StorybookPhp\Runtime\Casting\resolveConstructorArgDefs($ref, null, $typeMap);
+
     if (is_array($value)) {
         if (\StorybookPhp\Runtime\Casting\isListArray($value)) {
             return $ref->newInstanceArgs($value);
         }
 
-        return $ref->newInstanceArgs(\StorybookPhp\Runtime\Casting\matchArgs($constructor, $value, $typeMap));
+        return $ref->newInstanceArgs(\StorybookPhp\Runtime\Casting\matchArgs($constructor, $value, $typeMap, $argDefs));
     }
 
     $parameters = $constructor->getParameters();
     if (count($parameters) === 1 && !$parameters[0]->isVariadic()) {
         $parameter = $parameters[0];
-        $docType = \StorybookPhp\Runtime\Casting\resolveParamDocType($parameter, \StorybookPhp\Runtime\Contract\parseDocBlockParamTypes($constructor));
+        $docType = \StorybookPhp\Runtime\Casting\resolveParamDocType(
+            $parameter,
+            \StorybookPhp\Runtime\Contract\parseDocBlockParamTypes($constructor),
+            \StorybookPhp\Runtime\Casting\resolveParameterArgDef($parameter->getName(), $argDefs),
+        );
 
         return $ref->newInstanceArgs([
             \StorybookPhp\Runtime\Casting\castArg($parameter, $value, $docType, $typeMap),
         ]);
     }
 
-    return $ref->newInstanceArgs(\StorybookPhp\Runtime\Casting\matchArgs($constructor, (array) $value, $typeMap));
+    return $ref->newInstanceArgs(\StorybookPhp\Runtime\Casting\matchArgs($constructor, (array) $value, $typeMap, $argDefs));
 }
 
 /**

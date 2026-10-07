@@ -315,6 +315,51 @@ describe.skipIf(!hasPhp)("PhpExecutor", () => {
       expect(result.html).toContain("<p>First</p>");
       expect(result.html).toContain("<span>Second</span>");
     });
+
+    it("hydrates nested untyped arrays through typeMap.classes", async () => {
+      const request: PhpRenderRequest = {
+        type: "classMethod",
+        file: fixture("TypeMapNestedClasses.php"),
+        class: "App\\Components\\NestedMenu",
+        callable: "render",
+        args: {
+          sections: [{ items: [{ label: "Home", href: "/" }, { label: "Docs" }] }],
+        },
+      };
+
+      const untyped = await executor.execute(request);
+      expect(untyped.html).toBe("<nav><section>raw</section></nav>");
+
+      const typedExecutor = new PhpExecutor({
+        timeout: 10000,
+        typeMap: {
+          classes: {
+            "App\\Components\\NestedMenu": {
+              args: { sections: "NestedMenuSection[]" },
+            },
+            "App\\Components\\NestedMenuSection": {
+              args: { title: { type: "string", default: "Untitled" } },
+            },
+          },
+        },
+      });
+
+      const result = await typedExecutor.execute({
+        ...request,
+        typeMap: {
+          classes: {
+            "App\\Components\\NestedMenuSection": {
+              args: { items: { elementType: "App\\Components\\NestedMenuItem" } },
+            },
+          },
+        },
+      });
+
+      expect(result.error).toBeUndefined();
+      expect(result.html).toBe(
+        '<nav><section><h2>Untitled</h2><ul><li><a href="/">Home</a></li><li><a href="#">Docs</a></li></ul></section></nav>',
+      );
+    });
   });
 
   // ---------------------------------------------------------------------------

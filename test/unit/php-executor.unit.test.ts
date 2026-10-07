@@ -174,6 +174,73 @@ describe("php-executor", () => {
     }
   });
 
+  it("layers story class contracts over global ones per constructor parameter", async () => {
+    const written: string[] = [];
+
+    vi.doMock("node:child_process", () => ({
+      spawn: vi.fn(() => {
+        const proc = new EventEmitter() as EventEmitter & {
+          stdout: EventEmitter;
+          stderr: EventEmitter;
+          stdin: { write(chunk: string): void; end(): void };
+        };
+        proc.stdout = new EventEmitter();
+        proc.stderr = new EventEmitter();
+        proc.stdin = {
+          write(chunk: string) {
+            written.push(chunk);
+          },
+          end() {
+            proc.stdout.emit("data", Buffer.from(JSON.stringify({ html: "<div>ok</div>" })));
+            proc.emit("close", 0);
+          },
+        };
+        return proc;
+      }),
+    }));
+
+    const { PhpExecutor } = await import("../../src/runtime/server/php-executor.js");
+    const request = {
+      type: "classMethod" as const,
+      file: "/runtime/Menu.php",
+      class: "App\\Menu",
+      callable: "render",
+      args: {},
+    };
+    const executor = new PhpExecutor({
+      typeMap: {
+        classes: {
+          "App\\Menu": { args: { sections: "App\\MenuSection[]" } },
+          "App\\MenuSection": { args: { items: "array", title: "string" } },
+        },
+      },
+    });
+
+    await executor.execute({
+      ...request,
+      typeMap: {
+        bindings: { "App\\Contracts\\Item": "App\\MenuItem" },
+        classes: {
+          "App\\MenuSection": { args: { items: { elementType: "App\\MenuItem" } } },
+          "App\\MenuItem": {},
+        },
+      },
+    });
+    await new PhpExecutor({}).execute(request);
+
+    expect(JSON.parse(written[0]!).typeMap).toEqual({
+      bindings: { "App\\Contracts\\Item": "App\\MenuItem" },
+      classes: {
+        "App\\Menu": { args: { sections: "App\\MenuSection[]" } },
+        "App\\MenuSection": {
+          args: { items: { elementType: "App\\MenuItem" }, title: "string" },
+        },
+        "App\\MenuItem": { args: {} },
+      },
+    });
+    expect(JSON.parse(written[1]!)).not.toHaveProperty("typeMap");
+  });
+
   it("serializes adapter middleware in outer-to-inner order", async () => {
     let written = "";
 

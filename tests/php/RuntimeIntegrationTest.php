@@ -7,6 +7,14 @@ use StorybookPhp\EnumFixture\Status;
 use StorybookPhp\EnumFixture\UnitStatus;
 use StorybookPhp\TestFixture\AbstractCollection;
 use StorybookPhp\TestFixture\BrokenCollection;
+use StorybookPhp\TestFixture\ClassTypeMap\BaseShelf;
+use StorybookPhp\TestFixture\ClassTypeMap\Branch;
+use StorybookPhp\TestFixture\ClassTypeMap\Empty_;
+use StorybookPhp\TestFixture\ClassTypeMap\Holder;
+use StorybookPhp\TestFixture\ClassTypeMap\LabeledShelf;
+use StorybookPhp\TestFixture\ClassTypeMap\Leaf;
+use StorybookPhp\TestFixture\ClassTypeMap\Shelf;
+use StorybookPhp\TestFixture\ClassTypeMap\Tree;
 use StorybookPhp\TestFixture\ExampleRenderer;
 use StorybookPhp\TestFixture\Formatter;
 use StorybookPhp\TestFixture\FormatterInterface;
@@ -69,6 +77,8 @@ use StorybookPhp\TestFixture\StringableValue;
  * @covers \StorybookPhp\Runtime\Contract\enumTypeExists
  * @covers \StorybookPhp\Runtime\Contract\requireExistingClass
  * @covers \StorybookPhp\Runtime\Contract\resolveTypeMapBinding
+ * @covers \StorybookPhp\Runtime\Contract\resolveTypeMapClassArgDefs
+ * @covers \StorybookPhp\Runtime\Contract\collectClassEntryArgDefs
  * @covers \StorybookPhp\Runtime\Contract\isBackedEnumClass
  * @covers \StorybookPhp\Runtime\Contract\resolveEnumCase
  * @covers \StorybookPhp\Runtime\Contract\findEnumCase
@@ -85,6 +95,9 @@ use StorybookPhp\TestFixture\StringableValue;
  * @covers \StorybookPhp\Runtime\Casting\normalizeRuntimeTypeName
  * @covers \StorybookPhp\Runtime\Casting\resolveArgs
  * @covers \StorybookPhp\Runtime\Casting\resolveParameterArgDef
+ * @covers \StorybookPhp\Runtime\Casting\resolveConstructorArgDefs
+ * @covers \StorybookPhp\Runtime\Casting\layerClassArgDef
+ * @covers \StorybookPhp\Runtime\Casting\isPlainArrayDocType
  * @covers \StorybookPhp\Runtime\Casting\resolveVariadicArgValues
  * @covers \StorybookPhp\Runtime\Casting\resolveParameterArgValue
  * @covers \StorybookPhp\Runtime\Casting\matchArgs
@@ -168,6 +181,7 @@ final class RuntimeIntegrationTest extends TestCase
 {
     private const FIXTURE_FILE = __DIR__ . '/fixtures/RunnerFixtures.php';
     private const ENUM_FILE = __DIR__ . '/fixtures/EnumFixtures.php';
+    private const CLASS_TYPE_MAP_FILE = __DIR__ . '/fixtures/ClassTypeMapFixtures.php';
     private const TEMPLATE_FILE = __DIR__ . '/fixtures/Template.php';
     private const BOOTSTRAP_FILE = __DIR__ . '/fixtures/Bootstrap.php';
     private const ADAPTER_FILE = __DIR__ . '/fixtures/Adapter.php';
@@ -177,6 +191,7 @@ final class RuntimeIntegrationTest extends TestCase
     public static function setUpBeforeClass(): void
     {
         require_once self::FIXTURE_FILE;
+        require_once self::CLASS_TYPE_MAP_FILE;
 
         if (PHP_VERSION_ID >= 80100) {
             require_once self::ENUM_FILE;
@@ -269,6 +284,123 @@ final class RuntimeIntegrationTest extends TestCase
         self::assertSame(SelfReferencing::class, \StorybookPhp\Runtime\Contract\resolveClassName('self', $selfParameter));
         self::assertSame(SelfReferencing::class, \StorybookPhp\Runtime\Contract\resolveClassName('static', $selfParameter));
         self::assertNull(\StorybookPhp\Runtime\Contract\resolveClassName('parent', $selfParameter));
+    }
+
+    public function testClassTypeMapCollectsConstructorContractsAlongTheSharedConstructor(): void
+    {
+        $shelf = new ReflectionClass(LabeledShelf::class);
+
+        self::assertNull(\StorybookPhp\Runtime\Contract\resolveTypeMapClassArgDefs($shelf, null));
+        self::assertNull(\StorybookPhp\Runtime\Contract\resolveTypeMapClassArgDefs($shelf, ['classes' => 'invalid']));
+        self::assertNull(\StorybookPhp\Runtime\Contract\resolveTypeMapClassArgDefs(
+            new ReflectionClass(Empty_::class),
+            ['classes' => [Empty_::class => ['args' => ['value' => 'int']]]],
+        ));
+        self::assertNull(\StorybookPhp\Runtime\Contract\resolveTypeMapClassArgDefs($shelf, ['classes' => [
+            0 => ['args' => ['items' => 'int']],
+            LabeledShelf::class => 'invalid',
+            Shelf::class => ['args' => 'invalid'],
+            '\\' . BaseShelf::class => ['args' => ['items' => 'Leaf[]']],
+        ]]));
+        self::assertSame(
+            [
+                'items' => ['type' => 'Leaf[]', 'default' => []],
+                'label' => ['type' => 'string'],
+            ],
+            \StorybookPhp\Runtime\Contract\resolveTypeMapClassArgDefs($shelf, ['classes' => [
+                '\\' . strtolower(LabeledShelf::class) => ['args' => [
+                    'items' => ['type' => 'Leaf[]', 'default' => [], 0 => 'ignored'],
+                    0 => 'ignored',
+                    'skipped' => 1,
+                ]],
+                Shelf::class => ['args' => ['items' => 'int', 'label' => 'string']],
+                BaseShelf::class => ['args' => ['label' => 'int', 'extra' => 'int']],
+            ]]),
+        );
+    }
+
+    public function testClassTypeMapLayersUnderExplicitConstructorArgDefs(): void
+    {
+        $typeMap = ['classes' => [Shelf::class => ['args' => ['items' => 'Leaf[]']]]];
+
+        self::assertNull(\StorybookPhp\Runtime\Casting\resolveConstructorArgDefs(new ReflectionClass(Empty_::class), null, $typeMap));
+        self::assertSame(
+            ['label' => ['type' => 'string']],
+            \StorybookPhp\Runtime\Casting\resolveConstructorArgDefs(new ReflectionClass(Shelf::class), ['label' => ['type' => 'string']], null),
+        );
+        self::assertSame(
+            ['items' => ['type' => 'Leaf[]']],
+            \StorybookPhp\Runtime\Casting\resolveConstructorArgDefs(new ReflectionClass(Shelf::class), null, $typeMap),
+        );
+        self::assertSame(
+            [
+                'items' => ['type' => 'Leaf[]', 'default' => [['tags' => ['seed']]]],
+                'label' => ['type' => 'string'],
+            ],
+            \StorybookPhp\Runtime\Casting\resolveConstructorArgDefs(new ReflectionClass(Shelf::class), [
+                'items' => ['type' => 'array', 'default' => [['tags' => ['seed']]]],
+                'label' => ['type' => 'string'],
+            ], $typeMap),
+        );
+        self::assertSame(
+            ['items' => ['type' => 'Branch[]']],
+            \StorybookPhp\Runtime\Casting\resolveConstructorArgDefs(new ReflectionClass(Shelf::class), [
+                'items' => ['type' => 'Branch[]'],
+            ], $typeMap),
+        );
+        self::assertSame(
+            ['items' => ['type' => 'Leaf[]', 'nullable' => true]],
+            \StorybookPhp\Runtime\Casting\resolveConstructorArgDefs(new ReflectionClass(Shelf::class), [
+                'items' => ['type' => 'array|null', 'nullable' => true],
+            ], $typeMap),
+        );
+        self::assertTrue(\StorybookPhp\Runtime\Casting\isPlainArrayDocType('?list'));
+        self::assertTrue(\StorybookPhp\Runtime\Casting\isPlainArrayDocType('null|iterable'));
+        self::assertFalse(\StorybookPhp\Runtime\Casting\isPlainArrayDocType('array<int, Leaf>'));
+        self::assertFalse(\StorybookPhp\Runtime\Casting\isPlainArrayDocType('array|string'));
+        self::assertFalse(\StorybookPhp\Runtime\Casting\isPlainArrayDocType('Leaf'));
+
+        $shelf = \StorybookPhp\Runtime\Casting\instantiateClassFromValue(Shelf::class, ['label' => 'empty'], [
+            'classes' => [Shelf::class => ['args' => ['items' => ['type' => 'Leaf[]', 'default' => [['tags' => ['seed']]]]]]],
+        ]);
+        self::assertInstanceOf(Shelf::class, $shelf);
+        self::assertEquals([new Leaf(['seed'])], $shelf->items);
+    }
+
+    public function testClassTypeMapHydratesNestedUntypedArrays(): void
+    {
+        $value = ['branches' => [['leaves' => [['tags' => ['a', 'b']], ['tags' => ['c']]]], ['leaves' => [['tags' => ['d']]]]]];
+        $typeMap = ['classes' => [
+            Tree::class => ['args' => ['branches' => 'Branch[]']],
+            Branch::class => ['args' => ['leaves' => ['type' => 'array', 'elementType' => 'Leaf']]],
+        ]];
+
+        $untyped = \StorybookPhp\Runtime\Casting\instantiateClassFromValue(Tree::class, $value);
+        self::assertInstanceOf(Tree::class, $untyped);
+        self::assertSame('|', $untyped->render());
+
+        $tree = \StorybookPhp\Runtime\Casting\instantiateClassFromValue(Tree::class, $value, $typeMap);
+        self::assertInstanceOf(Tree::class, $tree);
+        self::assertSame('a/b,c|d', $tree->render());
+
+        $holder = \StorybookPhp\Runtime\Casting\instantiateClassFromValue(Holder::class, 'solo', [
+            'classes' => [Holder::class => ['args' => ['item' => 'Leaf']]],
+        ]);
+        self::assertInstanceOf(Holder::class, $holder);
+        self::assertEquals(new Leaf(['solo']), $holder->item);
+
+        $result = \StorybookPhp\Runtime\Execution\executeRunnerRequest([
+            'type' => 'classMethod',
+            'file' => self::CLASS_TYPE_MAP_FILE,
+            'class' => Tree::class,
+            'callable' => 'render',
+            'args' => $value,
+            'constructorArgDefs' => ['branches' => ['type' => 'array']],
+            'bootstrap' => null,
+            'adapters' => null,
+            'typeMap' => $typeMap,
+        ]);
+        self::assertSame('a/b,c|d', $result['html']);
     }
 
     public function testCastArrayElementsSupportsClassesEnumsAndFallbacks(): void
