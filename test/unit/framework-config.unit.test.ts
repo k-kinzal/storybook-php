@@ -87,6 +87,14 @@ describe("framework-config", () => {
     });
   });
 
+  it("keeps runtime class contracts without file mappings", () => {
+    const classes = { "App\\Menu": { args: { sections: "App\\MenuSection[]" } } };
+    const options = resolveFrameworkOptions({ typeMap: { classes } });
+
+    expect(options.typeMap).toEqual({ classes });
+    expect(options.adapterMap).toBeNull();
+  });
+
   it("handles absolute mapped imports and merged targets without adapters", () => {
     const options = resolveFrameworkOptions({
       _configDir: FIXTURES,

@@ -24,16 +24,16 @@ Relative paths in these options are resolved from Storybook's config directory.
 
 ## Available Options
 
-| Option          | Type                     | Default     | Description                                            |
-| --------------- | ------------------------ | ----------- | ------------------------------------------------------ |
-| `bootstrap`     | `string`                 | `undefined` | PHP file loaded before each render                     |
-| `phpBinary`     | `string`                 | `"php"`     | PHP executable path                                    |
-| `phpOptions`    | `string[]`               | `[]`        | CLI options prepended to the PHP binary invocation     |
-| `phpEnv`        | `Record<string, string>` | `undefined` | Environment variables merged over `process.env`        |
-| `timeout`       | `number`                 | `5000`      | Render timeout in milliseconds                         |
-| `defaultMethod` | `string`                 | `undefined` | Method name used when `@method` is omitted             |
-| `adapter`       | `string`                 | `undefined` | Global adapter middleware wrapped around PHP execution |
-| `typeMap`       | `TypeMapConfig`          | `undefined` | Advanced mapping for files, bindings, and arg metadata |
+| Option          | Type                     | Default     | Description                                                     |
+| --------------- | ------------------------ | ----------- | --------------------------------------------------------------- |
+| `bootstrap`     | `string`                 | `undefined` | PHP file loaded before each render                              |
+| `phpBinary`     | `string`                 | `"php"`     | PHP executable path                                             |
+| `phpOptions`    | `string[]`               | `[]`        | CLI options prepended to the PHP binary invocation              |
+| `phpEnv`        | `Record<string, string>` | `undefined` | Environment variables merged over `process.env`                 |
+| `timeout`       | `number`                 | `5000`      | Render timeout in milliseconds                                  |
+| `defaultMethod` | `string`                 | `undefined` | Method name used when `@method` is omitted                      |
+| `adapter`       | `string`                 | `undefined` | Global adapter middleware wrapped around PHP execution          |
+| `typeMap`       | `TypeMapConfig`          | `undefined` | Advanced mapping for files, bindings, classes, and arg metadata |
 
 `bootstrap`, `phpBinary`, `phpOptions`, `phpEnv`, `timeout`, and `adapter` affect runtime rendering. `defaultMethod` and `typeMap` also affect import resolution, TS plugin output, and `typegen` when you pass them through `--options-file`.
 
@@ -127,7 +127,7 @@ return static function (array $context, callable $next): array|string {
 - `constructorArgs`: hydrated constructor arguments for instance methods
 - `methodArgs`: hydrated method/function arguments
 - `publicArgDefs`, `constructorArgDefs`, `callableArgDefs`: resolved arg definitions
-- `typeMap`: runtime bindings used during casting
+- `typeMap`: runtime bindings and class constructor contracts used during casting
 
 `$next($context)` returns a response envelope with:
 
@@ -218,6 +218,7 @@ Exact file matches and glob-style suffix matches can be combined. Exact-match fi
 
 - `typeMap.files` controls how imported files map to public args, PHP execution files, callable selection, includes, and file-scoped adapters
 - `typeMap.bindings` provides runtime-only interface or abstract-type bindings used while hydrating PHP objects
+- `typeMap.classes` provides runtime-only constructor parameter types for classes the runner instantiates, including nested objects built from story args
 
 For the full schema, merging rules, and story-level overrides, see [Type Mapping](type-mapping.md).
 

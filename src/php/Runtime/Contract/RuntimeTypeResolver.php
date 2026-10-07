@@ -81,6 +81,76 @@ function resolveTypeMapBinding(string $typeName, ?array $typeMap): string
 }
 
 /**
+ * Collects `typeMap.classes` constructor arg definitions for a class.
+ *
+ * Entries for the class itself win over entries for ancestors that declare the
+ * shared constructor, so a child without its own constructor can refine the
+ * parent's contract. String shorthands are expanded to `['type' => ...]`.
+ *
+ * @param ReflectionClass<object> $class
+ * @param array<string, mixed>|null $typeMap
+ * @return array<string, array<string, mixed>>|null
+ *
+ * @example Resolving a nested constructor contract
+ *     \StorybookPhp\Runtime\Contract\resolveTypeMapClassArgDefs(new \ReflectionClass(\ArrayObject::class), [
+ *         'classes' => ['\ArrayObject' => ['args' => ['array' => 'string[]']]],
+ *     ]) // => ['array' => ['type' => 'string[]']]
+ */
+function resolveTypeMapClassArgDefs(ReflectionClass $class, ?array $typeMap): ?array
+{
+    $classes = $typeMap['classes'] ?? null;
+    $constructor = $class->getConstructor();
+    if (!is_array($classes) || !$constructor instanceof ReflectionMethod) {
+        return null;
+    }
+
+    $declaringClass = $constructor->getDeclaringClass()->getName();
+    $argDefs = [];
+    $current = $class->getName();
+    while ($current !== false) {
+        $argDefs += \StorybookPhp\Runtime\Contract\collectClassEntryArgDefs($current, $classes);
+        if ($current === $declaringClass) {
+            break;
+        }
+        $current = get_parent_class($current);
+    }
+
+    return $argDefs === [] ? null : $argDefs;
+}
+
+/**
+ * Merges every `typeMap.classes` entry whose key names the given class.
+ *
+ * Class names are compared case-insensitively and without a leading
+ * backslash, matching PHP's own class name resolution.
+ *
+ * @param array<array-key, mixed> $classes
+ * @return array<string, array<string, mixed>>
+ */
+function collectClassEntryArgDefs(string $className, array $classes): array
+{
+    $argDefs = [];
+    foreach ($classes as $key => $entry) {
+        if (!is_string($key) || strcasecmp(ltrim($key, '\\'), $className) !== 0 || !is_array($entry)) {
+            continue;
+        }
+        $args = $entry['args'] ?? null;
+        if (!is_array($args)) {
+            continue;
+        }
+        foreach ($args as $name => $argDef) {
+            if (is_string($name) && is_string($argDef)) {
+                $argDefs[$name] = ['type' => $argDef];
+            } elseif (is_string($name) && is_array($argDef)) {
+                $argDefs[$name] = array_filter($argDef, 'is_string', ARRAY_FILTER_USE_KEY);
+            }
+        }
+    }
+
+    return $argDefs;
+}
+
+/**
  * @param class-string $enumClass
  */
 function isBackedEnumClass(string $enumClass): bool

@@ -1,13 +1,14 @@
 # Type Mapping
 
-`typeMap` fills in the parts that static PHP parsing cannot infer on its own. Use it to define the public Storybook args surface, redirect non-PHP imports to PHP type sources, and resolve runtime bindings for interfaces and abstract types.
+`typeMap` fills in the parts that static PHP parsing cannot infer on its own. Use it to define the public Storybook args surface, redirect non-PHP imports to PHP type sources, resolve runtime bindings for interfaces and abstract types, and describe constructor types of nested classes.
 
 ## Overview
 
-`typeMap` now has two build-time/runtime sections:
+`typeMap` has three build-time/runtime sections:
 
 - `files`: file- or pattern-scoped component metadata
 - `bindings`: runtime PHP type bindings
+- `classes`: runtime constructor parameter types, keyed by PHP class
 
 Per-story overrides live in `parameters.typeMap` and use the same public `args` shape as `typeMap.files[*].args`.
 
@@ -37,6 +38,11 @@ framework: {
       },
       bindings: {
         "App\\Contracts\\Renderable": "App\\View\\HtmlBlock",
+      },
+      classes: {
+        "App\\View\\Menu": {
+          args: { sections: "App\\View\\MenuSection[]" },
+        },
       },
     },
   },
@@ -214,6 +220,52 @@ bindings: {
 
 `bindings` are runtime-only. They help the PHP runner hydrate typed objects, but they do not change generated TypeScript shapes on their own.
 
+## `typeMap.classes`
+
+`classes` describes constructor parameters of PHP classes that the runner instantiates. Use it when an untyped or plain `array` parameter actually expects objects and the class has no PHPDoc that says so.
+
+`files[*].args` only reaches the parameters of the imported component itself. `classes` applies wherever the runner builds an instance of that class — at the top level and, most importantly, for nested objects hydrated from story args:
+
+```php
+class Component
+{
+    public function __construct(array $foo) {}  // expects Foo[]
+}
+
+class Foo
+{
+    public function __construct(array $bar) {}  // expects Bar[]
+}
+
+class Bar
+{
+    public function __construct(array $buz) {}
+}
+```
+
+```ts
+classes: {
+  "App\\Component": {
+    args: { foo: "Foo[]" },
+  },
+  "App\\Foo": {
+    args: { bar: { type: "array", elementType: "App\\Bar" } },
+  },
+}
+```
+
+With that mapping, story args such as `{ foo: [{ bar: [{ buz: ["x"] }] }] }` are hydrated into `Component(Foo[](Bar[]))` without an adapter.
+
+Behavior:
+
+- keys are PHP class names; a leading `\` and letter case are ignored
+- each `args` entry accepts the same string shorthand or object form as `files[*].args`; `type`, `elementType`, `nullable`, and `default` are honored at runtime
+- short class names inside types resolve against the namespace of the class that declares the constructor, and `bindings` still apply to them
+- a class without its own constructor can be described directly; entries on the class win over entries on the ancestor that declares the constructor
+- explicit types from `files[*].args`, story `parameters.typeMap.args`, or PHPDoc-derived metadata take precedence for the imported component; `classes` only fills parameters whose type would otherwise be plain `array`, untyped, or `mixed`
+
+`classes` is runtime-only. It changes how the runner casts arguments, but it does not change generated TypeScript shapes or Storybook controls.
+
 ## Per-Story Overrides with `parameters.typeMap`
 
 Per-story overrides use the same public `args` shape as `typeMap.files[*].args`.
@@ -232,6 +284,11 @@ export const Custom = {
       bindings: {
         "App\\Contracts\\Renderable": "App\\View\\PlainTextBlock",
       },
+      classes: {
+        "App\\View\\MenuItem": {
+          args: { href: { type: "string", default: "/preview" } },
+        },
+      },
     },
   },
 };
@@ -239,7 +296,7 @@ export const Custom = {
 
 Story-level `args` overrides are runtime-only. They affect runtime casting and adapter input mapping for that story, but they do not regenerate module types or Storybook controls.
 
-Story-level `args` overrides are merged on top of the resolved public arg surface for that component. Story-level `bindings` are merged on top of global `typeMap.bindings`, and the story-level binding wins on conflicts.
+Story-level `args` overrides are merged on top of the resolved public arg surface for that component. Story-level `bindings` are merged on top of global `typeMap.bindings`, and the story-level binding wins on conflicts. Story-level `classes` are merged on top of global `typeMap.classes` per constructor parameter, so a story can refine one parameter without restating the rest of the class.
 
 ## `typegen` and `typeMap`
 
@@ -259,6 +316,7 @@ Use `typeMap` when:
 - inheritance or traits live outside the imported file
 - Storybook controls need options, defaults, element types, or nullable hints
 - runtime object construction needs interface-to-concrete bindings
+- nested objects built from story args have untyped or plain `array` constructor parameters
 - one PHP file exposes multiple callable stories with different public args
 
 For general runtime setup, see [Framework Options](framework-options.md).

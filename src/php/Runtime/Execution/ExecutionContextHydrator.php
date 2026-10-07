@@ -136,7 +136,11 @@ function hydrateClassExecutionContext(array $context, array $mappedArgs, array $
         \StorybookPhp\Runtime\Execution\plannerConstructorReflection($planner),
         $mappedArgs['constructor'] ?? [],
         $typeMap,
-        $planner['effectiveConstructorArgDefs'],
+        \StorybookPhp\Runtime\Casting\resolveConstructorArgDefs(
+            \StorybookPhp\Runtime\Execution\plannerClassReflection($planner),
+            $planner['effectiveConstructorArgDefs'],
+            $typeMap,
+        ),
     );
     $methodArgs = \StorybookPhp\Runtime\Casting\resolveNamedArgs(
         \StorybookPhp\Runtime\Execution\plannerCallableReflection($planner),

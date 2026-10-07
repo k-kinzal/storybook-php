@@ -3,11 +3,12 @@ import type { StorybookConfig } from "storybook";
 /**
  * Type Mapping Example
  *
- * This example demonstrates all three sections of typeMap:
+ * This example demonstrates all sections of typeMap:
  *
  *   1. files   — Map file paths to type information sources
  *   2. bindings — DI-style type resolution (interface → concrete)
- *   3. files[*].args / parameters.typeMap.args — Public Storybook args surface overrides
+ *   3. classes — Constructor types for classes the runtime instantiates (nested arrays)
+ *   4. files[*].args / parameters.typeMap.args — Public Storybook args surface overrides
  *
  * The stories in ../src cover:
  *   - options for string and enum controls
@@ -17,6 +18,7 @@ import type { StorybookConfig } from "storybook";
  *   - runtime defaults and nullable overrides
  *   - direct non-PHP template imports via files.args
  *   - phpFile redirects for non-PHP sources
+ *   - nested untyped arrays resolved through classes
  */
 const config: StorybookConfig = {
   addons: ["@storybook/addon-vitest"],
@@ -111,6 +113,21 @@ const config: StorybookConfig = {
         // it will instantiate HtmlBlock instead.
         bindings: {
           "App\\Components\\Renderable": "App\\Components\\HtmlBlock",
+        },
+
+        // ---------------------------------------------------------------
+        // classes: Constructor types the runtime cannot infer on its own
+        // ---------------------------------------------------------------
+        // Applied whenever the runner instantiates the class, including
+        // nested instances built from story args. Short class names resolve
+        // against the class's own namespace.
+        classes: {
+          "App\\Components\\NavMenu": {
+            args: { sections: "NavSection[]" },
+          },
+          "App\\Components\\NavSection": {
+            args: { links: "NavLink[]" },
+          },
         },
       },
     },

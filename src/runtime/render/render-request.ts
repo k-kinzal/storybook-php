@@ -131,11 +131,14 @@ function normalizeStoryTypeMap(value: unknown): StoryTypeMap | null {
 }
 
 function normalizeRuntimeTypeMap(storyTypeMap: StoryTypeMap | null): RuntimeTypeMap | null {
-  if (!storyTypeMap?.bindings) {
+  if (!storyTypeMap?.bindings && !storyTypeMap?.classes) {
     return null;
   }
 
-  return { bindings: storyTypeMap.bindings };
+  return {
+    ...(storyTypeMap.bindings ? { bindings: storyTypeMap.bindings } : {}),
+    ...(storyTypeMap.classes ? { classes: storyTypeMap.classes } : {}),
+  };
 }
 
 function mergeStoryPublicArgDefs(

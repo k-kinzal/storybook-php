@@ -115,6 +115,25 @@ describe("render-request", () => {
       expect(resolveExecutionRequest({ componentId, args: {} }, registry).publicArgDefs).toBeNull();
     });
 
+    it("forwards story-level class contracts as runtime type information", () => {
+      const registry = new RenderRegistry();
+      const componentId = registry.register({
+        type: "classMethod",
+        file: "/tmp/Menu.php",
+        sourceFile: "/tmp/Menu.php",
+        class: "App\\Menu",
+        callable: "render",
+      });
+      const classes = { "App\\Menu": { args: { sections: "App\\MenuSection[]" } } };
+
+      expect(
+        resolveExecutionRequest({ componentId, args: {}, typeMap: { classes } }, registry).typeMap,
+      ).toEqual({ classes });
+      expect(
+        resolveExecutionRequest({ componentId, args: {}, typeMap: { args: {} } }, registry).typeMap,
+      ).toBeNull();
+    });
+
     it("merges story-level public args overrides into registry arg defs", () => {
       const registry = new RenderRegistry();
       const componentId = registry.register(
