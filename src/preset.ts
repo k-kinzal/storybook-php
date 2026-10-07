@@ -16,7 +16,7 @@ interface ViteConfigLike extends Record<string, unknown> {
 
 export const core = {
   builder: "@storybook/builder-vite",
-  // renderer is 'storybook-php' — SB10 auto-loads storybook-php/preview
+  // renderer is 'storybook-php' — SB10+ auto-loads storybook-php/preview
   renderer: "storybook-php",
 };
 
@@ -26,7 +26,7 @@ export async function viteFinal(
 ): Promise<ViteConfigLike> {
   const { storybookPhpPlugin } = await import("./vite-plugin.js");
 
-  // SB10: framework options are accessed via the presets API
+  // SB10+: framework options are accessed via the presets API
   const frameworkOptions: FrameworkOptions =
     (await options.presets.apply<FrameworkOptions>("frameworkOptions", {} as FrameworkOptions)) ??
     {};
