@@ -139,11 +139,20 @@ jobs:
         working-directory: examples/${{ matrix.example }}
         run: npx vitest run --update
 
+      # Visual diffs are reviewed via the VRT report and must not fail the PR,
+      # but any other failure (PHP render errors, story exceptions, import
+      # errors) would also fail on main, so it fails the PR too.
       - name: Run VRT (compare)
         if: github.event_name == 'pull_request'
         working-directory: examples/${{ matrix.example }}
-        continue-on-error: true
-        run: npx vitest run
+        run: |
+          set +e
+          npx vitest run --reporter=default --reporter=json \
+            --outputFile.json="$RUNNER_TEMP/vrt-results.json" 2>&1 | tee "$RUNNER_TEMP/vrt-output.log"
+          exit_code="${PIPESTATUS[0]}"
+          set -e
+          node "$GITHUB_WORKSPACE/.github/vrt/check-results.mjs" \
+            "$exit_code" "$RUNNER_TEMP/vrt-results.json" "$RUNNER_TEMP/vrt-output.log"
 
       - name: Save VRT baselines (main)
         if: github.event_name == 'push'
@@ -153,7 +162,7 @@ jobs:
           key: vrt-v2-baselines-${{ matrix.example }}-${{ github.sha }}
 
       - name: Upload VRT results
-        if: github.event_name == 'pull_request'
+        if: ${{ !cancelled() && github.event_name == 'pull_request' }}
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: vrt-results-${{ matrix.example }}
@@ -166,7 +175,7 @@ jobs:
 
   vrt-report:
     needs: vrt
-    if: github.event_name == 'pull_request'
+    if: ${{ !cancelled() && github.event_name == 'pull_request' }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
