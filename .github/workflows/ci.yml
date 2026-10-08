@@ -217,9 +217,10 @@ jobs:
         uses: shivammathur/setup-php@f3e473d116dcccaddc5834248c87452386958240
         with:
           php-version: "8.4"
-      - name: Pack the addon
+      - name: Build and pack the addon
         run: |
           npm ci
+          npm run build
           npm pack --pack-destination "$RUNNER_TEMP"
       - name: Create a Storybook project from the basic example
         run: |
@@ -240,7 +241,7 @@ jobs:
           npx playwright install --with-deps chromium
       - name: Build Storybook
         working-directory: ${{ env.PROJECT_DIR }}
-        run: npx storybook-php build -o storybook-static
+        run: npx --no-install storybook-php build -o storybook-static
       - name: Run stories with the Vitest addon
         working-directory: ${{ env.PROJECT_DIR }}
-        run: npx storybook-php test
+        run: npx --no-install storybook-php test
