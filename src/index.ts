@@ -26,6 +26,8 @@ export type {
   PhpComponentSchema,
   FrameworkOptions,
   TypeMapConfig,
+  TypeBinding,
+  TypeBindings,
   ArgOverride,
   FileMapTarget,
   ClassMapTarget,

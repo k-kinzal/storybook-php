@@ -12,7 +12,8 @@ use PHPUnit\Framework\TestCase;
  * @group pbt
  * @medium
  * @covers \StorybookPhp\Runtime\Contract\splitGenericArgs
- * @covers \StorybookPhp\Runtime\Casting\splitUnionTypes
+ * @covers \StorybookPhp\Runtime\Contract\parseTypeExpression
+ * @covers \StorybookPhp\Runtime\Contract\describeTypeNode
  */
 final class DocTypeParserTest extends TestCase
 {
@@ -31,7 +32,15 @@ final class DocTypeParserTest extends TestCase
                 $types = [$nested, 'null', 'list<' . $leaf . '|null>'];
 
                 self::assertSame($types, \StorybookPhp\Runtime\Contract\splitGenericArgs(implode($space . ',' . $space, $types)));
-                self::assertSame($types, \StorybookPhp\Runtime\Casting\splitUnionTypes(implode($space . '|' . $space, $types)));
+
+                $union = \StorybookPhp\Runtime\Contract\parseTypeExpression(implode($space . '|' . $space, $types));
+                self::assertSame(
+                    $types,
+                    array_map(
+                        static fn (\StorybookPhp\Runtime\Contract\TypeNode $member): string => \StorybookPhp\Runtime\Contract\describeTypeNode($member),
+                        $union->members,
+                    ),
+                );
             });
     }
 }

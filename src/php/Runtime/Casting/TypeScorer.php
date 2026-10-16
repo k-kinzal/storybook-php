@@ -4,64 +4,153 @@ declare(strict_types=1);
 
 namespace StorybookPhp\Runtime\Casting;
 
-use LogicException;
-use ReflectionParameter;
+use StorybookPhp\Runtime\Contract\TypeNode;
 use Traversable;
 
 /**
- * Scores how well an inline/doc type candidate matches the incoming value.
+ * Scores how well a type accepts a value. Zero means the value cannot be
+ * hydrated into the type; higher scores are more exact matches.
  *
- * Higher scores are preferred when resolving unions.
- *
- * @param array<string, mixed>|null $typeMap
+ * @example Exact matches score higher than conversions
+ *     $ctx = \StorybookPhp\Runtime\Casting\HydrationContext::fromTypeMap(null);
+ *     $int = new \StorybookPhp\Runtime\Contract\TypeNode('named', 'int');
+ *     \StorybookPhp\Runtime\Casting\scoreTypeNodeMatch($int, 42, $ctx) // => 3
+ *     \StorybookPhp\Runtime\Casting\scoreTypeNodeMatch($int, '42', $ctx) // => 2
+ *     \StorybookPhp\Runtime\Casting\scoreTypeNodeMatch($int, 'abc', $ctx) // => 0
  */
-function scoreInlineNamedTypeMatch(string $typeName, mixed $value, ?array $typeMap = null): int
+function scoreTypeNodeMatch(TypeNode $type, mixed $value, HydrationContext $context): int
 {
-    $resolved = ltrim(\StorybookPhp\Runtime\Contract\resolveTypeMapBinding($typeName, $typeMap), '\\');
-    $nativeScore = \StorybookPhp\Runtime\Casting\scoreNativeTypeMatch(strtolower($resolved), $value);
-
-    if ($nativeScore !== null) {
-        return $nativeScore;
-    }
-
-    return \StorybookPhp\Runtime\Casting\scoreDeclaredTypeMatch($resolved, $value);
+    return match ($type->kind) {
+        'named' => \StorybookPhp\Runtime\Casting\scoreNamedTypeMatch($type->name, $value, $context),
+        'literal' => \StorybookPhp\Runtime\Casting\scoreLiteralTypeMatch($type, $value),
+        'nullable' => $value === null ? 3 : \StorybookPhp\Runtime\Casting\scoreTypeNodeMatch($type->members[0], $value, $context),
+        'union' => \StorybookPhp\Runtime\Casting\scoreUnionTypeMatch($type->members, $value, $context),
+        'intersection' => \StorybookPhp\Runtime\Casting\scoreIntersectionTypeMatch($type->members, $value, $context),
+        'generic' => \StorybookPhp\Runtime\Casting\scoreGenericTypeMatch($type, $value, $context),
+        'shape' => \StorybookPhp\Runtime\Casting\scoreShapeTypeMatch($type, $value),
+    };
 }
 
 /**
- * Scores a builtin type, or returns null when the name is a declared type.
+ * Picks the union member with the highest score, preferring earlier members
+ * on ties. Returns null when no member accepts the value.
+ *
+ * @param list<TypeNode> $members
+ *
+ * @example Earlier members win ties
+ *     $ctx = \StorybookPhp\Runtime\Casting\HydrationContext::fromTypeMap(null);
+ *     $type = \StorybookPhp\Runtime\Contract\parseTypeExpression('scalar|string');
+ *     \StorybookPhp\Runtime\Casting\selectUnionMember($type->members, 'x', $ctx)->name // => 'scalar'
  */
-function scoreNativeTypeMatch(string $typeName, mixed $value): ?int
+function selectUnionMember(array $members, mixed $value, HydrationContext $context): ?TypeNode
 {
-    if (in_array($typeName, ['true', 'false', 'null'], true)) {
-        return \StorybookPhp\Runtime\Casting\scoreLiteralTypeMatch($typeName, $value);
+    $best = null;
+    $bestScore = 0;
+    foreach ($members as $member) {
+        if ($member->kind === 'named' && $member->name === 'mixed') {
+            return $member;
+        }
+        $score = \StorybookPhp\Runtime\Casting\scoreTypeNodeMatch($member, $value, $context);
+        if ($score > $bestScore) {
+            $best = $member;
+            $bestScore = $score;
+        }
     }
 
-    return match ($typeName) {
+    return $best;
+}
+
+/**
+ * @param list<TypeNode> $members
+ */
+function scoreUnionTypeMatch(array $members, mixed $value, HydrationContext $context): int
+{
+    $best = 0;
+    foreach ($members as $member) {
+        $best = max($best, \StorybookPhp\Runtime\Casting\scoreTypeNodeMatch($member, $value, $context));
+    }
+
+    return $best;
+}
+
+/**
+ * @param list<TypeNode> $members
+ */
+function scoreIntersectionTypeMatch(array $members, mixed $value, HydrationContext $context): int
+{
+    if (!is_object($value)) {
+        $first = $members[0] ?? null;
+
+        return $first instanceof TypeNode && is_array($value) ? min(1, \StorybookPhp\Runtime\Casting\scoreTypeNodeMatch($first, $value, $context)) : 0;
+    }
+    foreach ($members as $member) {
+        if (!\StorybookPhp\Runtime\Casting\docTypeIsClassLike($member) || !$value instanceof $member->name) {
+            return 0;
+        }
+    }
+
+    return 3;
+}
+
+/**
+ * Scores a builtin or class name against a value.
+ */
+function scoreNamedTypeMatch(string $name, mixed $value, HydrationContext $context): int
+{
+    $builtin = \StorybookPhp\Runtime\Contract\canonicalBuiltinTypeName($name);
+    if ($builtin !== null) {
+        return \StorybookPhp\Runtime\Casting\scoreBuiltinTypeMatch($builtin, $value);
+    }
+
+    return \StorybookPhp\Runtime\Casting\scoreClassTypeMatch($name, $value, $context);
+}
+
+/**
+ * Scores a canonical builtin type against a value.
+ */
+function scoreBuiltinTypeMatch(string $builtin, mixed $value): int
+{
+    return match ($builtin) {
         'string' => \StorybookPhp\Runtime\Casting\scoreStringTypeMatch($value),
-        'int', 'integer' => \StorybookPhp\Runtime\Casting\scoreIntTypeMatch($value),
-        'float', 'double' => \StorybookPhp\Runtime\Casting\scoreFloatTypeMatch($value),
-        'bool', 'boolean' => \StorybookPhp\Runtime\Casting\scoreBoolTypeMatch($value),
-        'array', 'iterable' => is_array($value) ? 3 : ($value instanceof Traversable ? 1 : 0),
+        'int' => \StorybookPhp\Runtime\Casting\scoreIntTypeMatch($value),
+        'float' => \StorybookPhp\Runtime\Casting\scoreFloatTypeMatch($value),
+        'bool' => \StorybookPhp\Runtime\Casting\scoreBoolTypeMatch($value),
+        'numeric' => is_int($value) || is_float($value) ? 3 : (is_string($value) && is_numeric($value) ? 2 : 0),
+        'scalar' => is_scalar($value) ? 3 : 0,
+        'null' => $value === null ? 3 : 0,
+        default => \StorybookPhp\Runtime\Casting\scoreStructuralBuiltinMatch($builtin, $value),
+    };
+}
+
+/**
+ * Scores the builtin types that describe arrays, objects, callables, and resources.
+ */
+function scoreStructuralBuiltinMatch(string $builtin, mixed $value): int
+{
+    return match ($builtin) {
+        'array', 'non-empty-array' => is_array($value) ? 3 : 0,
+        'list', 'non-empty-list' => is_array($value) ? (\StorybookPhp\Runtime\Casting\isListArray($value) ? 3 : 1) : 0,
+        'iterable' => is_array($value) || $value instanceof Traversable ? 3 : 0,
         'object' => is_object($value) ? 3 : (is_array($value) ? 1 : 0),
         'callable' => is_callable($value) ? 3 : 0,
-        'mixed', 'unknown' => 0,
-        default => null,
+        'resource' => is_resource($value) ? 3 : 0,
+        default => 0,
     };
 }
 
 /**
- * Scores the true, false, and null literal type contracts.
- *
- * @throws LogicException when called with a non-literal type name
+ * Scores a literal type: exact values score 3, numeric strings 2.
  */
-function scoreLiteralTypeMatch(string $typeName, mixed $value): int
+function scoreLiteralTypeMatch(TypeNode $type, mixed $value): int
 {
-    return match ($typeName) {
-        'true' => $value === true ? 3 : 0,
-        'false' => $value === false ? 3 : 0,
-        'null' => $value === null ? 3 : 0,
-        default => throw new LogicException("Unsupported literal type: {$typeName}"),
-    };
+    if ($value === $type->literal) {
+        return 3;
+    }
+    if (is_string($value) && is_numeric($value) && (is_int($type->literal) || is_float($type->literal))) {
+        return (float) $value === (float) $type->literal ? 2 : 0;
+    }
+
+    return 0;
 }
 
 /**
@@ -122,134 +211,77 @@ function scoreBoolTypeMatch(mixed $value): int
     }
 
     return is_string($value)
-        && in_array(strtolower($value), ['0', '1', 'true', 'false', 'yes', 'no', 'on', 'off'], true)
+        && in_array(strtolower($value), ['0', '1', 'true', 'false', 'yes', 'no', 'on', 'off', ''], true)
         ? 1
         : 0;
 }
 
 /**
- * Scores a value against an existing class, interface, or enum contract.
+ * Scores a class, interface, or enum against a value, following type bindings.
  */
-function scoreDeclaredTypeMatch(string $resolved, mixed $value): int
+function scoreClassTypeMatch(string $className, mixed $value, HydrationContext $context): int
 {
+    if (is_object($value)) {
+        return $value instanceof $className ? 3 : 0;
+    }
+    $resolved = \StorybookPhp\Runtime\Contract\boundTypeName($className, $context->bindings);
     if (\StorybookPhp\Runtime\Contract\enumTypeExists($resolved)) {
-        $enumClass = \StorybookPhp\Runtime\Contract\requireExistingClass($resolved);
-        return $value instanceof $enumClass ? 3 : (\StorybookPhp\Runtime\Contract\findEnumCase($enumClass, $value) !== null ? 2 : 0);
+        return \StorybookPhp\Runtime\Contract\findEnumCase(\StorybookPhp\Runtime\Contract\requireExistingClass($resolved), $value) !== null ? 2 : 0;
     }
-
-    if (interface_exists($resolved)) {
-        return $value instanceof $resolved ? 3 : 0;
-    }
-
     if (!class_exists($resolved)) {
         return 0;
     }
-
-    if ($value instanceof $resolved) {
-        return 3;
-    }
-
-    return is_array($value) ? \StorybookPhp\Runtime\Casting\scoreClassInstantiationMatch($resolved, $value) : 0;
-}
-
-/**
- * Score how well a PHPDoc type string matches the incoming value.
- *
- * @param array<string, mixed>|null $typeMap
- */
-function scoreDocTypeMatch(string $docType, mixed $value, ?ReflectionParameter $param = null, ?array $typeMap = null): int
-{
-    $normalized = trim($docType);
-    if ($normalized === '' || strtolower($normalized) === 'mixed' || strtolower($normalized) === 'unknown') {
-        return 0;
-    }
-
-    if ($value === null) {
-        return strtolower($normalized) === 'null' || str_starts_with($normalized, '?') ? 3 : 0;
-    }
-
-    if (str_starts_with($normalized, '?')) {
-        return \StorybookPhp\Runtime\Casting\scoreDocTypeMatch(substr($normalized, 1), $value, $param, $typeMap);
-    }
-
-    $unionTypes = \StorybookPhp\Runtime\Casting\splitUnionTypes($normalized);
-    if (count($unionTypes) > 1) {
-        return \StorybookPhp\Runtime\Casting\scoreDocUnionTypeMatch($unionTypes, $value, $param, $typeMap);
-    }
-
-    $info = \StorybookPhp\Runtime\Contract\extractGenericValueType($normalized);
-    if ($info !== null) {
-        return \StorybookPhp\Runtime\Casting\scoreGenericDocTypeMatch($info['wrapperClass'], $value, $param, $typeMap);
-    }
-
-    return \StorybookPhp\Runtime\Casting\scoreInlineNamedTypeMatch(\StorybookPhp\Runtime\Casting\resolveBoundTypeName($normalized, $typeMap, $param), $value);
-}
-
-/**
- * @param list<string> $unionTypes
- * @param array<string, mixed>|null $typeMap
- */
-function scoreDocUnionTypeMatch(array $unionTypes, mixed $value, ?ReflectionParameter $param, ?array $typeMap): int
-{
-    $best = 0;
-    foreach ($unionTypes as $candidate) {
-        if (strtolower($candidate) !== 'null') {
-            $best = max($best, \StorybookPhp\Runtime\Casting\scoreDocTypeMatch($candidate, $value, $param, $typeMap));
-        }
-    }
-
-    return $best;
-}
-
-/**
- * @param array<string, mixed>|null $typeMap
- */
-function scoreGenericDocTypeMatch(?string $wrapperClass, mixed $value, ?ReflectionParameter $param, ?array $typeMap): int
-{
     if (is_array($value)) {
-        if ($wrapperClass === null) {
-            return 4;
+        if (!\StorybookPhp\Runtime\Casting\canHydrateObjectFromArray($resolved, $value)) {
+            return 0;
         }
-        $wrapper = \StorybookPhp\Runtime\Casting\resolveBoundTypeName($wrapperClass, $typeMap, $param);
 
-        return class_exists($wrapper) && \StorybookPhp\Runtime\Casting\canInstantiateCollectionWrapper($wrapper) ? 4 : 0;
+        return \StorybookPhp\Runtime\Casting\isListArray($value) && $value !== [] ? 1 : 2;
     }
 
-    if ($wrapperClass === null || !is_object($value)) {
-        return 0;
-    }
-    $wrapper = \StorybookPhp\Runtime\Casting\resolveBoundTypeName($wrapperClass, $typeMap, $param);
-
-    return (class_exists($wrapper) || interface_exists($wrapper)) && $value instanceof $wrapper ? 5 : 0;
+    return \StorybookPhp\Runtime\Casting\canHydrateObjectFromScalar($resolved) ? 1 : 0;
 }
 
 /**
- * Ranks compatible union members by conversion confidence and declaration order.
- *
- * @param list<string> $unionTypes
- * @param array<string, mixed>|null $typeMap
- * @return list<string>
+ * Scores array-likes, builtin generics, and generic class wrappers.
  */
-function rankDocTypeCandidates(array $unionTypes, mixed $value, ?ReflectionParameter $param, ?array $typeMap): array
+function scoreGenericTypeMatch(TypeNode $type, mixed $value, HydrationContext $context): int
 {
-    $ranked = [];
-    foreach ($unionTypes as $index => $candidate) {
-        if (strtolower($candidate) === 'null') {
-            continue;
+    $builtin = \StorybookPhp\Runtime\Contract\canonicalBuiltinTypeName($type->name);
+    if ($builtin !== null && \StorybookPhp\Runtime\Contract\isArrayLikeTypeName($builtin)) {
+        if (is_array($value)) {
+            return str_contains($builtin, 'list') && !\StorybookPhp\Runtime\Casting\isListArray($value) ? 1 : 4;
         }
-        $score = \StorybookPhp\Runtime\Casting\scoreDocTypeMatch($candidate, $value, $param, $typeMap);
-        if ($score > 0) {
-            $ranked[] = ['candidate' => $candidate, 'score' => $score, 'index' => $index];
+
+        return $value instanceof Traversable ? 2 : 0;
+    }
+    if ($builtin !== null) {
+        return \StorybookPhp\Runtime\Casting\scoreBuiltinTypeMatch($builtin, $value);
+    }
+    if (is_object($value)) {
+        return $value instanceof $type->name ? 5 : 0;
+    }
+    $resolved = \StorybookPhp\Runtime\Contract\boundTypeName($type->name, $context->bindings);
+
+    return is_array($value) && class_exists($resolved) && \StorybookPhp\Runtime\Casting\canHydrateObjectFromArray($resolved, $value) ? 4 : 0;
+}
+
+/**
+ * Scores an array or object shape: every required key must be present.
+ */
+function scoreShapeTypeMatch(TypeNode $type, mixed $value): int
+{
+    if (strtolower($type->name) === 'object') {
+        return is_object($value) ? 4 : (is_array($value) ? 3 : 0);
+    }
+    if (!is_array($value)) {
+        return 0;
+    }
+    foreach (array_keys($type->fields) as $key) {
+        if (!array_key_exists($key, $value) && !in_array($key, $type->optionalKeys, true)) {
+            return 0;
         }
     }
-    usort($ranked, static function (array $left, array $right): int {
-        $scoreComparison = $right['score'] <=> $left['score'];
 
-        return $scoreComparison !== 0 ? $scoreComparison : ($left['index'] <=> $right['index']);
-    });
-
-    return array_map(
-        static fn (array $candidate): string => $candidate['candidate'],
-        $ranked,
-    );
+    return 4;
 }

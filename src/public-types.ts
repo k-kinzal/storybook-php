@@ -78,6 +78,8 @@ export interface ArgType {
 export type { PhpComponent, PhpRenderer };
 export type {
   TypeMapConfig,
+  TypeBinding,
+  TypeBindings,
   ArgOverride,
   FileMapTarget,
   ClassMapTarget,

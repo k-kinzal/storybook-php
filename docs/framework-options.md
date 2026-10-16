@@ -217,7 +217,7 @@ Exact file matches and glob-style suffix matches can be combined. Exact-match fi
 `typeMap` is shared by build-time resolution and runtime casting:
 
 - `typeMap.files` controls how imported files map to public args, PHP execution files, callable selection, includes, and file-scoped adapters
-- `typeMap.bindings` provides runtime-only interface or abstract-type bindings used while hydrating PHP objects
+- `typeMap.bindings` provides runtime-only, DI-style bindings used while hydrating PHP objects: interface or abstract-type bindings (`"App\\Renderable": "App\\HtmlBlock"`) and slot bindings that fix the type or value of a constructor argument, setter, property, or method parameter (`"App\\Card::$meta": { value: {...} }`)
 - `typeMap.classes` provides runtime-only constructor parameter types for classes the runner instantiates, including nested objects built from story args
 
 For the full schema, merging rules, and story-level overrides, see [Type Mapping](type-mapping.md).

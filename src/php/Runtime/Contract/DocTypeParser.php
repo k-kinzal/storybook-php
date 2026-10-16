@@ -89,51 +89,62 @@ function splitGenericArgs(string $inner): array
 }
 
 /**
- * Native array-like type names recognised by PHPStan / Psalm.
- */
-const NATIVE_ARRAY_TYPES = ['list', 'array', 'iterable', 'non-empty-list', 'non-empty-array'];
-
-/**
- * Extract the inner value type from a generic / array doc type.
+ * Parses the `@var` / `@phpstan-var` / `@psalm-var` annotation of a property docblock.
  *
- * Returns ['valueType' => string, 'wrapperClass' => string|null] or null.
+ * Priority: @phpstan-var > @psalm-var > @var. Returns null when the property has no documented type.
  *
- * @return array{valueType: string, wrapperClass: string|null}|null
+ * @example Reading a property type
+ *     \StorybookPhp\Runtime\Contract\parseDocBlockVarType("/**\n * @var array<string, App\\Item> \$items the items\n *\/") // => 'array<string, App\\Item>'
+ *     \StorybookPhp\Runtime\Contract\parseDocBlockVarType(false) // => null
  */
-function extractGenericValueType(string $docType): ?array
+function parseDocBlockVarType(string|false $docComment): ?string
 {
-    $type = preg_replace('/\|null$/i', '', $docType) ?? $docType;
-    $type = preg_replace('/^null\|/i', '', $type) ?? $type;
-    $type = trim($type);
-
-    if (str_ends_with($type, '[]')) {
-        return ['valueType' => substr($type, 0, -2), 'wrapperClass' => null];
+    if ($docComment === false) {
+        return null;
     }
-
-    if (preg_match('/^(.+?)<(.+)>$/', $type, $matches) === 1) {
-        $outer = trim($matches[1]);
-        $inner = trim($matches[2]);
-        $args = \StorybookPhp\Runtime\Contract\splitGenericArgs($inner);
-        $valueType = count($args) >= 2 ? trim($args[count($args) - 1]) : $inner;
-
-        $isNative = in_array(strtolower($outer), NATIVE_ARRAY_TYPES, true);
-        return [
-            'valueType' => $valueType,
-            'wrapperClass' => $isNative ? null : $outer,
-        ];
+    foreach (['phpstan-var', 'psalm-var', 'var'] as $tag) {
+        if (preg_match('/@' . $tag . '[ \t]+([^\r\n]+)/', $docComment, $match) === 1) {
+            return \StorybookPhp\Runtime\Contract\leadingTypeExpression($match[1]);
+        }
     }
 
     return null;
 }
 
 /**
- * Check whether a PHPDoc type string represents an array-like or generic type.
+ * Returns the type expression at the start of a docblock tag line, which ends
+ * at the first whitespace outside of brackets.
+ *
+ * @example Stopping before the variable name
+ *     \StorybookPhp\Runtime\Contract\leadingTypeExpression('array{foo: int, bar?: string} $value description') // => 'array{foo: int, bar?: string}'
  */
-function isArrayLikeType(string $type): bool
+function leadingTypeExpression(string $text): string
 {
-    $t = preg_replace('/\|null$/i', '', $type) ?? $type;
-    $t = preg_replace('/^null\|/i', '', $t) ?? $t;
-    $t = trim($t);
+    $depth = 0;
+    $length = strlen($text);
+    for ($index = 0; $index < $length; $index++) {
+        $char = $text[$index];
+        if (in_array($char, ['<', '(', '{', '['], true)) {
+            $depth++;
+        } elseif (in_array($char, ['>', ')', '}', ']'], true)) {
+            $depth--;
+        } elseif ($depth === 0 && ($char === ' ' || $char === "\t") && !\StorybookPhp\Runtime\Contract\whitespaceJoinsTypeExpression($text, $index)) {
+            return trim(substr($text, 0, $index));
+        }
+    }
 
-    return str_ends_with($t, '[]') || preg_match('/^.+<.+>$/', $t) === 1;
+    return trim($text);
+}
+
+/**
+ * Reports whether the whitespace at an offset sits inside one type
+ * expression, such as after `:` in a callable return type or around `|`.
+ */
+function whitespaceJoinsTypeExpression(string $text, int $offset): bool
+{
+    $previous = rtrim(substr($text, 0, $offset));
+    $next = ltrim(substr($text, $offset));
+
+    return ($previous !== '' && str_contains(':|&,', $previous[strlen($previous) - 1]))
+        || ($next !== '' && str_contains('|&', $next[0]));
 }

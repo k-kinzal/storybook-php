@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace StorybookPhp\Runtime\Execution;
 
-use ReflectionException;
 use ReflectionFunctionAbstract;
 
 /**
@@ -13,7 +12,6 @@ use ReflectionFunctionAbstract;
  * @param array<string, mixed> $context
  * @param array<string, mixed>|null $templateInput
  * @return array<string, mixed>
- * @throws ReflectionException when reflection cannot expose a parameter default
  */
 function resolveTemplateContextArgs(array $context, ?array $templateInput = null): array
 {
@@ -94,6 +92,7 @@ function orderResolvedArgs(?ReflectionFunctionAbstract $ref, array $resolvedArgs
  * @param array<string, mixed> $templateArgs
  * @param array<string, mixed> $constructorArgs
  * @param array<string, mixed> $methodArgs
+ * @param array<string, mixed> $stateArgs
  * @return array{
  *   html: string,
  *   result?: mixed,
@@ -103,6 +102,7 @@ function orderResolvedArgs(?ReflectionFunctionAbstract $ref, array $resolvedArgs
  *   templateArgs?: array<string, mixed>,
  *   constructorArgs?: array<string, mixed>,
  *   methodArgs?: array<string, mixed>,
+ *   stateArgs?: array<string, mixed>,
  *   enumCaseValue?: mixed
  * }
  */
@@ -116,6 +116,7 @@ function buildExecutionResponse(
     array $constructorArgs = [],
     array $methodArgs = [],
     mixed $enumCaseValue = null,
+    array $stateArgs = [],
 ): array {
     $response = [
         'html' => $html,
@@ -125,6 +126,7 @@ function buildExecutionResponse(
         'publicArgs' => $publicArgs,
         'templateArgs' => $templateArgs,
         'constructorArgs' => $constructorArgs,
+        'stateArgs' => $stateArgs,
         'methodArgs' => $methodArgs,
     ];
 
