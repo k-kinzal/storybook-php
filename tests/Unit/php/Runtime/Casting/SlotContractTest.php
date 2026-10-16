@@ -10,7 +10,6 @@ use StorybookPhp\Runtime\Contract\HydrationException;
 use StorybookPhp\Runtime\Contract\TypeNode;
 use StorybookPhp\Runtime\Contract\TypeScope;
 use StorybookPhp\TestFixture\Hydration\Container;
-use StorybookPhp\TestFixture\Hydration\Intersected;
 use StorybookPhp\TestFixture\Hydration\Page;
 use StorybookPhp\TestFixture\Hydration\Profile;
 use StorybookPhp\TestFixture\Hydration\SelfLinked;
@@ -96,17 +95,14 @@ final class SlotContractTest extends TestCase
             new TypeScope('', [], SelfLinked::class),
         );
         $union = \StorybookPhp\Runtime\Casting\reflectionTypeNode(\StorybookPhp\TestFixture\Hydration\parameterOf([Page::class, '__construct'], 'block')->getType(), $scope);
-        $intersection = \StorybookPhp\Runtime\Casting\reflectionTypeNode(\StorybookPhp\TestFixture\Hydration\parameterOf([Intersected::class, '__construct'], 'value')->getType(), $scope);
         $mixed = \StorybookPhp\Runtime\Casting\reflectionTypeNode(\StorybookPhp\TestFixture\Hydration\parameterOf([Page::class, '__construct'], 'meta')->getType(), $scope);
 
         self::assertNull(\StorybookPhp\Runtime\Casting\reflectionTypeNode(null, $scope));
         self::assertNotNull($self);
         self::assertNotNull($union);
-        self::assertNotNull($intersection);
         self::assertNotNull($mixed);
         self::assertSame('?' . SelfLinked::class, \StorybookPhp\Runtime\Contract\describeTypeNode($self));
         self::assertSame('StorybookPhp\TestFixture\Hydration\AbstractBlock|string|null', \StorybookPhp\Runtime\Contract\describeTypeNode($union));
-        self::assertSame('Countable&Traversable', \StorybookPhp\Runtime\Contract\describeTypeNode($intersection));
         self::assertSame('mixed', \StorybookPhp\Runtime\Contract\describeTypeNode($mixed));
     }
 

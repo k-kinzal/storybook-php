@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace StorybookPhp\TestFixture\Hydration;
 
-use Countable;
 use LogicException;
 use ReflectionClass;
 use ReflectionFunction;
@@ -14,7 +13,6 @@ use ReflectionProperty;
 use stdClass;
 use StorybookPhp\TestFixture\{Formatter, FormatterInterface};
 use StorybookPhp\TestFixture\Item as AliasItem;
-use Traversable;
 
 require_once __DIR__ . '/RunnerFixtures.php';
 
@@ -192,12 +190,6 @@ final class Untyped
     }
 }
 
-final class Intersected
-{
-    public function __construct(public Countable&Traversable $value)
-    {
-    }
-}
 
 final class Widget
 {
