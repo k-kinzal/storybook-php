@@ -1,5 +1,11 @@
 import { dirname, isAbsolute, resolve } from "node:path";
-import type { AdapterMap, ArgOverride, FileMapTarget, FrameworkOptions } from "../../types.js";
+import type {
+  AdapterMap,
+  ArgOverride,
+  FileMapTarget,
+  FrameworkOptions,
+  TypeBindings,
+} from "../../types.js";
 
 export const PHP_IMPORT_RE: RegExp = /\.php(?:@(\w+))?$/;
 export const VIRTUAL_PREFIX = "\0storybook-php:";
@@ -34,7 +40,7 @@ export interface ResolvedFrameworkOptions {
   defaultMethod: string | null;
   typeMap?: {
     files?: ResolvedFileMap;
-    bindings?: Record<string, string>;
+    bindings?: TypeBindings;
   };
   adapterMap: AdapterMap | null;
 }

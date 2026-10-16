@@ -8,6 +8,9 @@ parameters:
   paths:
     - src/php
     - tests/Unit
+  scanFiles:
+    - tests/php/fixtures/RunnerFixtures.php
+    - tests/php/fixtures/HydrationFixtures.php
   toolkit:
     mutation:
       enabled: true

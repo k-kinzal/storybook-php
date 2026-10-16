@@ -4,11 +4,13 @@ declare(strict_types=1);
 
 namespace StorybookPhp\Runtime\Casting;
 
-use ReflectionException;
 use ReflectionFunctionAbstract;
 use ReflectionNamedType;
 use ReflectionParameter;
+use ReflectionType;
 use RuntimeException;
+use StorybookPhp\Runtime\Contract\HydrationException;
+use StorybookPhp\Runtime\Contract\TypeScope;
 
 /**
  * Resolves the effective doc type for a parameter using the provided arg definition.
@@ -41,51 +43,69 @@ function resolveParamDocType(
  */
 function buildOverrideDocType(ReflectionParameter $param, array $argDef): ?string
 {
-    $type = isset($argDef['type']) && is_string($argDef['type']) && trim($argDef['type']) !== ''
-        ? trim($argDef['type'])
-        : null;
-    if ($type !== null && in_array(strtolower($type), ['mixed', 'unknown'], true)) {
-        $type = null;
-    }
-    $elementType = isset($argDef['elementType']) && is_string($argDef['elementType']) && trim($argDef['elementType']) !== ''
-        ? trim($argDef['elementType'])
-        : null;
-
-    if ($type !== null) {
-        if ($elementType === null && \StorybookPhp\Runtime\Casting\isRedundantDocTypeOverride($param, $type)) {
-            return null;
-        }
-
-        if ($elementType === null) {
-            return $type;
-        }
-
-        if (in_array(strtolower($type), \StorybookPhp\Runtime\Contract\NATIVE_ARRAY_TYPES, true)) {
-            return $elementType . '[]';
-        }
-
-        return $type . '<' . $elementType . '>';
-    }
-
-    if ($elementType === null) {
+    $type = \StorybookPhp\Runtime\Casting\argDefTypeString($argDef, 'type');
+    $elementType = \StorybookPhp\Runtime\Casting\argDefTypeString($argDef, 'elementType');
+    if ($type !== null && $elementType === null && \StorybookPhp\Runtime\Casting\isRedundantDocTypeOverride($param, $type)) {
         return null;
+    }
+    if ($type !== null || $elementType === null) {
+        return \StorybookPhp\Runtime\Casting\argDefDocType($argDef);
     }
 
     $paramType = $param->getType();
-    if ($paramType === null) {
-        return $elementType . '[]';
-    }
     if ($paramType instanceof ReflectionNamedType) {
         $paramTypeName = $paramType->getName();
-        if (in_array(strtolower($paramTypeName), \StorybookPhp\Runtime\Contract\NATIVE_ARRAY_TYPES, true)) {
+        if (\StorybookPhp\Runtime\Contract\isArrayLikeTypeName($paramTypeName)) {
             return $elementType . '[]';
         }
-        if (!in_array(strtolower($paramTypeName), ['string', 'int', 'integer', 'float', 'double', 'bool', 'boolean', 'object', 'callable', 'mixed', 'true', 'false', 'null'], true)) {
+        if (\StorybookPhp\Runtime\Contract\canonicalBuiltinTypeName($paramTypeName) === null) {
             return $paramTypeName . '<' . $elementType . '>';
         }
+
+        return $elementType;
     }
 
-    return $elementType;
+    return $elementType . '[]';
+}
+
+/**
+ * Converts the `type` / `elementType` fields of an arg definition into a doc
+ * type string without consulting a PHP declaration.
+ *
+ * @param array<string, mixed> $argDef
+ *
+ * @example Element types become generic arrays
+ *     \StorybookPhp\Runtime\Casting\argDefDocType(['type' => 'array', 'elementType' => 'App\Item']) // => 'App\Item[]'
+ *     \StorybookPhp\Runtime\Casting\argDefDocType(['type' => 'App\Collection', 'elementType' => 'App\Item']) // => 'App\Collection<App\Item>'
+ *     \StorybookPhp\Runtime\Casting\argDefDocType(['type' => 'unknown']) // => null
+ */
+function argDefDocType(array $argDef): ?string
+{
+    $type = \StorybookPhp\Runtime\Casting\argDefTypeString($argDef, 'type');
+    $elementType = \StorybookPhp\Runtime\Casting\argDefTypeString($argDef, 'elementType');
+    if ($elementType === null) {
+        return $type;
+    }
+    if ($type === null || \StorybookPhp\Runtime\Contract\isArrayLikeTypeName($type)) {
+        return $elementType . '[]';
+    }
+
+    return $type . '<' . $elementType . '>';
+}
+
+/**
+ * Reads a non-empty type string from an arg definition, treating `mixed` and `unknown` as absent.
+ *
+ * @param array<string, mixed> $argDef
+ */
+function argDefTypeString(array $argDef, string $field): ?string
+{
+    $value = $argDef[$field] ?? null;
+    if (!is_string($value) || trim($value) === '' || in_array(strtolower(trim($value)), ['mixed', 'unknown'], true)) {
+        return null;
+    }
+
+    return trim($value);
 }
 
 /**
@@ -116,13 +136,9 @@ function normalizeRuntimeTypeName(string $typeName, ReflectionParameter $param):
         return null;
     }
 
-    $lower = strtolower($normalized);
-    return match ($lower) {
-        'integer' => 'int',
-        'double' => 'float',
-        'boolean' => 'bool',
-        default => \StorybookPhp\Runtime\Contract\resolveClassName($normalized, $param) ?? $lower,
-    };
+    return \StorybookPhp\Runtime\Contract\canonicalBuiltinTypeName($normalized)
+        ?? \StorybookPhp\Runtime\Contract\resolveClassName($normalized, $param)
+        ?? strtolower($normalized);
 }
 
 /**
@@ -132,7 +148,8 @@ function normalizeRuntimeTypeName(string $typeName, ReflectionParameter $param):
  * @param array<string, mixed>|null $typeMap
  * @param array<string, mixed>|null $argDefs
  * @return array{ordered: list<mixed>, named: array<string, mixed>}
- * @throws ReflectionException when reflection cannot expose a parameter default
+ * @throws HydrationException when a value cannot satisfy its parameter
+ * @throws RuntimeException when a required argument is missing
  */
 function resolveArgs(?ReflectionFunctionAbstract $ref, array $args, ?array $typeMap = null, ?array $argDefs = null): array
 {
@@ -140,25 +157,27 @@ function resolveArgs(?ReflectionFunctionAbstract $ref, array $args, ?array $type
         return ['ordered' => [], 'named' => []];
     }
 
+    $context = HydrationContext::fromTypeMap($typeMap);
     $docTypes = \StorybookPhp\Runtime\Contract\parseDocBlockParamTypes($ref);
+    $scope = \StorybookPhp\Runtime\Contract\typeScopeForFunction($ref);
 
     $ordered = [];
     $named = [];
     foreach ($ref->getParameters() as $param) {
         $name = $param->getName();
         $argDef = \StorybookPhp\Runtime\Casting\resolveParameterArgDef($name, $argDefs);
-        $docType = \StorybookPhp\Runtime\Casting\resolveParamDocType($param, $docTypes, $argDef);
+        $docType = $docTypes[$name] ?? null;
 
         if ($param->isVariadic()) {
             if (array_key_exists($name, $args)) {
-                $variadicValues = \StorybookPhp\Runtime\Casting\resolveVariadicArgValues($param, $args[$name], $docType, $typeMap);
+                $variadicValues = \StorybookPhp\Runtime\Casting\resolveVariadicArgValues($param, $args[$name], $docType, $argDef, $context, $scope);
                 array_push($ordered, ...$variadicValues);
                 $named[$name] = $variadicValues;
             }
             continue;
         }
 
-        $resolved = \StorybookPhp\Runtime\Casting\resolveParameterArgValue($param, $args, $argDef, $docType, $typeMap);
+        $resolved = \StorybookPhp\Runtime\Casting\resolveParameterArgValue($param, $args, $argDef, $docType, $context, $scope);
         $ordered[] = $resolved;
         $named[$name] = $resolved;
     }
@@ -181,59 +200,77 @@ function resolveParameterArgDef(string $name, ?array $argDefs): ?array
 }
 
 /**
- * @param array<string, mixed>|null $typeMap
+ * @param array<string, mixed>|null $argDef
+ * @param TypeScope|null $scope resolution scope of the declaring callable, built on demand when omitted
  * @return list<mixed>
- * @throws ReflectionException when reflection cannot expose a parameter default
+ * @throws HydrationException when a value cannot satisfy the parameter
  */
 function resolveVariadicArgValues(
     ReflectionParameter $param,
     mixed $value,
     ?string $docType,
-    ?array $typeMap,
+    ?array $argDef,
+    HydrationContext $context,
+    ?TypeScope $scope = null,
 ): array {
     $values = is_array($value) && \StorybookPhp\Runtime\Casting\isListArray($value) ? $value : [$value];
 
     $resolved = [];
     foreach ($values as $item) {
-        $resolved[] = \StorybookPhp\Runtime\Casting\castArg($param, $item, $docType, $typeMap);
+        $resolved[] = \StorybookPhp\Runtime\Casting\hydrateParameterValue($param, $item, $docType, $argDef, $context, $scope);
     }
 
     return $resolved;
 }
 
 /**
+ * Resolves one parameter from the story arguments, a slot binding value, the
+ * generated default, the PHP default, or null for nullable parameters.
+ *
  * @param array<array-key, mixed> $args
  * @param array<string, mixed>|null $argDef
- * @param array<string, mixed>|null $typeMap
+ * @param TypeScope|null $scope resolution scope of the declaring callable, built on demand when omitted
  * @throws RuntimeException when a required argument has no supplied or declared default
- * @throws ReflectionException when reflection cannot expose a parameter default
+ * @throws HydrationException when a value cannot satisfy the parameter
  */
 function resolveParameterArgValue(
     ReflectionParameter $param,
     array $args,
     ?array $argDef,
     ?string $docType,
-    ?array $typeMap,
+    HydrationContext $context,
+    ?TypeScope $scope = null,
 ): mixed {
     $name = $param->getName();
+    $binding = \StorybookPhp\Runtime\Contract\slotBinding(\StorybookPhp\Runtime\Casting\parameterSlotKeys($param), $context->bindings);
+    if ($binding !== null && $binding['hasValue']) {
+        return \StorybookPhp\Runtime\Casting\hydrateParameterValue($param, $binding['value'], $docType, $argDef, $context, $scope);
+    }
     if (array_key_exists($name, $args)) {
-        return \StorybookPhp\Runtime\Casting\castArg($param, $args[$name], $docType, $typeMap);
+        return \StorybookPhp\Runtime\Casting\hydrateParameterValue($param, $args[$name], $docType, $argDef, $context, $scope);
     }
     if ($argDef !== null && array_key_exists('default', $argDef)) {
-        return \StorybookPhp\Runtime\Casting\castArg($param, $argDef['default'], $docType, $typeMap);
+        return \StorybookPhp\Runtime\Casting\hydrateParameterValue($param, $argDef['default'], $docType, $argDef, $context, $scope);
     }
     if ($param->isDefaultValueAvailable()) {
-        return $param->getDefaultValue();
+        return \StorybookPhp\Runtime\Casting\parameterDefaultValue($param);
     }
-    $type = $param->getType();
-    if (($argDef['nullable'] ?? false) === true && ($type === null || $param->allowsNull())) {
-        return null;
-    }
-    if ($param->allowsNull()) {
+    if ($param->allowsNull() || (($argDef['nullable'] ?? false) === true && !$param->getType() instanceof ReflectionType)) {
         return null;
     }
 
-    throw new RuntimeException("Missing required argument: {$name}");
+    throw new RuntimeException("Missing required argument: {$name} (" . \StorybookPhp\Runtime\Casting\parameterLabel($param) . ' has no default value; pass it in the story args or bind it in typeMap).');
+}
+
+/**
+ * Cast a value to match the expected type of a reflection parameter.
+ *
+ * @param array<string, mixed>|null $typeMap
+ * @throws HydrationException when the value cannot satisfy the parameter
+ */
+function castArg(ReflectionParameter $param, mixed $value, ?string $docType = null, ?array $typeMap = null): mixed
+{
+    return \StorybookPhp\Runtime\Casting\hydrateParameterValue($param, $value, $docType, null, HydrationContext::fromTypeMap($typeMap));
 }
 
 /**
@@ -243,7 +280,8 @@ function resolveParameterArgValue(
  * @param array<string, mixed>|null $typeMap
  * @param array<string, mixed>|null $argDefs
  * @return list<mixed>
- * @throws ReflectionException when reflection cannot expose a parameter default
+ * @throws HydrationException when a value cannot satisfy its parameter
+ * @throws RuntimeException when a required argument is missing
  */
 function matchArgs(?ReflectionFunctionAbstract $ref, array $args, ?array $typeMap = null, ?array $argDefs = null): array
 {
@@ -257,7 +295,8 @@ function matchArgs(?ReflectionFunctionAbstract $ref, array $args, ?array $typeMa
  * @param array<string, mixed>|null $typeMap
  * @param array<string, mixed>|null $argDefs
  * @return array<string, mixed>
- * @throws ReflectionException when reflection cannot expose a parameter default
+ * @throws HydrationException when a value cannot satisfy its parameter
+ * @throws RuntimeException when a required argument is missing
  */
 function resolveNamedArgs(?ReflectionFunctionAbstract $ref, array $args, ?array $typeMap = null, ?array $argDefs = null): array
 {

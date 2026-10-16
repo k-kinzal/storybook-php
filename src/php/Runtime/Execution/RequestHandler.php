@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace StorybookPhp\Runtime\Execution;
 
-use ReflectionException;
 use RuntimeException;
 
 /**
@@ -12,7 +11,6 @@ use RuntimeException;
  *
  * @param array{type: 'classMethod'|'staticMethod'|'function'|'template'|'enumMethod', file: string, sourceFile?: string|null, class?: string|null, callable?: string|null, args: array<string, mixed>, publicArgDefs?: array<string, mixed>|null, constructorArgDefs?: array<string, mixed>|null, callableArgDefs?: array<string, mixed>|null, bootstrap?: string|null, adapters?: list<string>|null, typeMap?: array<string, mixed>|null} $__sb_request
  * @return array{html: string}
- * @throws ReflectionException when reflection cannot expose a parameter default
  * @throws RuntimeException when the request cannot be resolved or executed
  */
 function executeRunnerRequest(array $__sb_request): array
@@ -35,7 +33,6 @@ function executeRunnerRequest(array $__sb_request): array
 /**
  * @param array{type: 'classMethod'|'staticMethod'|'function'|'template'|'enumMethod', executionFile: string, class: string|null, callable: string|null, publicArgs: array<string, mixed>, __planner: array{type: 'classMethod'|'staticMethod'|'function'|'template'|'enumMethod', effectiveConstructorArgDefs: array<string, mixed>|null, effectiveCallableArgDefs: array<string, mixed>|null, ...}, ...} $context
  * @return array{html: string, ...}
- * @throws ReflectionException when reflection cannot expose a parameter default
  */
 function executeAdapterTerminal(array $context): array
 {

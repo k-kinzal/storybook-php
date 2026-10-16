@@ -6,18 +6,17 @@ namespace StorybookPhp\Runtime\Execution;
 
 use LogicException;
 use ReflectionClass;
-use ReflectionException;
 use ReflectionFunction;
 use ReflectionFunctionAbstract;
 use ReflectionMethod;
 use RuntimeException;
+use StorybookPhp\Runtime\Casting\HydrationContext;
 
 /**
  * Dispatches a validated plan to its supported render target.
  *
  * @param array<string, mixed> $__sb_context
  * @return array{html: string, ...}
- * @throws ReflectionException when reflection cannot expose a parameter default
  * @throws RuntimeException when the execution context cannot be resolved or invoked
  */
 function executeCoreContext(array $__sb_context): array
@@ -45,10 +44,16 @@ function executeClassMethodContext(array $context): array
     $method = \StorybookPhp\Runtime\Execution\plannerMethodReflection($planner);
     $constructor = \StorybookPhp\Runtime\Execution\plannerConstructorReflection($planner);
     $constructorArgs = \StorybookPhp\Runtime\Execution\executionContextArgs($context, 'constructorArgs');
+    $stateArgs = \StorybookPhp\Runtime\Execution\executionContextArgs($context, 'stateArgs');
     $methodArgs = \StorybookPhp\Runtime\Execution\executionContextArgs($context, 'methodArgs');
     $instance = $constructor instanceof ReflectionMethod
         ? $class->newInstanceArgs(\StorybookPhp\Runtime\Execution\orderResolvedArgs($constructor, $constructorArgs))
         : $class->newInstance();
+    \StorybookPhp\Runtime\Casting\applyObjectState(
+        $instance,
+        $stateArgs,
+        HydrationContext::fromTypeMap(\StorybookPhp\Runtime\Execution\normalizeNamedArgDefMap($context['typeMap'] ?? null)),
+    );
     ob_start();
     $result = $method->invokeArgs($instance, \StorybookPhp\Runtime\Execution\orderResolvedArgs($method, $methodArgs));
     $buffered = \StorybookPhp\Runtime\Transport\getOutputBuffer();
@@ -62,6 +67,8 @@ function executeClassMethodContext(array $context): array
         [],
         $constructorArgs,
         $methodArgs,
+        null,
+        $stateArgs,
     );
 }
 

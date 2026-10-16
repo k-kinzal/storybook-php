@@ -209,12 +209,42 @@ export interface FileMapTarget {
   adapter?: string;
 }
 
+/**
+ * Value of one `typeMap.bindings` entry.
+ *
+ * - a string names the concrete PHP type to build (`"App\\HtmlBlock"`)
+ * - `{ type }` replaces the expected type of a slot
+ * - `{ value }` replaces the incoming value of a slot before it is hydrated
+ */
+export type TypeBinding =
+  | string
+  | {
+      /** PHP type to hydrate the slot or type into */
+      type?: string;
+      /** Fixed value assigned to the slot, hydrated against its (bound) type */
+      value?: unknown;
+    };
+
+/**
+ * DI-style runtime bindings keyed by what they apply to:
+ *
+ * | key                         | applies to                                               |
+ * |-----------------------------|----------------------------------------------------------|
+ * | `App\Renderable`            | every slot expecting that interface / abstract / class   |
+ * | `App\Card::$body`           | the `body` state of `App\Card` (constructor arg, setter, or property) |
+ * | `App\Card::render($limit)`  | the `$limit` parameter of `App\Card::render()`            |
+ * | `App\render_card($limit)`   | the `$limit` parameter of the function `App\render_card()` |
+ *
+ * Type keys take a type name; slot keys take a type name or `{ type, value }`.
+ */
+export type TypeBindings = Record<string, TypeBinding>;
+
 /** Static type mapping configuration */
 export interface TypeMapConfig {
   /** Map file paths to type information sources */
   files?: Record<string, FileMapTarget>;
-  /** Map PHP type → PHP type (interface/abstract → concrete, DI-style) */
-  bindings?: Record<string, string>;
+  /** Runtime bindings: PHP type → concrete type, or slot → type/value (DI-style) */
+  bindings?: TypeBindings;
 }
 
 /**
@@ -222,15 +252,15 @@ export interface TypeMapConfig {
  * Use via `parameters.typeMap` in Meta or StoryObj.
  */
 export interface StoryTypeMap {
-  /** Map PHP type → PHP type (interface/abstract → concrete, DI-style) */
-  bindings?: Record<string, string>;
+  /** Runtime bindings: PHP type → concrete type, or slot → type/value (DI-style) */
+  bindings?: TypeBindings;
   /** Override the public Storybook args surface for the current story */
   args?: Record<string, string | ArgOverride>;
 }
 
 /** Runtime type information sent to the PHP runner */
 export interface RuntimeTypeMap {
-  bindings?: Record<string, string>;
+  bindings?: TypeBindings;
 }
 
 /** Framework options for storybook-php */

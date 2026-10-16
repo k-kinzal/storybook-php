@@ -59,7 +59,10 @@ describe("render-request", () => {
           componentId,
           args: { title: "Hello" },
           typeMap: {
-            bindings: { "App\\Contracts\\Card": "App\\Card" },
+            bindings: {
+              "App\\Contracts\\Card": "App\\Card",
+              "App\\Card::$meta": { value: { theme: "dark" } },
+            },
           },
         },
         registry,
@@ -82,7 +85,10 @@ describe("render-request", () => {
         bootstrap: null,
         adapter: "/runtime/default-adapter.php",
         typeMap: {
-          bindings: { "App\\Contracts\\Card": "App\\Card" },
+          bindings: {
+            "App\\Contracts\\Card": "App\\Card",
+            "App\\Card::$meta": { value: { theme: "dark" } },
+          },
         },
       });
     });

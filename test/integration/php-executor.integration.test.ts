@@ -318,6 +318,107 @@ describe.skipIf(!hasPhp)("PhpExecutor", () => {
   });
 
   // ---------------------------------------------------------------------------
+  // state hydration: constructor args, setters, properties, slot bindings
+  // ---------------------------------------------------------------------------
+  describe("state hydration", () => {
+    const stateRequest = (
+      args: Record<string, unknown>,
+      typeMap?: PhpRenderRequest["typeMap"],
+    ): PhpRenderRequest => ({
+      type: "classMethod",
+      file: fixture("TypeMapStateBinding.php"),
+      class: "App\\Components\\StatefulCard",
+      callable: "render",
+      args,
+      ...(typeMap ? { typeMap } : {}),
+    });
+
+    it("hydrates array shapes documented with imported class aliases", async () => {
+      const result = await executor.execute(
+        stateRequest({ title: "Card", shape: { badge: { label: "New" }, count: "2" } }),
+      );
+
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain("<h2>Card</h2>");
+      expect(result.html).toContain("<span>New x2</span>");
+    });
+
+    it("rewrites instance state through setters and public properties", async () => {
+      const result = await executor.execute(
+        stateRequest(
+          {
+            title: "Card",
+            subtitle: "Sub",
+            theme: { accent: "red" },
+            density: "compact",
+            shape: { badge: "Hot" },
+          },
+          { bindings: { "App\\Components\\StateTheme": "App\\Components\\DarkTheme" } },
+        ),
+      );
+
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('class="dark-red compact"');
+      expect(result.html).toContain("<p>Sub</p>");
+      expect(result.html).toContain("<span>Hot x0</span>");
+    });
+
+    it("applies slot bindings with fixed values and parameter types", async () => {
+      const result = await executor.execute(
+        stateRequest(
+          { title: "Card", shape: { badge: "Hot" }, limit: "ignored-by-binding" },
+          {
+            bindings: {
+              "App\\Components\\StatefulCard::$theme": { type: "App\\Components\\LightTheme" },
+              "App\\Components\\StatefulCard::$meta": { value: { theme: "dark" } },
+              "App\\Components\\StatefulCard::render($limit)": { value: 7 },
+            },
+          },
+        ),
+      );
+
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain('class="light normal"');
+      expect(result.html).toContain("<em>7</em>");
+      expect(result.html).toContain('<code>{"theme":"dark"}</code>');
+    });
+
+    it("names the slot that rejected a value", async () => {
+      const result = await executor.execute(
+        stateRequest({ title: "Card", shape: { badge: { label: ["not", "a", "string"] } } }),
+      );
+
+      expect(result.error).toBe(
+        "Cannot hydrate App\\Components\\StatefulCard::render($shape)[badge] > App\\Components\\State\\Badge::__construct($label): expected string, received list of 3 items.",
+      );
+    });
+
+    it("explains missing bindings for interface-typed state", async () => {
+      const result = await executor.execute(
+        stateRequest({ title: "Card", shape: { badge: "Hot" }, theme: { accent: "red" } }),
+      );
+
+      expect(result.error).toContain(
+        "Cannot hydrate App\\Components\\StatefulCard::setTheme($theme): App\\Components\\StateTheme is an interface",
+      );
+      expect(result.error).toContain('{"App\\\\Components\\\\StateTheme":"App\\\\ConcreteClass"}');
+    });
+
+    it("rejects unsupported binding keys with guidance", async () => {
+      const result = await executor.execute(
+        stateRequest(
+          { title: "Card", shape: { badge: "Hot" } },
+          { bindings: { "App\\Components\\StatefulCard::theme": "x" } },
+        ),
+      );
+
+      expect(result.error).toContain(
+        "typeMap binding key 'App\\Components\\StatefulCard::theme' is not supported.",
+      );
+    });
+  });
+
+  // ---------------------------------------------------------------------------
   // staticMethod: Alert::danger
   // ---------------------------------------------------------------------------
   describe("staticMethod", () => {

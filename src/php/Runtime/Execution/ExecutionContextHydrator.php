@@ -4,15 +4,15 @@ declare(strict_types=1);
 
 namespace StorybookPhp\Runtime\Execution;
 
-use ReflectionException;
+use ReflectionClass;
 use RuntimeException;
+use StorybookPhp\Runtime\Casting\HydrationContext;
 
 /**
  * Hydrates a validated execution context from a deterministic plan.
  *
  * @param array<string, mixed> $context
  * @return array{type: 'classMethod'|'staticMethod'|'function'|'template'|'enumMethod', executionFile: string, class: string|null, callable: string|null, publicArgs: array<string, mixed>, __planner: array{type: 'classMethod'|'staticMethod'|'function'|'template'|'enumMethod', effectiveConstructorArgDefs: array<string, mixed>|null, effectiveCallableArgDefs: array<string, mixed>|null, ...}, ...}
- * @throws ReflectionException when reflection cannot expose a parameter default
  * @throws RuntimeException when the execution plan or arguments cannot be resolved
  */
 function hydrateExecutionContext(array $context): array
@@ -110,14 +110,13 @@ function requireHydratedExecutionContext(array $context): array
  * @param array{type: 'classMethod'|'staticMethod'|'function'|'template'|'enumMethod', executionFile: string, class: string|null, callable: string|null, publicArgs: array<string, mixed>, __planner: array{type: 'classMethod'|'staticMethod'|'function'|'template'|'enumMethod', effectiveConstructorArgDefs: array<string, mixed>|null, effectiveCallableArgDefs: array<string, mixed>|null, ...}, ...} $context
  * @param array{template?: array<string, mixed>, constructor?: array<string, mixed>, method?: array<string, mixed>} $mappedArgs
  * @return array{type: 'classMethod'|'staticMethod'|'function'|'template'|'enumMethod', executionFile: string, class: string|null, callable: string|null, publicArgs: array<string, mixed>, __planner: array{type: 'classMethod'|'staticMethod'|'function'|'template'|'enumMethod', effectiveConstructorArgDefs: array<string, mixed>|null, effectiveCallableArgDefs: array<string, mixed>|null, ...}, ...}
- * @throws ReflectionException when reflection cannot expose a parameter default
  */
 function hydrateTemplateExecutionContext(array $context, array $mappedArgs): array
 {
     $publicArgs = \StorybookPhp\Runtime\Execution\executionContextArgs($context, 'publicArgs');
     $computed = \StorybookPhp\Runtime\Execution\resolveTemplateContextArgs($context, $mappedArgs['template'] ?? $publicArgs);
     $resolved = \StorybookPhp\Runtime\Execution\applyResolvedExecutionArgs($context, 'templateArgs', '__computedTemplateArgs', $computed);
-    unset($resolved['constructorArgs'], $resolved['methodArgs'], $resolved['enumCaseValue']);
+    unset($resolved['constructorArgs'], $resolved['stateArgs'], $resolved['methodArgs'], $resolved['enumCaseValue']);
 
     return \StorybookPhp\Runtime\Execution\requireHydratedExecutionContext($resolved);
 }
@@ -128,7 +127,6 @@ function hydrateTemplateExecutionContext(array $context, array $mappedArgs): arr
  * @param array{type: 'classMethod'|'staticMethod'|'function'|'template'|'enumMethod', effectiveConstructorArgDefs: array<string, mixed>|null, effectiveCallableArgDefs: array<string, mixed>|null, ...} $planner
  * @param array<string, mixed>|null $typeMap
  * @return array{type: 'classMethod'|'staticMethod'|'function'|'template'|'enumMethod', executionFile: string, class: string|null, callable: string|null, publicArgs: array<string, mixed>, __planner: array{type: 'classMethod'|'staticMethod'|'function'|'template'|'enumMethod', effectiveConstructorArgDefs: array<string, mixed>|null, effectiveCallableArgDefs: array<string, mixed>|null, ...}, ...}
- * @throws ReflectionException when reflection cannot expose a parameter default
  */
 function hydrateClassExecutionContext(array $context, array $mappedArgs, array $planner, ?array $typeMap): array
 {
@@ -144,11 +142,44 @@ function hydrateClassExecutionContext(array $context, array $mappedArgs, array $
         $typeMap,
         $planner['effectiveCallableArgDefs'],
     );
+    $stateArgs = \StorybookPhp\Runtime\Execution\resolveInstanceStateArgs(
+        \StorybookPhp\Runtime\Execution\plannerClassReflection($planner),
+        $mappedArgs['constructor'] ?? [],
+        array_merge(array_keys($constructorArgs), array_keys($methodArgs)),
+        $typeMap,
+    );
     $constructed = \StorybookPhp\Runtime\Execution\applyResolvedExecutionArgs($context, 'constructorArgs', '__computedConstructorArgs', $constructorArgs);
-    $resolved = \StorybookPhp\Runtime\Execution\applyResolvedExecutionArgs($constructed, 'methodArgs', '__computedMethodArgs', $methodArgs);
+    $withState = \StorybookPhp\Runtime\Execution\applyResolvedExecutionArgs($constructed, 'stateArgs', '__computedStateArgs', $stateArgs);
+    $resolved = \StorybookPhp\Runtime\Execution\applyResolvedExecutionArgs($withState, 'methodArgs', '__computedMethodArgs', $methodArgs);
     unset($resolved['templateArgs'], $resolved['enumCaseValue']);
 
     return \StorybookPhp\Runtime\Execution\requireHydratedExecutionContext($resolved);
+}
+
+/**
+ * Selects the story arguments that rewrite the component instance's state
+ * after construction: keys consumed by neither the constructor nor the
+ * invoked method, which name a setter or property of the class, plus values
+ * bound to `Class::$name` slots in `typeMap`.
+ *
+ * @param ReflectionClass<object> $class
+ * @param array<string, mixed> $input
+ * @param list<string> $consumedNames
+ * @param array<string, mixed>|null $typeMap
+ * @return array<string, mixed>
+ */
+function resolveInstanceStateArgs(ReflectionClass $class, array $input, array $consumedNames, ?array $typeMap): array
+{
+    $context = HydrationContext::fromTypeMap($typeMap);
+    $stateArgs = [];
+    foreach (array_merge($input, \StorybookPhp\Runtime\Casting\boundStateValues($class, $context)) as $key => $value) {
+        if (in_array($key, $consumedNames, true) || \StorybookPhp\Runtime\Casting\findStateSlot($class, $key) === null) {
+            continue;
+        }
+        $stateArgs[$key] = $value;
+    }
+
+    return $stateArgs;
 }
 
 /**
@@ -157,7 +188,6 @@ function hydrateClassExecutionContext(array $context, array $mappedArgs, array $
  * @param array{type: 'classMethod'|'staticMethod'|'function'|'template'|'enumMethod', effectiveConstructorArgDefs: array<string, mixed>|null, effectiveCallableArgDefs: array<string, mixed>|null, ...} $planner
  * @param array<string, mixed>|null $typeMap
  * @return array{type: 'classMethod'|'staticMethod'|'function'|'template'|'enumMethod', executionFile: string, class: string|null, callable: string|null, publicArgs: array<string, mixed>, __planner: array{type: 'classMethod'|'staticMethod'|'function'|'template'|'enumMethod', effectiveConstructorArgDefs: array<string, mixed>|null, effectiveCallableArgDefs: array<string, mixed>|null, ...}, ...}
- * @throws ReflectionException when reflection cannot expose a parameter default
  */
 function hydrateCallableExecutionContext(array $context, array $mappedArgs, array $planner, ?array $typeMap): array
 {
@@ -168,7 +198,7 @@ function hydrateCallableExecutionContext(array $context, array $mappedArgs, arra
         $planner['effectiveCallableArgDefs'],
     );
     $resolved = \StorybookPhp\Runtime\Execution\applyResolvedExecutionArgs($context, 'methodArgs', '__computedMethodArgs', $methodArgs);
-    unset($resolved['templateArgs'], $resolved['constructorArgs'], $resolved['enumCaseValue']);
+    unset($resolved['templateArgs'], $resolved['constructorArgs'], $resolved['stateArgs'], $resolved['enumCaseValue']);
 
     return \StorybookPhp\Runtime\Execution\requireHydratedExecutionContext($resolved);
 }
@@ -179,7 +209,6 @@ function hydrateCallableExecutionContext(array $context, array $mappedArgs, arra
  * @param array{type: 'classMethod'|'staticMethod'|'function'|'template'|'enumMethod', effectiveConstructorArgDefs: array<string, mixed>|null, effectiveCallableArgDefs: array<string, mixed>|null, ...} $planner
  * @param array<string, mixed>|null $typeMap
  * @return array{type: 'classMethod'|'staticMethod'|'function'|'template'|'enumMethod', executionFile: string, class: string|null, callable: string|null, publicArgs: array<string, mixed>, __planner: array{type: 'classMethod'|'staticMethod'|'function'|'template'|'enumMethod', effectiveConstructorArgDefs: array<string, mixed>|null, effectiveCallableArgDefs: array<string, mixed>|null, ...}, ...}
- * @throws ReflectionException when reflection cannot expose a parameter default
  */
 function hydrateEnumExecutionContext(array $context, array $mappedArgs, array $planner, ?array $typeMap): array
 {
@@ -195,7 +224,7 @@ function hydrateEnumExecutionContext(array $context, array $mappedArgs, array $p
         $planner['effectiveCallableArgDefs'],
     );
     $resolved = \StorybookPhp\Runtime\Execution\applyResolvedExecutionArgs($selected, 'methodArgs', '__computedMethodArgs', $methodArgs);
-    unset($resolved['templateArgs'], $resolved['constructorArgs']);
+    unset($resolved['templateArgs'], $resolved['constructorArgs'], $resolved['stateArgs']);
 
     return \StorybookPhp\Runtime\Execution\requireHydratedExecutionContext($resolved);
 }

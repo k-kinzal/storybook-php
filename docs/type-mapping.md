@@ -197,22 +197,52 @@ Behavior:
 
 ## `typeMap.bindings`
 
-`bindings` are runtime-only mappings used when the PHP runner instantiates typed constructor or method arguments.
+`bindings` are runtime-only, DI-style mappings used while the PHP runner hydrates story args into PHP values. A binding key says _where_ the mapping applies, and the value says _what_ to put there.
 
-Typical use cases:
-
-- interface -> concrete implementation
-- abstract class -> concrete implementation
-- nested typed collections
-- variadic object arguments
+| Key                          | Applies to                                                                      | Value                                  |
+| ---------------------------- | ------------------------------------------------------------------------------- | -------------------------------------- |
+| `App\\Contracts\\Renderable` | every slot that expects this interface, abstract class, or class                | concrete class name                    |
+| `App\\Card::$body`           | the `body` state of `App\\Card`: constructor argument, `setBody()`, or property | class name, `{ type }`, or `{ value }` |
+| `App\\Card::render($limit)`  | the `$limit` parameter of `App\\Card::render()`                                 | class name, `{ type }`, or `{ value }` |
+| `App\\render_card($limit)`   | the `$limit` parameter of the function `App\\render_card()`                     | class name, `{ type }`, or `{ value }` |
 
 ```ts
 bindings: {
+  // interface -> concrete class, wherever Renderable is expected
   "App\\Contracts\\Renderable": "App\\View\\HtmlBlock",
+  // this property is declared `mixed`; hydrate it as a Badge
+  "App\\Card::$badge": "App\\View\\Badge",
+  // force a fixed value into a slot, regardless of the story args
+  "App\\Card::$meta": { value: { theme: "dark" } },
+  // override both the expected type and the value of a method parameter
+  "App\\Card::render($limit)": { type: "int", value: "5" },
 }
 ```
 
-`bindings` are runtime-only. They help the PHP runner hydrate typed objects, but they do not change generated TypeScript shapes on their own.
+- A type binding is followed wherever the type appears: a constructor argument, a `@param list<Renderable>` element, an `array{body: Renderable}` key, or a `@var` property.
+- A slot `type` replaces the documented type of that slot before the native PHP declaration is applied, so it can only narrow what PHP accepts.
+- A slot `value` replaces the incoming story value for that slot and is hydrated like any other value. Slot values on properties and setters are applied even when the story args omit the key.
+- Bindings chain: `A -> B` and `B -> C` resolve `A` to `C`. Cycles are reported as errors.
+
+`bindings` do not change generated TypeScript shapes on their own.
+
+## How Story Args Become PHP Objects
+
+The runner treats a JSON object as the _state_ of a PHP object rather than only as constructor input:
+
+1. The expected type of every slot is resolved from the native PHP declaration, refined with the docblock (`@param`, `@var`, `@template`), and finally overridden by `typeMap` (`args` definitions and `bindings`). Docblock types are resolved through the file's `use` imports, so `array{foo: Foo}` finds the imported `Foo`.
+2. Keys that match constructor parameters (by name, or by case- and underscore-insensitive comparison such as `user_name` for `$userName`) are passed to the constructor.
+3. Remaining keys go through a public `setX()` method when one exists, otherwise they are written to the property of that name, including private and protected properties. Classes with `__set()` receive unknown keys through it.
+4. A list is passed positionally, or wrapped as the single array argument of collection-like constructors. A scalar feeds a constructor with one required argument.
+
+The same rules apply to the component instance itself: story args that match neither a constructor nor a method parameter, but do match a setter or property of the component class, rewrite its state after construction.
+
+Failures name the exact slot, for example:
+
+```
+Cannot hydrate App\Card::__construct($items)[0] > App\Item::__construct($label): expected string, received list of 1 item.
+Cannot hydrate App\Card::__construct($body): App\Contracts\Renderable is an interface, so no object can be built from the story value. Add a typeMap binding such as {"App\\Contracts\\Renderable":"App\\ConcreteClass"} to choose the class to instantiate.
+```
 
 ## Per-Story Overrides with `parameters.typeMap`
 
@@ -239,7 +269,7 @@ export const Custom = {
 
 Story-level `args` overrides are runtime-only. They affect runtime casting and adapter input mapping for that story, but they do not regenerate module types or Storybook controls.
 
-Story-level `args` overrides are merged on top of the resolved public arg surface for that component. Story-level `bindings` are merged on top of global `typeMap.bindings`, and the story-level binding wins on conflicts.
+Story-level `args` overrides are merged on top of the resolved public arg surface for that component. Story-level `bindings` are merged on top of global `typeMap.bindings`, and the story-level binding wins on conflicts. Slot bindings such as `"App\\Card::$meta": { value: ... }` work per story as well.
 
 ## `typegen` and `typeMap`
 
@@ -258,7 +288,7 @@ Use `typeMap` when:
 - your component comes from Blade, Twig, Latte, or another non-PHP file
 - inheritance or traits live outside the imported file
 - Storybook controls need options, defaults, element types, or nullable hints
-- runtime object construction needs interface-to-concrete bindings
+- runtime object construction needs interface-to-concrete bindings, or a specific slot needs a fixed type or value
 - one PHP file exposes multiple callable stories with different public args
 
 For general runtime setup, see [Framework Options](framework-options.md).
