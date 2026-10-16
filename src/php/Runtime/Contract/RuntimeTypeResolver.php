@@ -58,6 +58,9 @@ function requireExistingClass(string $name): string
 }
 
 /**
+ * Resolves a type name through `typeMap.bindings`, returning the input when
+ * no type binding applies.
+ *
  * @param array<string, mixed>|null $typeMap
  *
  * @example Resolving a configured runtime binding
@@ -67,17 +70,10 @@ function requireExistingClass(string $name): string
  */
 function resolveTypeMapBinding(string $typeName, ?array $typeMap): string
 {
-    if ($typeMap === null) {
-        return $typeName;
-    }
-
-    $bindings = $typeMap['bindings'] ?? null;
-    if (!is_array($bindings)) {
-        return $typeName;
-    }
-
-    $binding = $bindings[$typeName] ?? null;
-    return is_string($binding) ? $binding : $typeName;
+    return \StorybookPhp\Runtime\Contract\boundTypeName(
+        $typeName,
+        \StorybookPhp\Runtime\Contract\normalizeTypeMapBindings($typeMap),
+    );
 }
 
 /**
@@ -207,38 +203,18 @@ function findEnumCase(string $enumClass, mixed $value): ?object
 }
 
 /**
- * Resolve a short class name to a FQN using the declaring namespace.
+ * Resolves a short class name written in a parameter's docblock to the fully
+ * qualified name it denotes, or null when no such type exists.
+ *
+ * @example Resolving `self` for a method parameter
+ *     $parameter = new \ReflectionParameter([\StorybookPhp\Runtime\Contract\TypeScope::class, '__construct'], 'namespace');
+ *     \StorybookPhp\Runtime\Contract\resolveClassName('self', $parameter) // => 'StorybookPhp\Runtime\Contract\TypeScope'
+ *     \StorybookPhp\Runtime\Contract\resolveClassName('Missing', $parameter) // => null
  */
 function resolveClassName(string $className, ReflectionParameter $param): ?string
 {
-    $candidate = ltrim($className, '\\');
+    $scope = \StorybookPhp\Runtime\Contract\typeScopeForFunction($param->getDeclaringFunction());
+    $resolved = \StorybookPhp\Runtime\Contract\resolveTypeName($className, $scope);
 
-    if (\StorybookPhp\Runtime\Contract\typeExists($candidate)) {
-        return $candidate;
-    }
-
-    $declaringFunc = $param->getDeclaringFunction();
-    $namespace = null;
-    if ($declaringFunc instanceof ReflectionMethod) {
-        $declaringClass = $declaringFunc->getDeclaringClass();
-        if ($candidate === 'self' || $candidate === 'static') {
-            return $declaringClass->getName();
-        }
-        if ($candidate === 'parent') {
-            $parentClass = $declaringClass->getParentClass();
-            return $parentClass instanceof ReflectionClass ? $parentClass->getName() : null;
-        }
-        $namespace = $declaringClass->getNamespaceName();
-    } elseif (method_exists($declaringFunc, 'getNamespaceName')) {
-        $namespace = $declaringFunc->getNamespaceName();
-    }
-
-    if ($namespace !== null && $namespace !== '') {
-        $fqn = $namespace . '\\' . $candidate;
-        if (\StorybookPhp\Runtime\Contract\typeExists($fqn)) {
-            return $fqn;
-        }
-    }
-
-    return null;
+    return \StorybookPhp\Runtime\Contract\typeExists($resolved) ? $resolved : null;
 }

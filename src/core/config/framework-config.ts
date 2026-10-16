@@ -5,6 +5,7 @@ import type {
   ClassMapTarget,
   FileMapTarget,
   FrameworkOptions,
+  TypeBindings,
 } from "../../types.js";
 
 export const PHP_IMPORT_RE: RegExp = /\.php(?:@(\w+))?$/;
@@ -40,7 +41,7 @@ export interface ResolvedFrameworkOptions {
   defaultMethod: string | null;
   typeMap?: {
     files?: ResolvedFileMap;
-    bindings?: Record<string, string>;
+    bindings?: TypeBindings;
     classes?: Record<string, ClassMapTarget>;
   };
   adapterMap: AdapterMap | null;

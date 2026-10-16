@@ -76,6 +76,8 @@ For plain `.php` imports, `sourceFile` and `executionFile` are the same file. Fo
 
 Parameters are matched by name, not just position, so Storybook controls map naturally to PHP parameter names.
 
+Values are hydrated against the contract of each slot: the native PHP type, refined by the docblock (`@param`, `@var`, `array{...}` shapes, `list<T>` generics, `@template` arguments) and `typeMap.bindings`. Nested JSON objects become PHP objects by feeding constructor arguments by name and writing the remaining keys through setters or properties. Story args that match a setter or property of the component class, but no parameter, rewrite the instance state after construction. Hydration errors name the slot that failed, such as `App\Card::__construct($items)[0] > App\Item::$label`. See [Type Mapping](type-mapping.md) for the full rules.
+
 ## Output Resolution
 
 The runner converts PHP output into final HTML using these rules:
