@@ -619,7 +619,7 @@ describe.skipIf(!hasPhp)("PhpExecutor", () => {
         args: {
           title: "Template Cast",
           featured: 1,
-          tone: "success",
+          tone: hasPhp81 ? "success" : { value: "success" },
           content: { content: "Primary body", tag: "article" },
           items: {
             items: [

@@ -8020,7 +8020,7 @@ describe.skipIf(!hasPhp)("Integration: All Plan Patterns", () => {
       expect(result.html).toContain("+1 555-0123");
     });
 
-    it("renders NestedCompose with default country", async () => {
+    it("renders NestedCompose with explicit country properties", async () => {
       const result = await executor.execute({
         type: "classMethod",
         file: advanced("NestedCompose.php"),
@@ -8084,7 +8084,7 @@ describe.skipIf(!hasPhp)("Integration: All Plan Patterns", () => {
       expect(result.html).toContain("+1 555-0123");
     });
 
-    it("renders ContactCard with default country via autoload", async () => {
+    it("renders ContactCard with a mapped country value via autoload", async () => {
       const result = await autoloadExecutor.execute({
         type: "classMethod",
         file: advanced("Autoload/ContactCard.php"),
@@ -8093,6 +8093,11 @@ describe.skipIf(!hasPhp)("Integration: All Plan Patterns", () => {
         args: {
           name: "John Doe",
           address: { street: "10 Downing St", city: "London" },
+        },
+        types: {
+          "App\\Components\\Autoload\\Address::$country": {
+            value: { code: "US", name: "United States" },
+          },
         },
       });
       expect(result.error).toBeUndefined();
