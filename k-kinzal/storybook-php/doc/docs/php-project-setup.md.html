@@ -51,7 +51,7 @@
 <p>Only these are truly required:</p>
 <ul><li><code>.storybook/main.ts</code></li><li>one or more <code>*.stories.ts</code> files</li><li>the PHP files you want to render</li></ul>
 <p><code>bootstrap.php</code> is optional, but common.</p>
-<p><code>storybook-php.config.mjs</code> is only needed when <code>typegen</code> must know about <code>defaultMethod</code> or <code>typeMap</code>.</p>
+<p><code>storybook-php.config.mjs</code> is only needed when <code>typegen</code> must know about <code>defaultMethod</code> or <code>components</code>.</p>
 <h3>Minimal Storybook Config</h3>
 <pre class="code-block"><code>import type { StorybookConfig } from &quot;storybook&quot;;
 
@@ -90,7 +90,7 @@ composer storybook:typegen</code></pre>
 <p><code>typegen</code> only needs <code>storybook-php</code> itself:</p>
 <pre class="code-block"><code>npx --yes storybook-php typegen</code></pre>
 <p>It writes declaration files next to each matching source file, including exact-import outputs such as <code>Greeting.php@render.d.ts</code>.</p>
-<p>If your Storybook setup uses <code>defaultMethod</code> or <code>typeMap</code>, pass those settings explicitly because <code>typegen</code> does not evaluate <code>.storybook/main.ts</code>:</p>
+<p>If your Storybook setup uses <code>defaultMethod</code> or <code>components</code>, pass those settings explicitly because <code>typegen</code> does not evaluate <code>.storybook/main.ts</code>:</p>
 <pre class="code-block"><code>npx --yes storybook-php typegen --options-file storybook-php.config.mjs</code></pre>
 <p>Example <code>storybook-php.config.mjs</code>:</p>
 <pre class="code-block"><code>import { fileURLToPath } from &quot;node:url&quot;;
@@ -98,7 +98,7 @@ composer storybook:typegen</code></pre>
 export default {
   _configDir: fileURLToPath(new URL(&quot;./.storybook/&quot;, import.meta.url)),
   defaultMethod: &quot;render&quot;,
-  typeMap: {
+  components: {
     files: {
       &quot;../src/views/components/card.blade.php&quot;: {
         phpFile: &quot;../src/BladeCard.php&quot;,
@@ -107,7 +107,7 @@ export default {
     },
   },
 };</code></pre>
-<p><code>typegen</code> reads <code>defaultMethod</code>, <code>typeMap</code>, and <code>_configDir</code> from that file. Storybook itself still reads <code>.storybook/main.ts</code>.</p>
+<p><code>typegen</code> reads <code>defaultMethod</code>, <code>components</code>, and <code>_configDir</code> from that file. Storybook itself still reads <code>.storybook/main.ts</code>.</p>
 <h3>Running Storybook Tests</h3>
 <p>For the bundled test config, <code>test</code> needs these extra test packages:</p>
 <pre class="code-block"><code>npx --yes \

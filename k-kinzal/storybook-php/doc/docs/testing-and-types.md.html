@@ -66,7 +66,7 @@
 <p>Output notes:</p>
 <ul><li>scalar PHP types map to regular TypeScript primitives</li><li><code>array</code> becomes <code>unknown[]</code></li><li><code>object</code> and <code>mixed</code> become <code>unknown</code></li><li>class-like types become <code>Record&lt;string, unknown&gt;</code></li><li>optional PHP parameters become optional TS properties</li></ul>
 <h3><code>typegen --options-file</code></h3>
-<p><code>typegen</code> does not read <code>.storybook/main.ts</code>. If declaration generation depends on <code>defaultMethod</code> or <code>typeMap</code>, pass them through a separate JSON or JS module:</p>
+<p><code>typegen</code> does not read <code>.storybook/main.ts</code>. If declaration generation depends on <code>defaultMethod</code> or <code>components</code>, pass them through a separate JSON or JS module:</p>
 <pre class="code-block"><code>npx storybook-php typegen --options-file storybook-php.config.mjs</code></pre>
 <p>Example options file:</p>
 <pre class="code-block"><code>import { fileURLToPath } from &quot;node:url&quot;;
@@ -74,7 +74,7 @@
 export default {
   _configDir: fileURLToPath(new URL(&quot;./.storybook/&quot;, import.meta.url)),
   defaultMethod: &quot;render&quot;,
-  typeMap: {
+  components: {
     files: {
       &quot;../src/views/components/card.blade.php&quot;: {
         phpFile: &quot;../src/BladeCard.php&quot;,
@@ -83,7 +83,7 @@ export default {
     },
   },
 };</code></pre>
-<p><code>typegen</code> reads <code>defaultMethod</code>, <code>typeMap</code>, and <code>_configDir</code> from this file. <code>_configDir</code> is useful when relative <code>typeMap.files</code> entries should resolve the same way they do from your Storybook config directory.</p>
+<p><code>typegen</code> reads <code>defaultMethod</code>, <code>components</code>, and <code>_configDir</code> from this file. <code>_configDir</code> is useful when relative <code>components.files</code> entries should resolve the same way they do from your Storybook config directory.</p>
 <h3>Storybook Tests</h3>
 <p>Run Storybook tests with:</p>
 <pre class="code-block"><code>npx storybook-php test</code></pre>
