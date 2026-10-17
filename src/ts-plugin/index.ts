@@ -3,7 +3,10 @@ import { readFileSync } from "node:fs";
 import { createPhpResolver } from "./resolver.js";
 import type { FrameworkOptions } from "../types.js";
 
-interface PluginConfig extends Pick<FrameworkOptions, "defaultMethod" | "typeMap" | "_configDir"> {
+interface PluginConfig extends Pick<
+  FrameworkOptions,
+  "defaultMethod" | "components" | "types" | "_configDir"
+> {
   configDir?: string;
 }
 

@@ -1081,11 +1081,11 @@ describe("Vite Plugin", () => {
   // typeMap tests
   // -----------------------------------------------------------------------
   describe("typeMap", () => {
-    describe("typeMap.files with inline args", () => {
-      it("resolves a non-PHP file mapped via typeMap.files", () => {
+    describe("components.files with inline args", () => {
+      it("resolves a non-PHP file mapped via components.files", () => {
         const plugin = storybookPhpPlugin({
           _configDir: FIXTURES,
-          typeMap: {
+          components: {
             files: {
               "TypeMapInlineTarget.blade.php": {
                 args: {
@@ -1108,7 +1108,7 @@ describe("Vite Plugin", () => {
       it("generates template module with inline args", () => {
         const plugin = storybookPhpPlugin({
           _configDir: FIXTURES,
-          typeMap: {
+          components: {
             files: {
               "TypeMapInlineTarget.blade.php": {
                 args: {
@@ -1134,11 +1134,11 @@ describe("Vite Plugin", () => {
       });
     });
 
-    describe("typeMap.files with phpFile redirect", () => {
+    describe("components.files with phpFile redirect", () => {
       it("generates module from referenced PHP file", () => {
         const plugin = storybookPhpPlugin({
           _configDir: FIXTURES,
-          typeMap: {
+          components: {
             files: {
               "TypeMapInlineTarget.blade.php": {
                 phpFile: "SimpleComponent.php",
@@ -1157,11 +1157,11 @@ describe("Vite Plugin", () => {
       });
     });
 
-    describe("typeMap.files with includes", () => {
+    describe("components.files with includes", () => {
       it("resolves cross-file parent class constructor params", () => {
         const plugin = storybookPhpPlugin({
           _configDir: FIXTURES,
-          typeMap: {
+          components: {
             files: {
               "TypeMapChildClass.php": {
                 includes: ["TypeMapBaseClass.php"],
@@ -1196,11 +1196,11 @@ describe("Vite Plugin", () => {
       });
     });
 
-    describe("typeMap.files args overrides", () => {
+    describe("components.files args overrides", () => {
       it("applies options override to constructor param", () => {
         const plugin = storybookPhpPlugin({
           _configDir: FIXTURES,
-          typeMap: {
+          components: {
             files: {
               "SimpleComponent.php": {
                 args: {
@@ -1223,7 +1223,7 @@ describe("Vite Plugin", () => {
       it("applies type override to constructor param", () => {
         const plugin = storybookPhpPlugin({
           _configDir: FIXTURES,
-          typeMap: {
+          components: {
             files: {
               "SimpleComponent.php": {
                 args: {
@@ -1247,7 +1247,7 @@ describe("Vite Plugin", () => {
       it("escapes backslashes in FQCN types for inline args", () => {
         const plugin = storybookPhpPlugin({
           _configDir: FIXTURES,
-          typeMap: {
+          components: {
             files: {
               "TypeMapInlineTarget.blade.php": {
                 args: {
@@ -1268,13 +1268,13 @@ describe("Vite Plugin", () => {
     });
 
     // -----------------------------------------------------------------
-    // typeMap.files glob pattern matching
+    // components.files glob pattern matching
     // -----------------------------------------------------------------
-    describe("typeMap.files glob patterns", () => {
+    describe("components.files glob patterns", () => {
       it("resolves a file matching a glob pattern (*.blade.php)", () => {
         const plugin = storybookPhpPlugin({
           _configDir: FIXTURES,
-          typeMap: {
+          components: {
             files: {
               "*.blade.php": {
                 adapter: "./blade-adapter.php",
@@ -1294,7 +1294,7 @@ describe("Vite Plugin", () => {
       it("generates template module with empty args for pattern-only match", () => {
         const plugin = storybookPhpPlugin({
           _configDir: FIXTURES,
-          typeMap: {
+          components: {
             files: {
               "*.blade.php": {
                 adapter: "./blade-adapter.php",
@@ -1314,7 +1314,7 @@ describe("Vite Plugin", () => {
       it("merges pattern adapter with exact-match args", () => {
         const plugin = storybookPhpPlugin({
           _configDir: FIXTURES,
-          typeMap: {
+          components: {
             files: {
               "*.blade.php": {
                 adapter: "./blade-adapter.php",
@@ -1348,7 +1348,7 @@ describe("Vite Plugin", () => {
       it("does not match a non-matching pattern", () => {
         const plugin = storybookPhpPlugin({
           _configDir: FIXTURES,
-          typeMap: {
+          components: {
             files: {
               "*.twig": {
                 adapter: "./twig-adapter.php",
@@ -1368,7 +1368,7 @@ describe("Vite Plugin", () => {
       it("exact match overrides pattern match fields", () => {
         const plugin = storybookPhpPlugin({
           _configDir: FIXTURES,
-          typeMap: {
+          components: {
             files: {
               "*.blade.php": {
                 adapter: "./blade-adapter.php",
@@ -1480,7 +1480,7 @@ describe("vite-plugin runtime hooks", () => {
       _configDir: FIXTURES,
       bootstrap: "Bootstrap.php",
       adapter: "fixture-adapter.php",
-      typeMap: {
+      components: {
         files: {
           "SimpleComponent.php": { args: { name: "string" } },
           "TemplateFile.php": { adapter: "fixture-adapter.php" },
@@ -1504,7 +1504,7 @@ describe("vite-plugin runtime hooks", () => {
         adapter: "fixture-adapter.php",
         phpBinary: "php",
         timeout: 5000,
-        typeMap: {
+        components: {
           files: {
             "SimpleComponent.php": { args: { name: "string" } },
             "TemplateFile.php": { adapter: "fixture-adapter.php" },

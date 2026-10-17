@@ -27,7 +27,7 @@ export interface PhpResolver {
 
 export interface PhpResolverConfig extends Pick<
   FrameworkOptions,
-  "defaultMethod" | "typeMap" | "_configDir"
+  "defaultMethod" | "components" | "types" | "_configDir"
 > {
   configDir?: string;
 }

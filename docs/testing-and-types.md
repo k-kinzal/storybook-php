@@ -72,7 +72,7 @@ Output notes:
 
 ## `typegen --options-file`
 
-`typegen` does not read `.storybook/main.ts`. If declaration generation depends on `defaultMethod` or `typeMap`, pass them through a separate JSON or JS module:
+`typegen` does not read `.storybook/main.ts`. If declaration generation depends on `defaultMethod` or `components`, pass them through a separate JSON or JS module:
 
 ```bash
 npx storybook-php typegen --options-file storybook-php.config.mjs
@@ -86,7 +86,7 @@ import { fileURLToPath } from "node:url";
 export default {
   _configDir: fileURLToPath(new URL("./.storybook/", import.meta.url)),
   defaultMethod: "render",
-  typeMap: {
+  components: {
     files: {
       "../src/views/components/card.blade.php": {
         phpFile: "../src/BladeCard.php",
@@ -97,7 +97,7 @@ export default {
 };
 ```
 
-`typegen` reads `defaultMethod`, `typeMap`, and `_configDir` from this file. `_configDir` is useful when relative `typeMap.files` entries should resolve the same way they do from your Storybook config directory.
+`typegen` reads `defaultMethod`, `components`, and `_configDir` from this file. `_configDir` is useful when relative `components.files` entries should resolve the same way they do from your Storybook config directory.
 
 ## Storybook Tests
 

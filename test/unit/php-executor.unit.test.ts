@@ -174,7 +174,7 @@ describe("php-executor", () => {
     }
   });
 
-  it("layers story class contracts over global ones per constructor parameter", async () => {
+  it("layers story types over global types and keeps component contracts separate", async () => {
     const written: string[] = [];
 
     vi.doMock("node:child_process", () => ({
@@ -208,35 +208,20 @@ describe("php-executor", () => {
       args: {},
     };
     const executor = new PhpExecutor({
-      typeMap: {
-        classes: {
-          "App\\Menu": { args: { sections: "App\\MenuSection[]" } },
-          "App\\MenuSection": { args: { items: "array", title: "string" } },
-        },
-      },
+      components: { classes: { "App\\Menu": { args: { sections: "App\\MenuSection[]" } } } },
+      types: { "App\\Item::$label": "string", "App\\Item::$meta": { value: "global" } },
     });
-
     await executor.execute({
       ...request,
-      typeMap: {
-        bindings: { "App\\Contracts\\Item": "App\\MenuItem" },
-        classes: {
-          "App\\MenuSection": { args: { items: { elementType: "App\\MenuItem" } } },
-          "App\\MenuItem": {},
-        },
-      },
+      types: { "App\\Item::$meta": { value: "story" } },
     });
     await new PhpExecutor({}).execute(request);
-
-    expect(JSON.parse(written[0]!).typeMap).toEqual({
-      bindings: { "App\\Contracts\\Item": "App\\MenuItem" },
-      classes: {
-        "App\\Menu": { args: { sections: "App\\MenuSection[]" } },
-        "App\\MenuSection": {
-          args: { items: { elementType: "App\\MenuItem" }, title: "string" },
-        },
-        "App\\MenuItem": { args: {} },
-      },
+    expect(JSON.parse(written[0]!).components).toEqual({
+      classes: { "App\\Menu": { args: { sections: "App\\MenuSection[]" } } },
+    });
+    expect(JSON.parse(written[0]!).types).toEqual({
+      "App\\Item::$label": "string",
+      "App\\Item::$meta": { value: "story" },
     });
     expect(JSON.parse(written[1]!)).not.toHaveProperty("typeMap");
   });

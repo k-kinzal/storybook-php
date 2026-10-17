@@ -332,3 +332,39 @@ function functionOf(string $name): ReflectionFunction
 {
     return new ReflectionFunction($name);
 }
+
+
+class PropertyParent
+{
+    private int $inherited;
+
+    public function inherited(): int
+    {
+        return $this->inherited;
+    }
+}
+
+final class PropertyOnly extends PropertyParent
+{
+    public static string $staticValue = 'unchanged';
+
+    /** @var AliasItem */
+    public $item;
+
+    public string $userName;
+
+    public function __construct()
+    {
+        throw new LogicException('Constructor must not run');
+    }
+
+    public function setUserName(string $name): void
+    {
+        throw new LogicException('Setter must not run');
+    }
+
+    public function __set(string $name, mixed $value): void
+    {
+        throw new LogicException('Magic setter must not run');
+    }
+}

@@ -9,7 +9,7 @@ import {
   type DeclarationOutput,
 } from "./declaration-files.js";
 import { generateDeclarationModule } from "../component/declaration-emitter.js";
-import type { FrameworkOptions, PhpFileMeta, TypeMapConfig } from "../../types.js";
+import type { FrameworkOptions, PhpFileMeta, ComponentsConfig } from "../../types.js";
 
 /**
  * Legacy helper retained for API compatibility.
@@ -43,12 +43,13 @@ export function generateDts(meta: PhpFileMeta): string {
 
 export function generateDtsForFile(
   filePath: string,
-  typeMap?: TypeMapConfig,
+  components?: ComponentsConfig,
   configDir?: string,
   defaultMethod?: string,
 ): string {
-  const options: Pick<FrameworkOptions, "typeMap" | "_configDir" | "defaultMethod"> = {};
-  if (typeMap !== undefined) options.typeMap = typeMap;
+  const options: Pick<FrameworkOptions, "components" | "types" | "_configDir" | "defaultMethod"> =
+    {};
+  if (components !== undefined) options.components = components;
   if (configDir !== undefined) options._configDir = configDir;
   if (defaultMethod !== undefined) options.defaultMethod = defaultMethod;
 
@@ -60,7 +61,7 @@ export function generateDtsForFile(
 
 export function generateDtsOutputsForFile(
   filePath: string,
-  options: Pick<FrameworkOptions, "typeMap" | "_configDir" | "defaultMethod"> = {},
+  options: Pick<FrameworkOptions, "components" | "types" | "_configDir" | "defaultMethod"> = {},
 ): DeclarationOutput[] {
   const resolvedOptions = resolveFrameworkOptions(options);
   const resolvedSource = resolveComponentSource(filePath, resolvedOptions);

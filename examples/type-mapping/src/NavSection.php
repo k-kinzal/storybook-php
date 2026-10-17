@@ -4,7 +4,7 @@ namespace App\Components;
 
 /**
  * Nested component: `$links` is a plain `array`, so the runtime cannot tell
- * that it holds NavLink instances. typeMap.classes describes it instead.
+ * that it holds NavLink instances. types maps the links property instead.
  */
 class NavSection
 {

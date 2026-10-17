@@ -9,7 +9,7 @@ use RuntimeException;
 /**
  * Coordinates a validated runner request with adapters and invocation.
  *
- * @param array{type: 'classMethod'|'staticMethod'|'function'|'template'|'enumMethod', file: string, sourceFile?: string|null, class?: string|null, callable?: string|null, args: array<string, mixed>, publicArgDefs?: array<string, mixed>|null, constructorArgDefs?: array<string, mixed>|null, callableArgDefs?: array<string, mixed>|null, bootstrap?: string|null, adapters?: list<string>|null, typeMap?: array<string, mixed>|null} $__sb_request
+ * @param array{type: 'classMethod'|'staticMethod'|'function'|'template'|'enumMethod', file: string, sourceFile?: string|null, class?: string|null, callable?: string|null, args: array<string, mixed>, publicArgDefs?: array<string, mixed>|null, constructorArgDefs?: array<string, mixed>|null, callableArgDefs?: array<string, mixed>|null, bootstrap?: string|null, adapters?: list<string>|null, types?: array<string, mixed>|null, components?: array<string, mixed>|null} $__sb_request
  * @return array{html: string}
  * @throws RuntimeException when the request cannot be resolved or executed
  */
@@ -40,7 +40,7 @@ function executeAdapterTerminal(array $context): array
 }
 
 /**
- * @param array{type: 'classMethod'|'staticMethod'|'function'|'template'|'enumMethod', file: string, sourceFile?: string|null, class?: string|null, callable?: string|null, args: array<string, mixed>, publicArgDefs?: array<string, mixed>|null, constructorArgDefs?: array<string, mixed>|null, callableArgDefs?: array<string, mixed>|null, bootstrap?: string|null, adapters?: list<string>|null, typeMap?: array<string, mixed>|null} $request
+ * @param array{type: 'classMethod'|'staticMethod'|'function'|'template'|'enumMethod', file: string, sourceFile?: string|null, class?: string|null, callable?: string|null, args: array<string, mixed>, publicArgDefs?: array<string, mixed>|null, constructorArgDefs?: array<string, mixed>|null, callableArgDefs?: array<string, mixed>|null, bootstrap?: string|null, adapters?: list<string>|null, types?: array<string, mixed>|null, components?: array<string, mixed>|null} $request
  * @return array{type: 'classMethod'|'staticMethod'|'function'|'template'|'enumMethod', executionFile: string, class: string|null, callable: string|null, publicArgs: array<string, mixed>, ...}
  */
 function buildRunnerExecutionContext(array $request, bool $deferOutputResolution): array
@@ -56,6 +56,7 @@ function buildRunnerExecutionContext(array $request, bool $deferOutputResolution
         'constructorArgDefs' => $request['constructorArgDefs'] ?? null,
         'callableArgDefs' => $request['callableArgDefs'] ?? null,
         'deferOutputResolutionToAdapter' => $deferOutputResolution,
-        'typeMap' => $request['typeMap'] ?? null,
+        'types' => $request['types'] ?? null,
+        'components' => $request['components'] ?? null,
     ];
 }

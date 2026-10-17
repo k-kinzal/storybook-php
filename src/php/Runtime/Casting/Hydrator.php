@@ -20,7 +20,7 @@ use Traversable;
  * @throws HydrationException when the value cannot satisfy the contract
  *
  * @example Hydrating a documented array shape
- *     $ctx = \StorybookPhp\Runtime\Casting\HydrationContext::fromTypeMap(null);
+ *     $ctx = \StorybookPhp\Runtime\Casting\HydrationContext::fromTypes(null);
  *     $type = \StorybookPhp\Runtime\Contract\parseTypeExpression('array{count: int, tags: list<string>}');
  *     \StorybookPhp\Runtime\Casting\hydrateValue(['count' => '3', 'tags' => ['a', 5]], $type, $ctx) // => ['count' => 3, 'tags' => ['a', '5']]
  */
@@ -63,7 +63,7 @@ function hydrateNamedType(mixed $value, string $name, HydrationContext $context)
  * @throws HydrationException when the value cannot be converted
  *
  * @example Lossless scalar conversion
- *     $ctx = \StorybookPhp\Runtime\Casting\HydrationContext::fromTypeMap(null);
+ *     $ctx = \StorybookPhp\Runtime\Casting\HydrationContext::fromTypes(null);
  *     \StorybookPhp\Runtime\Casting\castBuiltinValue('int', '12', $ctx) // => 12
  *     \StorybookPhp\Runtime\Casting\castBuiltinValue('bool', 'off', $ctx) // => false
  *     \StorybookPhp\Runtime\Casting\castBuiltinValue('int', 'abc', $ctx) // throws \StorybookPhp\Runtime\Contract\HydrationException: expected int, received string 'abc'

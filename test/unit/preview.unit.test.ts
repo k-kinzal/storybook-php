@@ -91,13 +91,13 @@ describe("renderToCanvas", () => {
     });
   });
 
-  it("includes typeMap in POST body when parameters.typeMap is set", async () => {
+  it("includes php in POST body when parameters.php is set", async () => {
     const canvas = document.createElement("div");
-    const typeMap = {
-      bindings: { "App\\Iface": "App\\Concrete" },
+    const php = {
+      types: { "App\\Iface": "App\\Concrete" },
       args: { name: "string" },
     };
-    const ctx = makeContext(phpComponent, { name: "Alice" }, { typeMap });
+    const ctx = makeContext(phpComponent, { name: "Alice" }, { php });
 
     const mockFetch = vi.fn().mockResolvedValue({
       json: () => Promise.resolve({ html: "<div>ok</div>" }),
@@ -119,10 +119,10 @@ describe("renderToCanvas", () => {
     }
 
     const body = JSON.parse(String(options.body));
-    expect(body.typeMap).toEqual(typeMap);
+    expect(body.php).toEqual(php);
   });
 
-  it("omits typeMap from POST body when parameters.typeMap is absent", async () => {
+  it("omits php from POST body when parameters.php is absent", async () => {
     const canvas = document.createElement("div");
     const ctx = makeContext(phpComponent, { name: "Alice" });
 
@@ -146,7 +146,7 @@ describe("renderToCanvas", () => {
     }
 
     const body = JSON.parse(String(options.body));
-    expect(body.typeMap).toBeUndefined();
+    expect(body.php).toBeUndefined();
   });
 
   it("sets innerHTML to returned HTML on successful render", async () => {

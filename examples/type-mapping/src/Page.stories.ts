@@ -1,14 +1,14 @@
 /**
- * typeMap.bindings demo: Interface → Concrete resolution
+ * types demo: Interface → Concrete resolution
  *
  * Page's constructor takes `Renderable $content` (an interface).
- * Without typeMap, runner.php can't instantiate an interface.
+ * Without type mapping, runner.php can't instantiate an interface.
  *
- * typeMap.bindings in main.ts maps Renderable → HtmlBlock globally.
- * Individual stories can override this via parameters.typeMap to
+ * types in main.ts maps Renderable → HtmlBlock globally.
+ * Individual stories can override this via parameters.php.types to
  * bind to a different concrete class (e.g. PlainTextBlock).
  */
-import type { Meta, StoryObj, StoryTypeMap } from "storybook-php";
+import type { Meta, StoryObj, PhpStoryParameters } from "storybook-php";
 import { Page } from "./Page.php@render";
 
 const meta: Meta<typeof Page> = {
@@ -22,7 +22,7 @@ type Story = StoryObj<typeof Page>;
 export const Default: Story = {
   args: {
     title: "Welcome",
-    content: { content: "Hello from an HtmlBlock, resolved via typeMap.bindings!", tag: "p" },
+    content: { content: "Hello from an HtmlBlock, resolved via types!", tag: "p" },
   },
 };
 
@@ -34,19 +34,19 @@ export const WithDiv: Story = {
 };
 
 /**
- * Per-story typeMap override: bind Renderable to PlainTextBlock instead
+ * Per-story type mapping override: bind Renderable to PlainTextBlock instead
  * of the global HtmlBlock. The content is rendered as preformatted text.
  */
 export const PlainText: Story = {
   args: {
     title: "Plain Text View",
-    content: { content: "This content uses PlainTextBlock via per-story typeMap override." },
+    content: { content: "This content uses PlainTextBlock via per-story type mapping override." },
   },
   parameters: {
-    typeMap: {
-      bindings: {
+    php: {
+      types: {
         "App\\Components\\Renderable": "App\\Components\\PlainTextBlock",
       },
-    } satisfies StoryTypeMap,
+    } satisfies PhpStoryParameters,
   },
 };

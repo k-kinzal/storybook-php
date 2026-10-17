@@ -146,19 +146,19 @@ function normalizeRuntimeTypeName(string $typeName, ReflectionParameter $param):
  * Match arguments from an associative array to the parameter order expected by reflection.
  *
  * @param array<array-key, mixed> $args
- * @param array<string, mixed>|null $typeMap
+ * @param array<string, mixed>|null $types
  * @param array<string, mixed>|null $argDefs
  * @return array{ordered: list<mixed>, named: array<string, mixed>}
  * @throws HydrationException when a value cannot satisfy its parameter
  * @throws RuntimeException when a required argument is missing
  */
-function resolveArgs(?ReflectionFunctionAbstract $ref, array $args, ?array $typeMap = null, ?array $argDefs = null): array
+function resolveArgs(?ReflectionFunctionAbstract $ref, array $args, ?array $types = null, ?array $argDefs = null): array
 {
     if (!$ref instanceof ReflectionFunctionAbstract) {
         return ['ordered' => [], 'named' => []];
     }
 
-    $context = HydrationContext::fromTypeMap($typeMap);
+    $context = HydrationContext::fromTypes($types);
     $docTypes = \StorybookPhp\Runtime\Contract\parseDocBlockParamTypes($ref);
     $scope = \StorybookPhp\Runtime\Contract\typeScopeForFunction($ref);
 
@@ -201,7 +201,7 @@ function resolveParameterArgDef(string $name, ?array $argDefs): ?array
 }
 
 /**
- * Layers explicit constructor arg definitions over `typeMap.classes` entries.
+ * Layers explicit constructor arg definitions over `components.classes` entries.
  *
  * Explicit definitions keep precedence whenever they carry an effective type;
  * otherwise the class-level type contract fills the gap that reflection and
@@ -209,16 +209,16 @@ function resolveParameterArgDef(string $name, ?array $argDefs): ?array
  *
  * @param ReflectionClass<object> $class
  * @param array<string, mixed>|null $argDefs
- * @param array<string, mixed>|null $typeMap
+ * @param array<string, mixed>|null $components
  * @return array<string, mixed>|null
  */
-function resolveConstructorArgDefs(ReflectionClass $class, ?array $argDefs, ?array $typeMap): ?array
+function resolveConstructorArgDefs(ReflectionClass $class, ?array $argDefs, ?array $components): ?array
 {
     $constructor = $class->getConstructor();
     if ($constructor === null) {
         return $argDefs;
     }
-    $classArgDefs = \StorybookPhp\Runtime\Contract\resolveTypeMapClassArgDefs($class, $typeMap);
+    $classArgDefs = \StorybookPhp\Runtime\Contract\resolveComponentClassArgDefs($class, $components);
     if ($classArgDefs === null) {
         return $argDefs;
     }
@@ -258,7 +258,7 @@ function layerClassArgDef(ReflectionParameter $param, array $classArgDef, ?array
 
 /**
  * Reports whether a doc type names a native array without describing its
- * elements, which is the case `typeMap.classes` is allowed to refine.
+ * elements, which is the case `components.classes` is allowed to refine.
  *
  * @example Plain and described arrays
  *     \StorybookPhp\Runtime\Casting\isPlainArrayDocType('?list') // => true
@@ -304,7 +304,7 @@ function resolveVariadicArgValues(
 }
 
 /**
- * Resolves one parameter from the story arguments, a slot binding value, the
+ * Resolves one parameter from the story arguments, the
  * generated default, the PHP default, or null for nullable parameters.
  *
  * @param array<array-key, mixed> $args
@@ -322,10 +322,6 @@ function resolveParameterArgValue(
     ?TypeScope $scope = null,
 ): mixed {
     $name = $param->getName();
-    $binding = \StorybookPhp\Runtime\Contract\slotBinding(\StorybookPhp\Runtime\Casting\parameterSlotKeys($param), $context->bindings);
-    if ($binding !== null && $binding['hasValue']) {
-        return \StorybookPhp\Runtime\Casting\hydrateParameterValue($param, $binding['value'], $docType, $argDef, $context, $scope);
-    }
     if (array_key_exists($name, $args)) {
         return \StorybookPhp\Runtime\Casting\hydrateParameterValue($param, $args[$name], $docType, $argDef, $context, $scope);
     }
@@ -339,46 +335,46 @@ function resolveParameterArgValue(
         return null;
     }
 
-    throw new RuntimeException("Missing required argument: {$name} (" . \StorybookPhp\Runtime\Casting\parameterLabel($param) . ' has no default value; pass it in the story args or bind it in typeMap).');
+    throw new RuntimeException("Missing required argument: {$name} (" . \StorybookPhp\Runtime\Casting\parameterLabel($param) . ' has no default value; pass it in the story args or set a default in components).');
 }
 
 /**
  * Cast a value to match the expected type of a reflection parameter.
  *
- * @param array<string, mixed>|null $typeMap
+ * @param array<string, mixed>|null $types
  * @throws HydrationException when the value cannot satisfy the parameter
  */
-function castArg(ReflectionParameter $param, mixed $value, ?string $docType = null, ?array $typeMap = null): mixed
+function castArg(ReflectionParameter $param, mixed $value, ?string $docType = null, ?array $types = null): mixed
 {
-    return \StorybookPhp\Runtime\Casting\hydrateParameterValue($param, $value, $docType, null, HydrationContext::fromTypeMap($typeMap));
+    return \StorybookPhp\Runtime\Casting\hydrateParameterValue($param, $value, $docType, null, HydrationContext::fromTypes($types));
 }
 
 /**
  * Match arguments from an associative array to the parameter order expected by reflection.
  *
  * @param array<array-key, mixed> $args
- * @param array<string, mixed>|null $typeMap
+ * @param array<string, mixed>|null $types
  * @param array<string, mixed>|null $argDefs
  * @return list<mixed>
  * @throws HydrationException when a value cannot satisfy its parameter
  * @throws RuntimeException when a required argument is missing
  */
-function matchArgs(?ReflectionFunctionAbstract $ref, array $args, ?array $typeMap = null, ?array $argDefs = null): array
+function matchArgs(?ReflectionFunctionAbstract $ref, array $args, ?array $types = null, ?array $argDefs = null): array
 {
-    return \StorybookPhp\Runtime\Casting\resolveArgs($ref, $args, $typeMap, $argDefs)['ordered'];
+    return \StorybookPhp\Runtime\Casting\resolveArgs($ref, $args, $types, $argDefs)['ordered'];
 }
 
 /**
  * Resolve arguments into a named map keyed by parameter name.
  *
  * @param array<array-key, mixed> $args
- * @param array<string, mixed>|null $typeMap
+ * @param array<string, mixed>|null $types
  * @param array<string, mixed>|null $argDefs
  * @return array<string, mixed>
  * @throws HydrationException when a value cannot satisfy its parameter
  * @throws RuntimeException when a required argument is missing
  */
-function resolveNamedArgs(?ReflectionFunctionAbstract $ref, array $args, ?array $typeMap = null, ?array $argDefs = null): array
+function resolveNamedArgs(?ReflectionFunctionAbstract $ref, array $args, ?array $types = null, ?array $argDefs = null): array
 {
-    return \StorybookPhp\Runtime\Casting\resolveArgs($ref, $args, $typeMap, $argDefs)['named'];
+    return \StorybookPhp\Runtime\Casting\resolveArgs($ref, $args, $types, $argDefs)['named'];
 }

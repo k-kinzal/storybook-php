@@ -4,10 +4,8 @@ namespace App\Components;
 
 class NestedMenuItem
 {
-    public function __construct(
-        private string $label,
-        private string $href = '#',
-    ) {}
+    private string $label;
+    private string $href;
 
     public function render(): string
     {
@@ -17,10 +15,8 @@ class NestedMenuItem
 
 class NestedMenuSection
 {
-    public function __construct(
-        private string $title,
-        private array $items,
-    ) {}
+    private string $title;
+    private array $items;
 
     public function render(): string
     {

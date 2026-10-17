@@ -1,9 +1,9 @@
 /**
- * typeMap.files[*].args demo: Enum case values
+ * components.files[*].args demo: Enum case values
  *
  * The parser extracts enum case NAMES (Active, Inactive, ...)
  * but not the backing VALUES (active, inactive, ...).
- * typeMap.files[*].args provides these values so the select control works.
+ * components.files[*].args provides these values so the select control works.
  *
  * Config in main.ts:
  *   "../src/Status.php": { args: { _case: { options: [...] } } }

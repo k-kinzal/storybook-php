@@ -1,4 +1,4 @@
-import type { PhpComponent, PhpRenderInvokeRequest, StoryTypeMap } from "./types.js";
+import type { PhpComponent, PhpRenderInvokeRequest, PhpStoryParameters } from "./types.js";
 import { RENDER_PATH } from "./shared/render-contract.js";
 
 const PHP_PLACEHOLDER = "<!-- storybook-php-content -->";
@@ -9,7 +9,9 @@ interface RenderContext {
   storyContext: {
     component?: PhpComponent;
     args: Record<string, unknown>;
-    parameters?: ({ typeMap?: StoryTypeMap } & Record<string, unknown>) | undefined;
+    parameters?:
+      | ({ php?: PhpStoryParameters; typeMap?: never } & Record<string, unknown>)
+      | undefined;
     name: string;
     title: string;
     id: string;
@@ -42,12 +44,17 @@ export async function renderToCanvas(
   abortControllers.set(canvasElement, abortController);
   const { signal } = abortController;
 
-  const storyTypeMap = parameters?.["typeMap"];
+  if (parameters && "typeMap" in parameters) {
+    throw new Error(
+      "parameters.typeMap is no longer supported. Use parameters.php.component and parameters.php.types.",
+    );
+  }
+  const php = parameters?.php;
 
   const request: PhpRenderInvokeRequest = {
     componentId: component.__id,
     args: args ?? {},
-    ...(storyTypeMap ? { typeMap: storyTypeMap } : {}),
+    ...(php ? { php } : {}),
   };
 
   try {

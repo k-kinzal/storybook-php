@@ -48,7 +48,7 @@ export const FullProject: Story = {
         name: "v2.0 Planning",
         tasks: [
           { title: "Array casting", status: "in_progress", assignee: "Alice" },
-          { title: "Collection support", status: "todo" },
+          { title: "Collection support", status: "todo", assignee: null },
         ],
       },
     ],
@@ -62,6 +62,7 @@ export const MinimalProject: Story = {
       {
         name: "Charlie",
         role: "Solo Developer",
+        skills: [],
       },
     ],
   },

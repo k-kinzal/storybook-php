@@ -1,8 +1,8 @@
 /**
- * typeMap.files[*].args demo: Array element type
+ * components.files[*].args demo: Array element type
  *
  * The $tags param is typed as `array` in PHP, so the parser can't
- * determine the element type. typeMap.files[*].args provides `elementType: "string"`
+ * determine the element type. components.files[*].args provides `elementType: "string"`
  * so the system knows each element is a string.
  *
  * Config in main.ts:

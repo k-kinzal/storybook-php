@@ -6973,7 +6973,7 @@ describe.skipIf(!hasPhp)("Integration: All Plan Patterns", () => {
         callable: "render",
         args: {
           title: "Test Post",
-          author: { name: "Alice", role: "Admin" },
+          author: { name: "Alice", role: "Admin", avatar: "" },
           body: "Post body text.",
         },
       });
@@ -6992,7 +6992,7 @@ describe.skipIf(!hasPhp)("Integration: All Plan Patterns", () => {
         callable: "render",
         args: {
           title: "Release",
-          author: { name: "Bob" },
+          author: { name: "Bob", role: "Contributor", avatar: "" },
           date: "2025-03-01",
         },
       });
@@ -8020,7 +8020,7 @@ describe.skipIf(!hasPhp)("Integration: All Plan Patterns", () => {
       expect(result.html).toContain("+1 555-0123");
     });
 
-    it("renders NestedCompose with default country", async () => {
+    it("renders NestedCompose with explicit country properties", async () => {
       const result = await executor.execute({
         type: "classMethod",
         file: advanced("NestedCompose.php"),
@@ -8084,7 +8084,7 @@ describe.skipIf(!hasPhp)("Integration: All Plan Patterns", () => {
       expect(result.html).toContain("+1 555-0123");
     });
 
-    it("renders ContactCard with default country via autoload", async () => {
+    it("renders ContactCard with a mapped country value via autoload", async () => {
       const result = await autoloadExecutor.execute({
         type: "classMethod",
         file: advanced("Autoload/ContactCard.php"),
@@ -8093,6 +8093,11 @@ describe.skipIf(!hasPhp)("Integration: All Plan Patterns", () => {
         args: {
           name: "John Doe",
           address: { street: "10 Downing St", city: "London" },
+        },
+        types: {
+          "App\\Components\\Autoload\\Address::$country": {
+            value: { code: "US", name: "United States" },
+          },
         },
       });
       expect(result.error).toBeUndefined();
@@ -9329,14 +9334,14 @@ describe.skipIf(!hasPhp)("Integration: All Plan Patterns", () => {
       expect(result.html).toContain('<span class="tag" style="color: yellow;">JS</span>');
     });
 
-    it("casts list<Tag> with default color", async () => {
+    it("casts list<Tag> with explicit property values", async () => {
       const result = await executor.execute({
         type: "classMethod",
         file: fixture("ArrayOfObjects.php"),
         class: "App\\Fixtures\\TagCloud",
         callable: "render",
         args: {
-          tags: [{ name: "Rust" }],
+          tags: [{ name: "Rust", color: "gray" }],
         },
       });
       expect(result.error).toBeUndefined();
@@ -9439,7 +9444,7 @@ describe.skipIf(!hasPhp)("Integration: All Plan Patterns", () => {
               name: "v2.0 Planning",
               tasks: [
                 { title: "Array casting", status: "in_progress", assignee: "Alice" },
-                { title: "Collection support", status: "todo" },
+                { title: "Collection support", status: "todo", assignee: null },
               ],
             },
           ],
@@ -9490,7 +9495,7 @@ describe.skipIf(!hasPhp)("Integration: All Plan Patterns", () => {
         callable: "render",
         args: {
           name: "Quick Prototype",
-          members: [{ name: "Charlie", role: "Solo Developer" }],
+          members: [{ name: "Charlie", role: "Solo Developer", skills: [] }],
         },
       });
       expect(result.error).toBeUndefined();
@@ -9521,7 +9526,7 @@ describe.skipIf(!hasPhp)("Integration: All Plan Patterns", () => {
       expect(result.html).not.toContain('<div class="milestone">');
     });
 
-    it("renders member with skills using default enum value", async () => {
+    it("renders member with skills using explicit enum value", async () => {
       const result = await executor.execute({
         type: "classMethod",
         file: advanced("ProjectBoard.php"),
@@ -9533,17 +9538,17 @@ describe.skipIf(!hasPhp)("Integration: All Plan Patterns", () => {
             {
               name: "Dave",
               role: "Intern",
-              skills: [{ name: "HTML" }],
+              skills: [{ name: "HTML", level: "beginner" }],
             },
           ],
         },
       });
       expect(result.error).toBeUndefined();
-      // Skill uses default SkillLevel::Beginner
+      // The mapped property resolves SkillLevel::Beginner
       expect(result.html).toContain('<span class="skill skill-beginner">HTML</span>');
     });
 
-    it("renders task with default status and no assignee", async () => {
+    it("renders task with explicit status and no assignee", async () => {
       const result = await executor.execute({
         type: "classMethod",
         file: advanced("ProjectBoard.php"),
@@ -9555,13 +9560,13 @@ describe.skipIf(!hasPhp)("Integration: All Plan Patterns", () => {
           milestones: [
             {
               name: "Backlog",
-              tasks: [{ title: "Unassigned task" }],
+              tasks: [{ title: "Unassigned task", status: "todo", assignee: null }],
             },
           ],
         },
       });
       expect(result.error).toBeUndefined();
-      // Task uses default TaskStatus::Todo, no assignee
+      // The mapped property resolves TaskStatus::Todo
       expect(result.html).toContain('<li class="task-todo">Unassigned task</li>');
       expect(result.html).not.toContain("assignee");
     });
@@ -9586,13 +9591,11 @@ describe.skipIf(!hasPhp)("Integration: All Plan Patterns", () => {
       expect(result.html).toContain("1 > 2 > 3");
     });
 
-    it("resolves interface to concrete class via typeMap.bindings", async () => {
+    it("resolves interface to concrete class via types", async () => {
       const executor = new PhpExecutor({
         timeout: 10000,
-        typeMap: {
-          bindings: {
-            "App\\Components\\Renderable": "App\\Components\\HtmlBlock",
-          },
+        types: {
+          "App\\Components\\Renderable": "App\\Components\\HtmlBlock",
         },
       });
       const result = await executor.execute({
@@ -9610,13 +9613,11 @@ describe.skipIf(!hasPhp)("Integration: All Plan Patterns", () => {
       expect(result.html).toContain("<p>Hello from binding</p>");
     });
 
-    it("resolves interface variadics via typeMap.bindings", async () => {
+    it("resolves interface variadics via types", async () => {
       const executor = new PhpExecutor({
         timeout: 10000,
-        typeMap: {
-          bindings: {
-            "App\\Components\\VariadicRenderable": "App\\Components\\VariadicHtmlBlock",
-          },
+        types: {
+          "App\\Components\\VariadicRenderable": "App\\Components\\VariadicHtmlBlock",
         },
       });
       const result = await executor.execute({
@@ -9659,13 +9660,11 @@ describe.skipIf(!hasPhp)("Integration: All Plan Patterns", () => {
       expect(result.html).toContain("<b>Storybook</b>");
     });
 
-    it("resolves interface in list<> doc type via typeMap.bindings", async () => {
+    it("resolves interface in list<> doc type via types", async () => {
       const executor = new PhpExecutor({
         timeout: 10000,
-        typeMap: {
-          bindings: {
-            "App\\Components\\Renderable": "App\\Components\\HtmlBlock",
-          },
+        types: {
+          "App\\Components\\Renderable": "App\\Components\\HtmlBlock",
         },
       });
       const result = await executor.execute({
@@ -9714,10 +9713,8 @@ describe.skipIf(!hasPhp)("Integration: All Plan Patterns", () => {
     it("per-request bindings override global bindings", async () => {
       const executor = new PhpExecutor({
         timeout: 10000,
-        typeMap: {
-          bindings: {
-            "App\\Components\\Renderable": "App\\Components\\HtmlBlock",
-          },
+        types: {
+          "App\\Components\\Renderable": "App\\Components\\HtmlBlock",
         },
       });
       // Per-request override: bind to PlainTextBlock instead
@@ -9730,10 +9727,8 @@ describe.skipIf(!hasPhp)("Integration: All Plan Patterns", () => {
           title: "Override Test",
           content: { content: "plain text", tag: "span" },
         },
-        typeMap: {
-          bindings: {
-            "App\\Components\\Renderable": "App\\Components\\PlainTextBlock",
-          },
+        types: {
+          "App\\Components\\Renderable": "App\\Components\\PlainTextBlock",
         },
       });
       expect(result.error).toBeUndefined();
@@ -9791,10 +9786,8 @@ describe.skipIf(!hasPhp)("Integration: All Plan Patterns", () => {
     it("per-request bindings resolve interface in list<> doc type", async () => {
       const executor = new PhpExecutor({
         timeout: 10000,
-        typeMap: {
-          bindings: {
-            "App\\Components\\Renderable": "App\\Components\\HtmlBlock",
-          },
+        types: {
+          "App\\Components\\Renderable": "App\\Components\\HtmlBlock",
         },
       });
       // Per-request override: bind to PlainTextBlock instead of HtmlBlock
@@ -9807,10 +9800,8 @@ describe.skipIf(!hasPhp)("Integration: All Plan Patterns", () => {
           title: "Override Items",
           items: [{ content: "plain text", tag: "div" }],
         },
-        typeMap: {
-          bindings: {
-            "App\\Components\\Renderable": "App\\Components\\PlainTextBlock",
-          },
+        types: {
+          "App\\Components\\Renderable": "App\\Components\\PlainTextBlock",
         },
       });
       expect(result.error).toBeUndefined();
@@ -9831,10 +9822,8 @@ describe.skipIf(!hasPhp)("Integration: All Plan Patterns", () => {
           title: "No Global",
           items: [{ content: "Hello", tag: "p" }],
         },
-        typeMap: {
-          bindings: {
-            "App\\Components\\Renderable": "App\\Components\\HtmlBlock",
-          },
+        types: {
+          "App\\Components\\Renderable": "App\\Components\\HtmlBlock",
         },
       });
       expect(result.error).toBeUndefined();

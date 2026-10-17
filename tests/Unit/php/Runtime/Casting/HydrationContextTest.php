@@ -11,35 +11,27 @@ use StorybookPhp\Runtime\Contract\TypeNode;
 /**
  * @covers \StorybookPhp\Runtime\Contract\TypeNode
  * @covers \StorybookPhp\Runtime\Casting\HydrationContext
- * @covers \StorybookPhp\Runtime\Contract\normalizeTypeMapBindings
+ * @covers \StorybookPhp\Runtime\Contract\normalizeTypeMappings
  * @covers \StorybookPhp\Runtime\Contract\parseBindingKey
  * @covers \StorybookPhp\Runtime\Contract\normalizeBindingValue
  */
 final class HydrationContextTest extends TestCase
 {
-    public function testFromTypeMapNormalisesBindings(): void
+    public function testFromTypesNormalisesBindings(): void
     {
-        $context = HydrationContext::fromTypeMap(['bindings' => ['App\Renderable' => 'App\HtmlBlock']]);
+        $context = HydrationContext::fromTypes(['App\Renderable' => 'App\HtmlBlock']);
 
         self::assertSame(['app\renderable' => 'App\HtmlBlock'], $context->bindings['types']);
         self::assertSame('', $context->path);
         self::assertSame([], $context->templates);
-        self::assertSame(['types' => [], 'slots' => []], HydrationContext::fromTypeMap(null)->bindings);
-        self::assertSame([], HydrationContext::fromTypeMap(['classes' => 'invalid'])->classes);
+        self::assertSame(['types' => [], 'slots' => []], HydrationContext::fromTypes(null)->bindings);
     }
 
-    public function testClassTypeMapRoundTripsClassEntries(): void
-    {
-        $classes = ['App\Tree' => ['args' => ['branches' => 'Branch[]']]];
-        $context = HydrationContext::fromTypeMap(['classes' => $classes]);
 
-        self::assertSame(['classes' => $classes], $context->classTypeMap());
-        self::assertSame($classes, $context->at('App\Tree::$branches')->key(0)->withTemplates([])->classes);
-    }
 
     public function testAtAppendsSlotLabels(): void
     {
-        $context = HydrationContext::fromTypeMap(null);
+        $context = HydrationContext::fromTypes(null);
 
         self::assertSame('App\Card::$title', $context->at('App\Card::$title')->path);
         self::assertSame('App\Card::$items > App\Item::$label', $context->at('App\Card::$items')->at('App\Item::$label')->path);
@@ -47,7 +39,7 @@ final class HydrationContextTest extends TestCase
 
     public function testKeyAppendsArrayKeys(): void
     {
-        $context = HydrationContext::fromTypeMap(null)->at('App\Card::$meta');
+        $context = HydrationContext::fromTypes(null)->at('App\Card::$meta');
 
         self::assertSame('App\Card::$meta[theme]', $context->key('theme')->path);
         self::assertSame('App\Card::$meta[0]', $context->key(0)->path);

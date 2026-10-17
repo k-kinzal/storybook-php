@@ -129,7 +129,7 @@ That command writes bare-import and exact-import declarations next to the source
 - `Greeting.php.d.ts`
 - `Greeting.php@render.d.ts`
 
-If your setup relies on `defaultMethod` or `typeMap`, pass those settings to `typegen` with `--options-file`. The CLI does not read `.storybook/main.ts`.
+If your setup relies on `defaultMethod` or `components`, pass those settings to `typegen` with `--options-file`. The CLI does not read `.storybook/main.ts`.
 
 ## Next Steps
 

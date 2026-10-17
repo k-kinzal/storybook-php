@@ -8,6 +8,7 @@ use PHPUnit\Framework\TestCase;
 use RuntimeException;
 
 /**
+ * @covers \StorybookPhp\Runtime\Transport\readRunnerRequest
  * @covers \StorybookPhp\Runtime\Transport\decodeRunnerRequest
  * @covers \StorybookPhp\Runtime\Contract\normalizeStringKeyArray
  * @covers \StorybookPhp\Runtime\Transport\readRunnerStdin
@@ -32,4 +33,12 @@ final class RequestDecoderTest extends TestCase
 
         \StorybookPhp\Runtime\Transport\requireRunnerInput(false);
     }
+
+    public function testReadRunnerRequestRejectsLegacyTypeMap(): void
+    {
+        $this->expectException(RuntimeException::class);
+        $this->expectExceptionMessage('typeMap is no longer supported. Use components and types.');
+        \StorybookPhp\Runtime\Transport\readRunnerRequest('{"typeMap": {}}');
+    }
+
 }

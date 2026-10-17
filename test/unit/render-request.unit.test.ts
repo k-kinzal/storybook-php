@@ -28,8 +28,8 @@ describe("render-request", () => {
         'Render request body field "args" must be a JSON object',
       );
       expect(() =>
-        parseRenderInvokeRequest(JSON.stringify({ componentId: "cmp_1", args: {}, typeMap: [] })),
-      ).toThrowError('Render request body field "typeMap" must be a JSON object or null');
+        parseRenderInvokeRequest(JSON.stringify({ componentId: "cmp_1", args: {}, php: [] })),
+      ).toThrowError('Render request body field "php" must be a JSON object or null');
     });
   });
 
@@ -58,8 +58,8 @@ describe("render-request", () => {
         {
           componentId,
           args: { title: "Hello" },
-          typeMap: {
-            bindings: {
+          php: {
+            types: {
               "App\\Contracts\\Card": "App\\Card",
               "App\\Card::$meta": { value: { theme: "dark" } },
             },
@@ -84,11 +84,9 @@ describe("render-request", () => {
         callableArgDefs: {},
         bootstrap: null,
         adapter: "/runtime/default-adapter.php",
-        typeMap: {
-          bindings: {
-            "App\\Contracts\\Card": "App\\Card",
-            "App\\Card::$meta": { value: { theme: "dark" } },
-          },
+        types: {
+          "App\\Contracts\\Card": "App\\Card",
+          "App\\Card::$meta": { value: { theme: "dark" } },
         },
       });
     });
@@ -130,13 +128,16 @@ describe("render-request", () => {
         class: "App\\Menu",
         callable: "render",
       });
-      const classes = { "App\\Menu": { args: { sections: "App\\MenuSection[]" } } };
+      const types = { "App\\Menu::$sections": "App\\MenuSection[]" };
 
       expect(
-        resolveExecutionRequest({ componentId, args: {}, typeMap: { classes } }, registry).typeMap,
-      ).toEqual({ classes });
+        resolveExecutionRequest({ componentId, args: {}, php: { types } }, registry).types,
+      ).toEqual(types);
       expect(
-        resolveExecutionRequest({ componentId, args: {}, typeMap: { args: {} } }, registry).typeMap,
+        resolveExecutionRequest(
+          { componentId, args: {}, php: { component: { args: {} } } },
+          registry,
+        ).types,
       ).toBeNull();
     });
 
@@ -165,9 +166,11 @@ describe("render-request", () => {
         {
           componentId,
           args: { "method.title": "Preview" },
-          typeMap: {
-            args: {
-              "method.title": { type: "?string", default: "Preview" },
+          php: {
+            component: {
+              args: {
+                "method.title": { type: "?string", default: "Preview" },
+              },
             },
           },
         },
@@ -182,5 +185,15 @@ describe("render-request", () => {
         },
       });
     });
+  });
+  it("rejects legacy and malformed story configuration", () => {
+    expect(() =>
+      parseRenderInvokeRequest(JSON.stringify({ componentId: "cmp", args: {}, typeMap: {} })),
+    ).toThrow("Use php.component and php.types");
+    for (const php of [{ component: [] }, { types: [] }]) {
+      expect(() =>
+        parseRenderInvokeRequest(JSON.stringify({ componentId: "cmp", args: {}, php })),
+      ).toThrow("must be a JSON object");
+    }
   });
 });

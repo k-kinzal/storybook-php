@@ -6,22 +6,14 @@ namespace StorybookPhp\TestFixture\ClassTypeMap;
 
 final class Leaf
 {
-    /**
-     * @param array<array-key, mixed> $tags
-     */
-    public function __construct(public array $tags)
-    {
-    }
+    /** @var array<array-key, mixed> */
+    public array $tags;
 }
 
 final class Branch
 {
-    /**
-     * @param array<array-key, mixed> $leaves
-     */
-    public function __construct(public array $leaves)
-    {
-    }
+    /** @var array<array-key, mixed> */
+    public array $leaves;
 }
 
 final class Tree

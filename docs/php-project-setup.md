@@ -31,7 +31,7 @@ Only these are truly required:
 
 `bootstrap.php` is optional, but common.
 
-`storybook-php.config.mjs` is only needed when `typegen` must know about `defaultMethod` or `typeMap`.
+`storybook-php.config.mjs` is only needed when `typegen` must know about `defaultMethod` or `components`.
 
 ## Minimal Storybook Config
 
@@ -101,7 +101,7 @@ npx --yes storybook-php typegen
 
 It writes declaration files next to each matching source file, including exact-import outputs such as `Greeting.php@render.d.ts`.
 
-If your Storybook setup uses `defaultMethod` or `typeMap`, pass those settings explicitly because `typegen` does not evaluate `.storybook/main.ts`:
+If your Storybook setup uses `defaultMethod` or `components`, pass those settings explicitly because `typegen` does not evaluate `.storybook/main.ts`:
 
 ```bash
 npx --yes storybook-php typegen --options-file storybook-php.config.mjs
@@ -115,7 +115,7 @@ import { fileURLToPath } from "node:url";
 export default {
   _configDir: fileURLToPath(new URL("./.storybook/", import.meta.url)),
   defaultMethod: "render",
-  typeMap: {
+  components: {
     files: {
       "../src/views/components/card.blade.php": {
         phpFile: "../src/BladeCard.php",
@@ -126,7 +126,7 @@ export default {
 };
 ```
 
-`typegen` reads `defaultMethod`, `typeMap`, and `_configDir` from that file. Storybook itself still reads `.storybook/main.ts`.
+`typegen` reads `defaultMethod`, `components`, and `_configDir` from that file. Storybook itself still reads `.storybook/main.ts`.
 
 ## Running Storybook Tests
 

@@ -4,7 +4,7 @@ namespace App\Components;
 
 /**
  * Deeply nested untyped arrays: NavMenu → NavSection[] → NavLink[].
- * Neither level declares its element type, so typeMap.classes supplies both.
+ * Neither level declares its element type, so components.classes types the component constructor; types maps nested properties.
  */
 class NavMenu
 {

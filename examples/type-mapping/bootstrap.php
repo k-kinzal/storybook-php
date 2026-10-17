@@ -1,6 +1,6 @@
 <?php
 // Bootstrap: autoload for type-mapping example.
-// This example demonstrates typeMap configuration features.
+// This example demonstrates type mapping configuration features.
 
 spl_autoload_register(function (string $class): void {
     $prefix = 'App\\Components\\';

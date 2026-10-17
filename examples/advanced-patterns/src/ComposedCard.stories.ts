@@ -17,7 +17,7 @@ type Story = StoryObj<typeof ComposedCard>;
 export const Default: Story = {
   args: {
     title: "Getting Started with PHP 8.2",
-    author: { name: "Alice", role: "Lead Developer" },
+    author: { name: "Alice", role: "Lead Developer", avatar: "" },
     body: "A comprehensive guide to the latest PHP features.",
   },
 };
@@ -25,7 +25,7 @@ export const Default: Story = {
 export const WithDate: Story = {
   args: {
     title: "Release Notes v2.0",
-    author: { name: "Bob", role: "Maintainer" },
+    author: { name: "Bob", role: "Maintainer", avatar: "" },
     body: "Major performance improvements and bug fixes.",
     date: "2025-01-15",
   },

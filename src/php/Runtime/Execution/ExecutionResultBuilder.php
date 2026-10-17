@@ -37,21 +37,21 @@ function resolveTemplateContextArgs(array $context, ?array $templateInput = null
             $publicArgDefs[$key] = $value;
         }
     }
-    $typeMapSource = $context['typeMap'] ?? null;
-    if (!is_array($typeMapSource)) {
-        $typeMap = null;
+    $typesSource = $context['types'] ?? null;
+    if (!is_array($typesSource)) {
+        $types = null;
     } else {
-        $typeMap = [];
-        foreach ($typeMapSource as $key => $value) {
+        $types = [];
+        foreach ($typesSource as $key => $value) {
             if (!is_string($key)) {
                 continue;
             }
-            $typeMap[$key] = $value;
+            $types[$key] = $value;
         }
     }
 
     return $publicArgDefs !== null
-        ? \StorybookPhp\Runtime\Casting\castTemplateArgs($templateArgs, $publicArgDefs, $typeMap)
+        ? \StorybookPhp\Runtime\Casting\castTemplateArgs($templateArgs, $publicArgDefs, $types)
         : $templateArgs;
 }
 
@@ -92,7 +92,6 @@ function orderResolvedArgs(?ReflectionFunctionAbstract $ref, array $resolvedArgs
  * @param array<string, mixed> $templateArgs
  * @param array<string, mixed> $constructorArgs
  * @param array<string, mixed> $methodArgs
- * @param array<string, mixed> $stateArgs
  * @return array{
  *   html: string,
  *   result?: mixed,
@@ -102,7 +101,6 @@ function orderResolvedArgs(?ReflectionFunctionAbstract $ref, array $resolvedArgs
  *   templateArgs?: array<string, mixed>,
  *   constructorArgs?: array<string, mixed>,
  *   methodArgs?: array<string, mixed>,
- *   stateArgs?: array<string, mixed>,
  *   enumCaseValue?: mixed
  * }
  */
@@ -116,7 +114,6 @@ function buildExecutionResponse(
     array $constructorArgs = [],
     array $methodArgs = [],
     mixed $enumCaseValue = null,
-    array $stateArgs = [],
 ): array {
     $response = [
         'html' => $html,
@@ -126,7 +123,6 @@ function buildExecutionResponse(
         'publicArgs' => $publicArgs,
         'templateArgs' => $templateArgs,
         'constructorArgs' => $constructorArgs,
-        'stateArgs' => $stateArgs,
         'methodArgs' => $methodArgs,
     ];
 

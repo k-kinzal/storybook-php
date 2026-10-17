@@ -516,33 +516,36 @@ describe.skipIf(!hasPhp)("Phase 3: New advanced/ pattern examples", () => {
       expect(result.html).toContain("Solo");
     });
 
-    it("should render with items omitting optional constructor params", async () => {
-      // Given: MenuItem has optional $url with default '#'
+    it("should render object items with explicit property values", async () => {
+      // Nested values supply properties, including promoted properties with constructor defaults.
       const result = await executor.execute({
         type: "classMethod",
         file: advanced("VariadicObject.php"),
         class: "App\\Components\\VariadicObject",
         callable: "render",
         args: {
-          items: [{ label: "LabelOnly" }],
+          items: [{ label: "LabelOnly", url: "#" }],
         },
       });
 
-      // Then: item should render with label (url defaults to '#')
+      // The nested url is supplied explicitly.
       expect(result.error).toBeUndefined();
       expect(result.html).toContain("LabelOnly");
       expect(result.html).toContain('href="#"');
     });
 
-    it("should render with mixed items — some with and without optional params", async () => {
-      // Given: items where some provide url and some omit it
+    it("should render object items with different property values", async () => {
+      // Each nested item supplies its own url.
       const result = await executor.execute({
         type: "classMethod",
         file: advanced("VariadicObject.php"),
         class: "App\\Components\\VariadicObject",
         callable: "render",
         args: {
-          items: [{ label: "WithUrl", url: "/page" }, { label: "WithoutUrl" }],
+          items: [
+            { label: "WithUrl", url: "/page" },
+            { label: "WithoutUrl", url: "#" },
+          ],
         },
       });
 
@@ -803,6 +806,7 @@ describe.skipIf(!hasPhp)("Representative files still execute correctly", () => {
         address: {
           street: "1 Main St",
           city: "Testville",
+          country: { code: "US", name: "United States" },
         },
       },
     });

@@ -66,7 +66,7 @@ function normalizeAdapterResponse(mixed $response): array
         throw new RuntimeException("Adapter middleware responses must include a string 'html' field.");
     }
 
-    foreach (['publicArgs', 'templateArgs', 'constructorArgs', 'stateArgs', 'methodArgs'] as $field) {
+    foreach (['publicArgs', 'templateArgs', 'constructorArgs', 'methodArgs'] as $field) {
         if (array_key_exists($field, $response)) {
             if (!is_array($response[$field])) {
                 throw new RuntimeException("Adapter response field '{$field}' must be an object.");

@@ -4,8 +4,7 @@ import type {
   PhpRenderInvokeRequest,
   PhpRenderRequest,
   PhpRenderPlan,
-  RuntimeTypeMap,
-  StoryTypeMap,
+  PhpStoryParameters,
 } from "../../types.js";
 
 export { RENDER_PATH } from "../../shared/render-contract.js";
@@ -52,17 +51,31 @@ export function parseRenderInvokeRequest(body: string): PhpRenderInvokeRequest {
     throw new RequestValidationError('Render request body field "args" must be a JSON object');
   }
 
-  const typeMap = parsed["typeMap"];
-  if (typeMap !== undefined && typeMap !== null && !isRecord(typeMap)) {
+  if ("typeMap" in parsed) {
     throw new RequestValidationError(
-      'Render request body field "typeMap" must be a JSON object or null',
+      "typeMap is no longer supported. Use php.component and php.types.",
     );
+  }
+  const php = parsed["php"];
+  if (php !== undefined && php !== null && !isRecord(php)) {
+    throw new RequestValidationError(
+      'Render request body field "php" must be a JSON object or null',
+    );
+  }
+  if (isRecord(php)) {
+    for (const field of ["component", "types"]) {
+      if (php[field] !== undefined && !isRecord(php[field])) {
+        throw new RequestValidationError(
+          `Render request body field "php.${field}" must be a JSON object`,
+        );
+      }
+    }
   }
 
   return {
     componentId,
     args,
-    ...(typeMap !== undefined ? { typeMap: typeMap as StoryTypeMap | null } : {}),
+    ...(php !== undefined ? { php: php as PhpStoryParameters | null } : {}),
   };
 }
 
@@ -112,38 +125,27 @@ function buildExecutionRequest(
   target: ExecutionTarget,
   data: PhpRenderInvokeRequest,
 ): PhpRenderRequest {
-  const storyTypeMap = normalizeStoryTypeMap(data.typeMap);
+  const php = normalizePhpStoryParameters(data.php);
 
   return {
     ...target,
     args: isRecord(data.args) ? data.args : {},
-    publicArgDefs: mergeStoryPublicArgDefs(target, storyTypeMap) ?? null,
+    publicArgDefs: mergeStoryPublicArgDefs(target, php) ?? null,
     constructorArgDefs: target.constructorArgDefs ?? null,
     callableArgDefs: target.callableArgDefs ?? null,
     bootstrap: null,
     adapter: target.adapter,
-    typeMap: normalizeRuntimeTypeMap(storyTypeMap),
+    types: php?.types ?? null,
   };
 }
 
-function normalizeStoryTypeMap(value: unknown): StoryTypeMap | null {
-  return isRecord(value) ? (value as StoryTypeMap) : null;
-}
-
-function normalizeRuntimeTypeMap(storyTypeMap: StoryTypeMap | null): RuntimeTypeMap | null {
-  if (!storyTypeMap?.bindings && !storyTypeMap?.classes) {
-    return null;
-  }
-
-  return {
-    ...(storyTypeMap.bindings ? { bindings: storyTypeMap.bindings } : {}),
-    ...(storyTypeMap.classes ? { classes: storyTypeMap.classes } : {}),
-  };
+function normalizePhpStoryParameters(value: unknown): PhpStoryParameters | null {
+  return isRecord(value) ? (value as PhpStoryParameters) : null;
 }
 
 function mergeStoryPublicArgDefs(
   target: ExecutionTarget,
-  storyTypeMap: StoryTypeMap | null,
+  php: PhpStoryParameters | null,
 ): PhpRenderRequest["publicArgDefs"] {
   if (!target.publicArgDefs) {
     return null;
@@ -153,7 +155,7 @@ function mergeStoryPublicArgDefs(
     target.publicArgDefs,
     target.constructorArgDefs ?? {},
     target.callableArgDefs ?? {},
-    storyTypeMap?.args ?? null,
+    php?.component?.args ?? null,
   );
 }
 

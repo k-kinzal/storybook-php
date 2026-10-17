@@ -4,7 +4,7 @@ namespace App\Components;
 
 /**
  * Page component that takes a Renderable in its constructor.
- * typeMap.bindings maps Renderable → HtmlBlock so the runner
+ * types maps Renderable → HtmlBlock so the runner
  * knows how to instantiate the interface-typed parameter.
  */
 class Page

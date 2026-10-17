@@ -12,7 +12,7 @@ describe("framework-config", () => {
     const options = resolveFrameworkOptions({
       _configDir: FIXTURES,
       adapter: "/global-adapter.php",
-      typeMap: {
+      components: {
         files: {
           "SimpleComponent.php": { adapter: "fixture-adapter.php" },
         },
@@ -30,7 +30,7 @@ describe("framework-config", () => {
   it("merges pattern and exact file mappings for callable, includes, and adapters", () => {
     const options = resolveFrameworkOptions({
       _configDir: FIXTURES,
-      typeMap: {
+      components: {
         files: {
           "*.blade.php": {
             callable: "render",
@@ -48,7 +48,7 @@ describe("framework-config", () => {
 
     const mapping = findResolvedFileMapping(
       fixturePath("TypeMapInlineTarget.blade.php"),
-      options.typeMap!.files!,
+      options.components!.files!,
     );
 
     expect(mapping).toMatchObject({
@@ -61,8 +61,7 @@ describe("framework-config", () => {
   it("resolves bindings and absolute file-map paths", () => {
     const options = resolveFrameworkOptions({
       _configDir: FIXTURES,
-      typeMap: {
-        bindings: { "App\\Contracts\\View": "App\\ConcreteView" },
+      components: {
         files: {
           [fixturePath("TypeMapInlineTarget.blade.php")]: {
             phpFile: fixturePath("SimpleComponent.php"),
@@ -72,14 +71,15 @@ describe("framework-config", () => {
           "*.php": {},
         },
       },
+      types: { "App\\Contracts\\View": "App\\ConcreteView" },
     });
 
     const mapping = findResolvedFileMapping(
       fixturePath("TypeMapInlineTarget.blade.php"),
-      options.typeMap!.files!,
+      options.components!.files!,
     );
 
-    expect(options.typeMap?.bindings).toEqual({ "App\\Contracts\\View": "App\\ConcreteView" });
+    expect(options.types).toEqual({ "App\\Contracts\\View": "App\\ConcreteView" });
     expect(mapping).toMatchObject({
       phpFile: fixturePath("SimpleComponent.php"),
       includes: [fixturePath("TypeMapBaseClass.php")],
@@ -89,16 +89,16 @@ describe("framework-config", () => {
 
   it("keeps runtime class contracts without file mappings", () => {
     const classes = { "App\\Menu": { args: { sections: "App\\MenuSection[]" } } };
-    const options = resolveFrameworkOptions({ typeMap: { classes } });
+    const options = resolveFrameworkOptions({ components: { classes } });
 
-    expect(options.typeMap).toEqual({ classes });
+    expect(options.components).toEqual({ classes });
     expect(options.adapterMap).toBeNull();
   });
 
   it("handles absolute mapped imports and merged targets without adapters", () => {
     const options = resolveFrameworkOptions({
       _configDir: FIXTURES,
-      typeMap: {
+      components: {
         files: {
           "*.php": { callable: "render" },
           [fixturePath("SimpleComponent.php")]: { args: { name: "string" } },
@@ -114,10 +114,14 @@ describe("framework-config", () => {
       mapped: true,
     });
     expect(
-      findResolvedFileMapping(fixturePath("SimpleComponent.php"), options.typeMap!.files!),
+      findResolvedFileMapping(fixturePath("SimpleComponent.php"), options.components!.files!),
     ).toMatchObject({
       args: { name: "string" },
       callable: "render",
     });
+  });
+  it("rejects legacy framework typeMap", () => {
+    // @ts-expect-error Removed configuration is rejected for JS callers too.
+    expect(() => resolveFrameworkOptions({ typeMap: {} })).toThrow("Use components and types");
   });
 });

@@ -10,11 +10,14 @@ use RuntimeException;
 /**
  * Decodes and validates an untrusted runner request.
  *
- * @return array{type: 'classMethod'|'staticMethod'|'function'|'template'|'enumMethod', file: string, sourceFile: string|null, class: string|null, callable: string|null, args: array<string, mixed>, publicArgDefs: array<string, mixed>|null, constructorArgDefs: array<string, mixed>|null, callableArgDefs: array<string, mixed>|null, bootstrap: string|null, adapters: list<string>|null, typeMap: array<string, mixed>|null}
+ * @return array{type: 'classMethod'|'staticMethod'|'function'|'template'|'enumMethod', file: string, sourceFile: string|null, class: string|null, callable: string|null, args: array<string, mixed>, publicArgDefs: array<string, mixed>|null, constructorArgDefs: array<string, mixed>|null, callableArgDefs: array<string, mixed>|null, bootstrap: string|null, adapters: list<string>|null, types: array<string, mixed>|null, components: array<string, mixed>|null}
  */
 function readRunnerRequest(string $input): array
 {
     $decoded = \StorybookPhp\Runtime\Transport\decodeRunnerRequest($input);
+    if (array_key_exists('typeMap', $decoded)) {
+        throw new RuntimeException('typeMap is no longer supported. Use components and types.');
+    }
     $type = \StorybookPhp\Runtime\Transport\requireRunnerRenderType($decoded);
     $file = \StorybookPhp\Runtime\Transport\requireRunnerStringField($decoded, 'file');
     $args = \StorybookPhp\Runtime\Transport\runnerObjectField($decoded, 'args', false) ?? [];
@@ -32,7 +35,8 @@ function readRunnerRequest(string $input): array
         'callableArgDefs' => \StorybookPhp\Runtime\Transport\runnerObjectField($decoded, 'callableArgDefs'),
         'bootstrap' => \StorybookPhp\Runtime\Transport\runnerOptionalStringField($decoded, 'bootstrap'),
         'adapters' => $adapters === null ? null : \StorybookPhp\Runtime\Contract\normalizeStringList($adapters, 'adapters'),
-        'typeMap' => \StorybookPhp\Runtime\Transport\runnerObjectField($decoded, 'typeMap'),
+        'types' => \StorybookPhp\Runtime\Transport\runnerObjectField($decoded, 'types'),
+        'components' => \StorybookPhp\Runtime\Transport\runnerObjectField($decoded, 'components'),
     ];
 }
 

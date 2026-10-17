@@ -3,7 +3,7 @@
 namespace App\Components;
 
 /**
- * Backed enum — typeMap.files[*].args provides case values as options.
+ * Backed enum — components.files[*].args provides case values as options.
  */
 enum Status: string
 {

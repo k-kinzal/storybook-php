@@ -120,7 +120,8 @@ export interface PhpRenderRequest {
   /** Most specific per-request adapter override, composed inside the middleware chain */
   adapter?: string | null;
   /** Runtime-only bindings used while casting PHP objects */
-  typeMap?: RuntimeTypeMap | null;
+  types?: TypeMappings | null;
+  components?: Pick<ComponentsConfig, "classes"> | null;
 }
 
 /** Browser-to-server render invoke request */
@@ -129,7 +130,7 @@ export interface PhpRenderInvokeRequest {
   componentId: string;
   args: Record<string, unknown>;
   /** Per-story public args / bindings override */
-  typeMap?: StoryTypeMap | null;
+  php?: PhpStoryParameters | null;
 }
 
 /** Response from the PHP runner */
@@ -161,7 +162,7 @@ export interface PhpComponentSchema {
 }
 
 // ---------------------------------------------------------------------------
-// Type Map configuration (static type mapping)
+// Component contracts and type mapping
 // ---------------------------------------------------------------------------
 
 /**
@@ -184,7 +185,7 @@ export type ArgOverride =
     };
 
 /** Target for a file mapping entry */
-export interface FileMapTarget {
+export interface ComponentFileConfig {
   /** Public Storybook args for this import target */
   args?: Record<string, string | ArgOverride>;
   /** Callable-specific public args overrides for PHP files with multiple callables */
@@ -209,72 +210,27 @@ export interface FileMapTarget {
   adapter?: string;
 }
 
-/** Runtime constructor contract for a PHP class */
-export interface ClassMapTarget {
-  /**
-   * Constructor parameter types used whenever the runner instantiates this class,
-   * including nested instances built from story args (e.g. `"App\\Item[]"`).
-   */
-  args?: Record<string, string | ArgOverride>;
+/** Constructor argument contract for a class executed as a component. */
+export interface ComponentClassConfig {
+  args?: Record<string, ArgOverride>;
 }
 
-/**
- * Value of one `typeMap.bindings` entry.
- *
- * - a string names the concrete PHP type to build (`"App\\HtmlBlock"`)
- * - `{ type }` replaces the expected type of a slot
- * - `{ value }` replaces the incoming value of a slot before it is hydrated
- */
-export type TypeBinding =
-  | string
-  | {
-      /** PHP type to hydrate the slot or type into */
-      type?: string;
-      /** Fixed value assigned to the slot, hydrated against its (bound) type */
-      value?: unknown;
-    };
+/** A concrete type route or a property type/value override. */
+export type TypeMapping = string | { type?: string; value?: unknown };
 
-/**
- * DI-style runtime bindings keyed by what they apply to:
- *
- * | key                         | applies to                                               |
- * |-----------------------------|----------------------------------------------------------|
- * | `App\Renderable`            | every slot expecting that interface / abstract / class   |
- * | `App\Card::$body`           | the `body` state of `App\Card` (constructor arg, setter, or property) |
- * | `App\Card::render($limit)`  | the `$limit` parameter of `App\Card::render()`            |
- * | `App\render_card($limit)`   | the `$limit` parameter of the function `App\render_card()` |
- *
- * Type keys take a type name; slot keys take a type name or `{ type, value }`.
- */
-export type TypeBindings = Record<string, TypeBinding>;
+/** Fully qualified type names or `Class::$property` keys. No callable parameter keys. */
+export type TypeMappings = Record<string, TypeMapping>;
 
-/** Static type mapping configuration */
-export interface TypeMapConfig {
-  /** Map file paths to type information sources */
-  files?: Record<string, FileMapTarget>;
-  /** Runtime bindings: PHP type → concrete type, or slot → type/value (DI-style) */
-  bindings?: TypeBindings;
-  /** Map PHP class → constructor parameter types the runner cannot infer */
-  classes?: Record<string, ClassMapTarget>;
+/** Contracts and adapters for component execution. */
+export interface ComponentsConfig {
+  files?: Record<string, ComponentFileConfig>;
+  classes?: Record<string, ComponentClassConfig>;
 }
 
-/**
- * Per-story typeMap override.
- * Use via `parameters.typeMap` in Meta or StoryObj.
- */
-export interface StoryTypeMap {
-  /** Runtime bindings: PHP type → concrete type, or slot → type/value (DI-style) */
-  bindings?: TypeBindings;
-  /** Map PHP class → constructor parameter types for the current story */
-  classes?: Record<string, ClassMapTarget>;
-  /** Override the public Storybook args surface for the current story */
-  args?: Record<string, string | ArgOverride>;
-}
-
-/** Runtime type information sent to the PHP runner */
-export interface RuntimeTypeMap {
-  bindings?: TypeBindings;
-  classes?: Record<string, ClassMapTarget>;
+/** Per-story configuration under `parameters.php`. */
+export interface PhpStoryParameters {
+  component?: { args?: Record<string, ArgOverride> };
+  types?: TypeMappings;
 }
 
 /** Framework options for storybook-php */
@@ -302,14 +258,16 @@ export interface FrameworkOptions {
    * Adapters may also replace resolved target args directly or terminate the chain.
    */
   adapter?: string;
-  /** Static type mapping configuration */
-  typeMap?: TypeMapConfig;
+  /** Component execution contracts */
+  components?: ComponentsConfig;
+  /** Runtime type routes and property mappings */
+  types?: TypeMappings;
   /** @internal Resolved config directory for path resolution */
   _configDir?: string;
 }
 
 /**
- * @internal Pre-resolved adapter mappings from typeMap.files.
+ * @internal Pre-resolved adapter mappings from components.files.
  * Used by PhpExecutor to resolve per-file adapters at runtime.
  */
 export interface AdapterMap {

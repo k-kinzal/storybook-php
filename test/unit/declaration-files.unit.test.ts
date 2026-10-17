@@ -13,7 +13,7 @@ describe("declaration-files", () => {
       fixturePath("SimpleComponent.php"),
       resolveFrameworkOptions({
         _configDir: FIXTURES,
-        typeMap: {
+        components: {
           files: {
             "SimpleComponent.php": {
               callable: "missingMethod",

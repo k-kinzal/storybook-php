@@ -28,7 +28,7 @@ describe("framework-options-loader", () => {
     );
     writeFileSync(
       join(tempDir, "options.mjs"),
-      "export default { defaultMethod: 'preview', typeMap: { args: {} } };",
+      "export default { defaultMethod: 'preview', components: { files: {} } };",
     );
     writeFileSync(join(tempDir, "named.mjs"), "export const defaultMethod = 'named';");
 
@@ -38,7 +38,7 @@ describe("framework-options-loader", () => {
     });
     await expect(loadFrameworkOptionsFile("options.mjs", tempDir)).resolves.toEqual({
       defaultMethod: "preview",
-      typeMap: { args: {} },
+      components: { files: {} },
     });
     await expect(loadFrameworkOptionsFile("named.mjs", tempDir)).resolves.toMatchObject({
       defaultMethod: "named",
@@ -56,6 +56,12 @@ describe("framework-options-loader", () => {
 
     await expect(loadFrameworkOptionsFile("bad.mjs", tempDir)).rejects.toThrow(
       "Framework options file must export an object",
+    );
+  });
+  it("rejects legacy options-file configuration", async () => {
+    writeFileSync(join(tempDir, "legacy.json"), JSON.stringify({ typeMap: {} }));
+    await expect(loadFrameworkOptionsFile("legacy.json", tempDir)).rejects.toThrow(
+      "Use components and types",
     );
   });
 });

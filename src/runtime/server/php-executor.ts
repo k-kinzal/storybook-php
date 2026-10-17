@@ -6,9 +6,8 @@ import type {
   PhpRenderRequest,
   PhpRenderResponse,
   AdapterMap,
-  ClassMapTarget,
-  RuntimeTypeMap,
-  TypeMapConfig,
+  TypeMappings,
+  ComponentsConfig,
 } from "../../types.js";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -20,8 +19,9 @@ export interface PhpExecutorOptions {
   timeout?: number;
   bootstrap?: string;
   adapter?: string;
-  typeMap?: TypeMapConfig;
-  /** Pre-resolved adapter mappings from typeMap.files (patterns + exact paths) */
+  components?: ComponentsConfig;
+  types?: TypeMappings;
+  /** Pre-resolved adapter mappings from components.files (patterns + exact paths) */
   adapterMap?: AdapterMap;
 }
 
@@ -34,7 +34,8 @@ export class PhpExecutor {
   private adapter: string | null;
   private adapterMap: AdapterMap | null;
   private runnerPath: string;
-  private runtimeTypeMap: RuntimeTypeMap | null;
+  private types: TypeMappings | null;
+  private components: Pick<ComponentsConfig, "classes"> | null;
 
   constructor(options: PhpExecutorOptions = {}) {
     this.phpBinary = options.phpBinary ?? "php";
@@ -45,7 +46,11 @@ export class PhpExecutor {
     this.adapter = options.adapter ?? null;
     this.adapterMap = options.adapterMap ?? null;
     this.runnerPath = this.resolveRunnerPath();
-    this.runtimeTypeMap = mergeRuntimeTypeMaps(null, options.typeMap);
+    this.types = options.types ?? null;
+    this.components = options.components?.classes ? { classes: options.components.classes } : null;
+    if ("typeMap" in options) {
+      throw new Error("typeMap is no longer supported. Use components and types.");
+    }
   }
 
   /**
@@ -97,15 +102,15 @@ export class PhpExecutor {
   }
 
   async execute(request: PhpRenderRequest): Promise<PhpRenderResponse> {
-    const { typeMap: storyTypeMap, adapter: requestAdapter, ...rest } = request;
-    const mergedTypeMap = mergeRuntimeTypeMaps(this.runtimeTypeMap, storyTypeMap);
+    const { types, adapter: requestAdapter, ...rest } = request;
     const adapters = this.resolveAdapterChain(rest.sourceFile ?? rest.file, requestAdapter);
 
     const input = JSON.stringify({
       ...rest,
       bootstrap: request.bootstrap ?? this.bootstrap,
       adapters: adapters.length > 0 ? adapters : null,
-      ...(mergedTypeMap ? { typeMap: mergedTypeMap } : {}),
+      types: { ...this.types, ...types },
+      components: request.components ?? this.components,
     });
 
     return new Promise((resolvePromise) => {
@@ -157,40 +162,4 @@ export class PhpExecutor {
       proc.stdin.end();
     });
   }
-}
-
-function mergeRuntimeTypeMaps(
-  base: RuntimeTypeMap | null,
-  override: RuntimeTypeMap | null | undefined,
-): RuntimeTypeMap | null {
-  const bindings = {
-    ...base?.bindings,
-    ...override?.bindings,
-  };
-  const classes = mergeClassMaps(base?.classes, override?.classes);
-  const hasBindings = Object.keys(bindings).length > 0;
-  const hasClasses = Object.keys(classes).length > 0;
-
-  if (!hasBindings && !hasClasses) {
-    return null;
-  }
-
-  return {
-    ...(hasBindings ? { bindings } : {}),
-    ...(hasClasses ? { classes } : {}),
-  };
-}
-
-/** Story-level class args are layered over global ones per constructor parameter. */
-function mergeClassMaps(
-  base: Record<string, ClassMapTarget> | undefined,
-  override: Record<string, ClassMapTarget> | undefined,
-): Record<string, ClassMapTarget> {
-  const merged: Record<string, ClassMapTarget> = { ...base };
-
-  for (const [className, target] of Object.entries(override ?? {})) {
-    merged[className] = { args: { ...merged[className]?.args, ...target.args } };
-  }
-
-  return merged;
 }
