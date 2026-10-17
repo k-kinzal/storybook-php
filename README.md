@@ -9,7 +9,7 @@ A Storybook framework addon for developing and previewing PHP components as stor
 ## Supported Versions
 
 - PHP 8.0-8.5
-- Storybook 10.x
+- Storybook 10.x-11.x (Storybook 11 requires Node.js 22.12+ and Vite 6.3+)
 - Vite 5.x-8.x
 - Node.js 20.19+
 

@@ -188,3 +188,60 @@ jobs:
         run: composer install --no-interaction --prefer-dist --working-dir=examples/advanced-patterns
       - name: Test the addon and PHP integration
         run: npm test
+
+  storybook-compat:
+    name: Storybook ${{ matrix.storybook }} compatibility
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    needs: build
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - storybook: "10"
+            range: "^10.0.0"
+          - storybook: "11"
+            # Matches 11.x prereleases until the stable release ships.
+            range: "^11.0.0-0"
+    env:
+      STORYBOOK_RANGE: ${{ matrix.range }}
+    steps:
+      - name: Check out the repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+      - name: Set up Node.js
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020
+        with:
+          node-version: 24
+          cache: npm
+      - name: Set up PHP
+        uses: shivammathur/setup-php@f3e473d116dcccaddc5834248c87452386958240
+        with:
+          php-version: "8.4"
+      - name: Build and pack the addon
+        run: |
+          npm ci
+          npm run build
+          npm pack --pack-destination "$RUNNER_TEMP"
+      - name: Create a Storybook project from the basic example
+        run: |
+          project_dir="$RUNNER_TEMP/storybook-compat"
+          mkdir -p "$project_dir"
+          cp -R examples/basic/src examples/basic/.storybook examples/basic/bootstrap.php examples/basic/tsconfig.json .npmrc "$project_dir/"
+          echo '{ "name": "storybook-compat", "private": true, "type": "module" }' > "$project_dir/package.json"
+          echo "PROJECT_DIR=$project_dir" >> "$GITHUB_ENV"
+      - name: Install Storybook ${{ matrix.storybook }}
+        working-directory: ${{ env.PROJECT_DIR }}
+        run: |
+          npm install -D "$RUNNER_TEMP"/storybook-php-*.tgz \
+            "storybook@$STORYBOOK_RANGE" \
+            "@storybook/builder-vite@$STORYBOOK_RANGE" \
+            "@storybook/addon-vitest@$STORYBOOK_RANGE" \
+            "vite@^8.0.0" "vitest@^4.0.0" "@vitest/browser@^4.0.0" "@vitest/browser-playwright@^4.0.0" "playwright@^1.58.0"
+          npm ls storybook @storybook/builder-vite @storybook/addon-vitest
+          npx playwright install --with-deps chromium
+      - name: Build Storybook
+        working-directory: ${{ env.PROJECT_DIR }}
+        run: npx --no-install storybook-php build -o storybook-static
+      - name: Run stories with the Vitest addon
+        working-directory: ${{ env.PROJECT_DIR }}
+        run: npx --no-install storybook-php test
