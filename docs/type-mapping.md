@@ -1,352 +1,191 @@
-# Type Mapping
+# Component Configuration and Type Mapping
 
-`typeMap` fills in the parts that static PHP parsing cannot infer on its own. Use it to define the public Storybook args surface, redirect non-PHP imports to PHP type sources, resolve runtime bindings for interfaces and abstract types, and describe constructor types of nested classes.
+Component execution and conversion of argument values have separate contracts:
 
-## Overview
+- `components` describes imported components: their public args, constructors, callables, execution files, and adapters.
+- `types` describes objects appearing inside those arguments: concrete type routes and property types or fixed values.
 
-`typeMap` has three build-time/runtime sections:
-
-- `files`: file- or pattern-scoped component metadata
-- `bindings`: runtime DI-style bindings (type → concrete class, slot → type or value)
-- `classes`: runtime constructor parameter types, keyed by PHP class
-
-Per-story overrides live in `parameters.typeMap` and use the same public `args` shape as `typeMap.files[*].args`.
+## Component configuration (`components`)
 
 ```ts
 framework: {
   name: "storybook-php",
   options: {
-    typeMap: {
+    components: {
       files: {
-        "../src/views/components/card.blade.php": {
+        "../src/Card.php": {
           args: {
             title: "string",
-            body: "?string",
-            featured: { type: "bool", default: false },
+            "method.limit": { type: "int", default: 10 },
           },
-          adapter: new URL("../blade-adapter.php", import.meta.url).pathname,
+          callables: { compact: { args: { title: { default: "Compact" } } } },
+          includes: ["../src/BaseCard.php"],
         },
-        "../src/SearchCard.php": {
-          callables: {
-            render: {
-              args: {
-                "method.limit": { type: "int", default: 10 },
-              },
-            },
-          },
-        },
-      },
-      bindings: {
-        "App\\Contracts\\Renderable": "App\\View\\HtmlBlock",
+        "*.blade.php": { adapter: "./blade-adapter.php" },
       },
       classes: {
-        "App\\View\\Menu": {
-          args: { sections: "App\\View\\MenuSection[]" },
-        },
+        "App\\Card": { args: { badge: "App\\View\\Badge" } },
       },
+    },
+    types: {
+      "App\\Contracts\\Renderable": "App\\View\\HtmlBlock",
+      "App\\View\\Badge::$items": "list<App\\Item>",
+      "App\\View\\Badge::$meta": { value: { theme: "dark" } },
     },
   },
 }
 ```
 
-Like the rest of `framework.options`, relative `typeMap.files` paths resolve from Storybook's config directory.
+A function component maps its arguments and calls the function. A class component maps its constructor arguments, runs the constructor, and calls the selected method with mapped method arguments. Static methods, enum methods, and templates retain their existing execution rules. Extra public args are ignored when they match neither constructor nor callable parameters.
 
-## `typeMap.files`
+For initialization through setters, factories, containers, or other lifecycle operations, use an [adapter](framework-options.md#adapter). The built-in class and function execution paths serve the same purpose as project adapters: connecting the public Storybook args to the component's execution contract.
 
-`files` is the build-time source of truth for imported components. Each entry can target:
+### File contracts
 
-- an exact file path, resolved relative to your Storybook config directory
-- a suffix pattern starting with `*`, such as `*.blade.php`
+`components.files` keys are paths or suffix patterns such as `"*.blade.php"`. Relative paths resolve from Storybook's configuration directory. An exact match overlays the longest matching suffix pattern.
 
-Supported fields:
+Each entry supports:
 
-- `args`: define or refine the public Storybook args surface
-- `callables`: callable-specific `args` overrides for PHP files with multiple callables
-- `phpFile`: reuse another PHP file as the execution/type source
-- `callable`: force the callable used by `phpFile` redirects or mapped imports
-- `includes`: extra PHP files to parse for inheritance / trait metadata
-- `adapter`: adapter middleware for this file or pattern
+| Field       | Purpose                                                    |
+| ----------- | ---------------------------------------------------------- |
+| `args`      | Public argument types, controls, defaults, and nullability |
+| `callables` | Callable-specific `args` overrides within one file         |
+| `phpFile`   | A PHP execution/type source for an imported file           |
+| `callable`  | Callable to select from that PHP file                      |
+| `includes`  | Additional files to parse for parent classes and traits    |
+| `adapter`   | Middleware for the file or pattern                         |
 
-### Public Args Surface
-
-`args` always describes the public Storybook args surface, regardless of whether the source is:
-
-- a Blade/Twig/Latte template
-- a PHP class constructor
-- a PHP method or function
-
-Examples:
+A string argument override is shorthand for `{ type: "..." }`. Object overrides accept `type`, `elementType`, `options`, `nullable`, `required`, and `default`.
 
 ```ts
-files: {
-  "../src/views/components/card.blade.php": {
-    args: {
-      title: "string",
-      body: "?string",
-      featured: { type: "bool", default: false },
+components: {
+  files: {
+    "../src/Button.php": {
+      args: { variant: { options: ["primary", "secondary"] } },
     },
-  },
-  "../src/Button.php": {
-    args: {
-      variant: {
-        options: ["default", "primary", "danger"],
-      },
+    "../src/List.php": {
+      args: { items: { type: "array", elementType: "App\\Item" } },
     },
-  },
-}
-```
-
-### `constructor.` / `method.` Keys
-
-When a callable-backed component needs separate public inputs for constructor and invoked-method parameters with the same name, use namespaced public keys:
-
-```ts
-files: {
-  "../src/Card.php": {
-    callables: {
-      render: {
-        args: {
-          "constructor.title": "string",
-          "method.title": "?string",
-        },
-      },
+    "../src/card.bridge": {
+      phpFile: "../src/Card.php",
+      callable: "render",
     },
-  },
-}
-```
-
-When constructor and method args have the same name and compatible metadata, `storybook-php` keeps a single flat public key. It only splits them automatically when the two definitions cannot be merged safely.
-
-Flat keys stay the default. Use namespaced keys only when you need to split the public surface.
-
-### Callable-Specific Overrides
-
-Use `callables` when one PHP file exports multiple callable stories and they need different public args:
-
-```ts
-files: {
-  "../src/SearchCard.php": {
-    callables: {
-      render: {
-        args: {
-          query: "string",
-          "method.limit": { type: "int", default: 10 },
-        },
-      },
-      preview: {
-        args: {
-          compact: { type: "bool", default: true },
-        },
-      },
-    },
-  },
-}
-```
-
-Callable-specific `args` are layered on top of file-level `args` for that callable. When the same public key appears in both places, the callable-level definition wins.
-
-### Non-PHP Templates
-
-For Blade or other non-PHP templates, `args` can define the entire public contract directly:
-
-```ts
-files: {
-  "../src/views/components/card.blade.php": {
-    args: {
-      title: "string",
-      content: {
-        type: "App\\Contracts\\Renderable",
-        required: true,
-      },
-    },
-    adapter: new URL("../blade-adapter.php", import.meta.url).pathname,
-  },
-}
-```
-
-That adapter can be a terminal middleware that renders the template engine directly and returns HTML without calling `next`. The pre-cast template input is already available in `$context['templateArgs']`.
-
-### `phpFile` Redirects
-
-Use `phpFile` when a non-PHP import should reuse a PHP callable's signature and runtime plan:
-
-```ts
-files: {
-  "../src/views/components/card.blade.php": {
-    phpFile: "../src/BladeCard.php",
-    callable: "render",
-    adapter: new URL("../blade-adapter.php", import.meta.url).pathname,
-  },
-}
-```
-
-### `includes`
-
-If parent classes or traits live in other files, list them with `includes` so parsing can still resolve constructor and method metadata:
-
-```ts
-files: {
-  "../src/InfoCard.php": {
-    includes: ["../src/BaseCard.php", "../src/HasBadge.php"],
-  },
-}
-```
-
-### Pattern Matching and Precedence
-
-Behavior:
-
-- the longest matching suffix wins among patterns
-- exact matches override pattern fields
-- exact and pattern matches are merged when both apply
-- merging is field-by-field, not deep structural merging. For example, exact-match `args` replace pattern `args`, and exact `callables[render].args` replace the pattern version for that callable.
-
-## `typeMap.bindings`
-
-`bindings` are runtime-only, DI-style mappings used while the PHP runner hydrates story args into PHP values. A binding key says _where_ the mapping applies, and the value says _what_ to put there.
-
-| Key                          | Applies to                                                                      | Value                                  |
-| ---------------------------- | ------------------------------------------------------------------------------- | -------------------------------------- |
-| `App\\Contracts\\Renderable` | every slot that expects this interface, abstract class, or class                | concrete class name                    |
-| `App\\Card::$body`           | the `body` state of `App\\Card`: constructor argument, `setBody()`, or property | class name, `{ type }`, or `{ value }` |
-| `App\\Card::render($limit)`  | the `$limit` parameter of `App\\Card::render()`                                 | class name, `{ type }`, or `{ value }` |
-| `App\\render_card($limit)`   | the `$limit` parameter of the function `App\\render_card()`                     | class name, `{ type }`, or `{ value }` |
-
-```ts
-bindings: {
-  // interface -> concrete class, wherever Renderable is expected
-  "App\\Contracts\\Renderable": "App\\View\\HtmlBlock",
-  // this property is declared `mixed`; hydrate it as a Badge
-  "App\\Card::$badge": "App\\View\\Badge",
-  // force a fixed value into a slot, regardless of the story args
-  "App\\Card::$meta": { value: { theme: "dark" } },
-  // override both the expected type and the value of a method parameter
-  "App\\Card::render($limit)": { type: "int", value: "5" },
-}
-```
-
-- A type binding is followed wherever the type appears: a constructor argument, a `@param list<Renderable>` element, an `array{body: Renderable}` key, or a `@var` property.
-- A slot `type` replaces the documented type of that slot before the native PHP declaration is applied, so it can only narrow what PHP accepts.
-- A slot `value` replaces the incoming story value for that slot and is hydrated like any other value. Slot values on properties and setters are applied even when the story args omit the key.
-- Bindings chain: `A -> B` and `B -> C` resolve `A` to `C`. Cycles are reported as errors.
-
-`bindings` do not change generated TypeScript shapes on their own.
-
-## How Story Args Become PHP Objects
-
-The runner treats a JSON object as the _state_ of a PHP object rather than only as constructor input:
-
-1. The expected type of every slot is resolved from the native PHP declaration, refined with the docblock (`@param`, `@var`, `@template`), and finally overridden by `typeMap` (`args` definitions, `classes`, and `bindings`). Docblock types are resolved through the file's `use` imports, so `array{foo: Foo}` finds the imported `Foo`.
-2. Keys that match constructor parameters (by name, or by case- and underscore-insensitive comparison such as `user_name` for `$userName`) are passed to the constructor.
-3. Remaining keys go through a public `setX()` method when one exists, otherwise they are written to the property of that name, including private and protected properties. Classes with `__set()` receive unknown keys through it.
-4. A list is passed positionally, or wrapped as the single array argument of collection-like constructors. A scalar feeds a constructor with one required argument.
-
-The same rules apply to the component instance itself: story args that match neither a constructor nor a method parameter, but do match a setter or property of the component class, rewrite its state after construction.
-
-Failures name the exact slot, for example:
-
-```
-Cannot hydrate App\Card::__construct($items)[0] > App\Item::__construct($label): expected string, received list of 1 item.
-Cannot hydrate App\Card::__construct($body): App\Contracts\Renderable is an interface, so no object can be built from the story value. Add a typeMap binding such as {"App\\Contracts\\Renderable":"App\\ConcreteClass"} to choose the class to instantiate.
-```
-
-## `typeMap.classes`
-
-`classes` describes constructor parameters of PHP classes that the runner instantiates. Use it when an untyped or plain `array` parameter actually expects objects and the class has no PHPDoc that says so.
-
-`files[*].args` only reaches the parameters of the imported component itself. `classes` applies wherever the runner builds an instance of that class — at the top level and, most importantly, for nested objects hydrated from story args:
-
-```php
-class Component
-{
-    public function __construct(array $foo) {}  // expects Foo[]
-}
-
-class Foo
-{
-    public function __construct(array $bar) {}  // expects Bar[]
-}
-
-class Bar
-{
-    public function __construct(array $buz) {}
-}
-```
-
-```ts
-classes: {
-  "App\\Component": {
-    args: { foo: "Foo[]" },
-  },
-  "App\\Foo": {
-    args: { bar: { type: "array", elementType: "App\\Bar" } },
-  },
-}
-```
-
-With that mapping, story args such as `{ foo: [{ bar: [{ buz: ["x"] }] }] }` are hydrated into `Component(Foo[](Bar[]))` without an adapter.
-
-Behavior:
-
-- keys are PHP class names; a leading `\` and letter case are ignored
-- each `args` entry accepts the same string shorthand or object form as `files[*].args`; `type`, `elementType`, `nullable`, and `default` are honored at runtime
-- short class names inside types resolve against the namespace of the class that declares the constructor, and `bindings` still apply to them
-- a class without its own constructor can be described directly; entries on the class win over entries on the ancestor that declares the constructor
-- explicit types from `files[*].args`, story `parameters.typeMap.args`, or PHPDoc-derived metadata take precedence for the imported component; `classes` only fills parameters whose type would otherwise be plain `array`, untyped, or `mixed`
-
-`classes` is runtime-only. It changes how the runner casts arguments, but it does not change generated TypeScript shapes or Storybook controls.
-
-## Per-Story Overrides with `parameters.typeMap`
-
-Per-story overrides use the same public `args` shape as `typeMap.files[*].args`.
-
-```ts
-export const Custom = {
-  args: {
-    title: "Preview",
-  },
-  parameters: {
-    typeMap: {
+    "../src/notice.view": {
       args: {
-        "method.title": "?string",
-        subtitle: { nullable: true },
-      },
-      bindings: {
-        "App\\Contracts\\Renderable": "App\\View\\PlainTextBlock",
-      },
-      classes: {
-        "App\\View\\MenuItem": {
-          args: { href: { type: "string", default: "/preview" } },
-        },
+        title: "string",
+        featured: { type: "bool", default: false },
+        note: { type: "string", nullable: true },
       },
     },
+  },
+}
+```
+
+Use `constructor.name` and `method.name` to disambiguate parameters with the same name. `callables.render.args` and story overrides use this same public argument surface. `options` describes control choices; runtime conversions still follow the declared PHP contract.
+
+### Component class constructor contracts
+
+`components.classes` supplements constructor argument definitions when a class is executed as a component. Definitions for the concrete component take precedence over entries for ancestors sharing its constructor. Explicit effective argument types from file/story contracts and generated PHPDoc metadata retain precedence; class contracts can refine otherwise untyped or plain-array parameters.
+
+Nested objects use property mappings instead:
+
+```ts
+components: {
+  classes: {
+    "App\\NavMenu": { args: { sections: "list<App\\NavSection>" } },
+  },
+},
+types: {
+  "App\\NavSection::$links": "list<App\\NavLink>",
+  "App\\NavLink::$href": { value: "/docs" },
+},
+```
+
+Here `NavMenu` runs its constructor. Each `NavSection` and `NavLink` is allocated without running a constructor. A `components.classes` entry for either nested class would not affect these argument values.
+
+## Type mapping (`types`)
+
+`types` accepts exactly two kinds of key:
+
+| Key                        | Value                                                          | Meaning                                                      |
+| -------------------------- | -------------------------------------------------------------- | ------------------------------------------------------------ |
+| `App\Contracts\Renderable` | `"App\\View\\HtmlBlock"` or `{ type: "App\\View\\HtmlBlock" }` | Route a type to a concrete type                              |
+| `App\Card::$badge`         | `"App\\View\\Badge"` or `{ type: "App\\View\\Badge" }`         | Refine the property's type                                   |
+| `App\Card::$meta`          | `{ value: { theme: "dark" } }`                                 | Replace input, including an absent input, with a fixed value |
+| `App\Card::$items`         | `{ type: "list<App\\Item>", value: [] }`                       | Refine the property contract and supply its value            |
+
+Type routes can chain; cycles are errors. Type names in this configuration are fully qualified, optionally prefixed with `\`. They are not resolved against any source file's namespace or `use` imports. Global names such as `stdClass` remain valid. Property type expressions can use lists, shapes, unions, literals, and generics with fully qualified class names.
+
+`Class::method($param)`, `Class::__construct($param)`, and `function($param)` keys are rejected. Configure those parameters with `components.files[*].args`, `components.classes[*].args` for component constructors, or `parameters.php.component.args`.
+
+### Property hydration rules
+
+For objects appearing as values of constructor, method, function, or template arguments, and recursively inside those values:
+
+1. Resolve interfaces and abstract classes through type routes.
+2. Establish a property's contract from its native PHP type, then its `@var` docblock (or constructor `@param` for a promoted property), then a property type mapping. Mappings take precedence over docblocks but can only narrow the native type.
+3. Allocate the concrete class with `ReflectionClass::newInstanceWithoutConstructor()`.
+4. Hydrate input values against their property contracts and assign them with `ReflectionProperty::setValue()`. Public, protected, private, and inherited private properties are supported. Static properties are not instance slots.
+
+No constructor, setter, magic setter, or factory is called. A JSON key with no corresponding property is an error. Property lookup prefers exact names and retains case/underscore-insensitive matching for input keys. Mapping property names use the PHP property name.
+
+A scalar or positional list cannot initialize an object; there is no single-argument constructor conversion or collection-wrapper constructor fallback. An array/list contract still accepts array/list input. A generic wrapper must receive a property map such as `{ items: [{ label: "One" }] }`, rather than a bare list.
+
+Input keys omitted from a property map are left untouched. Typed properties without declaration defaults remain uninitialized, even when promoted constructor parameters have defaults. Supply required state explicitly or use a fixed property value mapping. Declaration defaults remain PHP defaults.
+
+Fixed property values override input and are hydrated through the property's contract. This also applies when the input omits the property. Existing PHP object instances are retained, enum values resolve by case name or backed value, and `stdClass` / `object{...}` shapes retain their existing behavior.
+
+PHPDoc names continue to resolve through `use` imports. `@template` binds generic arguments while descending into properties. Array shapes, lists, unions, literals, and lossless conversions use the same contract pipeline. A lossy conversion fails with a slot path:
+
+```text
+Cannot hydrate App\Card::render($items)[0] > App\Item::$count: expected int, received string 'many'.
+```
+
+These rules do not populate the component's own properties. Its constructor and selected method remain its execution contract. If the same PHP class is used as a nested argument value, that value follows property hydration.
+
+## Story overrides (`parameters.php`)
+
+```ts
+import type { PhpStoryParameters } from "storybook-php";
+
+export const Preview = {
+  args: { title: "Preview", content: { content: "Hello" } },
+  parameters: {
+    php: {
+      component: {
+        args: { "method.limit": { type: "int", default: 3 } },
+      },
+      types: {
+        "App\\Contracts\\Renderable": "App\\View\\PlainTextBlock",
+        "App\\Item::$meta": { value: { theme: "dark" } },
+      },
+    } satisfies PhpStoryParameters,
   },
 };
 ```
 
-Story-level `args` overrides are runtime-only. They affect runtime casting and adapter input mapping for that story, but they do not regenerate module types or Storybook controls.
+Story component args overlay the resolved public argument surface. Story `types` overlay global `types`; a story entry replaces the entire global entry with the same key. There is no per-story nested constructor configuration.
 
-Story-level `args` overrides are merged on top of the resolved public arg surface for that component. Story-level `bindings` are merged on top of global `typeMap.bindings`, and the story-level binding wins on conflicts; slot bindings such as `"App\\Card::$meta": { value: ... }` work per story as well. Story-level `classes` are merged on top of global `typeMap.classes` per constructor parameter, so a story can refine one parameter without restating the rest of the class.
+## CLI and editor configuration
 
-## `typegen` and `typeMap`
+The CLI does not evaluate `.storybook/main.ts`. Pass configuration explicitly:
 
-`typeMap.files` and `defaultMethod` affect declaration generation, but `typegen` does not read `.storybook/main.ts`. Pass those settings through `--options-file` instead:
-
-```bash
+```sh
 npx storybook-php typegen --options-file storybook-php.config.mjs
 ```
 
-That options file can export `typeMap`, `defaultMethod`, and `_configDir` so declaration generation resolves mapped files the same way Storybook does.
+The file can export `components`, `types`, `defaultMethod`, and `_configDir`. Component file contracts and `defaultMethod` determine generated declarations. Runtime `types` do not rewrite the public editor argument surface. The TS plugin accepts the same component file configuration.
 
-## When To Reach for `typeMap`
+## Breaking changes from `typeMap`
 
-Use `typeMap` when:
+- Move `typeMap.files` to `components.files`.
+- Move component constructor entries from `typeMap.classes` to `components.classes`.
+- Replace nested-class constructor entries with `types["Class::$property"]` mappings, using fully qualified names.
+- Move type/property entries from `typeMap.bindings` directly into `types`.
+- Replace parameter bindings with component argument contracts and defaults.
+- Move `parameters.typeMap.args` to `parameters.php.component.args` and per-story bindings to `parameters.php.types`.
+- Remove reliance on `stateArgs`, setters, constructor defaults for nested values, scalar constructors, and positional constructors. Use property maps or an adapter.
 
-- your component comes from Blade, Twig, Latte, or another non-PHP file
-- inheritance or traits live outside the imported file
-- Storybook controls need options, defaults, element types, or nullable hints
-- runtime object construction needs interface-to-concrete bindings, or a specific slot needs a fixed type or value
-- nested objects built from story args have untyped or plain `array` constructor parameters
-- one PHP file exposes multiple callable stories with different public args
+Old `typeMap` and `parameters.typeMap` settings are rejected. Exported configuration types are now `ComponentsConfig`, `ComponentFileConfig`, `ComponentClassConfig`, `TypeMapping`, `TypeMappings`, and `PhpStoryParameters`.
 
-For general runtime setup, see [Framework Options](framework-options.md).
+For adapters using the PHP helper API, `instantiateClassFromValue($class, $value, $types)` now takes a property map and a direct `types` map. `HydrationContext::fromTypes($types)` replaces `fromTypeMap()`. Component adapters still receive hydrated constructor/method/template args and can provide custom execution when needed.

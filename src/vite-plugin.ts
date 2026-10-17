@@ -9,7 +9,7 @@ import {
 } from "./core/config/framework-config.js";
 import { createPhpMiddleware } from "./runtime/server/dev-middleware.js";
 import { RenderRegistry } from "./runtime/render/render-registry.js";
-import type { AdapterMap, FileMapTarget, FrameworkOptions } from "./types.js";
+import type { AdapterMap, ComponentFileConfig, FrameworkOptions } from "./types.js";
 
 export function storybookPhpPlugin(options: FrameworkOptions = {}): Plugin {
   const resolvedOptions = resolveFrameworkOptions(options);
@@ -62,7 +62,8 @@ export function storybookPhpPlugin(options: FrameworkOptions = {}): Plugin {
         ...(resolvedOptions.phpEnv ? { phpEnv: resolvedOptions.phpEnv } : {}),
         ...(resolvedOptions.bootstrap !== null ? { bootstrap: resolvedOptions.bootstrap } : {}),
         ...(resolvedOptions.adapter !== null ? { adapter: resolvedOptions.adapter } : {}),
-        ...(options.typeMap !== undefined ? { typeMap: options.typeMap } : {}),
+        ...(options.components !== undefined ? { components: options.components } : {}),
+        ...(options.types !== undefined ? { types: options.types } : {}),
         ...(resolvedOptions.adapterMap ? { adapterMap: resolvedOptions.adapterMap } : {}),
       };
 
@@ -98,12 +99,12 @@ export function storybookPhpPlugin(options: FrameworkOptions = {}): Plugin {
 }
 
 export function resolveAdapterMap(
-  fileMap: Record<string, FileMapTarget> | undefined,
+  fileMap: Record<string, ComponentFileConfig> | undefined,
   configDir: string | undefined,
 ): AdapterMap | undefined {
   const options: FrameworkOptions = {};
   if (configDir !== undefined) options._configDir = configDir;
-  if (fileMap !== undefined) options.typeMap = { files: fileMap };
+  if (fileMap !== undefined) options.components = { files: fileMap };
   const resolved = resolveFrameworkOptions(options);
 
   return resolved.adapterMap ?? undefined;

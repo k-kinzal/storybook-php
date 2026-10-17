@@ -1,15 +1,7 @@
 /**
- * typeMap.classes demo: Constructor types for nested classes
- *
- * NavMenu takes `array $sections`, and each NavSection takes `array $links`.
- * Static analysis only sees `array`, so without help the runtime would pass
- * raw arrays down and NavSection / NavLink would never be instantiated.
- *
- * Config in main.ts:
- *   classes: {
- *     "App\\Components\\NavMenu": { args: { sections: "NavSection[]" } },
- *     "App\\Components\\NavSection": { args: { links: "NavLink[]" } },
- *   }
+ * NavMenu runs its constructor with the components.classes contract.
+ * NavSection and NavLink values are allocated through reflected properties;
+ * types["App\\Components\\NavSection::$links"] supplies the nested list type.
  */
 import type { Meta, StoryObj } from "storybook-php";
 import { NavMenu } from "./NavMenu.php@render";
@@ -34,7 +26,7 @@ export const Default: Story = {
       },
       {
         title: "Reference",
-        links: [{ label: "Framework Options" }],
+        links: [{ label: "Framework Options", href: "#" }],
       },
     ],
   },
@@ -50,11 +42,9 @@ export const StoryLevelOverride: Story = {
     ],
   },
   parameters: {
-    typeMap: {
-      classes: {
-        "App\\Components\\NavLink": {
-          args: { href: { type: "string", default: "/story" } },
-        },
+    php: {
+      types: {
+        "App\\Components\\NavLink::$href": { value: "/story" },
       },
     },
   },

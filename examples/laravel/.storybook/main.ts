@@ -9,7 +9,7 @@ const config: StorybookConfig = {
       bootstrap: new URL("../bootstrap.php", import.meta.url).pathname,
       adapter: new URL("../adapter.php", import.meta.url).pathname,
       timeout: 10000,
-      typeMap: {
+      components: {
         files: {
           "*.blade.php": {
             adapter: new URL("../blade.php", import.meta.url).pathname,

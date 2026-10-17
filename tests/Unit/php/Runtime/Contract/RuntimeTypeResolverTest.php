@@ -10,8 +10,8 @@ use RuntimeException;
 /**
  * @covers \StorybookPhp\Runtime\Contract\isRenderType
  * @covers \StorybookPhp\Runtime\Contract\requireExistingClass
- * @covers \StorybookPhp\Runtime\Contract\resolveTypeMapBinding
- * @covers \StorybookPhp\Runtime\Contract\normalizeTypeMapBindings
+ * @covers \StorybookPhp\Runtime\Contract\resolveMappedType
+ * @covers \StorybookPhp\Runtime\Contract\normalizeTypeMappings
  * @covers \StorybookPhp\Runtime\Contract\parseBindingKey
  * @covers \StorybookPhp\Runtime\Contract\normalizeBindingValue
  * @covers \StorybookPhp\Runtime\Contract\boundTypeName
@@ -31,9 +31,9 @@ final class RuntimeTypeResolverTest extends TestCase
 
     public function testResolveTypeMapBindingFollowsConfiguredTypeBindings(): void
     {
-        self::assertSame('Foo', \StorybookPhp\Runtime\Contract\resolveTypeMapBinding('Foo', null));
-        self::assertSame('Foo', \StorybookPhp\Runtime\Contract\resolveTypeMapBinding('Foo', ['bindings' => 'invalid']));
-        self::assertSame('Bar', \StorybookPhp\Runtime\Contract\resolveTypeMapBinding('Foo', ['bindings' => ['Foo' => 'Bar']]));
+        self::assertSame('Foo', \StorybookPhp\Runtime\Contract\resolveMappedType('Foo', null));
+        self::assertSame('Foo', \StorybookPhp\Runtime\Contract\resolveMappedType('Foo', ['bindings' => 'invalid']));
+        self::assertSame('Bar', \StorybookPhp\Runtime\Contract\resolveMappedType('Foo', ['Foo' => 'Bar']));
     }
 
     public function testRequireExistingClassRejectsUnknownClasses(): void

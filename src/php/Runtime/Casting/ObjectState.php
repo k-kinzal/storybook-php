@@ -5,9 +5,6 @@ declare(strict_types=1);
 namespace StorybookPhp\Runtime\Casting;
 
 use ReflectionClass;
-use ReflectionException;
-use ReflectionMethod;
-use ReflectionParameter;
 use ReflectionProperty;
 use StorybookPhp\Runtime\Contract\HydrationException;
 use StorybookPhp\Runtime\Contract\TypeScope;
@@ -19,15 +16,14 @@ use StorybookPhp\Runtime\Contract\TypeScope;
 const READONLY_PROPERTY_MODIFIER = 128;
 
 /**
- * Applies state keys to an existing object through `setX()` methods,
- * properties (any visibility), `__set()`, or dynamic properties on stdClass.
+ * Applies state keys to reflected properties of any visibility, including parent private properties.
  *
  * @param object $instance +mut the object whose state is rewritten
  * @param array<string, mixed> $state
- * @throws HydrationException when a key matches no setter or property, or a value cannot be converted
+ * @throws HydrationException when a key matches no property or a value cannot be converted
  *
  * @example Rewriting a property after construction
- *     $ctx = \StorybookPhp\Runtime\Casting\HydrationContext::fromTypeMap(null);
+ *     $ctx = \StorybookPhp\Runtime\Casting\HydrationContext::fromTypes(null);
  *     $scope = new \StorybookPhp\Runtime\Contract\TypeScope('App');
  *     \StorybookPhp\Runtime\Casting\applyObjectState($scope, ['class_name' => 'App\Card'], $ctx);
  *     $scope->className // => 'App\Card'
@@ -35,95 +31,46 @@ const READONLY_PROPERTY_MODIFIER = 128;
 function applyObjectState(object $instance, array $state, HydrationContext $context): void
 {
     $reflection = new ReflectionClass($instance);
-    $classArgDefs = \StorybookPhp\Runtime\Casting\classStateArgDefs($reflection, $context);
     $scopes = [];
     foreach ($state as $key => $value) {
         $slot = \StorybookPhp\Runtime\Casting\findStateSlot($reflection, $key);
-        $argDef = $slot === null ? null : $classArgDefs[\StorybookPhp\Runtime\Casting\normalizeStateKey($slot->getName())] ?? null;
-        if ($slot instanceof ReflectionMethod) {
-            $parameter = $slot->getParameters()[0];
-            $docType = \StorybookPhp\Runtime\Contract\parseDocBlockParamTypes($slot)[$parameter->getName()] ?? null;
-            $slot->invoke($instance, \StorybookPhp\Runtime\Casting\hydrateParameterValue($parameter, $value, $docType, $argDef, $context));
-        } elseif ($slot instanceof ReflectionProperty) {
+        if ($slot instanceof ReflectionProperty) {
             $scopes[$slot->getDeclaringClass()->getName()] ??= \StorybookPhp\Runtime\Contract\typeScopeForProperty($slot);
-            \StorybookPhp\Runtime\Casting\assignProperty($instance, $slot, $value, $context, $scopes[$slot->getDeclaringClass()->getName()], $argDef);
-        } elseif ($reflection->hasMethod('__set')) {
-            \StorybookPhp\Runtime\Casting\invokeMagicSetter($instance, $key, $value);
+            \StorybookPhp\Runtime\Casting\assignProperty($instance, $slot, $value, $context, $scopes[$slot->getDeclaringClass()->getName()]);
         } else {
             throw new HydrationException(
                 $context->at($reflection->getName() . '::$' . $key)->path,
-                "{$reflection->getName()} has no constructor argument, setter, or property named '{$key}'. Available state: [" . implode(', ', \StorybookPhp\Runtime\Casting\describeStateSlots($reflection)) . '].',
+                "{$reflection->getName()} has no property named '{$key}'. Available properties: [" . implode(', ', \StorybookPhp\Runtime\Casting\describeStateSlots($reflection)) . '].',
             );
         }
     }
 }
 
 /**
- * Collects `typeMap.classes` argument definitions that describe the state of
- * a class or one of its parents, keyed by normalised state name. A setter
- * `setFooBar()` and a property `$fooBar` both match the entry `fooBar`.
- *
- * @param ReflectionClass<object> $reflection
- * @return array<string, array<string, mixed>>
- *
- * @example Class entries describe setters and properties too
- *     $ctx = \StorybookPhp\Runtime\Casting\HydrationContext::fromTypeMap(['classes' => [\StorybookPhp\Runtime\Contract\TypeScope::class => ['args' => ['class_name' => 'string']]]]);
- *     \StorybookPhp\Runtime\Casting\classStateArgDefs(new \ReflectionClass(\StorybookPhp\Runtime\Contract\TypeScope::class), $ctx) // => ['classname' => ['type' => 'string']]
- */
-function classStateArgDefs(ReflectionClass $reflection, HydrationContext $context): array
-{
-    $argDefs = [];
-    $parents = class_parents($reflection->getName());
-    foreach (array_merge([$reflection->getName()], $parents === false ? [] : array_values($parents)) as $className) {
-        foreach (\StorybookPhp\Runtime\Contract\collectClassEntryArgDefs($className, $context->classes) as $name => $argDef) {
-            $argDefs[\StorybookPhp\Runtime\Casting\normalizeStateKey($name)] ??= $argDef;
-        }
-    }
-
-    return $argDefs;
-}
-
-/**
- * Routes a state key through the object's `__set()` magic method.
- *
- * @param object $instance +mut the object receiving the dynamic state
- * @throws HydrationException when the object has no `__set()` method
- */
-function invokeMagicSetter(object $instance, string $key, mixed $value): void
-{
-    try {
-        (new ReflectionMethod($instance, '__set'))->invoke($instance, $key, $value);
-    } catch (ReflectionException $exception) {
-        throw new HydrationException(get_class($instance) . '::$' . $key, 'the class has no __set() method to receive dynamic state.', $exception);
-    }
-}
-
-/**
- * Finds the public `setX()` method or the property that stores a state key.
+ * Finds the property that stores a state key, including inherited private properties.
  *
  * @param ReflectionClass<object> $reflection
  */
-function findStateSlot(ReflectionClass $reflection, string $key): ReflectionMethod|ReflectionProperty|null
+function findStateSlot(ReflectionClass $reflection, string $key): ?ReflectionProperty
 {
     $normalized = \StorybookPhp\Runtime\Casting\normalizeStateKey($key);
-    foreach ($reflection->getMethods(ReflectionMethod::IS_PUBLIC) as $method) {
-        $name = $method->getName();
-        if (
-            !$method->isStatic()
-            && $method->getNumberOfParameters() >= 1
-            && stripos($name, 'set') === 0
-            && \StorybookPhp\Runtime\Casting\normalizeStateKey(substr($name, 3)) === $normalized
-        ) {
-            return $method;
-        }
-    }
-    foreach ($reflection->getProperties() as $property) {
-        if (!$property->isStatic() && ($property->getName() === $key || \StorybookPhp\Runtime\Casting\normalizeStateKey($property->getName()) === $normalized)) {
-            return $property;
+    $fallback = null;
+    for ($name = $reflection->getName(); $name !== false; $name = get_parent_class($name)) {
+        $current = new ReflectionClass($name);
+        foreach ($current->getProperties() as $property) {
+            if ($property->isStatic()) {
+                continue;
+            }
+            if ($property->getName() === $key) {
+                return $property;
+            }
+            if (\StorybookPhp\Runtime\Casting\normalizeStateKey($property->getName()) === $normalized) {
+                $fallback ??= $property;
+            }
         }
     }
 
-    return null;
+    return $fallback;
 }
 
 /**
@@ -131,25 +78,24 @@ function findStateSlot(ReflectionClass $reflection, string $key): ReflectionMeth
  *
  * @param object $instance +mut the object whose property is written
  * @param TypeScope|null $scope resolution scope of the declaring class, built on demand when omitted
- * @param array<string, mixed>|null $argDef `typeMap.classes` definition describing the property
  * @throws HydrationException when the property is read-only and already initialised, rejects null, or the value cannot be converted
  */
-function assignProperty(object $instance, ReflectionProperty $property, mixed $value, HydrationContext $context, ?TypeScope $scope = null, ?array $argDef = null): void
+function assignProperty(object $instance, ReflectionProperty $property, mixed $value, HydrationContext $context, ?TypeScope $scope = null): void
 {
     $slot = $context->at(\StorybookPhp\Runtime\Casting\propertyLabel($property));
     if (($property->getModifiers() & READONLY_PROPERTY_MODIFIER) !== 0 && $property->isInitialized($instance)) {
-        throw new HydrationException($slot->path, 'the property is readonly and was already initialised by the constructor. Pass the value as a constructor argument instead.');
+        throw new HydrationException($slot->path, 'the property is readonly and has already been initialised. Pass its value when hydrating a new object.');
     }
     if ($value === null && !\StorybookPhp\Runtime\Casting\reflectionTypeAllowsNull($property->getType())) {
         throw new HydrationException($slot->path, 'the property is declared as ' . $property->getType() . ' and does not accept null.');
     }
-    $hydrated = $value === null ? null : \StorybookPhp\Runtime\Casting\hydrateValue($value, \StorybookPhp\Runtime\Casting\propertyContract($property, $context, $scope, $argDef), $slot);
+    $hydrated = $value === null ? null : \StorybookPhp\Runtime\Casting\hydrateValue($value, \StorybookPhp\Runtime\Casting\propertyContract($property, $context, $scope), $slot);
     @$property->setAccessible(true);
     $property->setValue($instance, $hydrated);
 }
 
 /**
- * Lists constructor arguments, setters, and properties for error messages.
+ * Lists instance properties for error messages.
  *
  * @param ReflectionClass<object> $reflection
  * @return list<string>
@@ -157,20 +103,12 @@ function assignProperty(object $instance, ReflectionProperty $property, mixed $v
 function describeStateSlots(ReflectionClass $reflection): array
 {
     $slots = [];
-    $constructor = $reflection->getConstructor();
-    if ($constructor instanceof ReflectionMethod) {
-        foreach ($constructor->getParameters() as $parameter) {
-            $slots[] = '$' . $parameter->getName();
-        }
-    }
-    foreach ($reflection->getMethods(ReflectionMethod::IS_PUBLIC) as $method) {
-        if (!$method->isStatic() && stripos($method->getName(), 'set') === 0 && $method->getNumberOfParameters() >= 1) {
-            $slots[] = $method->getName() . '()';
-        }
-    }
-    foreach ($reflection->getProperties() as $property) {
-        if (!$property->isStatic() && !$property->isPromoted()) {
-            $slots[] = '$' . $property->getName();
+    for ($name = $reflection->getName(); $name !== false; $name = get_parent_class($name)) {
+        $current = new ReflectionClass($name);
+        foreach ($current->getProperties() as $property) {
+            if (!$property->isStatic()) {
+                $slots[] = '$' . $property->getName();
+            }
         }
     }
 
@@ -178,36 +116,7 @@ function describeStateSlots(ReflectionClass $reflection): array
 }
 
 /**
- * Renders a constructor signature such as `__construct(string $label, int $count = 0)`.
- *
- * @param ReflectionClass<object> $reflection
- *
- * @example Signature rendering
- *     \StorybookPhp\Runtime\Casting\describeConstructor(new \ReflectionClass(\StorybookPhp\Runtime\Contract\HydrationException::class)) // => '__construct(string $path, string $reason, ?Throwable $previous = null)'
- *     \StorybookPhp\Runtime\Casting\describeConstructor(new \ReflectionClass(\stdClass::class)) // => 'no constructor'
- */
-function describeConstructor(ReflectionClass $reflection): string
-{
-    $constructor = $reflection->getConstructor();
-    if (!$constructor instanceof ReflectionMethod) {
-        return 'no constructor';
-    }
-    $parameters = [];
-    foreach ($constructor->getParameters() as $parameter) {
-        $type = $parameter->getType();
-        $rendered = ($type === null ? '' : $type . ' ') . ($parameter->isVariadic() ? '...' : '') . '$' . $parameter->getName();
-        if ($parameter->isDefaultValueAvailable()) {
-            $default = \StorybookPhp\Runtime\Casting\parameterDefaultValue($parameter);
-            $rendered .= ' = ' . ($default === null ? 'null' : str_replace("\n", '', var_export($default, true)));
-        }
-        $parameters[] = $rendered;
-    }
-
-    return '__construct(' . implode(', ', $parameters) . ')';
-}
-
-/**
- * Reports whether an array can feed the class constructor, used to rank union members.
+ * Reports whether an array is a property map for a concrete class, used to rank union members.
  *
  * @param class-string $class
  * @param array<array-key, mixed> $value
@@ -215,46 +124,17 @@ function describeConstructor(ReflectionClass $reflection): string
 function canHydrateObjectFromArray(string $class, array $value): bool
 {
     $reflection = new ReflectionClass($class);
-    if (!$reflection->isInstantiable()) {
+
+    if ($reflection->isAbstract() || ($value !== [] && \StorybookPhp\Runtime\Casting\isListArray($value))) {
         return false;
     }
-    $constructor = $reflection->getConstructor();
-    if (\StorybookPhp\Runtime\Casting\isListArray($value) && $value !== []) {
-        if (!$constructor instanceof ReflectionMethod) {
-            return false;
-        }
-        $count = \StorybookPhp\Runtime\Casting\constructorWrapsList($constructor) ? 1 : count($value);
-        $parameters = $constructor->getParameters();
-        $last = $parameters[count($parameters) - 1] ?? null;
-
-        return $count >= $constructor->getNumberOfRequiredParameters()
-            && ($count <= count($parameters) || ($last instanceof ReflectionParameter && $last->isVariadic()));
-    }
-    if (!$constructor instanceof ReflectionMethod) {
-        return true;
-    }
-    $state = \StorybookPhp\Runtime\Casting\stringKeyedState($value);
-    foreach ($constructor->getParameters() as $parameter) {
-        if (!$parameter->isOptional() && !$parameter->allowsNull() && \StorybookPhp\Runtime\Casting\findStateKey($parameter->getName(), $state) === null) {
+    foreach (array_keys($value) as $key) {
+        if (!\StorybookPhp\Runtime\Casting\findStateSlot($reflection, (string) $key) instanceof ReflectionProperty) {
             return false;
         }
     }
 
     return true;
-}
-
-/**
- * Reports whether a scalar can feed the class constructor.
- *
- * @param class-string $class
- */
-function canHydrateObjectFromScalar(string $class): bool
-{
-    $constructor = (new ReflectionClass($class))->getConstructor();
-
-    return $constructor instanceof ReflectionMethod
-        && $constructor->getNumberOfParameters() >= 1
-        && $constructor->getNumberOfRequiredParameters() <= 1;
 }
 
 /**
@@ -314,7 +194,7 @@ function stringKeyedState(array $value): array
  * @return array<string, mixed>
  *
  * @example A bound value overrides story input for that state
- *     $ctx = \StorybookPhp\Runtime\Casting\HydrationContext::fromTypeMap(['bindings' => ['StorybookPhp\Runtime\Contract\TypeScope::$namespace' => ['value' => 'App']]]);
+ *     $ctx = \StorybookPhp\Runtime\Casting\HydrationContext::fromTypes(['StorybookPhp\Runtime\Contract\TypeScope::$namespace' => ['value' => 'App']]);
  *     \StorybookPhp\Runtime\Casting\boundStateValues(new \ReflectionClass(\StorybookPhp\Runtime\Contract\TypeScope::class), $ctx) // => ['namespace' => 'App']
  */
 function boundStateValues(ReflectionClass $reflection, HydrationContext $context): array

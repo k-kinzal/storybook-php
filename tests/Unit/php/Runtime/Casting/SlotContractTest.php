@@ -60,7 +60,6 @@ require_once dirname(__DIR__, 4) . '/php/fixtures/HydrationFixtures.php';
  * @covers \StorybookPhp\Runtime\Casting\parameterContract
  * @covers \StorybookPhp\Runtime\Casting\propertyContract
  * @covers \StorybookPhp\Runtime\Casting\documentedTypeNode
- * @covers \StorybookPhp\Runtime\Casting\parameterSlotKeys
  * @covers \StorybookPhp\Runtime\Casting\propertySlotKeys
  * @covers \StorybookPhp\Runtime\Casting\parameterLabel
  * @covers \StorybookPhp\Runtime\Casting\propertyLabel
@@ -83,7 +82,7 @@ require_once dirname(__DIR__, 4) . '/php/fixtures/HydrationFixtures.php';
  * @covers \StorybookPhp\Runtime\Contract\parseTypeExpression
  * @covers \StorybookPhp\Runtime\Contract\describeTypeNode
  * @covers \StorybookPhp\Runtime\Contract\slotBinding
- * @covers \StorybookPhp\Runtime\Contract\normalizeTypeMapBindings
+ * @covers \StorybookPhp\Runtime\Contract\normalizeTypeMappings
  */
 final class SlotContractTest extends TestCase
 {
@@ -155,12 +154,12 @@ final class SlotContractTest extends TestCase
     public function testParameterContractLayersBindingArgDefAndDocblock(): void
     {
         $parameter = \StorybookPhp\TestFixture\Hydration\parameterOf([Shaped::class, '__construct'], 'shape');
-        $none = HydrationContext::fromTypeMap(null);
-        $bound = HydrationContext::fromTypeMap(['bindings' => [Shaped::class . '::$shape' => 'list<int>']]);
+        $none = HydrationContext::fromTypes(null);
+        $bound = HydrationContext::fromTypes([Shaped::class . '::$shape' => 'list<int>']);
 
         self::assertSame('array{foo: ' . Item::class . ', count?: int}', \StorybookPhp\Runtime\Contract\describeTypeNode(\StorybookPhp\Runtime\Casting\parameterContract($parameter, 'array{foo: AliasItem, count?: int}', null, $none)));
         self::assertSame('array<string>', \StorybookPhp\Runtime\Contract\describeTypeNode(\StorybookPhp\Runtime\Casting\parameterContract($parameter, 'array{foo: AliasItem}', ['type' => 'array', 'elementType' => 'string'], $none)));
-        self::assertSame('list<int>', \StorybookPhp\Runtime\Contract\describeTypeNode(\StorybookPhp\Runtime\Casting\parameterContract($parameter, 'array{foo: AliasItem}', ['elementType' => 'string'], $bound)));
+        self::assertSame('array<string>', \StorybookPhp\Runtime\Contract\describeTypeNode(\StorybookPhp\Runtime\Casting\parameterContract($parameter, 'array{foo: AliasItem}', ['elementType' => 'string'], $bound)));
         self::assertSame('array', \StorybookPhp\Runtime\Contract\describeTypeNode(\StorybookPhp\Runtime\Casting\parameterContract($parameter, null, ['type' => 'array'], $none)));
         self::assertSame('array', \StorybookPhp\Runtime\Contract\describeTypeNode(\StorybookPhp\Runtime\Casting\parameterContract($parameter, '  ', null, $none)));
     }
@@ -168,10 +167,10 @@ final class SlotContractTest extends TestCase
     public function testParameterContractBindsTemplatesFromTheContext(): void
     {
         $parameter = \StorybookPhp\TestFixture\Hydration\parameterOf([TypedCollection::class, '__construct'], 'items');
-        $context = HydrationContext::fromTypeMap(null)->withTemplates(['T' => new TypeNode('named', Item::class)]);
+        $context = HydrationContext::fromTypes(null)->withTemplates(['T' => new TypeNode('named', Item::class)]);
 
         self::assertSame('list<' . Item::class . '>', \StorybookPhp\Runtime\Contract\describeTypeNode(\StorybookPhp\Runtime\Casting\parameterContract($parameter, 'list<T>', null, $context)));
-        self::assertSame('list<mixed>', \StorybookPhp\Runtime\Contract\describeTypeNode(\StorybookPhp\Runtime\Casting\parameterContract($parameter, 'list<T>', null, HydrationContext::fromTypeMap(null))));
+        self::assertSame('list<mixed>', \StorybookPhp\Runtime\Contract\describeTypeNode(\StorybookPhp\Runtime\Casting\parameterContract($parameter, 'list<T>', null, HydrationContext::fromTypes(null))));
     }
 
     public function testParameterContractReportsUnparsableDocumentation(): void
@@ -180,12 +179,12 @@ final class SlotContractTest extends TestCase
 
         $this->expectException(HydrationException::class);
         $this->expectExceptionMessage("Cannot hydrate StorybookPhp\\TestFixture\\Hydration\\Shaped::__construct(\$shape): the documented type 'list<int' cannot be parsed: expected '>' before the end of type 'list<int'.");
-        \StorybookPhp\Runtime\Casting\parameterContract($parameter, 'list<int', null, HydrationContext::fromTypeMap(null));
+        \StorybookPhp\Runtime\Casting\parameterContract($parameter, 'list<int', null, HydrationContext::fromTypes(null));
     }
 
     public function testPropertyContractReadsVarPromotedParamAndBindings(): void
     {
-        $none = HydrationContext::fromTypeMap(null);
+        $none = HydrationContext::fromTypes(null);
 
         self::assertSame('list<' . Item::class . '>', \StorybookPhp\Runtime\Contract\describeTypeNode(\StorybookPhp\Runtime\Casting\propertyContract(\StorybookPhp\TestFixture\Hydration\propertyOf(Profile::class, 'items'), $none)));
         self::assertSame('array{foo: ' . Item::class . ', count?: int}', \StorybookPhp\Runtime\Contract\describeTypeNode(\StorybookPhp\Runtime\Casting\propertyContract(\StorybookPhp\TestFixture\Hydration\propertyOf(Shaped::class, 'shape'), $none)));
@@ -195,7 +194,7 @@ final class SlotContractTest extends TestCase
             Item::class,
             \StorybookPhp\Runtime\Contract\describeTypeNode(\StorybookPhp\Runtime\Casting\propertyContract(
                 \StorybookPhp\TestFixture\Hydration\propertyOf(Profile::class, 'meta'),
-                HydrationContext::fromTypeMap(['bindings' => [Profile::class . '::$meta' => Item::class]]),
+                HydrationContext::fromTypes([Profile::class . '::$meta' => Item::class]),
             )),
         );
     }
@@ -207,15 +206,6 @@ final class SlotContractTest extends TestCase
         $functionParameter = \StorybookPhp\TestFixture\Hydration\parameterOf('StorybookPhp\TestFixture\Hydration\acceptsShape', 'shape');
         $property = \StorybookPhp\TestFixture\Hydration\propertyOf(Profile::class, 'items');
 
-        self::assertSame(
-            ['storybookphp\testfixture\hydration\profile::__construct($name)', 'storybookphp\testfixture\hydration\profile::$name'],
-            \StorybookPhp\Runtime\Casting\parameterSlotKeys($constructorParameter),
-        );
-        self::assertSame(
-            ['storybookphp\testfixture\hydration\profile::settheme($theme)', 'storybookphp\testfixture\hydration\profile::$theme'],
-            \StorybookPhp\Runtime\Casting\parameterSlotKeys($setterParameter),
-        );
-        self::assertSame(['storybookphp\testfixture\hydration\acceptsshape($shape)'], \StorybookPhp\Runtime\Casting\parameterSlotKeys($functionParameter));
         self::assertSame(['storybookphp\testfixture\hydration\profile::$items'], \StorybookPhp\Runtime\Casting\propertySlotKeys($property));
         self::assertSame(Profile::class . '::__construct($name)', \StorybookPhp\Runtime\Casting\parameterLabel($constructorParameter));
         self::assertSame('StorybookPhp\TestFixture\Hydration\acceptsShape($shape)', \StorybookPhp\Runtime\Casting\parameterLabel($functionParameter));

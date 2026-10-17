@@ -1,8 +1,8 @@
 /**
- * typeMap.files[*].args demo: Runtime defaults and nullable overrides.
+ * components.files[*].args demo: Runtime defaults and nullable overrides.
  *
  * Neither $limit nor $subtitle has a useful runtime fallback in PHP alone.
- * typeMap.files[*].args fills those values when Storybook omits them.
+ * components.files[*].args fills those values when Storybook omits them.
  */
 import type { Meta, StoryObj } from "storybook-php";
 import { DefaultNotice } from "./DefaultNotice.php@render";

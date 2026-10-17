@@ -1,11 +1,11 @@
 /**
- * typeMap.files[].includes demo: Cross-file parent class resolution
+ * components.files[].includes demo: Cross-file parent class resolution
  *
  * InfoCard extends BaseCard, but they're in DIFFERENT files.
- * Without typeMap, the vite-plugin can't see BaseCard's constructor
+ * Without type mapping, the vite-plugin can't see BaseCard's constructor
  * params ($title, $variant) — it only searches the same file.
  *
- * typeMap.files tells it to also parse BaseCard.php:
+ * components.files tells it to also parse BaseCard.php:
  *   "../src/InfoCard.php": {
  *     includes: ["../src/BaseCard.php"],
  *   }
@@ -42,7 +42,7 @@ export const Primary: Story = {
 export const Success: Story = {
   args: {
     title: "All Good",
-    message: "Cross-file inheritance works with typeMap.files[].includes.",
+    message: "Cross-file inheritance works with components.files[].includes.",
     variant: "success",
   },
 };

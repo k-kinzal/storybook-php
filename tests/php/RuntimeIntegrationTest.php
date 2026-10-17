@@ -25,8 +25,6 @@ use StorybookPhp\TestFixture\SelfReferencing;
 use StorybookPhp\TestFixture\StringableValue;
 
 /**
- * @covers \StorybookPhp\Runtime\Casting\classStateArgDefs
- * @covers \StorybookPhp\Runtime\Casting\constructorArgumentValue
  * @covers \StorybookPhp\Runtime\Contract\nativeTypeScope
  * @covers \StorybookPhp\Runtime\Casting\parameterDefaultValue
  * @covers \StorybookPhp\Runtime\Casting\argDefDocType
@@ -56,19 +54,12 @@ use StorybookPhp\TestFixture\StringableValue;
  * @covers \StorybookPhp\Runtime\Casting\hydrateEnumCase
  * @covers \StorybookPhp\Runtime\Casting\hydrateObjectFromMap
  * @covers \StorybookPhp\Runtime\Casting\boundStateValues
- * @covers \StorybookPhp\Runtime\Casting\constructorArguments
  * @covers \StorybookPhp\Runtime\Casting\hydrateParameterValue
- * @covers \StorybookPhp\Runtime\Casting\hydrateObjectFromList
- * @covers \StorybookPhp\Runtime\Casting\constructorWrapsList
- * @covers \StorybookPhp\Runtime\Casting\reflectionTypeAcceptsArray
- * @covers \StorybookPhp\Runtime\Casting\hydrateObjectFromScalar
  * @covers \StorybookPhp\Runtime\Casting\applyObjectState
  * @covers \StorybookPhp\Runtime\Casting\findStateSlot
  * @covers \StorybookPhp\Runtime\Casting\assignProperty
  * @covers \StorybookPhp\Runtime\Casting\describeStateSlots
- * @covers \StorybookPhp\Runtime\Casting\describeConstructor
  * @covers \StorybookPhp\Runtime\Casting\canHydrateObjectFromArray
- * @covers \StorybookPhp\Runtime\Casting\canHydrateObjectFromScalar
  * @covers \StorybookPhp\Runtime\Casting\findStateKey
  * @covers \StorybookPhp\Runtime\Casting\normalizeStateKey
  * @covers \StorybookPhp\Runtime\Casting\stringKeyedState
@@ -99,7 +90,6 @@ use StorybookPhp\TestFixture\StringableValue;
  * @covers \StorybookPhp\Runtime\Casting\parameterContract
  * @covers \StorybookPhp\Runtime\Casting\propertyContract
  * @covers \StorybookPhp\Runtime\Casting\documentedTypeNode
- * @covers \StorybookPhp\Runtime\Casting\parameterSlotKeys
  * @covers \StorybookPhp\Runtime\Casting\propertySlotKeys
  * @covers \StorybookPhp\Runtime\Casting\parameterLabel
  * @covers \StorybookPhp\Runtime\Casting\propertyLabel
@@ -139,7 +129,7 @@ use StorybookPhp\TestFixture\StringableValue;
  * @covers \StorybookPhp\Runtime\Contract\parseUseClause
  * @covers \StorybookPhp\Runtime\Contract\resolveTypeName
  * @covers \StorybookPhp\Runtime\Contract\resolveTypeNode
- * @covers \StorybookPhp\Runtime\Contract\normalizeTypeMapBindings
+ * @covers \StorybookPhp\Runtime\Contract\normalizeTypeMappings
  * @covers \StorybookPhp\Runtime\Contract\parseBindingKey
  * @covers \StorybookPhp\Runtime\Contract\normalizeBindingValue
  * @covers \StorybookPhp\Runtime\Contract\boundTypeName
@@ -153,8 +143,8 @@ use StorybookPhp\TestFixture\StringableValue;
  * @covers \StorybookPhp\Runtime\Contract\typeExists
  * @covers \StorybookPhp\Runtime\Contract\enumTypeExists
  * @covers \StorybookPhp\Runtime\Contract\requireExistingClass
- * @covers \StorybookPhp\Runtime\Contract\resolveTypeMapBinding
- * @covers \StorybookPhp\Runtime\Contract\resolveTypeMapClassArgDefs
+ * @covers \StorybookPhp\Runtime\Contract\resolveMappedType
+ * @covers \StorybookPhp\Runtime\Contract\resolveComponentClassArgDefs
  * @covers \StorybookPhp\Runtime\Contract\collectClassEntryArgDefs
  * @covers \StorybookPhp\Runtime\Casting\resolveConstructorArgDefs
  * @covers \StorybookPhp\Runtime\Casting\layerClassArgDef
@@ -163,7 +153,6 @@ use StorybookPhp\TestFixture\StringableValue;
  * @covers \StorybookPhp\Runtime\Contract\resolveEnumCase
  * @covers \StorybookPhp\Runtime\Contract\findEnumCase
  * @covers \StorybookPhp\Runtime\Contract\resolveClassName
- * @covers \StorybookPhp\Runtime\Execution\resolveInstanceStateArgs
  * @covers \StorybookPhp\Runtime\Execution\normalizeNamedArgDefMap
  * @covers \StorybookPhp\Runtime\Execution\buildTargetArgDefs
  * @covers \StorybookPhp\Runtime\Execution\resolvePublicArgDefForTarget
@@ -341,13 +330,13 @@ final class RuntimeIntegrationTest extends TestCase
     {
         $shelf = new ReflectionClass(LabeledShelf::class);
 
-        self::assertNull(\StorybookPhp\Runtime\Contract\resolveTypeMapClassArgDefs($shelf, null));
-        self::assertNull(\StorybookPhp\Runtime\Contract\resolveTypeMapClassArgDefs($shelf, ['classes' => 'invalid']));
-        self::assertNull(\StorybookPhp\Runtime\Contract\resolveTypeMapClassArgDefs(
+        self::assertNull(\StorybookPhp\Runtime\Contract\resolveComponentClassArgDefs($shelf, null));
+        self::assertNull(\StorybookPhp\Runtime\Contract\resolveComponentClassArgDefs($shelf, ['classes' => 'invalid']));
+        self::assertNull(\StorybookPhp\Runtime\Contract\resolveComponentClassArgDefs(
             new ReflectionClass(Empty_::class),
             ['classes' => [Empty_::class => ['args' => ['value' => 'int']]]],
         ));
-        self::assertNull(\StorybookPhp\Runtime\Contract\resolveTypeMapClassArgDefs($shelf, ['classes' => [
+        self::assertNull(\StorybookPhp\Runtime\Contract\resolveComponentClassArgDefs($shelf, ['classes' => [
             0 => ['args' => ['items' => 'int']],
             LabeledShelf::class => 'invalid',
             Shelf::class => ['args' => 'invalid'],
@@ -358,7 +347,7 @@ final class RuntimeIntegrationTest extends TestCase
                 'items' => ['type' => 'Leaf[]', 'default' => []],
                 'label' => ['type' => 'string'],
             ],
-            \StorybookPhp\Runtime\Contract\resolveTypeMapClassArgDefs($shelf, ['classes' => [
+            \StorybookPhp\Runtime\Contract\resolveComponentClassArgDefs($shelf, ['classes' => [
                 '\\' . strtolower(LabeledShelf::class) => ['args' => [
                     'items' => ['type' => 'Leaf[]', 'default' => [], 0 => 'ignored'],
                     0 => 'ignored',
@@ -372,16 +361,16 @@ final class RuntimeIntegrationTest extends TestCase
 
     public function testClassTypeMapLayersUnderExplicitConstructorArgDefs(): void
     {
-        $typeMap = ['classes' => [Shelf::class => ['args' => ['items' => 'Leaf[]']]]];
+        $types = ['classes' => [Shelf::class => ['args' => ['items' => 'Leaf[]']]]];
 
-        self::assertNull(\StorybookPhp\Runtime\Casting\resolveConstructorArgDefs(new ReflectionClass(Empty_::class), null, $typeMap));
+        self::assertNull(\StorybookPhp\Runtime\Casting\resolveConstructorArgDefs(new ReflectionClass(Empty_::class), null, $types));
         self::assertSame(
             ['label' => ['type' => 'string']],
             \StorybookPhp\Runtime\Casting\resolveConstructorArgDefs(new ReflectionClass(Shelf::class), ['label' => ['type' => 'string']], null),
         );
         self::assertSame(
             ['items' => ['type' => 'Leaf[]']],
-            \StorybookPhp\Runtime\Casting\resolveConstructorArgDefs(new ReflectionClass(Shelf::class), null, $typeMap),
+            \StorybookPhp\Runtime\Casting\resolveConstructorArgDefs(new ReflectionClass(Shelf::class), null, $types),
         );
         self::assertSame(
             [
@@ -391,19 +380,19 @@ final class RuntimeIntegrationTest extends TestCase
             \StorybookPhp\Runtime\Casting\resolveConstructorArgDefs(new ReflectionClass(Shelf::class), [
                 'items' => ['type' => 'array', 'default' => [['tags' => ['seed']]]],
                 'label' => ['type' => 'string'],
-            ], $typeMap),
+            ], $types),
         );
         self::assertSame(
             ['items' => ['type' => 'Branch[]']],
             \StorybookPhp\Runtime\Casting\resolveConstructorArgDefs(new ReflectionClass(Shelf::class), [
                 'items' => ['type' => 'Branch[]'],
-            ], $typeMap),
+            ], $types),
         );
         self::assertSame(
             ['items' => ['type' => 'Leaf[]', 'nullable' => true]],
             \StorybookPhp\Runtime\Casting\resolveConstructorArgDefs(new ReflectionClass(Shelf::class), [
                 'items' => ['type' => 'array|null', 'nullable' => true],
-            ], $typeMap),
+            ], $types),
         );
         self::assertTrue(\StorybookPhp\Runtime\Casting\isPlainArrayDocType('?list'));
         self::assertTrue(\StorybookPhp\Runtime\Casting\isPlainArrayDocType('null|iterable'));
@@ -412,33 +401,35 @@ final class RuntimeIntegrationTest extends TestCase
         self::assertFalse(\StorybookPhp\Runtime\Casting\isPlainArrayDocType('Leaf'));
 
         $shelf = \StorybookPhp\Runtime\Casting\instantiateClassFromValue(Shelf::class, ['label' => 'empty'], [
-            'classes' => [Shelf::class => ['args' => ['items' => ['type' => 'Leaf[]', 'default' => [['tags' => ['seed']]]]]]],
+            BaseShelf::class . '::$items' => ['type' => Leaf::class . '[]', 'value' => [['tags' => ['seed']]]],
         ]);
         self::assertInstanceOf(Shelf::class, $shelf);
-        self::assertEquals([new Leaf(['seed'])], $shelf->items);
+        self::assertInstanceOf(Leaf::class, $shelf->items[0]);
+        self::assertSame(['seed'], $shelf->items[0]->tags);
     }
 
     public function testClassTypeMapHydratesNestedUntypedArrays(): void
     {
         $value = ['branches' => [['leaves' => [['tags' => ['a', 'b']], ['tags' => ['c']]]], ['leaves' => [['tags' => ['d']]]]]];
-        $typeMap = ['classes' => [
-            Tree::class => ['args' => ['branches' => 'Branch[]']],
-            Branch::class => ['args' => ['leaves' => ['type' => 'array', 'elementType' => 'Leaf']]],
-        ]];
+        $types = [
+            Tree::class . '::$branches' => Branch::class . '[]',
+            Branch::class . '::$leaves' => ['type' => Leaf::class . '[]'],
+        ];
 
         $untyped = \StorybookPhp\Runtime\Casting\instantiateClassFromValue(Tree::class, $value);
         self::assertInstanceOf(Tree::class, $untyped);
         self::assertSame('|', $untyped->render());
 
-        $tree = \StorybookPhp\Runtime\Casting\instantiateClassFromValue(Tree::class, $value, $typeMap);
+        $tree = \StorybookPhp\Runtime\Casting\instantiateClassFromValue(Tree::class, $value, $types);
         self::assertInstanceOf(Tree::class, $tree);
         self::assertSame('a/b,c|d', $tree->render());
 
-        $holder = \StorybookPhp\Runtime\Casting\instantiateClassFromValue(Holder::class, 'solo', [
-            'classes' => [Holder::class => ['args' => ['item' => 'Leaf']]],
+        $holder = \StorybookPhp\Runtime\Casting\instantiateClassFromValue(Holder::class, ['item' => ['tags' => ['solo']]], [
+            Holder::class . '::$item' => Leaf::class,
         ]);
         self::assertInstanceOf(Holder::class, $holder);
-        self::assertEquals(new Leaf(['solo']), $holder->item);
+        self::assertInstanceOf(Leaf::class, $holder->item);
+        self::assertSame(['solo'], $holder->item->tags);
 
         $result = \StorybookPhp\Runtime\Execution\executeRunnerRequest([
             'type' => 'classMethod',
@@ -447,9 +438,10 @@ final class RuntimeIntegrationTest extends TestCase
             'callable' => 'render',
             'args' => $value,
             'constructorArgDefs' => ['branches' => ['type' => 'array']],
+            'components' => ['classes' => [Tree::class => ['args' => ['branches' => Branch::class . '[]']]]],
             'bootstrap' => null,
             'adapters' => null,
-            'typeMap' => $typeMap,
+            'types' => $types,
         ]);
         self::assertSame('a/b,c|d', $result['html']);
     }
@@ -543,7 +535,7 @@ final class RuntimeIntegrationTest extends TestCase
             'callableArgDefs' => [],
             'bootstrap' => null,
             'adapters' => [self::ADAPTER_FILE],
-            'typeMap' => ['bindings' => []],
+            'types' => [],
         ], JSON_THROW_ON_ERROR));
 
         self::assertSame('function', $request['type']);
@@ -554,7 +546,7 @@ final class RuntimeIntegrationTest extends TestCase
         self::assertSame(['title' => ['type' => 'string']], $request['constructorArgDefs']);
         self::assertSame([], $request['callableArgDefs']);
         self::assertSame([self::ADAPTER_FILE], $request['adapters']);
-        self::assertSame(['bindings' => []], $request['typeMap']);
+        self::assertSame([], $request['types']);
 
         $cases = [
             ['123', 'Invalid request payload.'],
@@ -571,7 +563,7 @@ final class RuntimeIntegrationTest extends TestCase
             [json_encode(['type' => 'function', 'file' => self::FIXTURE_FILE, 'adapters' => 'bad'], JSON_THROW_ON_ERROR), 'Request field "adapters" must be an array or null.'],
             [json_encode(['type' => 'function', 'file' => self::FIXTURE_FILE, 'adapters' => ['']], JSON_THROW_ON_ERROR), "Field 'adapters' must be a list of non-empty strings."],
             [json_encode(['type' => 'function', 'file' => self::FIXTURE_FILE, 'adapters' => ['first' => self::ADAPTER_FILE]], JSON_THROW_ON_ERROR), "Field 'adapters' must be a list of non-empty strings."],
-            [json_encode(['type' => 'function', 'file' => self::FIXTURE_FILE, 'typeMap' => 'bad'], JSON_THROW_ON_ERROR), 'Request field "typeMap" must be an object or null.'],
+            [json_encode(['type' => 'function', 'file' => self::FIXTURE_FILE, 'types' => 'bad'], JSON_THROW_ON_ERROR), 'Request field "types" must be an object or null.'],
         ];
 
         foreach ($cases as [$payload, $message]) {
@@ -854,7 +846,7 @@ final class RuntimeIntegrationTest extends TestCase
             ],
             'bootstrap' => self::BOOTSTRAP_FILE,
             'adapters' => [self::ADAPTER_FILE],
-            'typeMap' => null,
+            'types' => null,
         ]);
         self::assertSame('loaded', $GLOBALS['storybookPhpBootstrapLoaded']);
         self::assertSame(
@@ -870,7 +862,7 @@ final class RuntimeIntegrationTest extends TestCase
             'args' => [],
             'bootstrap' => null,
             'adapters' => null,
-            'typeMap' => null,
+            'types' => null,
         ]);
         self::assertSame('plainplain-buffer:', $plainClassResult['html']);
 
@@ -882,7 +874,7 @@ final class RuntimeIntegrationTest extends TestCase
             'args' => ['amount' => '2.5'],
             'bootstrap' => null,
             'adapters' => null,
-            'typeMap' => null,
+            'types' => null,
         ]);
         self::assertSame('static:2.5', $staticResult['html']);
 
@@ -894,7 +886,7 @@ final class RuntimeIntegrationTest extends TestCase
             'args' => ['amount' => '2.5'],
             'bootstrap' => null,
             'adapters' => [self::ADAPTER_FILE],
-            'typeMap' => null,
+            'types' => null,
         ]);
         self::assertSame('staticMethod|RunnerFixtures.php||none|static:2.5', $staticAdapterResult['html']);
 
@@ -911,7 +903,7 @@ final class RuntimeIntegrationTest extends TestCase
             ],
             'bootstrap' => null,
             'adapters' => null,
-            'typeMap' => ['bindings' => [FormatterInterface::class => Formatter::class]],
+            'types' => [FormatterInterface::class => Formatter::class],
         ]);
         self::assertSame('say-HELLO:first:1,2func:', $functionResult['html']);
 
@@ -926,7 +918,7 @@ final class RuntimeIntegrationTest extends TestCase
             ],
             'bootstrap' => null,
             'adapters' => [self::ADAPTER_FILE],
-            'typeMap' => null,
+            'types' => null,
         ]);
         self::assertSame('function|RunnerFixtures.php|func:|none|hello:first:', $functionAdapterResult['html']);
 
@@ -942,7 +934,7 @@ final class RuntimeIntegrationTest extends TestCase
             ],
             'bootstrap' => null,
             'adapters' => [self::ADAPTER_FILE],
-            'typeMap' => null,
+            'types' => null,
         ]);
         self::assertSame('function|AliasFixture.php|func:|none|hello:first:', $functionSourceAdapterResult['html']);
 
@@ -955,7 +947,7 @@ final class RuntimeIntegrationTest extends TestCase
             'publicArgDefs' => null,
             'bootstrap' => null,
             'adapters' => null,
-            'typeMap' => null,
+            'types' => null,
         ]);
         self::assertSame('hi:2', $templateResult['html']);
 
@@ -971,7 +963,7 @@ final class RuntimeIntegrationTest extends TestCase
             ],
             'bootstrap' => null,
             'adapters' => null,
-            'typeMap' => null,
+            'types' => null,
         ]);
         self::assertSame('typed:4', $templateTypedResult['html']);
 
@@ -984,7 +976,7 @@ final class RuntimeIntegrationTest extends TestCase
             'publicArgDefs' => null,
             'bootstrap' => null,
             'adapters' => [self::ADAPTER_FILE],
-            'typeMap' => null,
+            'types' => null,
         ]);
         self::assertSame('template|Template.php||none|null', $templateAdapterResult['html']);
 
@@ -997,7 +989,7 @@ final class RuntimeIntegrationTest extends TestCase
                 'args' => ['_case' => 'draft', 'suffix' => '!'],
                 'bootstrap' => null,
                 'adapters' => null,
-                'typeMap' => null,
+                'types' => null,
             ]);
             self::assertSame('Draft!enum:', $enumResult['html']);
 
@@ -1009,7 +1001,7 @@ final class RuntimeIntegrationTest extends TestCase
                 'args' => ['_case' => 'draft', 'suffix' => '!'],
                 'bootstrap' => null,
                 'adapters' => [self::ADAPTER_FILE],
-                'typeMap' => null,
+                'types' => null,
             ]);
             self::assertSame('enumMethod|EnumFixtures.php|enum:|' . Status::class . '|Draft!', $enumAdapterResult['html']);
         }
@@ -1026,7 +1018,7 @@ final class RuntimeIntegrationTest extends TestCase
                 'args' => [],
                 'bootstrap' => null,
                 'adapters' => null,
-                'typeMap' => null,
+                'types' => null,
                 'message' => 'classMethod requires class and callable.',
             ],
             [
@@ -1037,7 +1029,7 @@ final class RuntimeIntegrationTest extends TestCase
                 'args' => [],
                 'bootstrap' => null,
                 'adapters' => null,
-                'typeMap' => null,
+                'types' => null,
                 'message' => 'staticMethod requires class and callable.',
             ],
             [
@@ -1048,7 +1040,7 @@ final class RuntimeIntegrationTest extends TestCase
                 'args' => [],
                 'bootstrap' => null,
                 'adapters' => null,
-                'typeMap' => null,
+                'types' => null,
                 'message' => 'function render requires callable.',
             ],
             [
@@ -1059,7 +1051,7 @@ final class RuntimeIntegrationTest extends TestCase
                 'args' => [],
                 'bootstrap' => null,
                 'adapters' => null,
-                'typeMap' => null,
+                'types' => null,
                 'message' => 'enumMethod requires enum class and callable.',
             ],
             [
@@ -1070,7 +1062,7 @@ final class RuntimeIntegrationTest extends TestCase
                 'args' => [],
                 'bootstrap' => null,
                 'adapters' => null,
-                'typeMap' => null,
+                'types' => null,
                 'message' => 'Unknown type: array',
             ],
             [
@@ -1081,7 +1073,7 @@ final class RuntimeIntegrationTest extends TestCase
                 'args' => [],
                 'bootstrap' => null,
                 'adapters' => null,
-                'typeMap' => null,
+                'types' => null,
                 'message' => 'Unknown type: unknown',
             ],
         ];
@@ -1095,7 +1087,7 @@ final class RuntimeIntegrationTest extends TestCase
                 'args' => ['_case' => 'draft'],
                 'bootstrap' => null,
                 'adapters' => null,
-                'typeMap' => null,
+                'types' => null,
                 'message' => "Enum '" . ExampleRenderer::class . "' is not available.",
             ];
         }
@@ -1110,7 +1102,7 @@ final class RuntimeIntegrationTest extends TestCase
                     'args' => $case['args'],
                     'bootstrap' => $case['bootstrap'],
                     'adapters' => $case['adapters'],
-                    'typeMap' => $case['typeMap'],
+                    'types' => $case['types'],
                 ]);
                 self::fail('Expected execution to fail.');
             } catch (RuntimeException $e) {
@@ -1138,9 +1130,9 @@ final class RuntimeIntegrationTest extends TestCase
                     'title' => ['type' => 'string', 'required' => true],
                     'featured' => ['type' => 'bool', 'default' => 1],
                 ],
-                'typeMap' => [
+                'types' => [
                     0 => 'skip',
-                    'bindings' => [],
+                    'App\Contract' => 'App\Concrete',
                 ],
             ],
             [
@@ -1174,7 +1166,7 @@ final class RuntimeIntegrationTest extends TestCase
             'args' => ['greeting' => 'run', 'count' => 5],
             'bootstrap' => null,
             'adapters' => null,
-            'typeMap' => null,
+            'types' => null,
         ], JSON_THROW_ON_ERROR);
         $encoded = \StorybookPhp\Runtime\run($validInput, false);
         self::assertSame('run:5', json_decode($encoded, true, 512, JSON_THROW_ON_ERROR)['html']);
@@ -1192,7 +1184,7 @@ final class RuntimeIntegrationTest extends TestCase
             'args' => [],
             'bootstrap' => null,
             'adapters' => null,
-            'typeMap' => null,
+            'types' => null,
         ], JSON_THROW_ON_ERROR);
         try {
             \StorybookPhp\Runtime\run($errorInput, false);
@@ -1205,7 +1197,7 @@ final class RuntimeIntegrationTest extends TestCase
     }
 
 
-    public function testClassMethodRenderingRewritesInstanceStateFromStoryArgs(): void
+    public function testComponentExecutionIgnoresResidualArgsAndPropertyMappings(): void
     {
         $result = \StorybookPhp\Runtime\Execution\executeRunnerRequest([
             'type' => 'classMethod',
@@ -1216,48 +1208,46 @@ final class RuntimeIntegrationTest extends TestCase
                 'title' => 'Hello',
                 'subtitle' => 'Sub',
                 'theme' => 'dark',
-                'shape' => ['foo' => 'alias', 'count' => '2'],
+                'shape' => ['foo' => ['label' => 'alias'], 'count' => '2'],
                 'limit' => '3',
                 'unrelated' => 'ignored',
             ],
             'bootstrap' => null,
             'adapters' => null,
-            'typeMap' => null,
+            'types' => null,
         ]);
-        self::assertSame('Hello:Sub:dark:alias:2:3', $result['html']);
+        self::assertSame('Hello:-:light:alias:2:3', $result['html']);
 
         $bound = \StorybookPhp\Runtime\Execution\executeRunnerRequest([
             'type' => 'classMethod',
             'file' => self::HYDRATION_FILE,
             'class' => Widget::class,
             'callable' => 'render',
-            'args' => ['title' => 'Hello', 'shape' => ['foo' => 'alias'], 'theme' => 'ignored'],
+            'args' => ['title' => 'Hello', 'shape' => ['foo' => ['label' => 'alias']], 'theme' => 'ignored'],
             'bootstrap' => null,
             'adapters' => null,
-            'typeMap' => ['bindings' => [
+            'types' => [
                 Widget::class . '::$theme' => ['value' => 'bound'],
                 Widget::class . '::$subtitle' => ['value' => 'fixed'],
-                Widget::class . '::render($limit)' => ['value' => 9],
-            ]],
+            ],
         ]);
-        self::assertSame('Hello:fixed:bound:alias:0:9', $bound['html']);
+        self::assertSame('Hello:-:light:alias:0:1', $bound['html']);
     }
 
-    public function testClassMethodRenderingExposesStateArgsToAdapters(): void
+    public function testComponentContextContainsOnlyConstructorAndMethodArgs(): void
     {
         $context = \StorybookPhp\Runtime\Execution\hydrateExecutionContext([
             'type' => 'classMethod',
             'executionFile' => self::HYDRATION_FILE,
             'class' => Widget::class,
             'callable' => 'render',
-            'publicArgs' => ['title' => 'Hello', 'subtitle' => 'Sub', 'shape' => ['foo' => 'alias'], 'other' => 1],
+            'publicArgs' => ['title' => 'Hello', 'subtitle' => 'Sub', 'shape' => ['foo' => ['label' => 'alias']], 'other' => 1],
         ]);
 
         self::assertSame(['title' => 'Hello'], $context['constructorArgs']);
-        self::assertSame(['subtitle' => 'Sub'], $context['stateArgs']);
-        self::assertSame(['subtitle' => 'Sub'], $context['__computedStateArgs']);
+        self::assertArrayNotHasKey('stateArgs', $context);
+        self::assertArrayNotHasKey('__computedStateArgs', $context);
         self::assertSame('alias', $context['methodArgs']['shape']['foo']->label);
-        self::assertSame(['stateArgs' => ['x' => 1]], array_intersect_key(\StorybookPhp\Runtime\Execution\normalizeAdapterResponse(['html' => '', 'stateArgs' => ['x' => 1]]), ['stateArgs' => true]));
     }
 
     public function testHydrationFailuresNameTheSlotThatRejectedTheValue(): void
@@ -1271,12 +1261,12 @@ final class RuntimeIntegrationTest extends TestCase
                 'args' => ['title' => 'Hello', 'shape' => ['foo' => ['label' => ['bad']]]],
                 'bootstrap' => null,
                 'adapters' => null,
-                'typeMap' => null,
+                'types' => null,
             ]);
             self::fail('Expected the nested hydration failure to surface.');
         } catch (RuntimeException $exception) {
             self::assertSame(
-                'Cannot hydrate ' . Widget::class . '::render($shape)[foo] > ' . Item::class . '::__construct($label): expected string, received list of 1 item.',
+                'Cannot hydrate ' . Widget::class . '::render($shape)[foo] > ' . Item::class . '::$label: expected string, received list of 1 item.',
                 $exception->getMessage(),
             );
         }
@@ -1290,7 +1280,7 @@ final class RuntimeIntegrationTest extends TestCase
                 'args' => ['formatter' => ['prefix' => 'x'], 'title' => 't'],
                 'bootstrap' => null,
                 'adapters' => null,
-                'typeMap' => null,
+                'types' => null,
             ]);
             self::fail('Expected the unbound interface to be reported.');
         } catch (RuntimeException $exception) {
@@ -1305,7 +1295,7 @@ final class RuntimeIntegrationTest extends TestCase
             'args' => ['title' => 'Hello', 'shape' => ['count' => 1]],
             'bootstrap' => null,
             'adapters' => null,
-            'typeMap' => ['bindings' => ['Nope::$x' => 5]],
+            'types' => ['Nope::$x' => 5],
         ], JSON_THROW_ON_ERROR);
         try {
             \StorybookPhp\Runtime\run($errorInput, false);
@@ -1313,7 +1303,7 @@ final class RuntimeIntegrationTest extends TestCase
         } catch (RuntimeException $exception) {
             $errorResponse = json_decode(\StorybookPhp\Runtime\failure($exception), true, 512, JSON_THROW_ON_ERROR);
         }
-        self::assertSame("Cannot hydrate value: typeMap binding 'Nope::\$x' must be a type name string or an object with 'type' and/or 'value', received int.", $errorResponse['error']);
+        self::assertSame("Cannot hydrate value: types binding 'Nope::\$x' must be a type name string or an object with 'type' and/or 'value', received int.", $errorResponse['error']);
     }
 
     public function testVersionSpecificTypesHydrateThroughTheSamePipeline(): void
@@ -1345,11 +1335,11 @@ final class RuntimeIntegrationTest extends TestCase
         }
 
         try {
-            \StorybookPhp\Runtime\Casting\applyObjectState($point, ['x' => 2], StorybookPhp\Runtime\Casting\HydrationContext::fromTypeMap(null));
+            \StorybookPhp\Runtime\Casting\applyObjectState($point, ['x' => 2], StorybookPhp\Runtime\Casting\HydrationContext::fromTypes(null));
             self::fail('Expected the initialised readonly property to be rejected.');
         } catch (RuntimeException $exception) {
             self::assertSame(
-                'Cannot hydrate ' . ReadonlyPoint::class . '::$x: the property is readonly and was already initialised by the constructor. Pass the value as a constructor argument instead.',
+                'Cannot hydrate ' . ReadonlyPoint::class . '::$x: the property is readonly and has already been initialised. Pass its value when hydrating a new object.',
                 $exception->getMessage(),
             );
         }

@@ -176,7 +176,7 @@ describe("createPhpMiddleware", () => {
   });
 
   it("returns 400 for invalid typeMap", async () => {
-    const body = JSON.stringify({ componentId: "cmp_1", args: {}, typeMap: [] });
+    const body = JSON.stringify({ componentId: "cmp_1", args: {}, php: [] });
     const req = createMockReq("POST", RENDER_PATH, body);
     const res = createMockRes();
     const next = vi.fn();
@@ -186,7 +186,7 @@ describe("createPhpMiddleware", () => {
     expect(next).not.toHaveBeenCalled();
     expect(res._status).toBe(400);
     const parsed = JSON.parse(res._body) as { error: string };
-    expect(parsed.error).toBe('Render request body field "typeMap" must be a JSON object or null');
+    expect(parsed.error).toBe('Render request body field "php" must be a JSON object or null');
   });
 
   // -------------------------------------------------------------------------
@@ -234,7 +234,7 @@ describe("createPhpMiddleware", () => {
       callableArgDefs: null,
       bootstrap: null,
       adapter: null,
-      typeMap: null,
+      types: null,
     });
   });
 
@@ -376,7 +376,7 @@ describe("createPhpMiddleware", () => {
       callableArgDefs: null,
       bootstrap: null,
       adapter: "/some/adapter.php",
-      typeMap: null,
+      types: null,
     });
   });
 
@@ -455,13 +455,11 @@ describe("createPhpMiddleware", () => {
       callable: "render",
     });
 
-    const typeMap = {
-      bindings: { "App\\Iface": "App\\Concrete" },
-    };
+    const types = { "App\\Iface": "App\\Concrete" };
     const body = JSON.stringify({
       componentId,
       args: {},
-      typeMap,
+      php: { types },
     });
     const req = createMockReq("POST", RENDER_PATH, body);
     const res = createMockRes();
@@ -470,7 +468,7 @@ describe("createPhpMiddleware", () => {
     await registryMiddleware(req, res, next);
 
     expect(res._status).toBe(200);
-    expect(mockExecute).toHaveBeenCalledWith(expect.objectContaining({ typeMap }));
+    expect(mockExecute).toHaveBeenCalledWith(expect.objectContaining({ types }));
   });
 
   // -------------------------------------------------------------------------
@@ -509,7 +507,7 @@ describe("createPhpMiddleware", () => {
       callableArgDefs: null,
       bootstrap: null,
       adapter: null,
-      typeMap: null,
+      types: null,
     });
   });
 

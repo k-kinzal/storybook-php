@@ -298,7 +298,7 @@ describe("PhpResolver", () => {
     it("supports typeMap-backed inline args with configDir", () => {
       const resolver = createPhpResolver(mockTs, {
         configDir: fixturesDir,
-        typeMap: {
+        components: {
           files: {
             "TypeMapInlineTarget.blade.php": {
               args: {

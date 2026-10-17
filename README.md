@@ -81,7 +81,7 @@ npx storybook-php start
 
 `typegen` defaults to the `src` directory when no directories are specified. It writes declaration files next to the source import path, including exact-import outputs such as `Button.php@render.d.ts`. When `defaultMethod` resolves, the bare `Button.php.d.ts` output mirrors that callable; otherwise a bare import remains template-shaped.
 
-If your type generation depends on `defaultMethod` or `typeMap`, pass them through `--options-file` because `typegen` does not read `.storybook/main.ts`. The options file can be JSON or a JS module and may also provide `_configDir` for relative path resolution.
+If your type generation depends on `defaultMethod` or `components`, pass them through `--options-file` because `typegen` does not read `.storybook/main.ts`. The options file can be JSON or a JS module and may also provide `_configDir` for relative path resolution.
 
 For PHP-first repositories that do not want to add a local `package.json`, see [PHP Project Setup](docs/php-project-setup.md) for the `npx`-based setup.
 
@@ -109,19 +109,19 @@ If your project does not define `vitest.config.*` and you do not pass `--config`
 
 PHP components are imported with the `./File.php@method` specifier. The `@method` suffix tells storybook-php which callable to invoke. Constructor parameters and method parameters are merged into the story's args.
 
-| Pattern                      | Import Syntax                 | Args Source                            |
-| ---------------------------- | ----------------------------- | -------------------------------------- |
-| Class instance method        | `./File.php@render`           | Constructor params + method params     |
-| Static method                | `./File.php@danger`           | Method params only                     |
-| Standalone function          | `./file.php@funcName`         | Function params                        |
-| Invocable class              | `./File.php@__invoke`         | Constructor params + `__invoke` params |
-| Enum method                  | `./File.php@swatch`           | `_case` + method params                |
-| Template file                | `./file.php` (default import) | Template variables from args           |
-| Mapped non-PHP import source | `./card.blade.php`            | `typeMap.files` decides the public API |
+| Pattern                      | Import Syntax                 | Args Source                               |
+| ---------------------------- | ----------------------------- | ----------------------------------------- |
+| Class instance method        | `./File.php@render`           | Constructor params + method params        |
+| Static method                | `./File.php@danger`           | Method params only                        |
+| Standalone function          | `./file.php@funcName`         | Function params                           |
+| Invocable class              | `./File.php@__invoke`         | Constructor params + `__invoke` params    |
+| Enum method                  | `./File.php@swatch`           | `_case` + method params                   |
+| Template file                | `./file.php` (default import) | Template variables from args              |
+| Mapped non-PHP import source | `./card.blade.php`            | `components.files` decides the public API |
 
 Methods that use `echo` instead of returning a string are captured via output buffering automatically.
 
-Non-PHP sources such as Blade, Twig, or Latte are supported through `framework.options.typeMap.files`. Those mappings can provide public args, redirect execution to a PHP file, select a callable, include extra files for analysis, and attach adapter middleware.
+Non-PHP sources such as Blade, Twig, or Latte are supported through `framework.options.components.files`. Those mappings can provide public args, redirect execution to a PHP file, select a callable, include extra files for analysis, and attach adapter middleware.
 
 ## Configuration
 
@@ -136,11 +136,12 @@ Configure in `.storybook/main.ts` under `framework.options`:
 | `timeout`       | `number`                 | `5000`      | Render timeout in milliseconds                                             |
 | `defaultMethod` | `string`                 | `undefined` | Method name used when `@method` is omitted from the import specifier       |
 | `adapter`       | `string`                 | `undefined` | Path to a PHP adapter file for custom output handling (e.g. Laravel Blade) |
-| `typeMap`       | `object`                 | `undefined` | File mappings, callable overrides, runtime type/slot bindings, class types |
+| `components`    | `object`                 | `undefined` | File and component constructor contracts, callable overrides, adapters     |
+| `types`         | `TypeMappings`           | `undefined` | Fully qualified type routes and property type/value mappings               |
 
 The adapter file must return middleware compatible with `fn(array $context, callable $next): array|string`
 
-Relative option paths are resolved from Storybook's config directory. `defaultMethod` and `typeMap` also affect module resolution, TS plugin output, and `typegen` when you pass them through `--options-file`.
+Relative option paths are resolved from Storybook's config directory. `defaultMethod` and `components` also affect module resolution, TS plugin output, and `typegen` when you pass them through `--options-file`.
 
 ## TypeScript Support
 
@@ -168,7 +169,7 @@ npx storybook-php typegen
 - `Button.php.d.ts`
 - `Button.php@render.d.ts`
 
-For advanced setups, load `defaultMethod` and `typeMap` from a separate file:
+For advanced setups, load `defaultMethod` and `components` from a separate file:
 
 ```bash
 npx storybook-php typegen --options-file storybook-php.config.mjs

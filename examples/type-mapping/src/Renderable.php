@@ -3,10 +3,10 @@
 namespace App\Components;
 
 /**
- * Interface + concrete implementation for demonstrating typeMap.bindings.
+ * Interface + concrete implementation for demonstrating types.
  *
  * When a constructor param is typed as Renderable (interface),
- * the runner can't instantiate it. typeMap.bindings tells it
+ * the runner can't instantiate it. types tells it
  * to use HtmlBlock as the concrete class.
  */
 interface Renderable

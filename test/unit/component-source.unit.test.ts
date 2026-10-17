@@ -12,7 +12,7 @@ describe("component-source", () => {
       fixturePath("TypeMapInlineTarget.blade.php"),
       resolveFrameworkOptions({
         _configDir: FIXTURES,
-        typeMap: {
+        components: {
           files: {
             "TypeMapInlineTarget.blade.php": {
               phpFile: "SimpleComponent.php",
@@ -32,7 +32,7 @@ describe("component-source", () => {
       fixturePath("ComplexComponent.php"),
       resolveFrameworkOptions({
         _configDir: FIXTURES,
-        typeMap: {
+        components: {
           files: {
             "ComplexComponent.php": {
               callables: {
@@ -60,7 +60,7 @@ describe("component-source", () => {
       fixturePath("SimpleComponent.php"),
       resolveFrameworkOptions({
         _configDir: FIXTURES,
-        typeMap: {
+        components: {
           files: {
             "SimpleComponent.php": {
               args: {
@@ -94,7 +94,7 @@ describe("component-source", () => {
       fixturePath("TypeMapInlineTarget.blade.php"),
       resolveFrameworkOptions({
         _configDir: FIXTURES,
-        typeMap: {
+        components: {
           files: {
             "TypeMapInlineTarget.blade.php": {
               args: {
@@ -120,7 +120,7 @@ describe("component-source", () => {
       fixturePath("TypeMapInlineTarget.blade.php"),
       resolveFrameworkOptions({
         _configDir: FIXTURES,
-        typeMap: {
+        components: {
           files: {
             "TypeMapInlineTarget.blade.php": {
               phpFile: "SimpleComponent.php",
@@ -134,7 +134,7 @@ describe("component-source", () => {
       fixturePath("TypeMapInlineTarget.blade.php"),
       resolveFrameworkOptions({
         _configDir: FIXTURES,
-        typeMap: {
+        components: {
           files: {
             "TypeMapInlineTarget.blade.php": {
               phpFile: "StandaloneFunctions.php",
@@ -154,7 +154,7 @@ describe("component-source", () => {
       fixturePath("TypeMapInlineTarget.blade.php"),
       resolveFrameworkOptions({
         _configDir: FIXTURES,
-        typeMap: {
+        components: {
           files: {
             "TypeMapInlineTarget.blade.php": {
               args: {

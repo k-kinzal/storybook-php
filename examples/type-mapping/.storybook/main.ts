@@ -1,24 +1,9 @@
 import type { StorybookConfig } from "storybook";
 
 /**
- * Type Mapping Example
- *
- * This example demonstrates all sections of typeMap:
- *
- *   1. files   — Map file paths to type information sources
- *   2. bindings — DI-style type resolution (interface → concrete)
- *   3. classes — Constructor types for classes the runtime instantiates (nested arrays)
- *   4. files[*].args / parameters.typeMap.args — Public Storybook args surface overrides
- *
- * The stories in ../src cover:
- *   - options for string and enum controls
- *   - interface bindings
- *   - elementType for arrays
- *   - type overrides for untyped params
- *   - runtime defaults and nullable overrides
- *   - direct non-PHP template imports via files.args
- *   - phpFile redirects for non-PHP sources
- *   - nested untyped arrays resolved through classes
+ * Component file and constructor contracts are configured under components.
+ * Argument value objects use types for concrete routes and property contracts.
+ * Story overrides use parameters.php.component.args and parameters.php.types.
  */
 const config: StorybookConfig = {
   addons: ["@storybook/addon-vitest"],
@@ -29,10 +14,7 @@ const config: StorybookConfig = {
       bootstrap: new URL("../bootstrap.php", import.meta.url).pathname,
       timeout: 5000,
 
-      typeMap: {
-        // ---------------------------------------------------------------
-        // files: Map file paths → type information sources
-        // ---------------------------------------------------------------
+      components: {
         files: {
           // Cross-file inheritance: tell the vite-plugin to also parse
           // BaseCard.php so it can resolve the parent constructor params.
@@ -105,30 +87,15 @@ const config: StorybookConfig = {
             },
           },
         },
-
-        // ---------------------------------------------------------------
-        // bindings: Interface/Abstract → Concrete class (DI-style)
-        // ---------------------------------------------------------------
-        // When runner.php encounters a constructor param typed as Renderable,
-        // it will instantiate HtmlBlock instead.
-        bindings: {
-          "App\\Components\\Renderable": "App\\Components\\HtmlBlock",
-        },
-
-        // ---------------------------------------------------------------
-        // classes: Constructor types the runtime cannot infer on its own
-        // ---------------------------------------------------------------
-        // Applied whenever the runner instantiates the class, including
-        // nested instances built from story args. Short class names resolve
-        // against the class's own namespace.
         classes: {
           "App\\Components\\NavMenu": {
             args: { sections: "NavSection[]" },
           },
-          "App\\Components\\NavSection": {
-            args: { links: "NavLink[]" },
-          },
         },
+      },
+      types: {
+        "App\\Components\\Renderable": "App\\Components\\HtmlBlock",
+        "App\\Components\\NavSection::$links": "list<App\\Components\\NavLink>",
       },
     },
   },

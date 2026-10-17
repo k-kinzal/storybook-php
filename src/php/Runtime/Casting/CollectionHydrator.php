@@ -15,7 +15,7 @@ use Traversable;
  * @throws HydrationException when no member accepts the value
  *
  * @example Choosing the union member by value shape
- *     $ctx = \StorybookPhp\Runtime\Casting\HydrationContext::fromTypeMap(null);
+ *     $ctx = \StorybookPhp\Runtime\Casting\HydrationContext::fromTypes(null);
  *     $type = \StorybookPhp\Runtime\Contract\parseTypeExpression('int|list<int>');
  *     \StorybookPhp\Runtime\Casting\hydrateUnionType('5', $type, $ctx) // => 5
  *     \StorybookPhp\Runtime\Casting\hydrateUnionType(['5'], $type, $ctx) // => [5]
@@ -72,7 +72,7 @@ function hydrateIntersectionType(mixed $value, TypeNode $type, HydrationContext 
  * @throws HydrationException when the value or an element cannot be converted
  *
  * @example Converting list elements
- *     $ctx = \StorybookPhp\Runtime\Casting\HydrationContext::fromTypeMap(null);
+ *     $ctx = \StorybookPhp\Runtime\Casting\HydrationContext::fromTypes(null);
  *     $type = \StorybookPhp\Runtime\Contract\parseTypeExpression('array<string, int>');
  *     \StorybookPhp\Runtime\Casting\hydrateGenericType(['a' => '1', 'b' => 2], $type, $ctx) // => ['a' => 1, 'b' => 2]
  */
@@ -122,7 +122,7 @@ function hydrateArrayElements(mixed $value, TypeNode $elementType, HydrationCont
  * @throws HydrationException when a required key is missing or a field cannot be converted
  *
  * @example Optional keys may be absent
- *     $ctx = \StorybookPhp\Runtime\Casting\HydrationContext::fromTypeMap(null);
+ *     $ctx = \StorybookPhp\Runtime\Casting\HydrationContext::fromTypes(null);
  *     $type = \StorybookPhp\Runtime\Contract\parseTypeExpression('array{id: int, note?: string}');
  *     \StorybookPhp\Runtime\Casting\hydrateShapeType(['id' => '7'], $type, $ctx) // => ['id' => 7]
  */

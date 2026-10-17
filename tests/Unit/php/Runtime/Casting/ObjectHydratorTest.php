@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Tests\Unit\StorybookPhp\Runtime\Casting;
 
+use Closure;
 use PHPUnit\Framework\TestCase;
 use stdClass;
 use StorybookPhp\Runtime\Casting\HydrationContext;
@@ -25,9 +26,7 @@ use StorybookPhp\TestFixture\Hydration\Profile;
 use StorybookPhp\TestFixture\Hydration\SelfLinked;
 use StorybookPhp\TestFixture\Hydration\SetterOnly;
 use StorybookPhp\TestFixture\Hydration\Shaped;
-use StorybookPhp\TestFixture\Hydration\Tags;
 use StorybookPhp\TestFixture\Hydration\Untyped;
-use StorybookPhp\TestFixture\Hydration\Variadic;
 use StorybookPhp\TestFixture\Item;
 use StorybookPhp\TestFixture\NoConstructorItem;
 
@@ -43,7 +42,6 @@ require_once dirname(__DIR__, 4) . '/php/fixtures/ClassTypeMapFixtures.php';
  * @covers \StorybookPhp\Runtime\Contract\normalizeStringKeyArray
  * @covers \StorybookPhp\Runtime\Contract\resolveClassName
  * @covers \StorybookPhp\Runtime\Contract\nativeTypeScope
- * @covers \StorybookPhp\Runtime\Casting\invokeMagicSetter
  * @covers \StorybookPhp\Runtime\Contract\parseFileImports
  * @covers \StorybookPhp\Runtime\Contract\parseUseClause
  * @covers \StorybookPhp\Runtime\Casting\scoreLiteralTypeMatch
@@ -76,28 +74,19 @@ require_once dirname(__DIR__, 4) . '/php/fixtures/ClassTypeMapFixtures.php';
  * @covers \StorybookPhp\Runtime\Casting\resolveHydrationClass
  * @covers \StorybookPhp\Runtime\Casting\hydrateObjectFromMap
  * @covers \StorybookPhp\Runtime\Casting\boundStateValues
- * @covers \StorybookPhp\Runtime\Casting\constructorArguments
- * @covers \StorybookPhp\Runtime\Casting\constructorArgumentValue
  * @covers \StorybookPhp\Runtime\Casting\resolveConstructorArgDefs
  * @covers \StorybookPhp\Runtime\Casting\layerClassArgDef
  * @covers \StorybookPhp\Runtime\Casting\isPlainArrayDocType
  * @covers \StorybookPhp\Runtime\Casting\resolveParameterArgDef
- * @covers \StorybookPhp\Runtime\Casting\classStateArgDefs
- * @covers \StorybookPhp\Runtime\Contract\resolveTypeMapClassArgDefs
+ * @covers \StorybookPhp\Runtime\Contract\resolveComponentClassArgDefs
  * @covers \StorybookPhp\Runtime\Contract\collectClassEntryArgDefs
  * @covers \StorybookPhp\Runtime\Casting\hydrateParameterValue
  * @covers \StorybookPhp\Runtime\Casting\parameterDefaultValue
- * @covers \StorybookPhp\Runtime\Casting\hydrateObjectFromList
- * @covers \StorybookPhp\Runtime\Casting\constructorWrapsList
- * @covers \StorybookPhp\Runtime\Casting\reflectionTypeAcceptsArray
- * @covers \StorybookPhp\Runtime\Casting\hydrateObjectFromScalar
  * @covers \StorybookPhp\Runtime\Casting\applyObjectState
  * @covers \StorybookPhp\Runtime\Casting\findStateSlot
  * @covers \StorybookPhp\Runtime\Casting\assignProperty
  * @covers \StorybookPhp\Runtime\Casting\describeStateSlots
- * @covers \StorybookPhp\Runtime\Casting\describeConstructor
  * @covers \StorybookPhp\Runtime\Casting\canHydrateObjectFromArray
- * @covers \StorybookPhp\Runtime\Casting\canHydrateObjectFromScalar
  * @covers \StorybookPhp\Runtime\Casting\findStateKey
  * @covers \StorybookPhp\Runtime\Casting\normalizeStateKey
  * @covers \StorybookPhp\Runtime\Casting\stringKeyedState
@@ -126,7 +115,6 @@ require_once dirname(__DIR__, 4) . '/php/fixtures/ClassTypeMapFixtures.php';
  * @covers \StorybookPhp\Runtime\Casting\docTypeIsClassLike
  * @covers \StorybookPhp\Runtime\Casting\reflectionTypeNode
  * @covers \StorybookPhp\Runtime\Casting\reflectionTypeAllowsNull
- * @covers \StorybookPhp\Runtime\Casting\parameterSlotKeys
  * @covers \StorybookPhp\Runtime\Casting\propertySlotKeys
  * @covers \StorybookPhp\Runtime\Casting\parameterLabel
  * @covers \StorybookPhp\Runtime\Casting\propertyLabel
@@ -151,7 +139,7 @@ require_once dirname(__DIR__, 4) . '/php/fixtures/ClassTypeMapFixtures.php';
  * @covers \StorybookPhp\Runtime\Contract\resolveTypeName
  * @covers \StorybookPhp\Runtime\Contract\resolveTypeNode
  * @covers \StorybookPhp\Runtime\Contract\parseTypeExpression
- * @covers \StorybookPhp\Runtime\Contract\normalizeTypeMapBindings
+ * @covers \StorybookPhp\Runtime\Contract\normalizeTypeMappings
  * @covers \StorybookPhp\Runtime\Contract\boundTypeName
  * @covers \StorybookPhp\Runtime\Contract\slotBinding
  * @covers \StorybookPhp\Runtime\Contract\typeExists
@@ -159,12 +147,12 @@ require_once dirname(__DIR__, 4) . '/php/fixtures/ClassTypeMapFixtures.php';
  */
 final class ObjectHydratorTest extends TestCase
 {
-    public function testHydrateObjectFeedsConstructorThenSettersAndProperties(): void
+    public function testHydrateObjectFillsPropertiesOfEveryVisibility(): void
     {
         $profile = \StorybookPhp\Runtime\Casting\hydrateObject(
             Profile::class,
-            ['name' => 'Ada', 'theme' => 'dark', 'items' => ['one', ['label' => 'two']], 'age' => '36', 'meta' => ['k' => 'v']],
-            HydrationContext::fromTypeMap(null),
+            ['name' => 'Ada', 'theme' => 'dark', 'items' => [['label' => 'one'], ['label' => 'two']], 'age' => '36', 'meta' => ['k' => 'v']],
+            HydrationContext::fromTypes(null),
         );
 
         self::assertInstanceOf(Profile::class, $profile);
@@ -178,7 +166,7 @@ final class ObjectHydratorTest extends TestCase
 
     public function testHydrateObjectReturnsExistingInstancesAndRejectsForeignObjects(): void
     {
-        $context = HydrationContext::fromTypeMap(['bindings' => [FormatterInterface::class => Formatter::class]]);
+        $context = HydrationContext::fromTypes([FormatterInterface::class => Formatter::class]);
         $formatter = new Formatter();
         $item = new Item('x');
 
@@ -190,122 +178,103 @@ final class ObjectHydratorTest extends TestCase
         \StorybookPhp\Runtime\Casting\hydrateObject(Item::class, $formatter, $context);
     }
 
-    public function testHydrateObjectMatchesSnakeCaseKeysAndSettersWithoutProperties(): void
+    public function testSetterNamesAreNotPropertyKeys(): void
     {
-        $setterOnly = \StorybookPhp\Runtime\Casting\hydrateObject(SetterOnly::class, ['user_value' => '5'], HydrationContext::fromTypeMap(null));
-
-        self::assertInstanceOf(SetterOnly::class, $setterOnly);
-        self::assertSame(5, $setterOnly->value());
-        $generated = \StorybookPhp\Runtime\Casting\hydrateObject(NoConstructorItem::class, [], HydrationContext::fromTypeMap(null));
+        $generated = \StorybookPhp\Runtime\Casting\hydrateObject(NoConstructorItem::class, [], HydrationContext::fromTypes(null));
         self::assertInstanceOf(NoConstructorItem::class, $generated);
         self::assertSame('generated', $generated->label);
+        $this->expectException(HydrationException::class);
+        $this->expectExceptionMessage("has no property named 'user_value'");
+        \StorybookPhp\Runtime\Casting\hydrateObject(SetterOnly::class, ['user_value' => '5'], HydrationContext::fromTypes(null));
     }
 
     public function testHydrateObjectAppliesSlotBindingsWithValues(): void
     {
-        $context = HydrationContext::fromTypeMap(['bindings' => [
+        $context = HydrationContext::fromTypes([
             Profile::class . '::$meta' => ['value' => ['fixed' => true]],
             Profile::class . '::$theme' => ['value' => 'bound'],
-            Profile::class . '::__construct($name)' => ['value' => 'Bound'],
-        ]]);
+            Profile::class . '::$name' => ['value' => 'Bound'],
+        ]);
         $profile = \StorybookPhp\Runtime\Casting\hydrateObject(Profile::class, ['name' => 'ignored', 'meta' => 'ignored'], $context);
 
         self::assertInstanceOf(Profile::class, $profile);
         self::assertSame('Bound', $profile->name);
         self::assertSame(['fixed' => true], $profile->meta);
         self::assertSame('bound', $profile->theme());
-        self::assertSame(['meta' => ['fixed' => true], 'theme' => 'bound'], \StorybookPhp\Runtime\Casting\boundStateValues(\StorybookPhp\TestFixture\Hydration\classOf(Profile::class), $context));
+        self::assertSame(['meta' => ['fixed' => true], 'theme' => 'bound', 'name' => 'Bound'], \StorybookPhp\Runtime\Casting\boundStateValues(\StorybookPhp\TestFixture\Hydration\classOf(Profile::class), $context));
         self::assertSame([], \StorybookPhp\Runtime\Casting\boundStateValues(\StorybookPhp\TestFixture\Hydration\classOf(ConcreteBlock::class), $context));
     }
 
-    public function testHydrateObjectBuildsFromListsAndScalars(): void
+    public function testPropertyMapsAndPrivateConstructors(): void
     {
-        $context = HydrationContext::fromTypeMap(null);
-
-        $pair = \StorybookPhp\Runtime\Casting\hydrateObject(Pair::class, ['1', '2'], $context);
+        $context = HydrationContext::fromTypes(null);
+        $pair = \StorybookPhp\Runtime\Casting\hydrateObject(Pair::class, ['x' => '1', 'y' => '2'], $context);
         self::assertInstanceOf(Pair::class, $pair);
         self::assertSame([1, 2], [$pair->x, $pair->y]);
-
-        $tags = \StorybookPhp\Runtime\Casting\hydrateObject(Tags::class, ['a', 'b'], $context);
-        self::assertInstanceOf(Tags::class, $tags);
-        self::assertSame(['a', 'b'], $tags->tags);
-        $single = \StorybookPhp\Runtime\Casting\hydrateObject(Tags::class, 'a', $context);
-        self::assertInstanceOf(Tags::class, $single);
-        self::assertSame(['a'], $single->tags);
-
-        $variadic = \StorybookPhp\Runtime\Casting\hydrateObject(Variadic::class, [1, 'b', 'c'], $context);
-        self::assertInstanceOf(Variadic::class, $variadic);
-        self::assertSame(['1', 'b', 'c'], $variadic->names);
-        $mapped = \StorybookPhp\Runtime\Casting\hydrateObject(Variadic::class, ['names' => ['a']], $context);
-        self::assertInstanceOf(Variadic::class, $mapped);
-        self::assertSame(['a'], $mapped->names);
-        $empty = \StorybookPhp\Runtime\Casting\hydrateObject(Variadic::class, ['names' => 'not-a-list'], $context);
-        self::assertInstanceOf(Variadic::class, $empty);
-        self::assertSame([], $empty->names);
-
-        $item = \StorybookPhp\Runtime\Casting\hydrateObject(Item::class, 'label', $context);
-        self::assertInstanceOf(Item::class, $item);
-        self::assertSame('label', $item->label);
         self::assertSame(['a' => 1], (array) \StorybookPhp\Runtime\Casting\hydrateObject(stdClass::class, ['a' => 1], $context));
+        self::assertInstanceOf(PrivateConstructor::class, \StorybookPhp\Runtime\Casting\hydrateObject(PrivateConstructor::class, [], $context));
+        $this->expectException(HydrationException::class);
+        $this->expectExceptionMessage('Constructors are not used for type mapping.');
+        \StorybookPhp\Runtime\Casting\hydrateObject(Item::class, 'label', $context);
     }
 
     public function testHydrateObjectRejectsListsThatDoNotFitTheConstructor(): void
     {
         $this->expectException(HydrationException::class);
-        $this->expectExceptionMessage('expected StorybookPhp\TestFixture\Hydration\Pair, received list of 3 items. 3 positional value(s) do not fit __construct(int $x, int $y = 0). Pass an object whose keys are constructor argument names instead.');
+        $this->expectExceptionMessage('Pass an object whose keys are property names.');
 
-        \StorybookPhp\Runtime\Casting\hydrateObject(Pair::class, [1, 2, 3], HydrationContext::fromTypeMap(null));
+        \StorybookPhp\Runtime\Casting\hydrateObject(Pair::class, [1, 2, 3], HydrationContext::fromTypes(null));
     }
 
     public function testHydrateObjectRejectsListsForClassesWithoutConstructors(): void
     {
         $this->expectException(HydrationException::class);
-        $this->expectExceptionMessage('StorybookPhp\TestFixture\NoConstructorItem has no constructor, so positional values cannot be applied. Pass an object whose keys are property names instead.');
+        $this->expectExceptionMessage('Pass an object whose keys are property names.');
 
-        \StorybookPhp\Runtime\Casting\hydrateObject(NoConstructorItem::class, ['a'], HydrationContext::fromTypeMap(null));
+        \StorybookPhp\Runtime\Casting\hydrateObject(NoConstructorItem::class, ['a'], HydrationContext::fromTypes(null));
     }
 
     public function testHydrateObjectRejectsScalarsForMultiArgumentConstructors(): void
     {
         $this->expectException(HydrationException::class);
-        $this->expectExceptionMessage('expected StorybookPhp\TestFixture\BrokenCollection, received string \'x\'. A single value only fits a constructor with one required argument, but this class has __construct(array $items, string $name). Pass an object whose keys are constructor argument names.');
+        $this->expectExceptionMessage('Pass an object whose keys are property names.');
 
-        \StorybookPhp\Runtime\Casting\hydrateObject(BrokenCollection::class, 'x', HydrationContext::fromTypeMap(null));
+        \StorybookPhp\Runtime\Casting\hydrateObject(BrokenCollection::class, 'x', HydrationContext::fromTypes(null));
     }
 
-    public function testHydrateObjectReportsMissingConstructorArguments(): void
+    public function testAbsentTypedPropertiesRemainUninitialized(): void
     {
-        $this->expectException(HydrationException::class);
-        $this->expectExceptionMessage('Cannot hydrate StorybookPhp\TestFixture\Hydration\Pair::__construct($x): the required constructor argument $x is missing. Received keys: [y], constructor: __construct(int $x, int $y = 0).');
-
-        \StorybookPhp\Runtime\Casting\hydrateObject(Pair::class, ['y' => 2], HydrationContext::fromTypeMap(null));
+        $pair = \StorybookPhp\Runtime\Casting\hydrateObject(Pair::class, ['y' => 2], HydrationContext::fromTypes(null));
+        self::assertInstanceOf(Pair::class, $pair);
+        self::assertFalse(\StorybookPhp\TestFixture\Hydration\propertyOf(Pair::class, 'x')->isInitialized($pair));
+        self::assertSame(2, $pair->y);
     }
 
-    public function testHydrateObjectUsesDefaultsAndNullForOptionalConstructorArguments(): void
+    public function testHydrationLeavesAbsentPropertiesUninitialized(): void
     {
-        $context = HydrationContext::fromTypeMap(['bindings' => [FormatterInterface::class => Formatter::class]]);
+        $context = HydrationContext::fromTypes([FormatterInterface::class => Formatter::class]);
         $page = \StorybookPhp\Runtime\Casting\hydrateObject(Page::class, ['formatter' => ['prefix' => 'p-']], $context);
         $linked = \StorybookPhp\Runtime\Casting\hydrateObject(SelfLinked::class, ['next' => ['next' => []]], $context);
 
         self::assertInstanceOf(Page::class, $page);
         self::assertSame('p-T:1', $page->render('t'));
-        self::assertNull($page->meta);
-        self::assertNull($page->block);
+        self::assertFalse(\StorybookPhp\TestFixture\Hydration\propertyOf(Page::class, 'meta')->isInitialized($page));
+        self::assertFalse(\StorybookPhp\TestFixture\Hydration\propertyOf(Page::class, 'block')->isInitialized($page));
         self::assertInstanceOf(SelfLinked::class, $linked);
         self::assertInstanceOf(SelfLinked::class, $linked->next);
         self::assertInstanceOf(SelfLinked::class, $linked->next->next);
-        self::assertNull($linked->next->next->next);
+        self::assertFalse(\StorybookPhp\TestFixture\Hydration\propertyOf(SelfLinked::class, 'next')->isInitialized($linked->next->next));
         $note = \StorybookPhp\Runtime\Casting\hydrateObject(OptionalNote::class, [], $context);
         self::assertInstanceOf(OptionalNote::class, $note);
-        self::assertNull($note->note);
+        self::assertFalse(\StorybookPhp\TestFixture\Hydration\propertyOf(OptionalNote::class, 'note')->isInitialized($note));
     }
 
     public function testHydrateObjectRejectsUnknownStateKeys(): void
     {
         $this->expectException(HydrationException::class);
-        $this->expectExceptionMessage("Cannot hydrate StorybookPhp\\TestFixture\\Hydration\\Profile::\$colour: StorybookPhp\\TestFixture\\Hydration\\Profile has no constructor argument, setter, or property named 'colour'. Available state: [\$name, setTheme(), \$theme, \$meta, \$items, \$age].");
+        $this->expectExceptionMessage('has no property named');
 
-        \StorybookPhp\Runtime\Casting\hydrateObject(Profile::class, ['name' => 'n', 'colour' => 'red'], HydrationContext::fromTypeMap(null));
+        \StorybookPhp\Runtime\Casting\hydrateObject(Profile::class, ['name' => 'n', 'colour' => 'red'], HydrationContext::fromTypes(null));
     }
 
     public function testParameterDefaultValueReportsParametersWithoutDefaults(): void
@@ -317,19 +286,18 @@ final class ObjectHydratorTest extends TestCase
         \StorybookPhp\Runtime\Casting\parameterDefaultValue(\StorybookPhp\TestFixture\Hydration\parameterOf([Pair::class, '__construct'], 'x'));
     }
 
-    public function testHydrateObjectRoutesUnknownKeysThroughMagicSetters(): void
+    public function testMagicSettersCannotReceiveUnknownProperties(): void
     {
-        $magic = \StorybookPhp\Runtime\Casting\hydrateObject(Magic::class, ['anything' => 1], HydrationContext::fromTypeMap(null));
-
-        self::assertInstanceOf(Magic::class, $magic);
-        self::assertSame(['anything' => 1], $magic->dynamic);
+        $this->expectException(HydrationException::class);
+        $this->expectExceptionMessage("has no property named 'anything'");
+        \StorybookPhp\Runtime\Casting\hydrateObject(Magic::class, ['anything' => 1], HydrationContext::fromTypes(null));
     }
 
     public function testHydrateObjectResolvesDocumentedTypesThroughImportsAndTemplates(): void
     {
-        $context = HydrationContext::fromTypeMap(null);
-        $shaped = \StorybookPhp\Runtime\Casting\hydrateObject(Shaped::class, ['shape' => ['foo' => 'a', 'count' => '1']], $context);
-        $container = \StorybookPhp\Runtime\Casting\hydrateObject(Container::class, ['collection' => [['label' => 'c']], 'pairs' => [[1, 2], ['x' => 3]]], $context);
+        $context = HydrationContext::fromTypes(null);
+        $shaped = \StorybookPhp\Runtime\Casting\hydrateObject(Shaped::class, ['shape' => ['foo' => ['label' => 'a'], 'count' => '1']], $context);
+        $container = \StorybookPhp\Runtime\Casting\hydrateObject(Container::class, ['collection' => ['items' => [['label' => 'c']]], 'pairs' => [['x' => 1, 'y' => 2], ['x' => 3]]], $context);
 
         self::assertInstanceOf(Shaped::class, $shaped);
         $shape = $shaped->shape;
@@ -338,27 +306,23 @@ final class ObjectHydratorTest extends TestCase
         self::assertInstanceOf(Container::class, $container);
         self::assertSame('c', $container->collection->items[0]->label);
         self::assertSame(2, $container->pairs[0]->y);
-        self::assertSame(0, $container->pairs[1]->y);
+        self::assertFalse(\StorybookPhp\TestFixture\Hydration\propertyOf(Pair::class, 'y')->isInitialized($container->pairs[1]));
     }
 
-    public function testHydrateObjectAppliesClassEntriesToNestedConstructors(): void
+    public function testPropertyMappingsTypeNestedArrays(): void
     {
-        $context = HydrationContext::fromTypeMap(['classes' => [
-            Tree::class => ['args' => ['branches' => 'Branch[]']],
-            Branch::class => ['args' => ['leaves' => ['type' => 'array', 'elementType' => 'Leaf', 'default' => [['tags' => ['seed']]]]]],
-        ]]);
-        $tree = \StorybookPhp\Runtime\Casting\hydrateObject(Tree::class, ['branches' => [['leaves' => [['tags' => ['a', 'b']]]], []]], $context);
-        $positional = \StorybookPhp\Runtime\Casting\hydrateObject(Tree::class, [['leaves' => [['tags' => ['p']]]]], $context);
-
+        $context = HydrationContext::fromTypes([
+            Tree::class . '::$branches' => Branch::class . '[]',
+            Branch::class . '::$leaves' => ['type' => \StorybookPhp\TestFixture\ClassTypeMap\Leaf::class . '[]'],
+        ]);
+        $tree = \StorybookPhp\Runtime\Casting\hydrateObject(Tree::class, ['branches' => [['leaves' => [['tags' => ['a', 'b']]]]]], $context);
         self::assertInstanceOf(Tree::class, $tree);
-        self::assertSame('a/b|seed', $tree->render());
-        self::assertInstanceOf(Tree::class, $positional);
-        self::assertSame('p', $positional->render());
+        self::assertSame('a/b', $tree->render());
     }
 
-    public function testHydrateObjectUsesDocblocksForUntypedConstructorArguments(): void
+    public function testPromotedPropertiesUseConstructorDocblocks(): void
     {
-        $context = HydrationContext::fromTypeMap(['bindings' => [FormatterInterface::class => Formatter::class]]);
+        $context = HydrationContext::fromTypes([FormatterInterface::class => Formatter::class]);
         $untyped = \StorybookPhp\Runtime\Casting\hydrateObject(Untyped::class, ['formatter' => ['prefix' => 'u-'], 'status' => 'published'], $context);
 
         self::assertInstanceOf(Untyped::class, $untyped);
@@ -368,7 +332,7 @@ final class ObjectHydratorTest extends TestCase
 
     public function testHydrateObjectResolvesAbstractTypesThroughBindings(): void
     {
-        $block = \StorybookPhp\Runtime\Casting\hydrateObject(AbstractBlock::class, ['content' => 'x'], HydrationContext::fromTypeMap(['bindings' => [AbstractBlock::class => ConcreteBlock::class]]));
+        $block = \StorybookPhp\Runtime\Casting\hydrateObject(AbstractBlock::class, ['content' => 'x'], HydrationContext::fromTypes([AbstractBlock::class => ConcreteBlock::class]));
 
         self::assertInstanceOf(ConcreteBlock::class, $block);
         self::assertSame('x', $block->content);
@@ -382,7 +346,7 @@ final class ObjectHydratorTest extends TestCase
         $this->expectException(HydrationException::class);
         $this->expectExceptionMessage($reason);
 
-        \StorybookPhp\Runtime\Casting\resolveHydrationClass($type, HydrationContext::fromTypeMap(['bindings' => ['App\Missing' => 'App\StillMissing']]));
+        \StorybookPhp\Runtime\Casting\resolveHydrationClass($type, HydrationContext::fromTypes(['App\Missing' => 'App\StillMissing']));
     }
 
     /**
@@ -390,11 +354,10 @@ final class ObjectHydratorTest extends TestCase
      */
     public static function providerUnbuildableTypes(): iterable
     {
-        yield 'missing class' => ['App\Nope', 'the type App\Nope does not exist. Check the docblock type, make sure the class is autoloadable from the bootstrap file, or add a typeMap binding for it.'];
-        yield 'missing bound class' => ['App\Missing', 'the type App\StillMissing (bound from App\Missing by typeMap) does not exist.'];
-        yield 'interface' => [FormatterInterface::class, 'StorybookPhp\TestFixture\FormatterInterface is an interface, so no object can be built from the story value. Add a typeMap binding such as {"StorybookPhp\\\\TestFixture\\\\FormatterInterface":"App\\\\ConcreteClass"} to choose the class to instantiate.'];
+        yield 'missing class' => ['App\Nope', 'the type App\Nope does not exist. Check the docblock type, make sure the class is autoloadable from the bootstrap file, or add a types binding for it.'];
+        yield 'missing bound class' => ['App\Missing', 'the type App\StillMissing (bound from App\Missing by types) does not exist.'];
+        yield 'interface' => [FormatterInterface::class, 'StorybookPhp\TestFixture\FormatterInterface is an interface, so no object can be built from the story value. Add a types binding such as {"StorybookPhp\\\\TestFixture\\\\FormatterInterface":"App\\\\ConcreteClass"} to choose the class to instantiate.'];
         yield 'abstract class' => [AbstractBlock::class, 'StorybookPhp\TestFixture\Hydration\AbstractBlock is an abstract class, so no object can be built from the story value.'];
-        yield 'private constructor' => [PrivateConstructor::class, 'StorybookPhp\TestFixture\Hydration\PrivateConstructor cannot be instantiated because its constructor is not public.'];
     }
 
     public function testHydrateParameterValueRejectsNullForNonNullableParameters(): void
@@ -402,19 +365,54 @@ final class ObjectHydratorTest extends TestCase
         $this->expectException(HydrationException::class);
         $this->expectExceptionMessage('Cannot hydrate StorybookPhp\TestFixture\Hydration\Pair::__construct($x): the parameter is declared as int and does not accept null.');
 
-        \StorybookPhp\Runtime\Casting\hydrateParameterValue(\StorybookPhp\TestFixture\Hydration\parameterOf([Pair::class, '__construct'], 'x'), null, null, null, HydrationContext::fromTypeMap(null));
+        \StorybookPhp\Runtime\Casting\hydrateParameterValue(\StorybookPhp\TestFixture\Hydration\parameterOf([Pair::class, '__construct'], 'x'), null, null, null, HydrationContext::fromTypes(null));
     }
 
     public function testHydrateParameterValueAcceptsNullForNullableParameters(): void
     {
-        self::assertNull(\StorybookPhp\Runtime\Casting\hydrateParameterValue(\StorybookPhp\TestFixture\Hydration\parameterOf([SelfLinked::class, '__construct'], 'next'), null, null, null, HydrationContext::fromTypeMap(null)));
+        self::assertNull(\StorybookPhp\Runtime\Casting\hydrateParameterValue(\StorybookPhp\TestFixture\Hydration\parameterOf([SelfLinked::class, '__construct'], 'next'), null, null, null, HydrationContext::fromTypes(null)));
     }
 
     public function testInstantiateClassFromValueKeepsTheLegacyEntryPoint(): void
     {
-        $formatter = \StorybookPhp\Runtime\Casting\instantiateClassFromValue(FormatterInterface::class, ['prefix' => 'x-'], ['bindings' => [FormatterInterface::class => Formatter::class]]);
+        $formatter = \StorybookPhp\Runtime\Casting\instantiateClassFromValue(FormatterInterface::class, ['prefix' => 'x-'], [FormatterInterface::class => Formatter::class]);
 
         self::assertInstanceOf(Formatter::class, $formatter);
         self::assertSame('x-A', $formatter->format('a'));
     }
+
+    public function testHydrateObjectBypassesMethodsAndIncludesParentPrivateProperties(): void
+    {
+        $class = \StorybookPhp\TestFixture\Hydration\PropertyOnly::class;
+        $parent = \StorybookPhp\TestFixture\Hydration\PropertyParent::class;
+        $context = HydrationContext::fromTypes([
+            $parent . '::$inherited' => ['value' => '42'],
+            $class . '::$item' => ['type' => Item::class, 'value' => ['label' => 'mapped']],
+        ]);
+        $value = \StorybookPhp\Runtime\Casting\hydrateObject($class, ['user_name' => 'Ada'], $context);
+        self::assertInstanceOf(\StorybookPhp\TestFixture\Hydration\PropertyOnly::class, $value);
+        self::assertSame(42, $value->inherited());
+        self::assertSame('Ada', $value->userName);
+        self::assertSame('mapped', $value->item->label);
+        self::assertContains('$inherited', \StorybookPhp\Runtime\Casting\describeStateSlots(\StorybookPhp\TestFixture\Hydration\classOf($class)));
+        $this->expectException(HydrationException::class);
+        $this->expectExceptionMessage("has no property named 'staticValue'");
+        \StorybookPhp\Runtime\Casting\hydrateObject($class, ['staticValue' => 'changed'], $context);
+    }
+
+    public function testHydrateObjectReportsInternalAllocationFailures(): void
+    {
+        $this->expectException(HydrationException::class);
+        $this->expectExceptionMessage('Closure cannot be allocated without its constructor. Use a component adapter');
+        \StorybookPhp\Runtime\Casting\hydrateObject(Closure::class, [], HydrationContext::fromTypes(null)->at('App\Card::$callback'));
+    }
+
+    public function testPropertyMappingNamesAreNotResolvedThroughFileImports(): void
+    {
+        $class = \StorybookPhp\TestFixture\Hydration\PropertyOnly::class;
+        $this->expectException(HydrationException::class);
+        $this->expectExceptionMessage('the type AliasItem does not exist');
+        \StorybookPhp\Runtime\Casting\hydrateObject($class, ['item' => ['label' => 'x']], HydrationContext::fromTypes([$class . '::$item' => 'AliasItem']));
+    }
+
 }

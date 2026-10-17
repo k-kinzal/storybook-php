@@ -20,13 +20,12 @@ use StorybookPhp\TestFixture\StringableValue;
 require_once dirname(__DIR__, 4) . '/php/fixtures/HydrationFixtures.php';
 
 /**
+ * @uses \StorybookPhp\Runtime\Casting\findStateSlot
  * @covers \StorybookPhp\Runtime\Contract\nativeTypeScope
  * @covers \StorybookPhp\Runtime\Contract\parseFileImports
  * @covers \StorybookPhp\Runtime\Contract\parseUseClause
- * @covers \StorybookPhp\Runtime\Casting\constructorWrapsList
  * @covers \StorybookPhp\Runtime\Casting\findStateKey
  * @covers \StorybookPhp\Runtime\Casting\normalizeStateKey
- * @covers \StorybookPhp\Runtime\Casting\reflectionTypeAcceptsArray
  * @covers \StorybookPhp\Runtime\Casting\reflectionTypeNode
  * @covers \StorybookPhp\Runtime\Casting\stringKeyedState
  * @covers \StorybookPhp\Runtime\Contract\TypeNode
@@ -37,7 +36,7 @@ require_once dirname(__DIR__, 4) . '/php/fixtures/HydrationFixtures.php';
  * @covers \StorybookPhp\Runtime\Contract\fileImports
  * @covers \StorybookPhp\Runtime\Contract\isArrayLikeTypeName
  * @covers \StorybookPhp\Runtime\Contract\normalizeBindingValue
- * @covers \StorybookPhp\Runtime\Contract\normalizeTypeMapBindings
+ * @covers \StorybookPhp\Runtime\Contract\normalizeTypeMappings
  * @covers \StorybookPhp\Runtime\Contract\parseAtomType
  * @covers \StorybookPhp\Runtime\Contract\parseBindingKey
  * @covers \StorybookPhp\Runtime\Contract\parseDocBlockTemplates
@@ -72,7 +71,6 @@ require_once dirname(__DIR__, 4) . '/php/fixtures/HydrationFixtures.php';
  * @covers \StorybookPhp\Runtime\Casting\scoreGenericTypeMatch
  * @covers \StorybookPhp\Runtime\Casting\scoreShapeTypeMatch
  * @covers \StorybookPhp\Runtime\Casting\canHydrateObjectFromArray
- * @covers \StorybookPhp\Runtime\Casting\canHydrateObjectFromScalar
  * @covers \StorybookPhp\Runtime\Casting\docTypeIsClassLike
  * @covers \StorybookPhp\Runtime\Casting\isListArray
  * @covers \StorybookPhp\Runtime\Casting\HydrationContext
@@ -86,7 +84,7 @@ final class TypeScorerTest extends TestCase
      */
     public function testScoreTypeNodeMatchRanksValuesByExactness(string $type, mixed $value, int $score): void
     {
-        $context = HydrationContext::fromTypeMap(['bindings' => [FormatterInterface::class => Formatter::class]]);
+        $context = HydrationContext::fromTypes([FormatterInterface::class => Formatter::class]);
 
         self::assertSame($score, \StorybookPhp\Runtime\Casting\scoreTypeNodeMatch(\StorybookPhp\Runtime\Contract\parseTypeExpression($type), $value, $context));
     }
@@ -137,9 +135,9 @@ final class TypeScorerTest extends TestCase
         yield 'class instance' => [Item::class, new Item('x'), 3];
         yield 'class foreign instance' => [Item::class, new stdClass(), 0];
         yield 'class from map' => [Item::class, ['label' => 'x'], 2];
-        yield 'class from list' => [Item::class, ['x'], 1];
-        yield 'class from scalar' => [Item::class, 'x', 1];
-        yield 'class from bad map' => [Pair::class, ['y' => 1], 0];
+        yield 'class from list' => [Item::class, ['x'], 0];
+        yield 'class from scalar' => [Item::class, 'x', 0];
+        yield 'class from bad map' => [Pair::class, ['y' => 1], 2];
         yield 'class from bad scalar' => [BrokenCollection::class, 'x', 0];
         yield 'bound interface' => [FormatterInterface::class, ['prefix' => 'a'], 2];
         yield 'missing class' => ['App\Missing', [], 0];
@@ -150,7 +148,7 @@ final class TypeScorerTest extends TestCase
         yield 'generic builtin' => ['class-string<Foo>', 'Foo', 3];
         yield 'generic wrapper instance' => [TypedCollection::class . '<int>', new TypedCollection([]), 5];
         yield 'generic wrapper foreign instance' => [TypedCollection::class . '<int>', new stdClass(), 0];
-        yield 'generic wrapper from list' => [TypedCollection::class . '<int>', [1], 4];
+        yield 'generic wrapper from list' => [TypedCollection::class . '<int>', [1], 0];
         yield 'generic wrapper missing' => ['App\Missing<int>', [1], 0];
         yield 'shape complete' => ['array{id: int, note?: string}', ['id' => 1], 4];
         yield 'shape missing key' => ['array{id: int}', [], 0];
@@ -167,7 +165,7 @@ final class TypeScorerTest extends TestCase
 
     public function testSelectUnionMemberPrefersEarlierMembersOnTiesAndMixed(): void
     {
-        $context = HydrationContext::fromTypeMap(null);
+        $context = HydrationContext::fromTypes(null);
         $tied = \StorybookPhp\Runtime\Contract\parseTypeExpression('scalar|string|int');
         $mixed = \StorybookPhp\Runtime\Contract\parseTypeExpression('int|mixed|string');
 

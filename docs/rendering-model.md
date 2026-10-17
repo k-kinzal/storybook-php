@@ -21,7 +21,7 @@ Storybook canvas
 
 The PHP process runs server-side. Storybook only receives HTML.
 
-Behind that request flow, each imported component is registered server-side as a render plan. The browser only sends `componentId`, story `args`, and optional `parameters.typeMap` overrides to `/__storybook_php/render`.
+Behind that request flow, each imported component is registered server-side as a render plan. The browser only sends `componentId`, story `args`, and optional `parameters.php` overrides to `/__storybook_php/render`.
 
 ## Internal Layering
 
@@ -39,20 +39,20 @@ The dependency rule is one-way: entrypoints may depend on runtime, core, shared,
 
 ## Supported Import Patterns
 
-| Pattern                      | Import syntax            | Args source                            |
-| ---------------------------- | ------------------------ | -------------------------------------- |
-| Instance method              | `./File.php@render`      | Constructor params + method params     |
-| Static method                | `./File.php@danger`      | Method params                          |
-| Standalone function          | `./file.php@renderBadge` | Function params                        |
-| Invocable class              | `./File.php@__invoke`    | Constructor params + `__invoke` params |
-| Enum instance method         | `./File.php@badge`       | `_case` + method params                |
-| Template file                | `./file.php`             | Story args become template variables   |
-| Mapped non-PHP import source | `./card.blade.php`       | `typeMap.files` defines the contract   |
+| Pattern                      | Import syntax            | Args source                             |
+| ---------------------------- | ------------------------ | --------------------------------------- |
+| Instance method              | `./File.php@render`      | Constructor params + method params      |
+| Static method                | `./File.php@danger`      | Method params                           |
+| Standalone function          | `./file.php@renderBadge` | Function params                         |
+| Invocable class              | `./File.php@__invoke`    | Constructor params + `__invoke` params  |
+| Enum instance method         | `./File.php@badge`       | `_case` + method params                 |
+| Template file                | `./file.php`             | Story args become template variables    |
+| Mapped non-PHP import source | `./card.blade.php`       | `components.files` defines the contract |
 
 If `framework.options.defaultMethod` is set, you can omit `@render` and import `./File.php` directly.
 Bare `.php` imports only mean template mode when `defaultMethod` is not set.
 
-Non-PHP imports are resolved only when they match `typeMap.files`. Those mappings can keep template mode, redirect execution with `phpFile`, force a callable with `callable`, and attach adapters.
+Non-PHP imports are resolved only when they match `components.files`. Those mappings can keep template mode, redirect execution with `phpFile`, force a callable with `callable`, and attach adapters.
 
 ## Build-Time Resolution
 
@@ -62,7 +62,7 @@ At import time, `storybook-php` resolves three related concepts:
 - `executionFile`: the PHP file that will actually be parsed and executed
 - `adapter`: the middleware chain chosen from global options, file mappings, and request overrides
 
-For plain `.php` imports, `sourceFile` and `executionFile` are the same file. For mapped files such as Blade or Twig templates, `typeMap.files[*].phpFile` can redirect execution to a separate PHP file while preserving the original import path as `sourceFile`.
+For plain `.php` imports, `sourceFile` and `executionFile` are the same file. For mapped files such as Blade or Twig templates, `components.files[*].phpFile` can redirect execution to a separate PHP file while preserving the original import path as `sourceFile`.
 
 ## How Args Are Matched
 
@@ -72,11 +72,15 @@ For plain `.php` imports, `sourceFile` and `executionFile` are the same file. Fo
 - Static methods and standalone functions only receive callable args.
 - Enum methods reserve `_case` to select the enum case before the method runs.
 - Template files receive all story args as local template variables.
-- If constructor and method parameters share a name but cannot be merged safely, the public surface splits into `constructor.name` and `method.name`. `typeMap` can also introduce those namespaced keys explicitly.
+- If constructor and method parameters share a name but cannot be merged safely, the public surface splits into `constructor.name` and `method.name`. `components` can also introduce those namespaced keys explicitly.
 
 Parameters are matched by name, not just position, so Storybook controls map naturally to PHP parameter names.
 
-Values are hydrated against the contract of each slot: the native PHP type, refined by the docblock (`@param`, `@var`, `array{...}` shapes, `list<T>` generics, `@template` arguments) and `typeMap.bindings`. Nested JSON objects become PHP objects by feeding constructor arguments by name and writing the remaining keys through setters or properties. Story args that match a setter or property of the component class, but no parameter, rewrite the instance state after construction. Hydration errors name the slot that failed, such as `App\Card::__construct($items)[0] > App\Item::$label`. See [Type Mapping](type-mapping.md) for the full rules.
+Component execution maps function arguments, or calls a class constructor and then its selected method. Extra public args that match neither callable are ignored. Use an adapter when a component needs additional setup.
+
+Objects appearing inside constructor, method, function, or template arguments use a separate type mapping pass. Native PHP types are refined by docblocks (`@param`, `@var`, shapes, lists, unions, and `@template` arguments), then property mappings in `types` take priority over docblocks while still narrowing the native type. Objects are allocated with `ReflectionClass::newInstanceWithoutConstructor()` and populated with `ReflectionProperty::setValue()`, including parent private properties. Constructors, setters, and factories are never invoked for these values. Missing typed properties remain uninitialized unless they have a property declaration default. Unknown keys and scalar or positional-list object inputs are errors.
+
+The component itself always follows its constructor contract; `types["Class::$property"]` does not change its instance state or constructor arguments. Hydration errors name the failing slot, such as `App\Card::__construct($items)[0] > App\Item::$label`. See [Component Configuration and Type Mapping](type-mapping.md).
 
 ## Output Resolution
 
@@ -107,7 +111,7 @@ Adapters sit around the core executor as middleware.
 The runtime composes adapters from least specific to most specific:
 
 1. global `framework.options.adapter`
-2. matching `typeMap.files` pattern adapters
+2. matching `components.files` pattern adapters
 3. exact file adapters
 4. per-request adapter overrides
 5. core executor
@@ -140,6 +144,6 @@ If the rendered HTML contains `<script>` tags, `storybook-php` recreates them af
 
 - PHP exceptions are returned to Storybook and shown as `PHP Render Error`.
 - Changes to PHP files invalidate the generated virtual modules.
-- Changes to redirected execution files and `typeMap.files[*].includes` dependencies also trigger reloads.
+- Changes to redirected execution files and `components.files[*].includes` dependencies also trigger reloads.
 
 For configuration-driven cases such as Blade or cross-file inheritance, see [Framework Options](framework-options.md) and [Type Mapping](type-mapping.md).

@@ -58,43 +58,43 @@ function requireExistingClass(string $name): string
 }
 
 /**
- * Resolves a type name through `typeMap.bindings`, returning the input when
+ * Resolves a type name through `types`, returning the input when
  * no type binding applies.
  *
- * @param array<string, mixed>|null $typeMap
+ * @param array<string, mixed>|null $types
  *
  * @example Resolving a configured runtime binding
- *     \StorybookPhp\Runtime\Contract\resolveTypeMapBinding('RendererContract', [
- *         'bindings' => ['RendererContract' => 'BladeRenderer'],
+ *     \StorybookPhp\Runtime\Contract\resolveMappedType('RendererContract', [
+ *         'RendererContract' => 'BladeRenderer',
  *     ]) // => 'BladeRenderer'
  */
-function resolveTypeMapBinding(string $typeName, ?array $typeMap): string
+function resolveMappedType(string $typeName, ?array $types): string
 {
     return \StorybookPhp\Runtime\Contract\boundTypeName(
         $typeName,
-        \StorybookPhp\Runtime\Contract\normalizeTypeMapBindings($typeMap),
+        \StorybookPhp\Runtime\Contract\normalizeTypeMappings($types),
     );
 }
 
 /**
- * Collects `typeMap.classes` constructor arg definitions for a class.
+ * Collects `components.classes` constructor arg definitions for a class.
  *
  * Entries for the class itself win over entries for ancestors that declare the
  * shared constructor, so a child without its own constructor can refine the
  * parent's contract. String shorthands are expanded to `['type' => ...]`.
  *
  * @param ReflectionClass<object> $class
- * @param array<string, mixed>|null $typeMap
+ * @param array<string, mixed>|null $components
  * @return array<string, array<string, mixed>>|null
  *
- * @example Resolving a nested constructor contract
- *     \StorybookPhp\Runtime\Contract\resolveTypeMapClassArgDefs(new \ReflectionClass(\ArrayObject::class), [
+ * @example Resolving a component constructor contract
+ *     \StorybookPhp\Runtime\Contract\resolveComponentClassArgDefs(new \ReflectionClass(\ArrayObject::class), [
  *         'classes' => ['\ArrayObject' => ['args' => ['array' => 'string[]']]],
  *     ]) // => ['array' => ['type' => 'string[]']]
  */
-function resolveTypeMapClassArgDefs(ReflectionClass $class, ?array $typeMap): ?array
+function resolveComponentClassArgDefs(ReflectionClass $class, ?array $components): ?array
 {
-    $classes = $typeMap['classes'] ?? null;
+    $classes = $components['classes'] ?? null;
     $constructor = $class->getConstructor();
     if (!is_array($classes) || !$constructor instanceof ReflectionMethod) {
         return null;
@@ -115,7 +115,7 @@ function resolveTypeMapClassArgDefs(ReflectionClass $class, ?array $typeMap): ?a
 }
 
 /**
- * Merges every `typeMap.classes` entry whose key names the given class.
+ * Merges every `components.classes` entry whose key names the given class.
  *
  * Class names are compared case-insensitively and without a leading
  * backslash, matching PHP's own class name resolution.

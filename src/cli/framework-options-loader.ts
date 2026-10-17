@@ -6,7 +6,7 @@ import type { FrameworkOptions } from "../types.js";
 export async function loadFrameworkOptionsFile(
   optionsFile: string | undefined,
   cwd: string = process.cwd(),
-): Promise<Pick<FrameworkOptions, "typeMap" | "_configDir" | "defaultMethod">> {
+): Promise<Pick<FrameworkOptions, "components" | "types" | "_configDir" | "defaultMethod">> {
   if (!optionsFile) {
     return {};
   }
@@ -23,7 +23,10 @@ export async function loadFrameworkOptionsFile(
     throw new Error(`Framework options file must export an object: ${resolvedPath}`);
   }
 
-  return loaded as Pick<FrameworkOptions, "typeMap" | "_configDir" | "defaultMethod">;
+  if ("typeMap" in loaded) {
+    throw new Error("typeMap is no longer supported. Use components and types.");
+  }
+  return loaded as Pick<FrameworkOptions, "components" | "types" | "_configDir" | "defaultMethod">;
 }
 
 function unwrapModuleDefault(moduleValue: unknown): unknown {

@@ -17,7 +17,7 @@ require_once dirname(__DIR__, 4) . '/php/fixtures/HydrationFixtures.php';
 /**
  * @covers \StorybookPhp\Runtime\Contract\TypeNode
  * @covers \StorybookPhp\Runtime\Contract\describeTypeNode
- * @covers \StorybookPhp\Runtime\Contract\normalizeTypeMapBindings
+ * @covers \StorybookPhp\Runtime\Contract\normalizeTypeMappings
  * @covers \StorybookPhp\Runtime\Contract\parseAtomType
  * @covers \StorybookPhp\Runtime\Contract\parseIntersectionType
  * @covers \StorybookPhp\Runtime\Contract\parseNamedType
@@ -51,7 +51,7 @@ final class HydratorTest extends TestCase
      */
     public function testCastBuiltinValueAcceptsLosslessConversions(string $builtin, mixed $value, mixed $expected): void
     {
-        self::assertSame($expected, \StorybookPhp\Runtime\Casting\castBuiltinValue($builtin, $value, HydrationContext::fromTypeMap(null)));
+        self::assertSame($expected, \StorybookPhp\Runtime\Casting\castBuiltinValue($builtin, $value, HydrationContext::fromTypes(null)));
     }
 
     /**
@@ -89,7 +89,7 @@ final class HydratorTest extends TestCase
 
     public function testCastBuiltinValueConvertsObjectsAndStringables(): void
     {
-        $context = HydrationContext::fromTypeMap(null);
+        $context = HydrationContext::fromTypes(null);
         $object = new stdClass();
         $iterator = new ArrayIterator([]);
         $resource = fopen('php://memory', 'rb');
@@ -111,7 +111,7 @@ final class HydratorTest extends TestCase
         $this->expectException(HydrationException::class);
         $this->expectExceptionMessage('Cannot hydrate App\Card::$slot: ' . $reason);
 
-        \StorybookPhp\Runtime\Casting\castBuiltinValue($builtin, $value, HydrationContext::fromTypeMap(null)->at('App\Card::$slot'));
+        \StorybookPhp\Runtime\Casting\castBuiltinValue($builtin, $value, HydrationContext::fromTypes(null)->at('App\Card::$slot'));
     }
 
     /**
@@ -141,7 +141,7 @@ final class HydratorTest extends TestCase
 
     public function testHydrateValuePassesNullThroughAndDispatchesByKind(): void
     {
-        $context = HydrationContext::fromTypeMap(null);
+        $context = HydrationContext::fromTypes(null);
 
         self::assertNull(\StorybookPhp\Runtime\Casting\hydrateValue(null, new TypeNode('named', 'int'), $context));
         self::assertSame(5, \StorybookPhp\Runtime\Casting\hydrateValue('5', \StorybookPhp\Runtime\Contract\parseTypeExpression('?int'), $context));
@@ -153,7 +153,7 @@ final class HydratorTest extends TestCase
      */
     public function testHydrateLiteralTypeAcceptsEquivalentScalars(string $literal, mixed $value, mixed $expected): void
     {
-        self::assertSame($expected, \StorybookPhp\Runtime\Casting\hydrateValue($value, \StorybookPhp\Runtime\Contract\parseTypeExpression($literal), HydrationContext::fromTypeMap(null)));
+        self::assertSame($expected, \StorybookPhp\Runtime\Casting\hydrateValue($value, \StorybookPhp\Runtime\Contract\parseTypeExpression($literal), HydrationContext::fromTypes(null)));
     }
 
     /**
@@ -177,7 +177,7 @@ final class HydratorTest extends TestCase
         $this->expectException(HydrationException::class);
         $this->expectExceptionMessage($reason);
 
-        \StorybookPhp\Runtime\Casting\hydrateValue($value, \StorybookPhp\Runtime\Contract\parseTypeExpression($literal), HydrationContext::fromTypeMap(null));
+        \StorybookPhp\Runtime\Casting\hydrateValue($value, \StorybookPhp\Runtime\Contract\parseTypeExpression($literal), HydrationContext::fromTypes(null));
     }
 
     /**
@@ -208,7 +208,7 @@ final class HydratorTest extends TestCase
 
     public function testHydrationFailureAppendsHints(): void
     {
-        $context = HydrationContext::fromTypeMap(null)->at('App\Card::$count');
+        $context = HydrationContext::fromTypes(null)->at('App\Card::$count');
 
         self::assertSame("Cannot hydrate App\\Card::\$count: expected int, received string 'x'.", \StorybookPhp\Runtime\Casting\hydrationFailure($context, 'int', 'x')->getMessage());
         self::assertSame("Cannot hydrate App\\Card::\$count: expected int, received string 'x'. Hint.", \StorybookPhp\Runtime\Casting\hydrationFailure($context, 'int', 'x', 'Hint.')->getMessage());

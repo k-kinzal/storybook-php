@@ -24,18 +24,19 @@ Relative paths in these options are resolved from Storybook's config directory.
 
 ## Available Options
 
-| Option          | Type                     | Default     | Description                                                     |
-| --------------- | ------------------------ | ----------- | --------------------------------------------------------------- |
-| `bootstrap`     | `string`                 | `undefined` | PHP file loaded before each render                              |
-| `phpBinary`     | `string`                 | `"php"`     | PHP executable path                                             |
-| `phpOptions`    | `string[]`               | `[]`        | CLI options prepended to the PHP binary invocation              |
-| `phpEnv`        | `Record<string, string>` | `undefined` | Environment variables merged over `process.env`                 |
-| `timeout`       | `number`                 | `5000`      | Render timeout in milliseconds                                  |
-| `defaultMethod` | `string`                 | `undefined` | Method name used when `@method` is omitted                      |
-| `adapter`       | `string`                 | `undefined` | Global adapter middleware wrapped around PHP execution          |
-| `typeMap`       | `TypeMapConfig`          | `undefined` | Advanced mapping for files, bindings, classes, and arg metadata |
+| Option          | Type                     | Default     | Description                                                   |
+| --------------- | ------------------------ | ----------- | ------------------------------------------------------------- |
+| `bootstrap`     | `string`                 | `undefined` | PHP file loaded before each render                            |
+| `phpBinary`     | `string`                 | `"php"`     | PHP executable path                                           |
+| `phpOptions`    | `string[]`               | `[]`        | CLI options prepended to the PHP binary invocation            |
+| `phpEnv`        | `Record<string, string>` | `undefined` | Environment variables merged over `process.env`               |
+| `timeout`       | `number`                 | `5000`      | Render timeout in milliseconds                                |
+| `defaultMethod` | `string`                 | `undefined` | Method name used when `@method` is omitted                    |
+| `adapter`       | `string`                 | `undefined` | Global adapter middleware wrapped around PHP execution        |
+| `components`    | `ComponentsConfig`       | `undefined` | Component file contracts, constructor contracts, and adapters |
+| `types`         | `TypeMappings`           | `undefined` | Type routes and property type/value mappings                  |
 
-`bootstrap`, `phpBinary`, `phpOptions`, `phpEnv`, `timeout`, and `adapter` affect runtime rendering. `defaultMethod` and `typeMap` also affect import resolution, TS plugin output, and `typegen` when you pass them through `--options-file`.
+`bootstrap`, `phpBinary`, `phpOptions`, `phpEnv`, `timeout`, and `adapter` affect runtime rendering. `defaultMethod` and `components` also affect import resolution, TS plugin output, and `typegen` when you pass them through `--options-file`.
 
 ## `bootstrap`
 
@@ -127,7 +128,8 @@ return static function (array $context, callable $next): array|string {
 - `constructorArgs`: hydrated constructor arguments for instance methods
 - `methodArgs`: hydrated method/function arguments
 - `publicArgDefs`, `constructorArgDefs`, `callableArgDefs`: resolved arg definitions
-- `typeMap`: runtime bindings and class constructor contracts used during casting
+- `components`: constructor contracts for component classes
+- `types`: runtime type routes and property mappings for argument values
 
 `$next($context)` returns a response envelope with:
 
@@ -144,8 +146,8 @@ Returning a plain string is shorthand for `['html' => '...']`. If an adapter doe
 Middleware wraps from least specific to most specific:
 
 1. global `framework.options.adapter`
-2. matching `typeMap.files` pattern adapters, from shortest suffix to longest suffix
-3. exact `typeMap.files["/exact/path"]` adapter
+2. matching `components.files` pattern adapters, from shortest suffix to longest suffix
+3. exact `components.files["/exact/path"]` adapter
 4. per-request adapter overrides
 5. the built-in core executor
 
@@ -198,10 +200,10 @@ For `template` mode, adapters can take over rendering completely by reading `$co
 
 ## Per-File Adapters
 
-Use `typeMap.files` when only some files need a custom adapter:
+Use `components.files` when only some files need a custom adapter:
 
 ```ts
-typeMap: {
+components: {
   files: {
     "*.blade.php": {
       adapter: new URL("../blade-adapter.php", import.meta.url).pathname,
@@ -212,57 +214,12 @@ typeMap: {
 
 Exact file matches and glob-style suffix matches can be combined. Exact-match fields win when both apply.
 
-## `typeMap`
+## `components` and `types`
 
-`typeMap` is shared by build-time resolution and runtime casting:
+`components.files` defines the public args, execution file, callable, includes, and adapter for each imported file or suffix pattern. `components.classes` supplies constructor argument contracts only for a class executed as a component. Neither setting defines the properties of nested objects.
 
-- `typeMap.files` controls how imported files map to public args, PHP execution files, callable selection, includes, and file-scoped adapters
-- `typeMap.bindings` provides runtime-only, DI-style bindings used while hydrating PHP objects: interface or abstract-type bindings (`"App\\Renderable": "App\\HtmlBlock"`) and slot bindings that fix the type or value of a constructor argument, setter, property, or method parameter (`"App\\Card::$meta": { value: {...} }`)
-- `typeMap.classes` provides runtime-only constructor parameter types for classes the runner instantiates, including nested objects built from story args
+`types` maps fully qualified type names to concrete types, or `Class::$property` keys to types and fixed values. It applies to objects inside constructor, method, function, and template arguments. These objects are allocated without constructors and populated through Reflection, including inherited private properties. Method and function parameter keys are not accepted.
 
-For the full schema, merging rules, and story-level overrides, see [Type Mapping](type-mapping.md).
+Per-story configuration uses `parameters.php.component.args` and `parameters.php.types`. Story type mappings replace global entries with the same key. To change an argument type or default, use the component argument contract.
 
-If you use `typeMap` with `typegen`, load it through `--options-file` because `typegen` does not evaluate your Storybook config.
-
-## `phpBinary` and `timeout`
-
-Use `phpBinary` when PHP is not available as plain `php`:
-
-```ts
-options: {
-  phpBinary: "/opt/homebrew/bin/php",
-  timeout: 15000,
-}
-```
-
-Raise `timeout` when your bootstrap or template engine does meaningful startup work.
-
-## `phpOptions` and `phpEnv`
-
-Use `phpOptions` to pass CLI flags to the PHP binary. The array is spread in front of the runner script, so anything accepted by the `php` command works:
-
-```ts
-options: {
-  phpOptions: ["-d", "memory_limit=512M", "-d", "error_reporting=E_ALL"],
-}
-```
-
-Use `phpEnv` to set environment variables for the spawned PHP process. Entries are merged over `process.env`, so unspecified variables (like `PATH`) are inherited from the Storybook process:
-
-```ts
-options: {
-  phpEnv: {
-    APP_ENV: "testing",
-    XDEBUG_MODE: "off",
-    PHP_INI_SCAN_DIR: "/etc/php/conf.d",
-  },
-}
-```
-
-When `phpEnv` is omitted, PHP inherits the Node default environment without any override.
-
-## Related Guides
-
-- [Rendering Model](rendering-model.md)
-- [Type Mapping](type-mapping.md)
-- [Testing and Types](testing-and-types.md)
+See [Component Configuration and Type Mapping](type-mapping.md) for contracts, precedence, and migration examples. For `typegen`, pass `components`, `defaultMethod`, and `_configDir` through `--options-file`; the CLI does not evaluate `.storybook/main.ts`.

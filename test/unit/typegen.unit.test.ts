@@ -232,7 +232,7 @@ function loose($anything): void {}
   it("applies typeMap inline args in exact-import outputs", () => {
     const outputs = generateDtsOutputsForFile(fixturePath("TypeMapInlineTarget.blade.php"), {
       _configDir: resolve(import.meta.dirname!, "../fixtures"),
-      typeMap: {
+      components: {
         files: {
           "TypeMapInlineTarget.blade.php": {
             args: {

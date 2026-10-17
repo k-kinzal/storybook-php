@@ -4,7 +4,7 @@ namespace App\Components;
 
 /**
  * Base card class in a separate file.
- * Used to demonstrate typeMap.files[].includes for cross-file inheritance.
+ * Used to demonstrate components.files[].includes for cross-file inheritance.
  */
 abstract class BaseCard
 {

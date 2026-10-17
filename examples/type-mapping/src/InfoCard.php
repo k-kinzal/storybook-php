@@ -5,9 +5,9 @@ namespace App\Components;
 /**
  * Concrete card extending BaseCard from a DIFFERENT file.
  *
- * Without typeMap.files[].includes, the vite-plugin can't see BaseCard's
+ * Without components.files[].includes, the vite-plugin can't see BaseCard's
  * constructor params ($title, $variant) because it only searches the same file.
- * typeMap solves this by telling the plugin to also parse BaseCard.php.
+ * type mapping solves this by telling the plugin to also parse BaseCard.php.
  */
 class InfoCard extends BaseCard
 {

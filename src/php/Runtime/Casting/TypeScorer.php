@@ -12,7 +12,7 @@ use Traversable;
  * hydrated into the type; higher scores are more exact matches.
  *
  * @example Exact matches score higher than conversions
- *     $ctx = \StorybookPhp\Runtime\Casting\HydrationContext::fromTypeMap(null);
+ *     $ctx = \StorybookPhp\Runtime\Casting\HydrationContext::fromTypes(null);
  *     $int = new \StorybookPhp\Runtime\Contract\TypeNode('named', 'int');
  *     \StorybookPhp\Runtime\Casting\scoreTypeNodeMatch($int, 42, $ctx) // => 3
  *     \StorybookPhp\Runtime\Casting\scoreTypeNodeMatch($int, '42', $ctx) // => 2
@@ -38,7 +38,7 @@ function scoreTypeNodeMatch(TypeNode $type, mixed $value, HydrationContext $cont
  * @param list<TypeNode> $members
  *
  * @example Earlier members win ties
- *     $ctx = \StorybookPhp\Runtime\Casting\HydrationContext::fromTypeMap(null);
+ *     $ctx = \StorybookPhp\Runtime\Casting\HydrationContext::fromTypes(null);
  *     $type = \StorybookPhp\Runtime\Contract\parseTypeExpression('scalar|string');
  *     \StorybookPhp\Runtime\Casting\selectUnionMember($type->members, 'x', $ctx)->name // => 'scalar'
  */
@@ -236,10 +236,10 @@ function scoreClassTypeMatch(string $className, mixed $value, HydrationContext $
             return 0;
         }
 
-        return \StorybookPhp\Runtime\Casting\isListArray($value) && $value !== [] ? 1 : 2;
+        return 2;
     }
 
-    return \StorybookPhp\Runtime\Casting\canHydrateObjectFromScalar($resolved) ? 1 : 0;
+    return 0;
 }
 
 /**

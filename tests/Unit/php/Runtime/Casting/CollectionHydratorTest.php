@@ -16,35 +16,34 @@ use StorybookPhp\TestFixture\Item;
 require_once dirname(__DIR__, 4) . '/php/fixtures/HydrationFixtures.php';
 
 /**
- * @covers \StorybookPhp\Runtime\Casting\classStateArgDefs
- * @covers \StorybookPhp\Runtime\Casting\constructorArgumentValue
- * @covers \StorybookPhp\Runtime\Casting\describeConstructor
+ * @uses \StorybookPhp\Runtime\Casting\assignProperty
+ * @uses \StorybookPhp\Runtime\Casting\findStateSlot
+ * @uses \StorybookPhp\Runtime\Casting\normalizeStateKey
+ * @uses \StorybookPhp\Runtime\Casting\propertyContract
+ * @uses \StorybookPhp\Runtime\Casting\propertyLabel
+ * @uses \StorybookPhp\Runtime\Casting\propertySlotKeys
+ * @uses \StorybookPhp\Runtime\Contract\parseDocBlockVarType
+ * @uses \StorybookPhp\Runtime\Contract\typeScopeForProperty
  * @covers \StorybookPhp\Runtime\Casting\resolveConstructorArgDefs
  * @covers \StorybookPhp\Runtime\Casting\resolveParameterArgDef
  * @covers \StorybookPhp\Runtime\Contract\collectClassEntryArgDefs
- * @covers \StorybookPhp\Runtime\Contract\resolveTypeMapClassArgDefs
+ * @covers \StorybookPhp\Runtime\Contract\resolveComponentClassArgDefs
  * @covers \StorybookPhp\Runtime\Contract\nativeTypeScope
  * @covers \StorybookPhp\Runtime\Contract\parseFileImports
  * @covers \StorybookPhp\Runtime\Contract\parseUseClause
  * @covers \StorybookPhp\Runtime\Casting\applyObjectState
  * @covers \StorybookPhp\Runtime\Casting\boundStateValues
  * @covers \StorybookPhp\Runtime\Casting\canHydrateObjectFromArray
- * @covers \StorybookPhp\Runtime\Casting\canHydrateObjectFromScalar
- * @covers \StorybookPhp\Runtime\Casting\constructorArguments
- * @covers \StorybookPhp\Runtime\Casting\constructorWrapsList
  * @covers \StorybookPhp\Runtime\Casting\docTypeIsArrayLike
  * @covers \StorybookPhp\Runtime\Casting\docTypeRefines
  * @covers \StorybookPhp\Runtime\Casting\documentedTypeNode
  * @covers \StorybookPhp\Runtime\Casting\findStateKey
- * @covers \StorybookPhp\Runtime\Casting\hydrateObjectFromList
  * @covers \StorybookPhp\Runtime\Casting\hydrateObjectFromMap
  * @covers \StorybookPhp\Runtime\Casting\hydrateParameterValue
  * @covers \StorybookPhp\Runtime\Casting\isListArray
  * @covers \StorybookPhp\Runtime\Casting\parameterContract
  * @covers \StorybookPhp\Runtime\Casting\parameterLabel
- * @covers \StorybookPhp\Runtime\Casting\parameterSlotKeys
  * @covers \StorybookPhp\Runtime\Casting\refineTypeNode
- * @covers \StorybookPhp\Runtime\Casting\reflectionTypeAcceptsArray
  * @covers \StorybookPhp\Runtime\Casting\reflectionTypeNode
  * @covers \StorybookPhp\Runtime\Casting\scoreBuiltinTypeMatch
  * @covers \StorybookPhp\Runtime\Casting\scoreClassTypeMatch
@@ -65,7 +64,7 @@ require_once dirname(__DIR__, 4) . '/php/fixtures/HydrationFixtures.php';
  * @covers \StorybookPhp\Runtime\Contract\isArrayLikeTypeName
  * @covers \StorybookPhp\Runtime\Contract\mapTypeNodeNames
  * @covers \StorybookPhp\Runtime\Contract\normalizeBindingValue
- * @covers \StorybookPhp\Runtime\Contract\normalizeTypeMapBindings
+ * @covers \StorybookPhp\Runtime\Contract\normalizeTypeMappings
  * @covers \StorybookPhp\Runtime\Contract\parseAtomType
  * @covers \StorybookPhp\Runtime\Contract\parseBindingKey
  * @covers \StorybookPhp\Runtime\Contract\parseDocBlockParamTypes
@@ -118,7 +117,7 @@ final class CollectionHydratorTest extends TestCase
 {
     public function testHydrateUnionTypeChoosesTheBestMember(): void
     {
-        $context = HydrationContext::fromTypeMap(null);
+        $context = HydrationContext::fromTypes(null);
         $type = \StorybookPhp\Runtime\Contract\parseTypeExpression('int|list<int>|' . Item::class);
 
         self::assertSame(5, \StorybookPhp\Runtime\Casting\hydrateUnionType('5', $type, $context));
@@ -134,17 +133,17 @@ final class CollectionHydratorTest extends TestCase
         $this->expectException(HydrationException::class);
         $this->expectExceptionMessage('Cannot hydrate App\Card::$slot: expected int|string, received empty array. None of the union members accepts this value.');
 
-        \StorybookPhp\Runtime\Casting\hydrateUnionType([], \StorybookPhp\Runtime\Contract\parseTypeExpression('int|string'), HydrationContext::fromTypeMap(null)->at('App\Card::$slot'));
+        \StorybookPhp\Runtime\Casting\hydrateUnionType([], \StorybookPhp\Runtime\Contract\parseTypeExpression('int|string'), HydrationContext::fromTypes(null)->at('App\Card::$slot'));
     }
 
     public function testHydrateIntersectionTypeAcceptsObjectsImplementingEveryMember(): void
     {
         $type = \StorybookPhp\Runtime\Contract\parseTypeExpression('Countable&Traversable');
         $object = new ArrayObject([1]);
-        $context = HydrationContext::fromTypeMap(['bindings' => ['Countable' => ArrayObject::class]]);
+        $context = HydrationContext::fromTypes(['Countable' => ArrayObject::class]);
 
         self::assertSame($object, \StorybookPhp\Runtime\Casting\hydrateIntersectionType($object, $type, $context));
-        self::assertSame([1, 2], (array) \StorybookPhp\Runtime\Casting\hydrateIntersectionType([1, 2], $type, $context));
+        self::assertSame([], (array) \StorybookPhp\Runtime\Casting\hydrateIntersectionType([], $type, $context));
     }
 
     public function testHydrateIntersectionTypeRejectsObjectsMissingAMember(): void
@@ -155,7 +154,7 @@ final class CollectionHydratorTest extends TestCase
         \StorybookPhp\Runtime\Casting\hydrateIntersectionType(
             new ArrayIterator([]),
             \StorybookPhp\Runtime\Contract\parseTypeExpression('Countable&Traversable&StorybookPhp\TestFixture\FormatterInterface'),
-            HydrationContext::fromTypeMap(null),
+            HydrationContext::fromTypes(null),
         );
     }
 
@@ -164,12 +163,12 @@ final class CollectionHydratorTest extends TestCase
         $this->expectException(HydrationException::class);
         $this->expectExceptionMessage('An intersection must name at least one class or interface.');
 
-        \StorybookPhp\Runtime\Casting\hydrateIntersectionType(1, \StorybookPhp\Runtime\Contract\parseTypeExpression('int&string'), HydrationContext::fromTypeMap(null));
+        \StorybookPhp\Runtime\Casting\hydrateIntersectionType(1, \StorybookPhp\Runtime\Contract\parseTypeExpression('int&string'), HydrationContext::fromTypes(null));
     }
 
     public function testHydrateGenericTypeConvertsArrayLikesBuiltinsAndWrappers(): void
     {
-        $context = HydrationContext::fromTypeMap(null);
+        $context = HydrationContext::fromTypes(null);
         $iterator = new ArrayIterator([]);
 
         self::assertSame(['a' => 1], \StorybookPhp\Runtime\Casting\hydrateGenericType(['a' => '1'], \StorybookPhp\Runtime\Contract\parseTypeExpression('array<string, int>'), $context));
@@ -178,12 +177,12 @@ final class CollectionHydratorTest extends TestCase
         self::assertSame('Foo', \StorybookPhp\Runtime\Casting\hydrateGenericType('Foo', \StorybookPhp\Runtime\Contract\parseTypeExpression('class-string<Foo>'), $context));
         self::assertSame(3, \StorybookPhp\Runtime\Casting\hydrateGenericType('3', \StorybookPhp\Runtime\Contract\parseTypeExpression('int<0, max>'), $context));
 
-        $collection = \StorybookPhp\Runtime\Casting\hydrateGenericType([['label' => 'a']], \StorybookPhp\Runtime\Contract\parseTypeExpression(TypedCollection::class . '<' . Item::class . '>'), $context);
+        $collection = \StorybookPhp\Runtime\Casting\hydrateGenericType(['items' => [['label' => 'a']]], \StorybookPhp\Runtime\Contract\parseTypeExpression(TypedCollection::class . '<' . Item::class . '>'), $context);
         self::assertInstanceOf(TypedCollection::class, $collection);
         self::assertInstanceOf(Item::class, $collection->items[0]);
         self::assertSame('a', $collection->items[0]->label);
 
-        $pairs = \StorybookPhp\Runtime\Casting\hydrateGenericType([[1, 2]], \StorybookPhp\Runtime\Contract\parseTypeExpression(TypedCollection::class . '<' . Pair::class . '>'), $context);
+        $pairs = \StorybookPhp\Runtime\Casting\hydrateGenericType(['items' => [['x' => 1, 'y' => 2]]], \StorybookPhp\Runtime\Contract\parseTypeExpression(TypedCollection::class . '<' . Pair::class . '>'), $context);
         self::assertInstanceOf(TypedCollection::class, $pairs);
         self::assertInstanceOf(Pair::class, $pairs->items[0]);
         self::assertSame(2, $pairs->items[0]->y);
@@ -194,7 +193,7 @@ final class CollectionHydratorTest extends TestCase
         $this->expectException(HydrationException::class);
         $this->expectExceptionMessage("Cannot hydrate App\\Card::\$items[1]: expected int, received string 'x'.");
 
-        \StorybookPhp\Runtime\Casting\hydrateGenericType([1, 'x'], \StorybookPhp\Runtime\Contract\parseTypeExpression('list<int>'), HydrationContext::fromTypeMap(null)->at('App\Card::$items'));
+        \StorybookPhp\Runtime\Casting\hydrateGenericType([1, 'x'], \StorybookPhp\Runtime\Contract\parseTypeExpression('list<int>'), HydrationContext::fromTypes(null)->at('App\Card::$items'));
     }
 
     public function testHydrateArrayElementsRejectsNonArrays(): void
@@ -202,12 +201,12 @@ final class CollectionHydratorTest extends TestCase
         $this->expectException(HydrationException::class);
         $this->expectExceptionMessage("expected list<int>, received string 'x'.");
 
-        \StorybookPhp\Runtime\Casting\hydrateArrayElements('x', \StorybookPhp\Runtime\Contract\parseTypeExpression('int'), HydrationContext::fromTypeMap(null), 'list<int>');
+        \StorybookPhp\Runtime\Casting\hydrateArrayElements('x', \StorybookPhp\Runtime\Contract\parseTypeExpression('int'), HydrationContext::fromTypes(null), 'list<int>');
     }
 
     public function testHydrateShapeTypeConvertsDeclaredKeysAndKeepsOthers(): void
     {
-        $context = HydrationContext::fromTypeMap(null);
+        $context = HydrationContext::fromTypes(null);
         $type = \StorybookPhp\Runtime\Contract\parseTypeExpression('array{id: int, note?: string, ...}');
 
         self::assertSame(['id' => 7, 'extra' => true], \StorybookPhp\Runtime\Casting\hydrateShapeType(['id' => '7', 'extra' => true], $type, $context));
@@ -225,7 +224,7 @@ final class CollectionHydratorTest extends TestCase
         $this->expectException(HydrationException::class);
         $this->expectExceptionMessage("Cannot hydrate App\\Card::\$shape: expected array{id: int, note?: string}, received object with keys [note]. The required key 'id' is missing.");
 
-        \StorybookPhp\Runtime\Casting\hydrateShapeType(['note' => 'x'], \StorybookPhp\Runtime\Contract\parseTypeExpression('array{id: int, note?: string}'), HydrationContext::fromTypeMap(null)->at('App\Card::$shape'));
+        \StorybookPhp\Runtime\Casting\hydrateShapeType(['note' => 'x'], \StorybookPhp\Runtime\Contract\parseTypeExpression('array{id: int, note?: string}'), HydrationContext::fromTypes(null)->at('App\Card::$shape'));
     }
 
     public function testHydrateShapeTypeRejectsNonArrays(): void
@@ -233,7 +232,7 @@ final class CollectionHydratorTest extends TestCase
         $this->expectException(HydrationException::class);
         $this->expectExceptionMessage("expected array{id: int}, received string 'x'.");
 
-        \StorybookPhp\Runtime\Casting\hydrateShapeType('x', \StorybookPhp\Runtime\Contract\parseTypeExpression('array{id: int}'), HydrationContext::fromTypeMap(null));
+        \StorybookPhp\Runtime\Casting\hydrateShapeType('x', \StorybookPhp\Runtime\Contract\parseTypeExpression('array{id: int}'), HydrationContext::fromTypes(null));
     }
 
     public function testObjectShapesRejectScalars(): void
@@ -241,6 +240,6 @@ final class CollectionHydratorTest extends TestCase
         $this->expectException(HydrationException::class);
         $this->expectExceptionMessage('expected object{a: int}, received int 1.');
 
-        \StorybookPhp\Runtime\Casting\hydrateShapeType(1, \StorybookPhp\Runtime\Contract\parseTypeExpression('object{a: int}'), HydrationContext::fromTypeMap(null));
+        \StorybookPhp\Runtime\Casting\hydrateShapeType(1, \StorybookPhp\Runtime\Contract\parseTypeExpression('object{a: int}'), HydrationContext::fromTypes(null));
     }
 }

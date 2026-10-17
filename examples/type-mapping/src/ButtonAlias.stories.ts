@@ -1,7 +1,7 @@
 /**
- * typeMap.files demo: phpFile redirect.
+ * components.files demo: phpFile redirect.
  *
- * button.bridge is not executable PHP. typeMap.files redirects it to
+ * button.bridge is not executable PHP. components.files redirects it to
  * Button.php@render so the import still gets the full typed signature.
  */
 import type { Meta, StoryObj } from "storybook-php";

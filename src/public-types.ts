@@ -1,9 +1,9 @@
-import type { PhpComponent, PhpRenderer, StoryTypeMap } from "./types.js";
+import type { PhpComponent, PhpRenderer, PhpStoryParameters } from "./types.js";
 
 /** Extract the args type from a PhpComponent */
 type ArgsFromComponent<C> = C extends PhpComponent<infer A> ? A : Record<string, unknown>;
 
-type StoryParameters = { typeMap?: StoryTypeMap } & Record<string, unknown>;
+type StoryParameters = { php?: PhpStoryParameters; typeMap?: never } & Record<string, unknown>;
 
 /** Story metadata — equivalent to Storybook's Meta */
 export interface Meta<TComponent extends PhpComponent = PhpComponent> {
@@ -77,11 +77,11 @@ export interface ArgType {
 
 export type { PhpComponent, PhpRenderer };
 export type {
-  TypeMapConfig,
-  TypeBinding,
-  TypeBindings,
+  ComponentsConfig,
+  TypeMapping,
+  TypeMappings,
   ArgOverride,
-  FileMapTarget,
-  ClassMapTarget,
-  StoryTypeMap,
+  ComponentFileConfig,
+  ComponentClassConfig,
+  PhpStoryParameters,
 } from "./types.js";

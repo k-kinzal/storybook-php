@@ -13,16 +13,16 @@ use StorybookPhp\Runtime\Contract\TypeScope;
  * such as the `type` of a template argument definition. Class names must be
  * fully qualified because there is no namespace to resolve them in.
  *
- * @param array<string, mixed>|null $typeMap
+ * @param array<string, mixed>|null $types
  * @throws HydrationException when the value cannot satisfy the type
  *
  * @example Casting template input with a documented type
  *     \StorybookPhp\Runtime\Casting\castInlineDocTypeValue(['a' => '1'], 'array<string, int>') // => ['a' => 1]
  *     \StorybookPhp\Runtime\Casting\castInlineDocTypeValue(null, 'string') // => null
  */
-function castInlineDocTypeValue(mixed $value, string $docType, ?array $typeMap = null, string $label = ''): mixed
+function castInlineDocTypeValue(mixed $value, string $docType, ?array $types = null, string $label = ''): mixed
 {
-    $context = HydrationContext::fromTypeMap($typeMap);
+    $context = HydrationContext::fromTypes($types);
     $slot = $label === '' ? $context : $context->at($label);
     try {
         $node = \StorybookPhp\Runtime\Contract\parseTypeExpression($docType);
@@ -41,21 +41,21 @@ function castInlineDocTypeValue(mixed $value, string $docType, ?array $typeMap =
  * Casts one template argument using its generated definition.
  *
  * @param array<string, mixed> $argDef
- * @param array<string, mixed>|null $typeMap
+ * @param array<string, mixed>|null $types
  * @throws HydrationException when the value cannot satisfy the definition
  *
  * @example Element types apply to every item
  *     \StorybookPhp\Runtime\Casting\castTemplateArgValue(['type' => 'array', 'elementType' => 'int'], ['1', '2']) // => [1, 2]
  *     \StorybookPhp\Runtime\Casting\castTemplateArgValue(['type' => 'unknown'], 'keep') // => 'keep'
  */
-function castTemplateArgValue(array $argDef, mixed $value, ?array $typeMap = null, string $label = ''): mixed
+function castTemplateArgValue(array $argDef, mixed $value, ?array $types = null, string $label = ''): mixed
 {
     $docType = \StorybookPhp\Runtime\Casting\argDefDocType($argDef);
     if ($docType === null || $value === null) {
         return $value;
     }
 
-    return \StorybookPhp\Runtime\Casting\castInlineDocTypeValue($value, $docType, $typeMap, $label);
+    return \StorybookPhp\Runtime\Casting\castInlineDocTypeValue($value, $docType, $types, $label);
 }
 
 /**
@@ -63,12 +63,12 @@ function castTemplateArgValue(array $argDef, mixed $value, ?array $typeMap = nul
  *
  * @param array<string, mixed> $args
  * @param array<string, mixed> $argDefs
- * @param array<string, mixed>|null $typeMap
+ * @param array<string, mixed>|null $types
  * @return array<string, mixed>
  * @throws HydrationException when a value cannot satisfy its definition
  * @throws RuntimeException when a required template argument is missing
  */
-function castTemplateArgs(array $args, array $argDefs, ?array $typeMap = null): array
+function castTemplateArgs(array $args, array $argDefs, ?array $types = null): array
 {
     $casted = [];
 
@@ -80,12 +80,12 @@ function castTemplateArgs(array $args, array $argDefs, ?array $typeMap = null): 
         $label = 'template argument $' . $name;
 
         if (array_key_exists($name, $args)) {
-            $casted[$name] = \StorybookPhp\Runtime\Casting\castTemplateArgValue($argDef, $args[$name], $typeMap, $label);
+            $casted[$name] = \StorybookPhp\Runtime\Casting\castTemplateArgValue($argDef, $args[$name], $types, $label);
             continue;
         }
 
         if (array_key_exists('default', $argDef)) {
-            $casted[$name] = \StorybookPhp\Runtime\Casting\castTemplateArgValue($argDef, $argDef['default'], $typeMap, $label);
+            $casted[$name] = \StorybookPhp\Runtime\Casting\castTemplateArgValue($argDef, $argDef['default'], $types, $label);
             continue;
         }
 

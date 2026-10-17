@@ -164,9 +164,9 @@ function docTypeIsClassLike(TypeNode $doc): bool
 
 /**
  * Builds the contract of a callable parameter from its native type, its
- * docblock, the generated argument definition, and slot bindings.
+ * docblock, and the component argument definition.
  *
- * Priority of the documented layer: slot binding `type` > argument
+ * Priority of the documented layer: argument
  * definition `type`/`elementType` > `@param`. The result is always refined
  * against the native declaration.
  *
@@ -176,16 +176,15 @@ function docTypeIsClassLike(TypeNode $doc): bool
  *
  * @example Contract of a documented array parameter
  *     $parameter = new \ReflectionParameter([\StorybookPhp\Runtime\Casting\HydrationContext::class, 'withTemplates'], 'templates');
- *     $ctx = \StorybookPhp\Runtime\Casting\HydrationContext::fromTypeMap(null);
+ *     $ctx = \StorybookPhp\Runtime\Casting\HydrationContext::fromTypes(null);
  *     $node = \StorybookPhp\Runtime\Casting\parameterContract($parameter, 'array<string, TypeNode>', null, $ctx);
  *     \StorybookPhp\Runtime\Contract\describeTypeNode($node) // => 'array<string, StorybookPhp\Runtime\Contract\TypeNode>'
  */
 function parameterContract(ReflectionParameter $param, ?string $docType, ?array $argDef, HydrationContext $context, ?TypeScope $scope = null): TypeNode
 {
     $resolvedScope = $scope ?? \StorybookPhp\Runtime\Contract\typeScopeForFunction($param->getDeclaringFunction());
-    $binding = \StorybookPhp\Runtime\Contract\slotBinding(\StorybookPhp\Runtime\Casting\parameterSlotKeys($param), $context->bindings);
-    $documented = $binding['type'] ?? null;
-    if ($documented === null && $argDef !== null) {
+    $documented = null;
+    if ($argDef !== null) {
         $documented = \StorybookPhp\Runtime\Casting\buildOverrideDocType($param, $argDef);
     }
     $documented ??= $docType;
@@ -202,19 +201,18 @@ function parameterContract(ReflectionParameter $param, ?string $docType, ?array 
  * bindings.
  *
  * @param TypeScope|null $scope resolution scope of the declaring class, built on demand when omitted
- * @param array<string, mixed>|null $argDef `typeMap.classes` definition that overrides the docblock
  * @throws HydrationException when a documented type cannot be parsed
  *
  * @example Contract of a documented property
  *     $property = new \ReflectionProperty(\StorybookPhp\Runtime\Contract\TypeScope::class, 'imports');
- *     $ctx = \StorybookPhp\Runtime\Casting\HydrationContext::fromTypeMap(null);
+ *     $ctx = \StorybookPhp\Runtime\Casting\HydrationContext::fromTypes(null);
  *     \StorybookPhp\Runtime\Contract\describeTypeNode(\StorybookPhp\Runtime\Casting\propertyContract($property, $ctx)) // => 'array<string, string>'
  */
-function propertyContract(ReflectionProperty $property, HydrationContext $context, ?TypeScope $scope = null, ?array $argDef = null): TypeNode
+function propertyContract(ReflectionProperty $property, HydrationContext $context, ?TypeScope $scope = null): TypeNode
 {
     $resolvedScope = $scope ?? \StorybookPhp\Runtime\Contract\typeScopeForProperty($property);
     $binding = \StorybookPhp\Runtime\Contract\slotBinding(\StorybookPhp\Runtime\Casting\propertySlotKeys($property), $context->bindings);
-    $documented = $binding['type'] ?? ($argDef === null ? null : \StorybookPhp\Runtime\Casting\argDefDocType($argDef));
+    $documented = $binding['type'] ?? null;
     $documented ??= \StorybookPhp\Runtime\Contract\parseDocBlockVarType($property->getDocComment());
     if ($documented === null && $property->isPromoted()) {
         $constructor = $property->getDeclaringClass()->getConstructor();
@@ -223,7 +221,7 @@ function propertyContract(ReflectionProperty $property, HydrationContext $contex
 
     return \StorybookPhp\Runtime\Casting\refineTypeNode(
         \StorybookPhp\Runtime\Casting\reflectionTypeNode($property->getType(), $resolvedScope),
-        \StorybookPhp\Runtime\Casting\documentedTypeNode($documented, $resolvedScope, $context, \StorybookPhp\Runtime\Casting\propertyLabel($property)),
+        \StorybookPhp\Runtime\Casting\documentedTypeNode($documented, isset($binding['type']) ? new TypeScope() : $resolvedScope, $context, \StorybookPhp\Runtime\Casting\propertyLabel($property)),
     );
 }
 
@@ -244,34 +242,6 @@ function documentedTypeNode(?string $documented, TypeScope $scope, HydrationCont
     }
 
     return \StorybookPhp\Runtime\Contract\resolveTypeNode($node, $scope, $context->templates);
-}
-
-/**
- * Canonical binding keys that may configure a parameter, most specific first.
- *
- * Constructor parameters also answer to the `Class::$name` state key because
- * they initialise the object's state.
- *
- * @return list<string>
- *
- * @example Keys of a constructor parameter
- *     $parameter = new \ReflectionParameter([\StorybookPhp\Runtime\Contract\TypeScope::class, '__construct'], 'imports');
- *     \StorybookPhp\Runtime\Casting\parameterSlotKeys($parameter) // => ['storybookphp\runtime\contract\typescope::__construct($imports)', 'storybookphp\runtime\contract\typescope::$imports']
- */
-function parameterSlotKeys(ReflectionParameter $param): array
-{
-    $function = $param->getDeclaringFunction();
-    $name = $param->getName();
-    if (!$function instanceof ReflectionMethod) {
-        return [strtolower($function->getName()) . '($' . $name . ')'];
-    }
-    $class = strtolower($function->getDeclaringClass()->getName());
-    $keys = [$class . '::' . strtolower($function->getName()) . '($' . $name . ')'];
-    if ($function->isConstructor() || str_starts_with(strtolower($function->getName()), 'set')) {
-        $keys[] = $class . '::$' . $name;
-    }
-
-    return $keys;
 }
 
 /**

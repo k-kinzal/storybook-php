@@ -23,9 +23,6 @@ final class FailingConstructor
 }
 
 /**
- * @covers \StorybookPhp\Runtime\Casting\classStateArgDefs
- * @covers \StorybookPhp\Runtime\Casting\constructorArgumentValue
- * @covers \StorybookPhp\Runtime\Casting\describeConstructor
  * @covers \StorybookPhp\Runtime\Casting\resolveParameterArgDef
  * @covers \StorybookPhp\Runtime\Contract\collectClassEntryArgDefs
  * @covers \StorybookPhp\Runtime\Contract\nativeTypeScope
@@ -41,12 +38,10 @@ final class FailingConstructor
  * @covers \StorybookPhp\Runtime\Casting\normalizeStateKey
  * @covers \StorybookPhp\Runtime\Casting\parameterContract
  * @covers \StorybookPhp\Runtime\Casting\parameterLabel
- * @covers \StorybookPhp\Runtime\Casting\parameterSlotKeys
  * @covers \StorybookPhp\Runtime\Casting\propertyContract
  * @covers \StorybookPhp\Runtime\Casting\propertyLabel
  * @covers \StorybookPhp\Runtime\Casting\propertySlotKeys
  * @covers \StorybookPhp\Runtime\Casting\refineTypeNode
- * @covers \StorybookPhp\Runtime\Casting\reflectionTypeAcceptsArray
  * @covers \StorybookPhp\Runtime\Casting\reflectionTypeNode
  * @covers \StorybookPhp\Runtime\Casting\scoreNamedTypeMatch
  * @covers \StorybookPhp\Runtime\Casting\stringKeyedState
@@ -96,14 +91,9 @@ final class FailingConstructor
  * @covers \StorybookPhp\Runtime\Casting\hydrateObject
  * @covers \StorybookPhp\Runtime\Casting\resolveHydrationClass
  * @covers \StorybookPhp\Runtime\Casting\hydrateObjectFromMap
- * @covers \StorybookPhp\Runtime\Casting\hydrateObjectFromList
- * @covers \StorybookPhp\Runtime\Casting\hydrateObjectFromScalar
- * @covers \StorybookPhp\Runtime\Casting\constructorArguments
  * @covers \StorybookPhp\Runtime\Casting\hydrateParameterValue
- * @covers \StorybookPhp\Runtime\Casting\constructorWrapsList
  * @covers \StorybookPhp\Runtime\Casting\applyObjectState
  * @covers \StorybookPhp\Runtime\Casting\canHydrateObjectFromArray
- * @covers \StorybookPhp\Runtime\Casting\canHydrateObjectFromScalar
  * @covers \StorybookPhp\Runtime\Casting\selectUnionMember
  * @covers \StorybookPhp\Runtime\Casting\scoreTypeNodeMatch
  * @covers \StorybookPhp\Runtime\Casting\scoreClassTypeMatch
@@ -116,14 +106,14 @@ final class FailingConstructor
  * @covers \StorybookPhp\Runtime\Contract\HydrationException
  * @covers \StorybookPhp\Runtime\Contract\parseTypeExpression
  * @covers \StorybookPhp\Runtime\Contract\resolveTypeNode
- * @covers \StorybookPhp\Runtime\Contract\normalizeTypeMapBindings
+ * @covers \StorybookPhp\Runtime\Contract\normalizeTypeMappings
  * @covers \StorybookPhp\Runtime\Contract\boundTypeName
- * @covers \StorybookPhp\Runtime\Contract\resolveTypeMapClassArgDefs
+ * @covers \StorybookPhp\Runtime\Contract\resolveComponentClassArgDefs
  * @covers \StorybookPhp\Runtime\Casting\resolveConstructorArgDefs
  */
 final class runtime_castTest extends TestCase
 {
-    public function testUnionSelectionUsesTheCompatibleConstructorContract(): void
+    public function testUnionSelectionUsesCompatibleProperties(): void
     {
         $result = \StorybookPhp\Runtime\Casting\castInlineDocTypeValue(
             ['label' => 'item'],
@@ -133,38 +123,35 @@ final class runtime_castTest extends TestCase
         self::assertInstanceOf(Item::class, $result);
     }
 
-    public function testUnionConversionDoesNotHideProgrammingErrors(): void
+    public function testUnionHydrationDoesNotInvokeConstructors(): void
     {
-        $this->expectException(TypeError::class);
-        \StorybookPhp\Runtime\Casting\castInlineDocTypeValue(
-            ['label' => 'item'],
-            FailingConstructor::class . '|' . Item::class,
-        );
+        $value = \StorybookPhp\Runtime\Casting\castInlineDocTypeValue(['label' => 'item'], FailingConstructor::class . '|' . Item::class);
+        self::assertInstanceOf(FailingConstructor::class, $value);
+        self::assertSame('item', $value->label);
     }
 
-    public function testScalarInstantiationUsesTheSingleParameterContract(): void
+    public function testScalarInstantiationIsRejected(): void
     {
-        $item = \StorybookPhp\Runtime\Casting\instantiateClassFromValue(Item::class, 'label');
-
-        self::assertInstanceOf(Item::class, $item);
-        self::assertSame('label', $item->label);
+        $this->expectException(HydrationException::class);
+        $this->expectExceptionMessage('Pass an object whose keys are property names.');
+        \StorybookPhp\Runtime\Casting\instantiateClassFromValue(Item::class, 'label');
     }
 
     public function testCollectionWrappersReceiveTheirElementsThroughTemplates(): void
     {
-        $wrapped = \StorybookPhp\Runtime\Casting\castInlineDocTypeValue([['label' => 'wrapped']], ListCollection::class . '<' . Item::class . '>');
+        $wrapped = \StorybookPhp\Runtime\Casting\castInlineDocTypeValue(['items' => [['label' => 'wrapped']]], ListCollection::class . '<' . Item::class . '>');
         self::assertInstanceOf(ListCollection::class, $wrapped);
         self::assertInstanceOf(Item::class, $wrapped->items[0]);
 
         $bound = \StorybookPhp\Runtime\Casting\castInlineDocTypeValue(
-            [['label' => 'bound']],
+            ['items' => [['label' => 'bound']]],
             ListCollectionContract::class . '<' . Item::class . '>',
-            ['bindings' => [ListCollectionContract::class => ListCollection::class]],
+            [ListCollectionContract::class => ListCollection::class],
         );
         self::assertInstanceOf(ListCollection::class, $bound);
         self::assertInstanceOf(Item::class, $bound->items[0]);
 
-        $positional = \StorybookPhp\Runtime\Casting\instantiateClassFromValue(BrokenCollection::class, [[new Item('alpha')], 'named']);
+        $positional = \StorybookPhp\Runtime\Casting\instantiateClassFromValue(BrokenCollection::class, ['items' => [new Item('alpha')], 'name' => 'named']);
         self::assertInstanceOf(BrokenCollection::class, $positional);
         self::assertSame('alpha', $positional->items[0]->label);
         self::assertSame('named', $positional->name);
@@ -177,7 +164,7 @@ final class runtime_castTest extends TestCase
         self::assertSame('generated', $items[1]->label);
 
         $this->expectException(HydrationException::class);
-        $this->expectExceptionMessage(NoConstructorCollection::class . ' has no constructor, so positional values cannot be applied.');
+        $this->expectExceptionMessage('Pass an object whose keys are property names.');
         \StorybookPhp\Runtime\Casting\castInlineDocTypeValue([['label' => 'ignored']], NoConstructorCollection::class . '<' . Item::class . '>');
     }
 
@@ -198,7 +185,7 @@ final class runtime_castTest extends TestCase
             self::fail('Expected the missing class to be reported.');
         } catch (HydrationException $exception) {
             self::assertStringEndsWith(
-                '($value): the type StorybookPhp\MissingRuntimeType does not exist. Check the docblock type, make sure the class is autoloadable from the bootstrap file, or add a typeMap binding for it.',
+                '($value): the type StorybookPhp\MissingRuntimeType does not exist. Check the docblock type, make sure the class is autoloadable from the bootstrap file, or add a types binding for it.',
                 $exception->getMessage(),
             );
         }

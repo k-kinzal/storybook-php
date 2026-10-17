@@ -184,7 +184,10 @@ describe.skipIf(!hasPhp)("PhpExecutor", () => {
         class: "App\\Fixtures\\LegacyTagCloud",
         callable: "render",
         args: {
-          tags: [{ name: "Alpha", color: "red" }, { name: "Beta" }],
+          tags: [
+            { name: "Alpha", color: "red" },
+            { name: "Beta", color: "gray" },
+          ],
         },
         publicArgDefs: {
           tags: argDef("array", 0),
@@ -281,11 +284,9 @@ describe.skipIf(!hasPhp)("PhpExecutor", () => {
     it("casts wrapper objects from combined type and elementType overrides", async () => {
       const typedExecutor = new PhpExecutor({
         timeout: 10000,
-        typeMap: {
-          bindings: {
-            "App\\Components\\WrappedRenderable": "App\\Components\\WrappedHtmlBlock",
-            "App\\Components\\WrappedListContract": "App\\Components\\WrappedList",
-          },
+        types: {
+          "App\\Components\\WrappedRenderable": "App\\Components\\WrappedHtmlBlock",
+          "App\\Components\\WrappedListContract": "App\\Components\\WrappedList",
         },
       });
 
@@ -295,10 +296,12 @@ describe.skipIf(!hasPhp)("PhpExecutor", () => {
         class: "App\\Components\\WrappedListRenderer",
         callable: "render",
         args: {
-          items: [
-            { content: "First", tag: "p" },
-            { content: "Second", tag: "span" },
-          ],
+          items: {
+            items: [
+              { content: "First", tag: "p" },
+              { content: "Second", tag: "span" },
+            ],
+          },
         },
         publicArgDefs: {
           items: argDef("App\\Components\\WrappedListContract", 0, {
@@ -316,14 +319,22 @@ describe.skipIf(!hasPhp)("PhpExecutor", () => {
       expect(result.html).toContain("<span>Second</span>");
     });
 
-    it("hydrates nested untyped arrays through typeMap.classes", async () => {
+    it("separates the component constructor contract from nested property mappings", async () => {
       const request: PhpRenderRequest = {
         type: "classMethod",
         file: fixture("TypeMapNestedClasses.php"),
         class: "App\\Components\\NestedMenu",
         callable: "render",
         args: {
-          sections: [{ items: [{ label: "Home", href: "/" }, { label: "Docs" }] }],
+          sections: [
+            {
+              title: "Untitled",
+              items: [
+                { label: "Home", href: "/" },
+                { label: "Docs", href: "#" },
+              ],
+            },
+          ],
         },
       };
 
@@ -332,13 +343,10 @@ describe.skipIf(!hasPhp)("PhpExecutor", () => {
 
       const typedExecutor = new PhpExecutor({
         timeout: 10000,
-        typeMap: {
+        components: {
           classes: {
             "App\\Components\\NestedMenu": {
               args: { sections: "NestedMenuSection[]" },
-            },
-            "App\\Components\\NestedMenuSection": {
-              args: { title: { type: "string", default: "Untitled" } },
             },
           },
         },
@@ -346,12 +354,8 @@ describe.skipIf(!hasPhp)("PhpExecutor", () => {
 
       const result = await typedExecutor.execute({
         ...request,
-        typeMap: {
-          classes: {
-            "App\\Components\\NestedMenuSection": {
-              args: { items: { elementType: "App\\Components\\NestedMenuItem" } },
-            },
-          },
+        types: {
+          "App\\Components\\NestedMenuSection::$items": "list<App\\Components\\NestedMenuItem>",
         },
       });
 
@@ -368,14 +372,14 @@ describe.skipIf(!hasPhp)("PhpExecutor", () => {
   describe("state hydration", () => {
     const stateRequest = (
       args: Record<string, unknown>,
-      typeMap?: PhpRenderRequest["typeMap"],
+      types?: PhpRenderRequest["types"],
     ): PhpRenderRequest => ({
       type: "classMethod",
       file: fixture("TypeMapStateBinding.php"),
       class: "App\\Components\\StatefulCard",
       callable: "render",
       args,
-      ...(typeMap ? { typeMap } : {}),
+      ...(types ? { types } : {}),
     });
 
     it("hydrates array shapes documented with imported class aliases", async () => {
@@ -388,7 +392,7 @@ describe.skipIf(!hasPhp)("PhpExecutor", () => {
       expect(result.html).toContain("<span>New x2</span>");
     });
 
-    it("rewrites instance state through setters and public properties", async () => {
+    it("ignores residual args even when they match properties and setters", async () => {
       const result = await executor.execute(
         stateRequest(
           {
@@ -396,36 +400,28 @@ describe.skipIf(!hasPhp)("PhpExecutor", () => {
             subtitle: "Sub",
             theme: { accent: "red" },
             density: "compact",
-            shape: { badge: "Hot" },
+            shape: { badge: { label: "Hot" } },
           },
-          { bindings: { "App\\Components\\StateTheme": "App\\Components\\DarkTheme" } },
-        ),
-      );
-
-      expect(result.error).toBeUndefined();
-      expect(result.html).toContain('class="dark-red compact"');
-      expect(result.html).toContain("<p>Sub</p>");
-      expect(result.html).toContain("<span>Hot x0</span>");
-    });
-
-    it("applies slot bindings with fixed values and parameter types", async () => {
-      const result = await executor.execute(
-        stateRequest(
-          { title: "Card", shape: { badge: "Hot" }, limit: "ignored-by-binding" },
-          {
-            bindings: {
-              "App\\Components\\StatefulCard::$theme": { type: "App\\Components\\LightTheme" },
-              "App\\Components\\StatefulCard::$meta": { value: { theme: "dark" } },
-              "App\\Components\\StatefulCard::render($limit)": { value: 7 },
-            },
-          },
+          { "App\\Components\\StateTheme": "App\\Components\\DarkTheme" },
         ),
       );
 
       expect(result.error).toBeUndefined();
       expect(result.html).toContain('class="light normal"');
-      expect(result.html).toContain("<em>7</em>");
-      expect(result.html).toContain('<code>{"theme":"dark"}</code>');
+      expect(result.html).toContain("<p></p>");
+      expect(result.html).toContain("<span>Hot x0</span>");
+    });
+
+    it("keeps property bindings away from component parameters and state", async () => {
+      const result = await executor.execute(
+        stateRequest(
+          { title: "Card", shape: { badge: { label: "Hot" } } },
+          { "App\\Components\\StatefulCard::$meta": { value: { theme: "dark" } } },
+        ),
+      );
+      expect(result.error).toBeUndefined();
+      expect(result.html).toContain("<em>1</em>");
+      expect(result.html).toContain("<code>none</code>");
     });
 
     it("names the slot that rejected a value", async () => {
@@ -434,31 +430,31 @@ describe.skipIf(!hasPhp)("PhpExecutor", () => {
       );
 
       expect(result.error).toBe(
-        "Cannot hydrate App\\Components\\StatefulCard::render($shape)[badge] > App\\Components\\State\\Badge::__construct($label): expected string, received list of 3 items.",
+        "Cannot hydrate App\\Components\\StatefulCard::render($shape)[badge] > App\\Components\\State\\Badge::$label: expected string, received list of 3 items.",
       );
     });
 
-    it("explains missing bindings for interface-typed state", async () => {
+    it("rejects parameter bindings and explains the component configuration", async () => {
       const result = await executor.execute(
-        stateRequest({ title: "Card", shape: { badge: "Hot" }, theme: { accent: "red" } }),
+        stateRequest(
+          { title: "Card", shape: { badge: { label: "Hot" } } },
+          { "App\\Components\\StatefulCard::render($limit)": { value: 7 } },
+        ),
       );
-
-      expect(result.error).toContain(
-        "Cannot hydrate App\\Components\\StatefulCard::setTheme($theme): App\\Components\\StateTheme is an interface",
-      );
-      expect(result.error).toContain('{"App\\\\Components\\\\StateTheme":"App\\\\ConcreteClass"}');
+      expect(result.error).toContain("is not supported");
+      expect(result.error).toContain("Configure component arguments under components");
     });
 
     it("rejects unsupported binding keys with guidance", async () => {
       const result = await executor.execute(
         stateRequest(
-          { title: "Card", shape: { badge: "Hot" } },
-          { bindings: { "App\\Components\\StatefulCard::theme": "x" } },
+          { title: "Card", shape: { badge: { label: "Hot" } } },
+          { "App\\Components\\StatefulCard::theme": "x" },
         ),
       );
 
       expect(result.error).toContain(
-        "typeMap binding key 'App\\Components\\StatefulCard::theme' is not supported.",
+        "types key 'App\\Components\\StatefulCard::theme' is not supported.",
       );
     });
   });
@@ -617,20 +613,20 @@ describe.skipIf(!hasPhp)("PhpExecutor", () => {
             default: "Generated footer",
           },
         },
-        typeMap: {
-          bindings: {
-            "App\\Templates\\RenderableSnippet": "App\\Templates\\HtmlSnippet",
-          },
+        types: {
+          "App\\Templates\\RenderableSnippet": "App\\Templates\\HtmlSnippet",
         },
         args: {
           title: "Template Cast",
           featured: 1,
           tone: "success",
           content: { content: "Primary body", tag: "article" },
-          items: [
-            { content: "First", tag: "p" },
-            { content: "Second", tag: "span" },
-          ],
+          items: {
+            items: [
+              { content: "First", tag: "p" },
+              { content: "Second", tag: "span" },
+            ],
+          },
         },
       });
 

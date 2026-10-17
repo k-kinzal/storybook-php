@@ -1,8 +1,8 @@
 /**
- * typeMap.files[*].args demo: String option set
+ * components.files[*].args demo: String option set
  *
- * The $variant param is a plain `string` in PHP. Without typeMap,
- * Storybook renders a text input. With typeMap.files[*].args providing `options`,
+ * The $variant param is a plain `string` in PHP. Without type mapping,
+ * Storybook renders a text input. With components.files[*].args providing `options`,
  * the control becomes a select dropdown automatically.
  *
  * Config in main.ts:

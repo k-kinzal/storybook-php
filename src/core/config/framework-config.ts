@@ -2,16 +2,16 @@ import { dirname, isAbsolute, resolve } from "node:path";
 import type {
   AdapterMap,
   ArgOverride,
-  ClassMapTarget,
-  FileMapTarget,
+  ComponentClassConfig,
+  ComponentFileConfig,
   FrameworkOptions,
-  TypeBindings,
+  TypeMappings,
 } from "../../types.js";
 
 export const PHP_IMPORT_RE: RegExp = /\.php(?:@(\w+))?$/;
 export const VIRTUAL_PREFIX = "\0storybook-php:";
 
-export interface ResolvedFileMapTarget {
+export interface ResolvedComponentFileConfig {
   args?: Record<string, string | ArgOverride>;
   callables?: Record<
     string,
@@ -26,8 +26,8 @@ export interface ResolvedFileMapTarget {
 }
 
 export interface ResolvedFileMap {
-  exact: Record<string, ResolvedFileMapTarget>;
-  patterns: Array<{ suffix: string; target: ResolvedFileMapTarget }>;
+  exact: Record<string, ResolvedComponentFileConfig>;
+  patterns: Array<{ suffix: string; target: ResolvedComponentFileConfig }>;
 }
 
 export interface ResolvedFrameworkOptions {
@@ -39,11 +39,11 @@ export interface ResolvedFrameworkOptions {
   bootstrap: string | null;
   adapter: string | null;
   defaultMethod: string | null;
-  typeMap?: {
+  components?: {
     files?: ResolvedFileMap;
-    bindings?: TypeBindings;
-    classes?: Record<string, ClassMapTarget>;
+    classes?: Record<string, ComponentClassConfig>;
   };
+  types?: TypeMappings;
   adapterMap: AdapterMap | null;
 }
 
@@ -54,14 +54,16 @@ export interface ResolvedImportSource {
 }
 
 export function resolveFrameworkOptions(options: FrameworkOptions = {}): ResolvedFrameworkOptions {
+  if ("typeMap" in options) {
+    throw new Error("typeMap is no longer supported. Use components and types.");
+  }
   const configDir = options._configDir ?? process.cwd();
-  const resolvedFiles = resolveTypeMapFiles(options.typeMap?.files, configDir);
-  const resolvedTypeMap =
-    resolvedFiles || options.typeMap?.bindings || options.typeMap?.classes
+  const resolvedFiles = resolveComponentFiles(options.components?.files, configDir);
+  const resolvedComponent =
+    resolvedFiles || options.components?.classes
       ? {
           ...(resolvedFiles ? { files: resolvedFiles } : {}),
-          ...(options.typeMap?.bindings ? { bindings: options.typeMap.bindings } : {}),
-          ...(options.typeMap?.classes ? { classes: options.typeMap.classes } : {}),
+          ...(options.components?.classes ? { classes: options.components.classes } : {}),
         }
       : null;
 
@@ -74,7 +76,8 @@ export function resolveFrameworkOptions(options: FrameworkOptions = {}): Resolve
     bootstrap: options.bootstrap ?? null,
     adapter: options.adapter ?? null,
     defaultMethod: options.defaultMethod ?? null,
-    ...(resolvedTypeMap ? { typeMap: resolvedTypeMap } : {}),
+    ...(resolvedComponent ? { components: resolvedComponent } : {}),
+    ...(options.types ? { types: options.types } : {}),
     adapterMap: resolveAdapterMap(resolvedFiles),
   };
 }
@@ -84,10 +87,10 @@ export function resolveImportSource(
   importer: string | undefined,
   options: ResolvedFrameworkOptions,
 ): ResolvedImportSource | null {
-  if (options.typeMap?.files && importer) {
+  if (options.components?.files && importer) {
     const sourcePath = stripCallableSuffix(source);
     const absPath = isAbsolute(sourcePath) ? sourcePath : resolve(dirname(importer), sourcePath);
-    const mapping = findResolvedFileMapping(absPath, options.typeMap.files);
+    const mapping = findResolvedFileMapping(absPath, options.components.files);
     if (mapping) {
       return {
         sourceFile: absPath,
@@ -125,9 +128,9 @@ export function stripCallableSuffix(specifier: string): string {
 export function findResolvedFileMapping(
   absPath: string,
   fileMap: ResolvedFileMap,
-): ResolvedFileMapTarget | null {
-  let exactMatch: ResolvedFileMapTarget | undefined;
-  let patternMatch: ResolvedFileMapTarget | undefined;
+): ResolvedComponentFileConfig | null {
+  let exactMatch: ResolvedComponentFileConfig | undefined;
+  let patternMatch: ResolvedComponentFileConfig | undefined;
   let patternSuffixLen = 0;
 
   exactMatch = fileMap.exact[absPath];
@@ -143,14 +146,16 @@ export function findResolvedFileMapping(
   if (!patternMatch) return exactMatch!;
   if (!exactMatch) return patternMatch!;
 
-  return mergeFileMapTargets(patternMatch, exactMatch);
+  return mergeComponentFileConfigs(patternMatch, exactMatch);
 }
 
 export function resolveSourceFileMapping(
   sourceFile: string,
-  options: Pick<ResolvedFrameworkOptions, "typeMap">,
-): ResolvedFileMapTarget | null {
-  return options.typeMap?.files ? findResolvedFileMapping(sourceFile, options.typeMap.files) : null;
+  options: Pick<ResolvedFrameworkOptions, "components">,
+): ResolvedComponentFileConfig | null {
+  return options.components?.files
+    ? findResolvedFileMapping(sourceFile, options.components.files)
+    : null;
 }
 
 export function resolveAdapterForSourceFile(
@@ -164,17 +169,17 @@ export function resolveAdapterForSourceFile(
   return options.adapter;
 }
 
-function resolveTypeMapFiles(
-  fileMap: Record<string, FileMapTarget> | undefined,
+function resolveComponentFiles(
+  fileMap: Record<string, ComponentFileConfig> | undefined,
   configDir: string,
 ): ResolvedFileMap | undefined {
   if (!fileMap) return undefined;
 
-  const exact: Record<string, ResolvedFileMapTarget> = {};
-  const patterns: Array<{ suffix: string; target: ResolvedFileMapTarget }> = [];
+  const exact: Record<string, ResolvedComponentFileConfig> = {};
+  const patterns: Array<{ suffix: string; target: ResolvedComponentFileConfig }> = [];
 
   for (const [key, target] of Object.entries(fileMap)) {
-    const resolvedTarget: ResolvedFileMapTarget = {};
+    const resolvedTarget: ResolvedComponentFileConfig = {};
 
     if (target.args !== undefined) resolvedTarget.args = target.args;
     if (target.callables !== undefined) {
@@ -213,11 +218,11 @@ function resolveTypeMapFiles(
   return { exact, patterns };
 }
 
-function mergeFileMapTargets(
-  pattern: ResolvedFileMapTarget,
-  exact: ResolvedFileMapTarget,
-): ResolvedFileMapTarget {
-  const result: ResolvedFileMapTarget = {};
+function mergeComponentFileConfigs(
+  pattern: ResolvedComponentFileConfig,
+  exact: ResolvedComponentFileConfig,
+): ResolvedComponentFileConfig {
+  const result: ResolvedComponentFileConfig = {};
 
   const args = exact.args ?? pattern.args;
   if (args !== undefined) result.args = args;
@@ -231,7 +236,7 @@ function mergeFileMapTargets(
     for (const callableName of callableKeys) {
       const patternCallable = pattern.callables?.[callableName];
       const exactCallable = exact.callables?.[callableName];
-      const callableTarget: NonNullable<ResolvedFileMapTarget["callables"]>[string] = {};
+      const callableTarget: NonNullable<ResolvedComponentFileConfig["callables"]>[string] = {};
       const args = exactCallable?.args ?? patternCallable?.args;
       if (args !== undefined) {
         callableTarget.args = args;
