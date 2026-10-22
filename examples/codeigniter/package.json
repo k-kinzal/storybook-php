@@ -18,7 +18,7 @@
     "@vitest/browser": "4.1.11",
     "@vitest/browser-playwright": "4.1.11",
     "playwright": "^1.58.0",
-    "storybook": "^10.3.0",
+    "storybook": "^10.6.2",
     "storybook-addon-vis": "3.0.0",
     "vite": "^8.0.16",
     "vitest": "4.1.11",

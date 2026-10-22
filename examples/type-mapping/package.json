@@ -13,7 +13,7 @@
   "devDependencies": {
     "@storybook/addon-vitest": "^10.3.0",
     "@storybook/builder-vite": "^10.3.0",
-    "storybook": "^10.3.0",
+    "storybook": "^10.6.2",
     "vite": "^8.0.16"
   }
 }
