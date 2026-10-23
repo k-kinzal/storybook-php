@@ -111,10 +111,10 @@ npx storybook-php test
 
 ## Required Test Dependencies
 
-Install these when using `storybook-php test`:
+Use Vitest 4.1.12+ or 5.0.5+ with the matching `@vitest/browser-playwright` version when using `storybook-php test`:
 
 ```bash
-npm install -D vitest @storybook/addon-vitest @vitest/browser-playwright
+npm install -D vitest@^4.1.12 @storybook/addon-vitest@^10.6.3 @vitest/browser-playwright@^4.1.12
 ```
 
 Also enable the addon in `.storybook/main.ts`:
@@ -151,6 +151,12 @@ Use the TS plugin when you want live editor support without writing files to dis
 Use `typegen` when you want `.d.ts` files checked into the repo, consumed by tooling outside the TS plugin, or shared across editors and CI.
 
 It is normal to use both together.
+
+## Repository Development
+
+Repository contributors need Node.js 22.18+, 24.11+, or 26+ for the Vite Plus 1.x toolchain. CI uses Node.js 24. This does not change the Node.js 20.19+ requirement for consuming the built addon with Vitest 4.
+
+The root package pins Vite Plus, its Vite core alias, and the bundled Vitest version together. The root-only Storybook override permits this patched toolchain despite Storybook 10's older optional Vite Plus peer range. Consumer projects and examples use upstream Vite; npm does not inherit these overrides from the addon.
 
 ## Related Guides
 

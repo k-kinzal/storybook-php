@@ -6,8 +6,8 @@ This guide explains how to install and use `storybook-php` to preview PHP-render
 
 - PHP 8.0-8.5
 - Node.js 20.19+
-- Storybook 10.x
-- Vite 5.x-8.x
+- Storybook 10.6.2+ (10.x)
+- Vite 6.4.4+, 7.3.7+, or 8.3.3+
 - A `php` binary available on your `PATH`, or a custom `phpBinary` configured in Storybook
 
 ## Installation
@@ -15,10 +15,12 @@ This guide explains how to install and use `storybook-php` to preview PHP-render
 Install the framework addon and its required Storybook/Vite packages:
 
 ```bash
-npm install -D storybook storybook-php @storybook/builder-vite vite
+npm install -D storybook@^10.6.3 storybook-php @storybook/builder-vite@^10.6.3 vite@^8.3.3
 ```
 
 If your project already has Storybook 10 with the Vite builder, add `storybook-php` on top of that setup.
+
+Before restarting an existing development server, update its dependencies and lockfile. Storybook 10.6.2 fixes [cross-origin code injection](https://github.com/storybookjs/storybook/security/advisories/GHSA-f2ph-cmg5-wxc8) and [local-network code injection](https://github.com/storybookjs/storybook/security/advisories/GHSA-px85-f4q5-jh77). Keep the default host and iframe protections enabled; do not set `core.allowedHosts: true`, `security.insecureRemoteIframeEmbed`, or `security.insecureIframeMessaging`. For sharing, build and serve a static Storybook.
 
 ## Storybook Configuration
 
