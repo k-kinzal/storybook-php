@@ -87,6 +87,12 @@
       groupName: "vitest",
     },
     {
+      description: "The root Vite Plus core alias and bundled Vitest must move together",
+      matchFileNames: ["package.json"],
+      matchPackageNames: ["vite-plus", "@voidzero-dev/vite-plus-core", "vitest", "@vitest/**"],
+      groupName: "vite-plus-toolchain",
+    },
+    {
       description: "One PR per week for workflow actions",
       matchManagers: ["github-actions"],
       groupName: "github-actions",

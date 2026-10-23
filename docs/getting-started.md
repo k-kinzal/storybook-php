@@ -7,7 +7,7 @@ This guide explains how to install and use `storybook-php` to preview PHP-render
 - PHP 8.0-8.5
 - Node.js 20.19+
 - Storybook 10.x
-- Vite 5.x-8.x
+- Vite 6.x-8.x
 - A `php` binary available on your `PATH`, or a custom `phpBinary` configured in Storybook
 
 ## Installation

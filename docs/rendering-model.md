@@ -21,7 +21,7 @@ Storybook canvas
 
 The PHP process runs server-side. Storybook only receives HTML.
 
-Behind that request flow, each imported component is registered server-side as a render plan. The browser only sends `componentId`, story `args`, and optional `parameters.php` overrides to `/__storybook_php/render`.
+Behind that request flow, each imported component is registered server-side as a render plan. The browser only sends `componentId`, story `args`, and optional `parameters.php` overrides to `/__storybook_php/render`. Requests must use `Content-Type: application/json`. The endpoint rejects cross-origin browser requests before invoking PHP.
 
 ## Internal Layering
 

@@ -22,6 +22,19 @@ export function createPhpMiddleware(
       return;
     }
 
+    if (!isTrustedRequest(req)) {
+      sendJson(res, 403, { html: "", error: "Cross-origin render requests are not allowed" });
+      return;
+    }
+
+    // Requiring JSON prevents cross-origin HTML forms and no-cors fetches from
+    // invoking PHP without a CORS preflight, even when Origin is absent.
+    const contentType = req.headers["content-type"]?.split(";", 1)[0]?.trim().toLowerCase();
+    if (contentType !== "application/json") {
+      sendJson(res, 415, { html: "", error: "Render requests require application/json" });
+      return;
+    }
+
     try {
       const body = await readBody(req);
       const data = parseRenderInvokeRequest(body);
@@ -36,6 +49,32 @@ export function createPhpMiddleware(
       });
     }
   };
+}
+
+function isTrustedRequest(req: IncomingMessage): boolean {
+  const fetchSite = req.headers["sec-fetch-site"];
+  if (fetchSite && fetchSite !== "same-origin" && fetchSite !== "none") {
+    return false;
+  }
+
+  const origin = req.headers.origin;
+  // Non-browser clients do not necessarily send Origin. They still have to
+  // use JSON, and Storybook/Vite validates the request's Host header.
+  if (origin === undefined) {
+    return true;
+  }
+
+  try {
+    const url = new URL(origin);
+    // Compare the public host and port so HTTPS-terminating proxies work too.
+    return (
+      (url.protocol === "http:" || url.protocol === "https:") &&
+      url.origin === origin &&
+      url.host === req.headers.host
+    );
+  } catch {
+    return false;
+  }
 }
 
 function readBody(req: IncomingMessage): Promise<string> {
