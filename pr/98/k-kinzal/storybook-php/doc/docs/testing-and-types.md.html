@@ -35,7 +35,7 @@
 <main class="content">
 <p class="diff-empty" id="diff-empty" data-changes="Nothing on this page changed between 310f67f and working tree." data-off="This page documents what 310f67f had and working tree no longer has. Switch to Diff to read it." hidden></p>
 <div class="symbol-head"><h1><span class="chip chip-kind k-document">document</span>Testing and Types</h1><div class="symbol-meta"><span class="src-link">docs/testing-and-types.md</span></div></div>
-<section class="readme" data-diff="modified"><div class="doc-block" data-diff="same"><h2>Testing and Types</h2>
+<section class="readme" data-diff="same"><div class="doc-block" data-diff="same"><h2>Testing and Types</h2>
 </div><div class="doc-block" data-diff="same"><p><code>storybook-php</code> includes tooling for TypeScript editor support, generated declaration files, and Storybook test runs.</p>
 </div><div class="doc-block" data-diff="same"><h3>TypeScript Editor Support</h3>
 </div><div class="doc-block" data-diff="same"><p>Add the client types and TS plugin to <code>tsconfig.json</code>:</p>
@@ -90,10 +90,8 @@ export default {
 </div><div class="doc-block" data-diff="same"><pre class="code-block"><code>npx storybook-php test</code></pre>
 </div><div class="doc-block" data-diff="same"><p><code>storybook-php test</code> runs <code>vitest run</code>. If your project does not define <code>vitest.config.*</code> and you do not pass <code>--config</code>, it automatically falls back to the bundled Vitest config.</p>
 </div><div class="doc-block" data-diff="same"><h3>Required Test Dependencies</h3>
-</div><div class="doc-block" data-diff="removed"><p>Install these when using <code>storybook-php test</code>:</p>
-</div><div class="doc-block" data-diff="removed"><pre class="code-block"><code>npm install -D vitest @storybook/addon-vitest @vitest/browser-playwright</code></pre>
-</div><div class="doc-block" data-diff="added"><p>Use Vitest 4.1.12+ or 5.0.5+ with the matching <code>@vitest/browser-playwright</code> version when using <code>storybook-php test</code>:</p>
-</div><div class="doc-block" data-diff="added"><pre class="code-block"><code>npm install -D vitest@^4.1.12 @storybook/addon-vitest@^10.6.3 @vitest/browser-playwright@^4.1.12</code></pre>
+</div><div class="doc-block" data-diff="same"><p>Install these when using <code>storybook-php test</code>:</p>
+</div><div class="doc-block" data-diff="same"><pre class="code-block"><code>npm install -D vitest @storybook/addon-vitest @vitest/browser-playwright</code></pre>
 </div><div class="doc-block" data-diff="same"><p>Also enable the addon in <code>.storybook/main.ts</code>:</p>
 </div><div class="doc-block" data-diff="same"><pre class="code-block"><code>const config = {
   addons: [&quot;@storybook/addon-vitest&quot;],
@@ -112,10 +110,6 @@ export default {
 </div><div class="doc-block" data-diff="same"><p>Use the TS plugin when you want live editor support without writing files to disk.</p>
 </div><div class="doc-block" data-diff="same"><p>Use <code>typegen</code> when you want <code>.d.ts</code> files checked into the repo, consumed by tooling outside the TS plugin, or shared across editors and CI.</p>
 </div><div class="doc-block" data-diff="same"><p>It is normal to use both together.</p>
-</div><div class="doc-block" data-diff="added"><h3>Repository Development</h3>
-</div><div class="doc-block" data-diff="added"><p>Repository contributors need Node.js 22.18+, 24.11+, or 26+ for the Vite Plus 1.x toolchain. CI uses Node.js 24. This does not change the Node.js 20.19+ requirement for consuming the built addon with Vitest 4.</p>
-</div><div class="doc-block" data-diff="added"><p>The root package pins Vite Plus, its Vite core alias, and the bundled Vitest version together. The root-only Storybook override permits this patched toolchain despite Storybook 10&#039;s older optional Vite Plus peer range. Consumer projects and examples use upstream Vite; npm does not inherit these overrides from the addon.</p>
-</div><div class="doc-block" data-diff="added"><p>The examples keep Vitest browser API writes and execution disabled locally. Their visual comparator still uses Vitest&#039;s file-writing API for PNG diffs, so writes are enabled only inside ephemeral GitHub Actions jobs, with the API bound to <code>127.0.0.1</code>; execution stays disabled.</p>
 </div><div class="doc-block" data-diff="same"><h3>Related Guides</h3>
 </div><div class="doc-block" data-diff="same"><ul><li><a href="../../../../k-kinzal/storybook-php/doc/docs/getting-started.md.html">Getting Started</a></li><li><a href="../../../../k-kinzal/storybook-php/doc/docs/framework-options.md.html">Framework Options</a></li><li><a href="../../../../k-kinzal/storybook-php/doc/docs/type-mapping.md.html">Type Mapping</a></li></ul>
 </div></section>

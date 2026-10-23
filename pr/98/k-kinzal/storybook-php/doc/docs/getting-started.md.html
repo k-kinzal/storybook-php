@@ -39,13 +39,11 @@
 </div><div class="doc-block" data-diff="same"><p>This guide explains how to install and use <code>storybook-php</code> to preview PHP-rendered UI pieces inside Storybook.</p>
 </div><div class="doc-block" data-diff="same"><h3>Requirements</h3>
 </div><div class="doc-block" data-diff="removed"><ul><li>PHP 8.0-8.5</li><li>Node.js 20.19+</li><li>Storybook 10.x</li><li>Vite 5.x-8.x</li><li>A <code>php</code> binary available on your <code>PATH</code>, or a custom <code>phpBinary</code> configured in Storybook</li></ul>
-</div><div class="doc-block" data-diff="added"><ul><li>PHP 8.0-8.5</li><li>Node.js 20.19+</li><li>Storybook 10.6.2+ (10.x)</li><li>Vite 6.4.4+, 7.3.7+, or 8.3.3+</li><li>A <code>php</code> binary available on your <code>PATH</code>, or a custom <code>phpBinary</code> configured in Storybook</li></ul>
+</div><div class="doc-block" data-diff="added"><ul><li>PHP 8.0-8.5</li><li>Node.js 20.19+</li><li>Storybook 10.x</li><li>Vite 6.x-8.x</li><li>A <code>php</code> binary available on your <code>PATH</code>, or a custom <code>phpBinary</code> configured in Storybook</li></ul>
 </div><div class="doc-block" data-diff="same"><h3>Installation</h3>
 </div><div class="doc-block" data-diff="same"><p>Install the framework addon and its required Storybook/Vite packages:</p>
-</div><div class="doc-block" data-diff="removed"><pre class="code-block"><code>npm install -D storybook storybook-php @storybook/builder-vite vite</code></pre>
-</div><div class="doc-block" data-diff="added"><pre class="code-block"><code>npm install -D storybook@^10.6.3 storybook-php @storybook/builder-vite@^10.6.3 vite@^8.3.3</code></pre>
+</div><div class="doc-block" data-diff="same"><pre class="code-block"><code>npm install -D storybook storybook-php @storybook/builder-vite vite</code></pre>
 </div><div class="doc-block" data-diff="same"><p>If your project already has Storybook 10 with the Vite builder, add <code>storybook-php</code> on top of that setup.</p>
-</div><div class="doc-block" data-diff="added"><p>Before restarting an existing development server, update its dependencies and lockfile. Storybook 10.6.2 fixes <a href="https://github.com/storybookjs/storybook/security/advisories/GHSA-f2ph-cmg5-wxc8">cross-origin code injection</a> and <a href="https://github.com/storybookjs/storybook/security/advisories/GHSA-px85-f4q5-jh77">local-network code injection</a>. Keep the default host and iframe protections enabled; do not set <code>core.allowedHosts: true</code>, <code>security.insecureRemoteIframeEmbed</code>, or <code>security.insecureIframeMessaging</code>. For sharing, build and serve a static Storybook.</p>
 </div><div class="doc-block" data-diff="same"><h3>Storybook Configuration</h3>
 </div><div class="doc-block" data-diff="same"><p>Add the framework to <code>.storybook/main.ts</code>:</p>
 </div><div class="doc-block" data-diff="same"><pre class="code-block"><code>import type { StorybookConfig } from &quot;storybook&quot;;
