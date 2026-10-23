@@ -2,9 +2,9 @@ name: VRT
 
 on:
   push:
-    branches: [main]
+    branches: [main, "0.3.x"]
   pull_request:
-    branches: [main]
+    branches: [main, "0.3.x"]
 
 permissions:
   contents: read
@@ -95,7 +95,7 @@ jobs:
         if: matrix.pkg == 'pnpm'
         uses: pnpm/action-setup@903f9c1a6ebcba6cf41d87230be49611ac97822e # v6.0.3
         with:
-          version: 10.33.0
+          version: 10.34.5
 
       - name: Setup Node.js
         uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6.4.0
@@ -129,9 +129,9 @@ jobs:
         uses: actions/cache/restore@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5.0.5
         with:
           path: examples/${{ matrix.example }}/__vis__/linux/__baselines__
-          key: vrt-v2-baselines-${{ matrix.example }}-${{ github.sha }}
+          key: vrt-v2-0.3-baselines-${{ matrix.example }}-${{ github.sha }}
           restore-keys: |
-            vrt-v2-baselines-${{ matrix.example }}-
+            vrt-v2-0.3-baselines-${{ matrix.example }}-
 
       - name: Run VRT (update baselines)
         if: github.event_name == 'push'
@@ -144,12 +144,12 @@ jobs:
         continue-on-error: true
         run: npx vitest run
 
-      - name: Save VRT baselines (main)
+      - name: Save VRT baselines (maintenance branch)
         if: github.event_name == 'push'
         uses: actions/cache/save@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5.0.5
         with:
           path: examples/${{ matrix.example }}/__vis__/linux/__baselines__
-          key: vrt-v2-baselines-${{ matrix.example }}-${{ github.sha }}
+          key: vrt-v2-0.3-baselines-${{ matrix.example }}-${{ github.sha }}
 
       - name: Upload VRT results
         if: github.event_name == 'pull_request'
