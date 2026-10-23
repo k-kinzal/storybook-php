@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Component Configuration and Type Mapping — storybook-php</title>
+<link rel="canonical" href="https://k-kinzal.github.io/storybook-php/pr/98/k-kinzal/storybook-php/doc/docs/type-mapping.md.html">
+<meta name="description" content="Component Configuration and Type Mapping, a document of the k-kinzal/storybook-php package.">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="storybook-php">
+<meta property="og:title" content="Component Configuration and Type Mapping — storybook-php">
+<meta property="og:description" content="Component Configuration and Type Mapping, a document of the k-kinzal/storybook-php package.">
+<meta property="og:url" content="https://k-kinzal.github.io/storybook-php/pr/98/k-kinzal/storybook-php/doc/docs/type-mapping.md.html">
+<meta property="og:image" content="https://k-kinzal.github.io/storybook-php/pr/98/assets/og-image.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="storybook-php">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="stylesheet" href="../../../../assets/style.css">
+<script>try{var t=localStorage.getItem("docgen-theme");if(t){document.documentElement.dataset.theme=t}document.documentElement.dataset.diffMode=localStorage.getItem("docgen-diff-mode")||"inline"}catch(e){}</script>
+</head>
+<body data-root="../../../../">
+<nav class="sidebar" id="sidebar"><div class="sb-head"><a class="sb-site" href="../../../../index.html">storybook-php</a></div><div class="sb-pkg"><a href="../../../../k-kinzal/storybook-php/index.html">k-kinzal/storybook-php</a></div><nav class="sb-block"><div class="sb-title">Package</div><ul class="sb-list"><li data-diff="same"><a href="../../../../k-kinzal/storybook-php/all-items.html">All items</a></li><li data-diff="modified"><a href="../../../../k-kinzal/storybook-php/index.html#documents">Documents</a></li></ul></nav></nav>
+<div class="page">
+<header class="topbar">
+<button class="nav-toggle" id="nav-toggle" title="Toggle navigation">☰</button>
+<nav class="crumbs"><a href="../../../../k-kinzal/storybook-php/index.html">k-kinzal/storybook-php</a><span class="crumb-sep">::</span><span class="crumb-current">docs/type-mapping.md</span></nav>
+<div class="topbar-tools">
+<input type="search" id="search" placeholder="Search… ( / )" autocomplete="off" spellcheck="false">
+<span class="diff-range" title="Comparing 612cf4c to working tree">612cf4c <span class="diff-arrow">→</span> working tree</span><div class="diff-modes" id="diff-modes" role="group" aria-label="Diff display mode"><button type="button" class="diff-mode" data-diff-mode="off" title="Documentation of the head revision, without diff marks">Off</button><button type="button" class="diff-mode" data-diff-mode="inline" title="Every page with additions and removals marked">Diff</button><button type="button" class="diff-mode" data-diff-mode="changes" title="Only what the head revision added, changed, or removed">Changes</button></div><a class="repo-link" href="https://github.com/k-kinzal/storybook-php" title="Repository: https://github.com/k-kinzal/storybook-php" rel="noreferrer">github.com</a>
+<button id="theme-toggle" title="Toggle theme">◐</button>
+</div>
+</header>
+<div class="search-results" id="search-results" hidden></div>
+<main class="content">
+<p class="diff-empty" id="diff-empty" data-changes="Nothing on this page changed between 612cf4c and working tree." data-off="This page documents what 612cf4c had and working tree no longer has. Switch to Diff to read it." hidden></p>
+<div class="symbol-head"><h1><span class="chip chip-kind k-document">document</span>Component Configuration and Type Mapping</h1><div class="symbol-meta"><span class="src-link">docs/type-mapping.md</span></div></div>
+<section class="readme" data-diff="same"><div class="doc-block" data-diff="same"><h2>Component Configuration and Type Mapping</h2>
+</div><div class="doc-block" data-diff="same"><p>Component execution and conversion of argument values have separate contracts:</p>
+</div><div class="doc-block" data-diff="same"><ul><li><code>components</code> describes imported components: their public args, constructors, callables, execution files, and adapters.</li><li><code>types</code> describes objects appearing inside those arguments: concrete type routes and property types or fixed values.</li></ul>
+</div><div class="doc-block" data-diff="same"><h3>Component configuration (<code>components</code>)</h3>
+</div><div class="doc-block" data-diff="same"><pre class="code-block"><code>framework: {
+  name: &quot;storybook-php&quot;,
+  options: {
+    components: {
+      files: {
+        &quot;../src/Card.php&quot;: {
+          args: {
+            title: &quot;string&quot;,
+            &quot;method.limit&quot;: { type: &quot;int&quot;, default: 10 },
+          },
+          callables: { compact: { args: { title: { default: &quot;Compact&quot; } } } },
+          includes: [&quot;../src/BaseCard.php&quot;],
+        },
+        &quot;*.blade.php&quot;: { adapter: &quot;./blade-adapter.php&quot; },
+      },
+      classes: {
+        &quot;App\\Card&quot;: { args: { badge: &quot;App\\View\\Badge&quot; } },
+      },
+    },
+    types: {
+      &quot;App\\Contracts\\Renderable&quot;: &quot;App\\View\\HtmlBlock&quot;,
+      &quot;App\\View\\Badge::$items&quot;: &quot;list&lt;App\\Item&gt;&quot;,
+      &quot;App\\View\\Badge::$meta&quot;: { value: { theme: &quot;dark&quot; } },
+    },
+  },
+}</code></pre>
+</div><div class="doc-block" data-diff="same"><p>A function component maps its arguments and calls the function. A class component maps its constructor arguments, runs the constructor, and calls the selected method with mapped method arguments. Static methods, enum methods, and templates retain their existing execution rules. Extra public args are ignored when they match neither constructor nor callable parameters.</p>
+</div><div class="doc-block" data-diff="same"><p>For initialization through setters, factories, containers, or other lifecycle operations, use an <a href="../../../../k-kinzal/storybook-php/doc/docs/framework-options.md.html#adapter">adapter</a>. The built-in class and function execution paths serve the same purpose as project adapters: connecting the public Storybook args to the component&#039;s execution contract.</p>
+</div><div class="doc-block" data-diff="same"><h4>File contracts</h4>
+</div><div class="doc-block" data-diff="same"><p><code>components.files</code> keys are paths or suffix patterns such as <code>&quot;*.blade.php&quot;</code>. Relative paths resolve from Storybook&#039;s configuration directory. An exact match overlays the longest matching suffix pattern.</p>
+</div><div class="doc-block" data-diff="same"><p>Each entry supports:</p>
+</div><div class="doc-block" data-diff="same"><div class="table-wrap"><table><thead><tr><th>Field</th><th>Purpose</th></tr></thead><tbody><tr><td><code>args</code></td><td>Public argument types, controls, defaults, and nullability</td></tr><tr><td><code>callables</code></td><td>Callable-specific <code>args</code> overrides within one file</td></tr><tr><td><code>phpFile</code></td><td>A PHP execution/type source for an imported file</td></tr><tr><td><code>callable</code></td><td>Callable to select from that PHP file</td></tr><tr><td><code>includes</code></td><td>Additional files to parse for parent classes and traits</td></tr><tr><td><code>adapter</code></td><td>Middleware for the file or pattern</td></tr></tbody></table></div>
+</div><div class="doc-block" data-diff="same"><p>A string argument override is shorthand for <code>{ type: &quot;...&quot; }</code>. Object overrides accept <code>type</code>, <code>elementType</code>, <code>options</code>, <code>nullable</code>, <code>required</code>, and <code>default</code>.</p>
+</div><div class="doc-block" data-diff="same"><pre class="code-block"><code>components: {
+  files: {
+    &quot;../src/Button.php&quot;: {
+      args: { variant: { options: [&quot;primary&quot;, &quot;secondary&quot;] } },
+    },
+    &quot;../src/List.php&quot;: {
+      args: { items: { type: &quot;array&quot;, elementType: &quot;App\\Item&quot; } },
+    },
+    &quot;../src/card.bridge&quot;: {
+      phpFile: &quot;../src/Card.php&quot;,
+      callable: &quot;render&quot;,
+    },
+    &quot;../src/notice.view&quot;: {
+      args: {
+        title: &quot;string&quot;,
+        featured: { type: &quot;bool&quot;, default: false },
+        note: { type: &quot;string&quot;, nullable: true },
+      },
+    },
+  },
+}</code></pre>
+</div><div class="doc-block" data-diff="same"><p>Use <code>constructor.name</code> and <code>method.name</code> to disambiguate parameters with the same name. <code>callables.render.args</code> and story overrides use this same public argument surface. <code>options</code> describes control choices; runtime conversions still follow the declared PHP contract.</p>
+</div><div class="doc-block" data-diff="same"><h4>Component class constructor contracts</h4>
+</div><div class="doc-block" data-diff="same"><p><code>components.classes</code> supplements constructor argument definitions when a class is executed as a component. Definitions for the concrete component take precedence over entries for ancestors sharing its constructor. Explicit effective argument types from file/story contracts and generated PHPDoc metadata retain precedence; class contracts can refine otherwise untyped or plain-array parameters.</p>
+</div><div class="doc-block" data-diff="same"><p>Nested objects use property mappings instead:</p>
+</div><div class="doc-block" data-diff="same"><pre class="code-block"><code>components: {
+  classes: {
+    &quot;App\\NavMenu&quot;: { args: { sections: &quot;list&lt;App\\NavSection&gt;&quot; } },
+  },
+},
+types: {
+  &quot;App\\NavSection::$links&quot;: &quot;list&lt;App\\NavLink&gt;&quot;,
+  &quot;App\\NavLink::$href&quot;: { value: &quot;/docs&quot; },
+},</code></pre>
+</div><div class="doc-block" data-diff="same"><p>Here <code>NavMenu</code> runs its constructor. Each <code>NavSection</code> and <code>NavLink</code> is allocated without running a constructor. A <code>components.classes</code> entry for either nested class would not affect these argument values.</p>
+</div><div class="doc-block" data-diff="same"><h3>Type mapping (<code>types</code>)</h3>
+</div><div class="doc-block" data-diff="same"><p><code>types</code> accepts exactly two kinds of key:</p>
+</div><div class="doc-block" data-diff="same"><div class="table-wrap"><table><thead><tr><th>Key</th><th>Value</th><th>Meaning</th></tr></thead><tbody><tr><td><code>App\Contracts\Renderable</code></td><td><code>&quot;App\\View\\HtmlBlock&quot;</code> or <code>{ type: &quot;App\\View\\HtmlBlock&quot; }</code></td><td>Route a type to a concrete type</td></tr><tr><td><code>App\Card::$badge</code></td><td><code>&quot;App\\View\\Badge&quot;</code> or <code>{ type: &quot;App\\View\\Badge&quot; }</code></td><td>Refine the property&#039;s type</td></tr><tr><td><code>App\Card::$meta</code></td><td><code>{ value: { theme: &quot;dark&quot; } }</code></td><td>Replace input, including an absent input, with a fixed value</td></tr><tr><td><code>App\Card::$items</code></td><td><code>{ type: &quot;list&lt;App\\Item&gt;&quot;, value: [] }</code></td><td>Refine the property contract and supply its value</td></tr></tbody></table></div>
+</div><div class="doc-block" data-diff="same"><p>Type routes can chain; cycles are errors. Type names in this configuration are fully qualified, optionally prefixed with <code>\</code>. They are not resolved against any source file&#039;s namespace or <code>use</code> imports. Global names such as <code>stdClass</code> remain valid. Property type expressions can use lists, shapes, unions, literals, and generics with fully qualified class names.</p>
+</div><div class="doc-block" data-diff="same"><p><code>Class::method($param)</code>, <code>Class::__construct($param)</code>, and <code>function($param)</code> keys are rejected. Configure those parameters with <code>components.files[*].args</code>, <code>components.classes[*].args</code> for component constructors, or <code>parameters.php.component.args</code>.</p>
+</div><div class="doc-block" data-diff="same"><h4>Property hydration rules</h4>
+</div><div class="doc-block" data-diff="same"><p>For objects appearing as values of constructor, method, function, or template arguments, and recursively inside those values:</p>
+</div><div class="doc-block" data-diff="same"><ol><li>Resolve interfaces and abstract classes through type routes.</li><li>Establish a property&#039;s contract from its native PHP type, then its <code>@var</code> docblock (or constructor <code>@param</code> for a promoted property), then a property type mapping. Mappings take precedence over docblocks but can only narrow the native type.</li><li>Allocate the concrete class with <code>ReflectionClass::newInstanceWithoutConstructor()</code>.</li><li>Hydrate input values against their property contracts and assign them with <code>ReflectionProperty::setValue()</code>. Public, protected, private, and inherited private properties are supported. Static properties are not instance slots.</li></ol>
+</div><div class="doc-block" data-diff="same"><p>No constructor, setter, magic setter, or factory is called. A JSON key with no corresponding property is an error. Property lookup prefers exact names and retains case/underscore-insensitive matching for input keys. Mapping property names use the PHP property name.</p>
+</div><div class="doc-block" data-diff="same"><p>A scalar or positional list cannot initialize an object; there is no single-argument constructor conversion or collection-wrapper constructor fallback. An array/list contract still accepts array/list input. A generic wrapper must receive a property map such as <code>{ items: [{ label: &quot;One&quot; }] }</code>, rather than a bare list.</p>
+</div><div class="doc-block" data-diff="same"><p>Input keys omitted from a property map are left untouched. Typed properties without declaration defaults remain uninitialized, even when promoted constructor parameters have defaults. Supply required state explicitly or use a fixed property value mapping. Declaration defaults remain PHP defaults.</p>
+</div><div class="doc-block" data-diff="same"><p>Fixed property values override input and are hydrated through the property&#039;s contract. This also applies when the input omits the property. Existing PHP object instances are retained, enum values resolve by case name or backed value, and <code>stdClass</code> / <code>object{...}</code> shapes retain their existing behavior.</p>
+</div><div class="doc-block" data-diff="same"><p>PHPDoc names continue to resolve through <code>use</code> imports. <code>@template</code> binds generic arguments while descending into properties. Array shapes, lists, unions, literals, and lossless conversions use the same contract pipeline. A lossy conversion fails with a slot path:</p>
+</div><div class="doc-block" data-diff="same"><pre class="code-block"><code>Cannot hydrate App\Card::render($items)[0] &gt; App\Item::$count: expected int, received string &#039;many&#039;.</code></pre>
+</div><div class="doc-block" data-diff="same"><p>These rules do not populate the component&#039;s own properties. Its constructor and selected method remain its execution contract. If the same PHP class is used as a nested argument value, that value follows property hydration.</p>
+</div><div class="doc-block" data-diff="same"><h3>Story overrides (<code>parameters.php</code>)</h3>
+</div><div class="doc-block" data-diff="same"><pre class="code-block"><code>import type { PhpStoryParameters } from &quot;storybook-php&quot;;
+
+export const Preview = {
+  args: { title: &quot;Preview&quot;, content: { content: &quot;Hello&quot; } },
+  parameters: {
+    php: {
+      component: {
+        args: { &quot;method.limit&quot;: { type: &quot;int&quot;, default: 3 } },
+      },
+      types: {
+        &quot;App\\Contracts\\Renderable&quot;: &quot;App\\View\\PlainTextBlock&quot;,
+        &quot;App\\Item::$meta&quot;: { value: { theme: &quot;dark&quot; } },
+      },
+    } satisfies PhpStoryParameters,
+  },
+};</code></pre>
+</div><div class="doc-block" data-diff="same"><p>Story component args overlay the resolved public argument surface. Story <code>types</code> overlay global <code>types</code>; a story entry replaces the entire global entry with the same key. There is no per-story nested constructor configuration.</p>
+</div><div class="doc-block" data-diff="same"><h3>CLI and editor configuration</h3>
+</div><div class="doc-block" data-diff="same"><p>The CLI does not evaluate <code>.storybook/main.ts</code>. Pass configuration explicitly:</p>
+</div><div class="doc-block" data-diff="same"><pre class="code-block"><code>npx storybook-php typegen --options-file storybook-php.config.mjs</code></pre>
+</div><div class="doc-block" data-diff="same"><p>The file can export <code>components</code>, <code>types</code>, <code>defaultMethod</code>, and <code>_configDir</code>. Component file contracts and <code>defaultMethod</code> determine generated declarations. Runtime <code>types</code> do not rewrite the public editor argument surface. The TS plugin accepts the same component file configuration.</p>
+</div><div class="doc-block" data-diff="same"><h3>Breaking changes from <code>typeMap</code></h3>
+</div><div class="doc-block" data-diff="same"><ul><li>Move <code>typeMap.files</code> to <code>components.files</code>.</li><li>Move component constructor entries from <code>typeMap.classes</code> to <code>components.classes</code>.</li><li>Replace nested-class constructor entries with <code>types[&quot;Class::$property&quot;]</code> mappings, using fully qualified names.</li><li>Move type/property entries from <code>typeMap.bindings</code> directly into <code>types</code>.</li><li>Replace parameter bindings with component argument contracts and defaults.</li><li>Move <code>parameters.typeMap.args</code> to <code>parameters.php.component.args</code> and per-story bindings to <code>parameters.php.types</code>.</li><li>Remove reliance on <code>stateArgs</code>, setters, constructor defaults for nested values, scalar constructors, and positional constructors. Use property maps or an adapter.</li></ul>
+</div><div class="doc-block" data-diff="same"><p>Old <code>typeMap</code> and <code>parameters.typeMap</code> settings are rejected. Exported configuration types are now <code>ComponentsConfig</code>, <code>ComponentFileConfig</code>, <code>ComponentClassConfig</code>, <code>TypeMapping</code>, <code>TypeMappings</code>, and <code>PhpStoryParameters</code>.</p>
+</div><div class="doc-block" data-diff="same"><p>For adapters using the PHP helper API, <code>instantiateClassFromValue($class, $value, $types)</code> now takes a property map and a direct <code>types</code> map. <code>HydrationContext::fromTypes($types)</code> replaces <code>fromTypeMap()</code>. Component adapters still receive hydrated constructor/method/template args and can provide custom execution when needed.</p>
+</div></section>
+</main>
+<footer class="site-footer">Generated by <a href="https://github.com/k-kinzal/php-ai-toolkit">php-ai-toolkit</a> docgen</footer>
+</div>
+<script src="../../../../assets/search-index.js" defer></script>
+<script src="../../../../assets/app.js" defer></script>
+</body>
+</html>
