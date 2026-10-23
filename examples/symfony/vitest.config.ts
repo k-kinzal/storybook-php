@@ -13,6 +13,13 @@ export default defineConfig({
   },
   test: {
     browser: {
+      api: {
+        host: "127.0.0.1",
+        // The visual comparator writes PNG diffs. Only ephemeral CI may write;
+        // local Storybook/Vitest servers keep writes and execution disabled.
+        allowWrite: process.env["GITHUB_ACTIONS"] === "true",
+        allowExec: false,
+      },
       enabled: true,
       ui: false,
       provider: playwright({

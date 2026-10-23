@@ -158,6 +158,8 @@ Repository contributors need Node.js 22.18+, 24.11+, or 26+ for the Vite Plus 1.
 
 The root package pins Vite Plus, its Vite core alias, and the bundled Vitest version together. The root-only Storybook override permits this patched toolchain despite Storybook 10's older optional Vite Plus peer range. Consumer projects and examples use upstream Vite; npm does not inherit these overrides from the addon.
 
+The examples keep Vitest browser API writes and execution disabled locally. Their visual comparator still uses Vitest's file-writing API for PNG diffs, so writes are enabled only inside ephemeral GitHub Actions jobs, with the API bound to `127.0.0.1`; execution stays disabled.
+
 ## Related Guides
 
 - [Getting Started](getting-started.md)
