@@ -23,6 +23,7 @@ function createMockReq(method: string, url: string, body?: string): IncomingMess
   const req = emitter as unknown as IncomingMessage;
   req.method = method;
   req.url = url;
+  req.headers = { host: "localhost:6006", "content-type": "application/json" };
 
   // Simulate body delivery on next tick
   if (body !== undefined) {
@@ -44,6 +45,7 @@ function createErrorReq(): IncomingMessage {
   const req = emitter as unknown as IncomingMessage;
   req.method = "POST";
   req.url = RENDER_PATH;
+  req.headers = { host: "localhost:6006", "content-type": "application/json" };
 
   process.nextTick(() => {
     emitter.emit("error", "socket failed");
@@ -145,6 +147,83 @@ describe("createPhpMiddleware", () => {
   // -------------------------------------------------------------------------
   // Validation errors
   // -------------------------------------------------------------------------
+  it.each([
+    "https://attacker.example",
+    "http://localhost:6007",
+    "http://localhost:6006.attacker.example",
+    "null",
+    "invalid origin",
+    "file://localhost:6006",
+    "http://localhost:6006/path",
+    "http://user@localhost:6006",
+  ])("rejects untrusted Origin %s before executing PHP", async (origin) => {
+    const req = createMockReq("POST", RENDER_PATH, "{}");
+    req.headers.origin = origin;
+    const res = createMockRes();
+    const next = vi.fn();
+
+    await middleware(req, res, next);
+
+    expect(res._status).toBe(403);
+    expect(mockExecute).not.toHaveBeenCalled();
+    expect(next).not.toHaveBeenCalled();
+  });
+
+  it.each(["cross-site", "same-site"])("rejects %s fetches even without Origin", async (site) => {
+    const req = createMockReq("POST", RENDER_PATH, "{}");
+    req.headers["sec-fetch-site"] = site;
+    const res = createMockRes();
+
+    await middleware(req, res, vi.fn());
+
+    expect(res._status).toBe(403);
+    expect(mockExecute).not.toHaveBeenCalled();
+  });
+
+  it.each([undefined, "text/plain", "application/x-www-form-urlencoded", "multipart/form-data"])(
+    "rejects content type %s before executing PHP",
+    async (contentType) => {
+      const req = createMockReq("POST", RENDER_PATH, "{}");
+      req.headers["content-type"] = contentType;
+      const res = createMockRes();
+
+      await middleware(req, res, vi.fn());
+
+      expect(res._status).toBe(415);
+      expect(mockExecute).not.toHaveBeenCalled();
+    },
+  );
+
+  it.each([
+    ["http://localhost:6006", "localhost:6006", "same-origin"],
+    ["http://127.0.0.1:6006", "127.0.0.1:6006", "same-origin"],
+    ["http://[::1]:6006", "[::1]:6006", "same-origin"],
+    ["https://storybook.example", "storybook.example", "same-origin"],
+    [undefined, "localhost:6006", "none"],
+  ])("renders trusted JSON requests from %s", async (origin, host, fetchSite) => {
+    mockExecute.mockResolvedValueOnce({ html: "<p>ok</p>" });
+    const { componentId, middleware: registeredMiddleware } = createRegisteredMiddleware({
+      type: "template",
+      file: "/some/template.php",
+      sourceFile: "/some/template.php",
+      class: null,
+      callable: null,
+    });
+    const req = createMockReq("POST", RENDER_PATH, JSON.stringify({ componentId, args: {} }));
+    req.headers = {
+      host,
+      origin,
+      "sec-fetch-site": fetchSite,
+      "content-type": "application/json; charset=utf-8",
+    };
+    const res = createMockRes();
+
+    await registeredMiddleware(req, res, vi.fn());
+
+    expect(res._status).toBe(200);
+    expect(mockExecute).toHaveBeenCalledOnce();
+  });
+
   it("returns 400 for missing componentId", async () => {
     const body = JSON.stringify({
       args: {},

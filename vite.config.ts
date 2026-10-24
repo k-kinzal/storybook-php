@@ -54,8 +54,6 @@ export default defineConfig({
     ],
     coverage: {
       provider: "v8",
-      // Supported by Vitest at runtime; vite-plus' config typing does not expose it yet.
-      // @ts-expect-error coverage.all is valid in the underlying Vitest config
       all: true,
       include: ["src/**/*.ts"],
       exclude: ["src/cli.ts", "src/index.ts", "src/public-types.ts", "src/types.ts"],
