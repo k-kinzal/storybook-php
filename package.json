@@ -51,6 +51,9 @@
     },
     "./package.json": "./package.json"
   },
+  "publishConfig": {
+    "tag": "latest"
+  },
   "scripts": {
     "build": "vp pack",
     "dev": "vp pack --watch",
