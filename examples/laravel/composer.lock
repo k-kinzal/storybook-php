@@ -436,7 +436,7 @@
         },
         {
             "name": "illuminate/events",
-            "version": "v12.55.1",
+            "version": "v12.70.0",
             "source": {
                 "type": "git",
                 "url": "https://github.com/illuminate/events.git",
@@ -491,16 +491,16 @@
         },
         {
             "name": "illuminate/filesystem",
-            "version": "v12.55.1",
+            "version": "v12.70.0",
             "source": {
                 "type": "git",
                 "url": "https://github.com/illuminate/filesystem.git",
-                "reference": "b91eede30e1bde98cb51fb4c4f28269a8dea593e"
+                "reference": "4e2bff4d2ac439db7a2903b8a99bc8dc5c8d5de4"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/illuminate/filesystem/zipball/b91eede30e1bde98cb51fb4c4f28269a8dea593e",
-                "reference": "b91eede30e1bde98cb51fb4c4f28269a8dea593e",
+                "url": "https://api.github.com/repos/illuminate/filesystem/zipball/4e2bff4d2ac439db7a2903b8a99bc8dc5c8d5de4",
+                "reference": "4e2bff4d2ac439db7a2903b8a99bc8dc5c8d5de4",
                 "shasum": ""
             },
             "require": {
@@ -554,7 +554,7 @@
                 "issues": "https://github.com/laravel/framework/issues",
                 "source": "https://github.com/laravel/framework"
             },
-            "time": "2026-03-09T14:26:54+00:00"
+            "time": "2026-09-28T13:55:57+00:00"
         },
         {
             "name": "illuminate/macroable",
@@ -787,16 +787,16 @@
         },
         {
             "name": "illuminate/view",
-            "version": "v12.55.1",
+            "version": "v12.70.0",
             "source": {
                 "type": "git",
                 "url": "https://github.com/illuminate/view.git",
-                "reference": "03ed552cf1d9a3e424750c760244b46e0cefda4a"
+                "reference": "ea300ac93680690580927fda447fdd883034f263"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/illuminate/view/zipball/03ed552cf1d9a3e424750c760244b46e0cefda4a",
-                "reference": "03ed552cf1d9a3e424750c760244b46e0cefda4a",
+                "url": "https://api.github.com/repos/illuminate/view/zipball/ea300ac93680690580927fda447fdd883034f263",
+                "reference": "ea300ac93680690580927fda447fdd883034f263",
                 "shasum": ""
             },
             "require": {
@@ -837,7 +837,7 @@
                 "issues": "https://github.com/laravel/framework/issues",
                 "source": "https://github.com/laravel/framework"
             },
-            "time": "2026-03-17T13:09:53+00:00"
+            "time": "2026-10-06T13:17:04+00:00"
         },
         {
             "name": "nesbot/carbon",
