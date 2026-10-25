@@ -8,16 +8,16 @@
     "packages": [
         {
             "name": "latte/latte",
-            "version": "v3.1.2",
+            "version": "v3.1.6",
             "source": {
                 "type": "git",
                 "url": "https://github.com/nette/latte.git",
-                "reference": "734ab908c17b28bd75b9331debd1901bec2f23ef"
+                "reference": "adccfac3d5d7bff441a0e5ae85978f448787f5d4"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/nette/latte/zipball/734ab908c17b28bd75b9331debd1901bec2f23ef",
-                "reference": "734ab908c17b28bd75b9331debd1901bec2f23ef",
+                "url": "https://api.github.com/repos/nette/latte/zipball/adccfac3d5d7bff441a0e5ae85978f448787f5d4",
+                "reference": "adccfac3d5d7bff441a0e5ae85978f448787f5d4",
                 "shasum": ""
             },
             "require": {
@@ -93,9 +93,9 @@
             ],
             "support": {
                 "issues": "https://github.com/nette/latte/issues",
-                "source": "https://github.com/nette/latte/tree/v3.1.2"
+                "source": "https://github.com/nette/latte/tree/v3.1.6"
             },
-            "time": "2026-02-24T21:38:20+00:00"
+            "time": "2026-07-27T14:32:10+00:00"
         }
     ],
     "packages-dev": [],
