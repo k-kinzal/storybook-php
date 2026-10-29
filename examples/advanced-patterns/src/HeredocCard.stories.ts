@@ -30,6 +30,6 @@ export const WithImage: Story = {
   args: {
     title: "Featured Post",
     body: "A card with an image header.",
-    imageUrl: "https://picsum.photos/400/200",
+    imageUrl: "/fixtures/landscape.svg",
   },
 };

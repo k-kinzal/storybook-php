@@ -9,7 +9,7 @@ class BladeProfile extends Component
     public function __construct(
         public string $name = 'John Doe',
         public string $role = 'Developer',
-        public string $avatar = 'https://via.placeholder.com/64',
+        public string $avatar = '/fixtures/avatar.svg',
     ) {}
 
     public function initials(): string

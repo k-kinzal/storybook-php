@@ -16,6 +16,7 @@ TOTAL_EXAMPLES=0
 EXAMPLE_DIFFS_LINES=""
 declare -a CHANGED_EXAMPLES=()
 declare -a PASSED_EXAMPLES=()
+declare -a UNAVAILABLE_EXAMPLES=()
 
 append_example_diff() {
   EXAMPLE_DIFFS_LINES="${EXAMPLE_DIFFS_LINES}${1}"$'\t'"${2}"$'\n'
@@ -35,19 +36,9 @@ $EXAMPLE_DIFFS_LINES
 EOF
 }
 
-print_example_diff_rows() {
-  while IFS=$'\t' read -r name count; do
-    [ -n "$name" ] || continue
-    printf '%s\t%s\n' "$name" "$count"
-  done <<EOF
-$EXAMPLE_DIFFS_LINES
-EOF
-}
-
 if [ ! -d "$RESULTS_DIR" ]; then
-  echo "No VRT results directory found. Skipping report generation."
-  echo "HAS_DIFFS=false" >> "$GITHUB_ENV"
-  exit 0
+  echo "No VRT artifacts found; report the missing results."
+  mkdir -p "$RESULTS_DIR"
 fi
 
 for artifact_dir in "$RESULTS_DIR"/vrt-results-*; do
@@ -66,12 +57,18 @@ for artifact_dir in "$RESULTS_DIR"/vrt-results-*; do
     append_example_diff "$example_name" "$diff_count"
     CHANGED_EXAMPLES+=("$example_name")
   else
-    PASSED_EXAMPLES+=("$example_name")
+    status="$(node -e 'const fs=require("fs"); const p=process.argv[1]; console.log(fs.existsSync(p) ? JSON.parse(fs.readFileSync(p,"utf8")).status : "error")' "$artifact_dir/vrt-status.json")"
+    if [ "$status" = matched ]; then
+      PASSED_EXAMPLES+=("$example_name")
+    else
+      UNAVAILABLE_EXAMPLES+=("$example_name")
+    fi
   fi
 done
 
 CHANGED_COUNT="${#CHANGED_EXAMPLES[@]}"
 PASSED_COUNT="${#PASSED_EXAMPLES[@]}"
+UNAVAILABLE_COUNT="${#UNAVAILABLE_EXAMPLES[@]}"
 
 # Helper: base64 encode a file (Linux & macOS compatible)
 b64_encode() {
@@ -224,6 +221,22 @@ for example in $(printf '%s\n' "${PASSED_EXAMPLES[@]-}" | sort); do
 EOF
 done
 
+cat >> "$OUTPUT" << EOF
+  <div class="sidebar-section" style="margin-top:var(--sp-md)"><div class="sidebar-label">Not compared <span class="sidebar-label-count">${UNAVAILABLE_COUNT}</span></div></div>
+EOF
+for example in $(printf '%s\n' "${UNAVAILABLE_EXAMPLES[@]-}" | sort); do
+  active_class=""
+  if [ -z "$first_project" ]; then
+    first_project="$example"
+    active_class=" active"
+  fi
+  cat >> "$OUTPUT" << EOF
+  <div class="sidebar-row${active_class}" onclick="selectProject('${example}')" data-project="${example}">
+    <span class="sidebar-dot sidebar-dot--changed"></span><span class="sidebar-name">${example}</span>
+  </div>
+EOF
+done
+
 echo '</div>' >> "$OUTPUT"
 
 # ── Main panels ──
@@ -324,6 +337,16 @@ for example in $(printf '%s\n' "${PASSED_EXAMPLES[@]-}" | sort); do
 EOF
 done
 
+for example in $(printf '%s\n' "${UNAVAILABLE_EXAMPLES[@]-}" | sort); do
+  active_class=""
+  [ "$example" = "$first_project" ] && active_class=" active"
+  cat >> "$OUTPUT" << EOF
+<div class="pass-panel${active_class}" data-panel="${example}">
+  <span class="pass-text">Comparison unavailable. Check the job log for baseline readiness or test errors.</span>
+</div>
+EOF
+done
+
 # Close main, shell, add JS
 cat >> "$OUTPUT" << 'JSBLOCK'
 </div></div>
@@ -357,15 +380,6 @@ JSBLOCK
 
 echo "Generated $OUTPUT with $TOTAL_DIFFS diff(s) across $CHANGED_COUNT example(s)."
 
-# Generate diff summary markdown for PR comment
-if [ "$HAS_DIFFS" = true ]; then
-  {
-    echo "| Example | Diffs |"
-    echo "|---------|-------|"
-    print_example_diff_rows | sort | while IFS=$'\t' read -r example count; do
-      echo "| ${example} | ${count} |"
-    done
-  } > "$DIFF_SUMMARY"
-fi
-
+# Always refresh the comment, including when an earlier diff has disappeared.
+node "$(dirname "$0")/summarize.mjs" "$RESULTS_DIR" > "$DIFF_SUMMARY"
 echo "HAS_DIFFS=${HAS_DIFFS}" >> "$GITHUB_ENV"

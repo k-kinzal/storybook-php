@@ -1,0 +1,23 @@
+{
+  "schema": 1,
+  "image": "mcr.microsoft.com/playwright:v1.64.1-noble@sha256:d65108d1a8095d8b0c4a5e32bf1807a40a5ce90ff0c78473e1116b1c243235e8",
+  "platform": "linux/amd64",
+  "playwrightVersion": "1.64.1",
+  "launchOptions": {
+    "args": [
+      "--font-render-hinting=none",
+      "--disable-font-subpixel-positioning",
+      "--disable-lcd-text",
+      "--force-color-profile=srgb",
+      "--disable-gpu"
+    ]
+  },
+  "contextOptions": {
+    "deviceScaleFactor": 2,
+    "viewport": { "width": 960, "height": 720 },
+    "locale": "en-US",
+    "timezoneId": "UTC",
+    "colorScheme": "light",
+    "reducedMotion": "reduce"
+  }
+}

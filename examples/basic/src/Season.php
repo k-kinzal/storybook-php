@@ -42,8 +42,8 @@ enum Season {
         return "<div class=\"season-grid\" style=\"display: flex; flex-wrap: wrap; gap: 12px;\">{$cards}</div>";
     }
 
-    public static function current(string $hemisphere = 'north'): string {
-        $month = (int) date('n');
+    public static function current(string $hemisphere = 'north', ?int $month = null): string {
+        $month = $month ?? (int) date('n');
         if ($hemisphere === 'south') {
             $month = (($month + 5) % 12) + 1;
         }

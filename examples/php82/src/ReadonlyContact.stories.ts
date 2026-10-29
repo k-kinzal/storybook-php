@@ -28,6 +28,6 @@ export const WithAvatar: Story = {
     name: "Sam Lee",
     email: "sam@example.com",
     role: "Editor",
-    avatar: "https://i.pravatar.cc/80?u=sam",
+    avatar: "/fixtures/avatar.svg",
   },
 };

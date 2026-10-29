@@ -1,6 +1,7 @@
 import type { StorybookConfig } from "storybook";
 
 const config: StorybookConfig = {
+  staticDirs: ["../../_shared/public"],
   addons: ["@storybook/addon-vitest"],
   stories: ["../src/**/*.stories.ts"],
   framework: {

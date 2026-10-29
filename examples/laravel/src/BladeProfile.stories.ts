@@ -14,5 +14,5 @@ export const Default: Story = {
 };
 
 export const Admin: Story = {
-  args: { name: "Jane Smith", role: "Admin", avatar: "https://via.placeholder.com/64/ff6b6b" },
+  args: { name: "Jane Smith", role: "Admin", avatar: "/fixtures/avatar-admin.svg" },
 };
