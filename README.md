@@ -11,9 +11,7 @@ A Storybook framework addon for developing and previewing PHP components as stor
 - PHP 8.0-8.5
 - Storybook 10.x
 - Vite 6.x-8.x
-- Node.js 20.19+ or 22.12+, matching [Storybook 10](https://storybook.js.org/docs/releases/migration-guide)
-
-Use a maintained Node.js release with current security updates; see [runtime security updates](SECURITY.md#runtime-security-updates). Repository development and CI use the version pinned in `.nvmrc` (`nvm install && nvm use`).
+- Node.js 20.19+ or 22.12+
 
 ## Quick Start
 

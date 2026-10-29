@@ -5,12 +5,10 @@ This guide explains how to install and use `storybook-php` to preview PHP-render
 ## Requirements
 
 - PHP 8.0-8.5
-- Node.js 20.19+ or 22.12+, matching [Storybook 10](https://storybook.js.org/docs/releases/migration-guide)
+- Node.js 20.19+ or 22.12+
 - Storybook 10.x
 - Vite 6.x-8.x
 - A `php` binary available on your `PATH`, or a custom `phpBinary` configured in Storybook
-
-Use a maintained Node.js release with current security updates. The compatibility minimum above follows Storybook and does not guarantee that a Node.js version has all security fixes. See the [runtime security guidance](https://github.com/k-kinzal/storybook-php/blob/main/SECURITY.md#runtime-security-updates).
 
 ## Installation
 
