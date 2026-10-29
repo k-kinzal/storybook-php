@@ -9,7 +9,7 @@ PHP renders HTML server-side, and frameworks compose pages from partial template
 - **PHP:** 8.0–8.5
 - **Storybook:** 10.x
 - **Vite:** 6.x–8.x
-- **Node:** ≥20.19
+- **Node:** 20.19+ or 22.12+
 
 ## Architecture
 
