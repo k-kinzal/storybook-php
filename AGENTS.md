@@ -9,7 +9,9 @@ PHP renders HTML server-side, and frameworks compose pages from partial template
 - **PHP:** 8.0–8.5
 - **Storybook:** 10.x
 - **Vite:** 6.x–8.x
-- **Node:** ≥20.19
+- **Node:** 20.19+ or 22.12+, matching Storybook 10 (`>=20.19.0 <22.0.0 || >=22.12.0`)
+
+Repository development and CI use the security-patched Node.js version pinned in `.nvmrc`. Keep all Node.js workflow steps on `node-version-file: .nvmrc`; the package's compatibility range follows Storybook separately.
 
 ## Architecture
 

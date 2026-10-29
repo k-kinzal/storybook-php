@@ -1242,7 +1242,7 @@ packages:
 
   storybook-php@file:../..:
     resolution: {directory: ../.., type: directory}
-    engines: {node: '>=20.19.0'}
+    engines: {node: '>=20.19.0 <22.0.0 || >=22.12.0'}
     hasBin: true
     peerDependencies:
       '@storybook/addon-vitest': ^10.0.0
