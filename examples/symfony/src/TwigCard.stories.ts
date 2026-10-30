@@ -22,7 +22,7 @@ export const WithImage: Story = {
   args: {
     title: "Mountain View",
     body: "A beautiful landscape captured at sunrise.",
-    image: "https://picsum.photos/seed/mountain/400/200",
+    image: "/fixtures/landscape.svg",
     footer: "Photo credit: Unsplash",
   },
 };

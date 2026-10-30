@@ -16,4 +16,3 @@ build/
 .claude/
 .idea/
 *.log
-examples/*/package-lock.json

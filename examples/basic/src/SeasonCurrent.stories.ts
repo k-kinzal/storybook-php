@@ -13,9 +13,9 @@ export default meta;
 type Story = StoryObj<typeof Season>;
 
 export const Northern: Story = {
-  args: { hemisphere: "north" },
+  args: { hemisphere: "north", month: 3 },
 };
 
 export const Southern: Story = {
-  args: { hemisphere: "south" },
+  args: { hemisphere: "south", month: 3 },
 };

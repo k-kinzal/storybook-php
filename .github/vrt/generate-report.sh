@@ -11,6 +11,7 @@ DIFF_SUMMARY="diff-summary.md"
 HAS_DIFFS=false
 TOTAL_DIFFS=0
 TOTAL_EXAMPLES=0
+NOT_COMPARED=""
 
 # Collect data per example. Keep this Bash 3 compatible for macOS local runs.
 EXAMPLE_DIFFS_LINES=""
@@ -35,17 +36,12 @@ $EXAMPLE_DIFFS_LINES
 EOF
 }
 
-print_example_diff_rows() {
-  while IFS=$'\t' read -r name count; do
-    [ -n "$name" ] || continue
-    printf '%s\t%s\n' "$name" "$count"
-  done <<EOF
-$EXAMPLE_DIFFS_LINES
-EOF
-}
+# Refresh the summary even when an earlier diff is gone or comparison was skipped.
+printf '| Example | Result |\n|---------|--------|\n' > "$DIFF_SUMMARY"
 
 if [ ! -d "$RESULTS_DIR" ]; then
   echo "No VRT results directory found. Skipping report generation."
+  echo "No comparison results are available. See the job logs." > "$DIFF_SUMMARY"
   echo "HAS_DIFFS=false" >> "$GITHUB_ENV"
   exit 0
 fi
@@ -53,6 +49,11 @@ fi
 for artifact_dir in "$RESULTS_DIR"/vrt-results-*; do
   [ -d "$artifact_dir" ] || continue
   example_name="${artifact_dir##*vrt-results-}"
+  if [ "$(cat "$artifact_dir/compared.txt" 2>/dev/null || true)" != true ]; then
+    NOT_COMPARED="${NOT_COMPARED} ${example_name}"
+    echo "| ${example_name} | Not compared: missing main baseline or test error; see job log |" >> "$DIFF_SUMMARY"
+    continue
+  fi
   TOTAL_EXAMPLES=$((TOTAL_EXAMPLES + 1))
 
   diff_count=0
@@ -65,8 +66,10 @@ for artifact_dir in "$RESULTS_DIR"/vrt-results-*; do
     TOTAL_DIFFS=$((TOTAL_DIFFS + diff_count))
     append_example_diff "$example_name" "$diff_count"
     CHANGED_EXAMPLES+=("$example_name")
+    echo "| ${example_name} | ${diff_count} visual diff(s) |" >> "$DIFF_SUMMARY"
   else
     PASSED_EXAMPLES+=("$example_name")
+    echo "| ${example_name} | No visual changes |" >> "$DIFF_SUMMARY"
   fi
 done
 
@@ -186,6 +189,7 @@ EOF
 # ── Sidebar ──
 cat >> "$OUTPUT" << EOF
 <div class="sidebar">
+  <p class="sidebar-section">Not compared: ${NOT_COMPARED:-none}. See job logs for details.</p>
   <div class="sidebar-section"><div class="sidebar-label">Changed <span class="sidebar-label-count">${CHANGED_COUNT}</span></div></div>
 EOF
 
@@ -356,16 +360,5 @@ function setMode(btn,mode){
 JSBLOCK
 
 echo "Generated $OUTPUT with $TOTAL_DIFFS diff(s) across $CHANGED_COUNT example(s)."
-
-# Generate diff summary markdown for PR comment
-if [ "$HAS_DIFFS" = true ]; then
-  {
-    echo "| Example | Diffs |"
-    echo "|---------|-------|"
-    print_example_diff_rows | sort | while IFS=$'\t' read -r example count; do
-      echo "| ${example} | ${count} |"
-    done
-  } > "$DIFF_SUMMARY"
-fi
 
 echo "HAS_DIFFS=${HAS_DIFFS}" >> "$GITHUB_ENV"

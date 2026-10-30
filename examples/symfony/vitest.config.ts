@@ -3,7 +3,11 @@ import { playwright } from "@vitest/browser-playwright";
 import { storybookVis } from "storybook-addon-vis/vitest-plugin";
 import { defineConfig } from "vitest/config";
 
+import { browserOptions, publicDir, screenshotDefines } from "../_shared/vrt-config.mjs";
+
 export default defineConfig({
+  publicDir,
+  define: screenshotDefines,
   plugins: [
     storybookTest({ configDir: ".storybook" }),
     storybookVis({ comparisonMethod: "pixel" }),
@@ -22,20 +26,7 @@ export default defineConfig({
       },
       enabled: true,
       ui: false,
-      provider: playwright({
-        launchOptions: {
-          args: [
-            "--font-render-hinting=none",
-            "--disable-font-subpixel-positioning",
-            "--disable-lcd-text",
-            "--force-color-profile=srgb",
-          ],
-        },
-        contextOptions: {
-          deviceScaleFactor: 2,
-          viewport: { width: 960, height: 720 },
-        },
-      }),
+      provider: playwright(browserOptions),
       instances: [{ browser: "chromium" }],
     },
     setupFiles: ["./vitest.setup.ts"],

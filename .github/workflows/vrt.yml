@@ -5,6 +5,7 @@ on:
     branches: [main]
   pull_request:
     branches: [main]
+  workflow_dispatch:
 
 permissions:
   contents: read
@@ -13,7 +14,12 @@ permissions:
 
 jobs:
   vrt:
-    runs-on: ubuntu-latest
+    if: github.event_name != 'workflow_dispatch' || github.ref == 'refs/heads/main'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    env:
+      TZ: UTC
+      VRT_BROWSER_WS_ENDPOINT: ws://127.0.0.1:6677/
     strategy:
       fail-fast: false
       matrix:
@@ -90,6 +96,8 @@ jobs:
         uses: shivammathur/setup-php@eb7c497e18156a6bbabfef1d3a82760b9eda3962 # 2.40.0
         with:
           php-version: ${{ matrix.php }}
+          ini-values: date.timezone=UTC
+          coverage: none
 
       - name: Setup pnpm
         if: matrix.pkg == 'pnpm'
@@ -116,26 +124,32 @@ jobs:
         working-directory: examples/${{ matrix.example }}
         run: pnpm install --frozen-lockfile
 
-      - name: Install Node dependencies (npm install)
+      - name: Install Node dependencies (npm ci)
         if: matrix.pkg == 'npm-install'
         working-directory: examples/${{ matrix.example }}
-        run: npm install
+        run: npm ci
 
-      - name: Install Playwright browsers
-        working-directory: examples/${{ matrix.example }}
-        run: npx playwright install --with-deps chromium
+      - name: Start pinned Playwright browser
+        run: |
+          image="$(node -p "require('./examples/_shared/vrt-environment.json').image")"
+          docker run --detach --rm --init --ipc=host --platform linux/amd64 \
+            --name vrt-browser --publish 127.0.0.1:6677:6677 \
+            --volume "$GITHUB_WORKSPACE:/work:ro" "$image" \
+            node /work/examples/${{ matrix.example }}/node_modules/playwright/cli.js \
+            run-server --port 6677 --host 0.0.0.0
+          curl --fail --retry 30 --retry-all-errors --retry-delay 1 --max-time 2 \
+            http://127.0.0.1:6677/
 
       - name: Restore VRT baselines (PR)
+        id: baseline
         if: github.event_name == 'pull_request'
         uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: examples/${{ matrix.example }}/__vis__/linux/__baselines__
-          key: vrt-v2-baselines-${{ matrix.example }}-${{ github.sha }}
-          restore-keys: |
-            vrt-v2-baselines-${{ matrix.example }}-
+          key: vrt-v3-${{ matrix.example }}-${{ matrix.php }}-${{ hashFiles('examples/_shared/vrt-environment.json', 'examples/_shared/*.mjs') }}-${{ github.event.pull_request.base.sha || github.sha }}
 
       - name: Run VRT (update baselines)
-        if: github.event_name == 'push'
+        if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
         working-directory: examples/${{ matrix.example }}
         run: npx vitest run --update
 
@@ -143,8 +157,11 @@ jobs:
       # but any other failure (PHP render errors, story exceptions, import
       # errors) would also fail on main, so it fails the PR too.
       - name: Run VRT (compare)
+        id: compare
         if: github.event_name == 'pull_request'
         working-directory: examples/${{ matrix.example }}
+        env:
+          VRT_COMPARE: ${{ steps.baseline.outputs.cache-hit == 'true' }}
         run: |
           set +e
           npx vitest run --reporter=default --reporter=json \
@@ -155,11 +172,21 @@ jobs:
             "$exit_code" "$RUNNER_TEMP/vrt-results.json" "$RUNNER_TEMP/vrt-output.log"
 
       - name: Save VRT baselines (main)
-        if: github.event_name == 'push'
+        if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
         uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: examples/${{ matrix.example }}/__vis__/linux/__baselines__
-          key: vrt-v2-baselines-${{ matrix.example }}-${{ github.sha }}
+          key: vrt-v3-${{ matrix.example }}-${{ matrix.php }}-${{ hashFiles('examples/_shared/vrt-environment.json', 'examples/_shared/*.mjs') }}-${{ github.event.pull_request.base.sha || github.sha }}
+
+      - name: Record whether comparison completed
+        if: ${{ !cancelled() && github.event_name == 'pull_request' }}
+        run: |
+          mkdir -p examples/${{ matrix.example }}/__vis__/linux
+          echo "${{ steps.compare.outcome == 'success' && steps.baseline.outputs.cache-hit == 'true' }}" > examples/${{ matrix.example }}/__vis__/linux/compared.txt
+
+      - name: Stop browser
+        if: always()
+        run: docker stop vrt-browser || true
 
       - name: Upload VRT results
         if: ${{ !cancelled() && github.event_name == 'pull_request' }}
@@ -167,6 +194,7 @@ jobs:
         with:
           name: vrt-results-${{ matrix.example }}
           path: |
+            examples/${{ matrix.example }}/__vis__/linux/compared.txt
             examples/${{ matrix.example }}/__vis__/linux/__diffs__/
             examples/${{ matrix.example }}/__vis__/linux/__results__/
             examples/${{ matrix.example }}/__vis__/linux/__baselines__/
@@ -206,7 +234,7 @@ jobs:
           path: vrt-report.html
 
       - name: Comment on PR
-        if: env.HAS_DIFFS == 'true'
+        if: hashFiles('diff-summary.md') != '' && github.event.pull_request.head.repo.full_name == github.repository
         uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
         with:
           script: |
@@ -215,7 +243,7 @@ jobs:
             const runUrl = `https://github.com/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`;
 
             const body = [
-              '## 🔍 VRT: Visual diffs detected\n',
+              '## VRT comparison\n',
               diffSummary,
               `\n📎 [View VRT Report](${runUrl})`,
             ].join('\n');

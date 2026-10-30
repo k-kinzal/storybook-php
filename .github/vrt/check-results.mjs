@@ -23,7 +23,11 @@ function fail(message, details = []) {
 }
 
 if (exitCode === 0) {
-  console.log("VRT passed with no visual diffs.");
+  console.log(
+    process.env["VRT_COMPARE"] === "false"
+      ? "Story tests passed; visual comparison skipped (no matching main baseline)."
+      : "VRT passed with no visual diffs.",
+  );
   process.exit(0);
 }
 

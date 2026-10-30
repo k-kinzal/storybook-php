@@ -19,7 +19,7 @@ export const Default: Story = {
 };
 
 export const WithImage: Story = {
-  args: { name: "Jane Smith", imageUrl: "https://i.pravatar.cc/96", size: 96 },
+  args: { name: "Jane Smith", imageUrl: "/fixtures/avatar.svg", size: 96 },
 };
 
 export const SmallAvatar: Story = {
