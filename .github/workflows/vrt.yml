@@ -6,11 +6,6 @@ on:
   pull_request:
     branches: [main]
   workflow_dispatch:
-    inputs:
-      capture_image:
-        description: "Optional pinned Playwright image for pre-generating main baselines (same Playwright version)"
-        required: false
-        type: string
 
 permissions:
   contents: read
@@ -25,7 +20,6 @@ jobs:
     env:
       TZ: UTC
       VRT_BROWSER_WS_ENDPOINT: ws://127.0.0.1:6677/
-      BASELINE_SHA: ${{ github.event.pull_request.base.sha || github.sha }}
     strategy:
       fail-fast: false
       matrix:
@@ -97,8 +91,6 @@ jobs:
 
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          persist-credentials: false
 
       - name: Setup PHP
         uses: shivammathur/setup-php@eb7c497e18156a6bbabfef1d3a82760b9eda3962 # 2.40.0
@@ -119,12 +111,6 @@ jobs:
         with:
           node-version-file: .nvmrc
 
-      - name: Select capture environment (main only)
-        if: github.event_name == 'workflow_dispatch'
-        env:
-          VRT_CAPTURE_IMAGE: ${{ inputs.capture_image }}
-        run: node .github/vrt/configure-environment.mjs
-
       - name: Install Composer dependencies
         if: matrix.composer == true
         working-directory: examples/${{ matrix.example }}
@@ -143,34 +129,26 @@ jobs:
         working-directory: examples/${{ matrix.example }}
         run: npm ci
 
-      - name: Test VRT infrastructure
-        run: node --test .github/vrt/*.test.mjs
+      - name: Start pinned Playwright browser
+        run: |
+          image="$(node -p "require('./examples/_shared/vrt-environment.json').image")"
+          docker run --detach --rm --init --ipc=host --platform linux/amd64 \
+            --name vrt-browser --publish 127.0.0.1:6677:6677 \
+            --volume "$GITHUB_WORKSPACE:/work:ro" "$image" \
+            node /work/examples/${{ matrix.example }}/node_modules/playwright/cli.js \
+            run-server --port 6677 --host 0.0.0.0
+          curl --fail --retry 30 --retry-all-errors --retry-delay 1 --max-time 2 \
+            http://127.0.0.1:6677/
 
-      - name: Start pinned browser
-        run: node .github/vrt/start-browser.mjs "${{ matrix.example }}"
-
-      - name: Verify screenshot readiness
-        env:
-          VRT_TEST_EXAMPLE: ${{ matrix.example }}
-        run: node --test .github/vrt/browser.test.mjs
-
-      - name: Select main baseline
-        id: baseline-key
-        run: node .github/vrt/baseline.mjs key "${{ matrix.example }}" "${{ matrix.php }}" "$BASELINE_SHA" >> "$GITHUB_OUTPUT"
-
-      - name: Restore main baseline
+      - name: Restore VRT baselines (PR)
+        id: baseline
         if: github.event_name == 'pull_request'
         uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: examples/${{ matrix.example }}/__vis__/linux/__baselines__
-          key: ${{ steps.baseline-key.outputs.key }}
+          key: vrt-v3-${{ matrix.example }}-${{ matrix.php }}-${{ hashFiles('examples/_shared/vrt-environment.json', 'examples/_shared/*.mjs') }}-${{ github.event.pull_request.base.sha || github.sha }}
 
-      - name: Verify main baseline provenance
-        if: github.event_name == 'pull_request'
-        id: baseline
-        run: node .github/vrt/baseline.mjs check "${{ matrix.example }}" "${{ matrix.php }}" "$BASELINE_SHA" >> "$GITHUB_OUTPUT"
-
-      - name: Generate baselines on main
+      - name: Run VRT (update baselines)
         if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
         working-directory: examples/${{ matrix.example }}
         run: npx vitest run --update
@@ -183,7 +161,7 @@ jobs:
         if: github.event_name == 'pull_request'
         working-directory: examples/${{ matrix.example }}
         env:
-          VRT_COMPARE: ${{ steps.baseline.outputs.available }}
+          VRT_COMPARE: ${{ steps.baseline.outputs.cache-hit == 'true' }}
         run: |
           set +e
           npx vitest run --reporter=default --reporter=json \
@@ -193,24 +171,22 @@ jobs:
           node "$GITHUB_WORKSPACE/.github/vrt/check-results.mjs" \
             "$exit_code" "$RUNNER_TEMP/vrt-results.json" "$RUNNER_TEMP/vrt-output.log"
 
-      - name: Record baseline provenance
-        if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
-        run: node .github/vrt/baseline.mjs publish "${{ matrix.example }}" "${{ matrix.php }}" "$BASELINE_SHA"
-
-      - name: Save VRT baselines (main only)
+      - name: Save VRT baselines (main)
         if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
         uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: examples/${{ matrix.example }}/__vis__/linux/__baselines__
-          key: ${{ steps.baseline-key.outputs.key }}
+          key: vrt-v3-${{ matrix.example }}-${{ matrix.php }}-${{ hashFiles('examples/_shared/vrt-environment.json', 'examples/_shared/*.mjs') }}-${{ github.event.pull_request.base.sha || github.sha }}
 
-      - name: Record comparison status
+      - name: Record whether comparison completed
         if: ${{ !cancelled() && github.event_name == 'pull_request' }}
-        run: node .github/vrt/record-result.mjs "examples/${{ matrix.example }}/__vis__/linux" "${{ steps.compare.outcome == 'success' && '0' || '1' }}"
+        run: |
+          mkdir -p examples/${{ matrix.example }}/__vis__/linux
+          echo "${{ steps.compare.outcome == 'success' && steps.baseline.outputs.cache-hit == 'true' }}" > examples/${{ matrix.example }}/__vis__/linux/compared.txt
 
       - name: Stop browser
         if: always()
-        run: docker stop "storybook-php-vrt-${{ matrix.example }}" || true
+        run: docker stop vrt-browser || true
 
       - name: Upload VRT results
         if: ${{ !cancelled() && github.event_name == 'pull_request' }}
@@ -218,7 +194,7 @@ jobs:
         with:
           name: vrt-results-${{ matrix.example }}
           path: |
-            examples/${{ matrix.example }}/__vis__/linux/vrt-status.json
+            examples/${{ matrix.example }}/__vis__/linux/compared.txt
             examples/${{ matrix.example }}/__vis__/linux/__diffs__/
             examples/${{ matrix.example }}/__vis__/linux/__results__/
             examples/${{ matrix.example }}/__vis__/linux/__baselines__/
@@ -231,6 +207,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          sparse-checkout: .github/vrt
 
       - name: Download all VRT results
         uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2

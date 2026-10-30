@@ -11,12 +11,12 @@ DIFF_SUMMARY="diff-summary.md"
 HAS_DIFFS=false
 TOTAL_DIFFS=0
 TOTAL_EXAMPLES=0
+NOT_COMPARED=""
 
 # Collect data per example. Keep this Bash 3 compatible for macOS local runs.
 EXAMPLE_DIFFS_LINES=""
 declare -a CHANGED_EXAMPLES=()
 declare -a PASSED_EXAMPLES=()
-declare -a UNAVAILABLE_EXAMPLES=()
 
 append_example_diff() {
   EXAMPLE_DIFFS_LINES="${EXAMPLE_DIFFS_LINES}${1}"$'\t'"${2}"$'\n'
@@ -36,14 +36,24 @@ $EXAMPLE_DIFFS_LINES
 EOF
 }
 
+# Refresh the summary even when an earlier diff is gone or comparison was skipped.
+printf '| Example | Result |\n|---------|--------|\n' > "$DIFF_SUMMARY"
+
 if [ ! -d "$RESULTS_DIR" ]; then
-  echo "No VRT artifacts found; report the missing results."
-  mkdir -p "$RESULTS_DIR"
+  echo "No VRT results directory found. Skipping report generation."
+  echo "No comparison results are available. See the job logs." > "$DIFF_SUMMARY"
+  echo "HAS_DIFFS=false" >> "$GITHUB_ENV"
+  exit 0
 fi
 
 for artifact_dir in "$RESULTS_DIR"/vrt-results-*; do
   [ -d "$artifact_dir" ] || continue
   example_name="${artifact_dir##*vrt-results-}"
+  if [ "$(cat "$artifact_dir/compared.txt" 2>/dev/null || true)" != true ]; then
+    NOT_COMPARED="${NOT_COMPARED} ${example_name}"
+    echo "| ${example_name} | Not compared: missing main baseline or test error; see job log |" >> "$DIFF_SUMMARY"
+    continue
+  fi
   TOTAL_EXAMPLES=$((TOTAL_EXAMPLES + 1))
 
   diff_count=0
@@ -56,19 +66,15 @@ for artifact_dir in "$RESULTS_DIR"/vrt-results-*; do
     TOTAL_DIFFS=$((TOTAL_DIFFS + diff_count))
     append_example_diff "$example_name" "$diff_count"
     CHANGED_EXAMPLES+=("$example_name")
+    echo "| ${example_name} | ${diff_count} visual diff(s) |" >> "$DIFF_SUMMARY"
   else
-    status="$(node -e 'const fs=require("fs"); const p=process.argv[1]; console.log(fs.existsSync(p) ? JSON.parse(fs.readFileSync(p,"utf8")).status : "error")' "$artifact_dir/vrt-status.json")"
-    if [ "$status" = matched ]; then
-      PASSED_EXAMPLES+=("$example_name")
-    else
-      UNAVAILABLE_EXAMPLES+=("$example_name")
-    fi
+    PASSED_EXAMPLES+=("$example_name")
+    echo "| ${example_name} | No visual changes |" >> "$DIFF_SUMMARY"
   fi
 done
 
 CHANGED_COUNT="${#CHANGED_EXAMPLES[@]}"
 PASSED_COUNT="${#PASSED_EXAMPLES[@]}"
-UNAVAILABLE_COUNT="${#UNAVAILABLE_EXAMPLES[@]}"
 
 # Helper: base64 encode a file (Linux & macOS compatible)
 b64_encode() {
@@ -183,6 +189,7 @@ EOF
 # ── Sidebar ──
 cat >> "$OUTPUT" << EOF
 <div class="sidebar">
+  <p class="sidebar-section">Not compared: ${NOT_COMPARED:-none}. See job logs for details.</p>
   <div class="sidebar-section"><div class="sidebar-label">Changed <span class="sidebar-label-count">${CHANGED_COUNT}</span></div></div>
 EOF
 
@@ -217,22 +224,6 @@ for example in $(printf '%s\n' "${PASSED_EXAMPLES[@]-}" | sort); do
   <div class="sidebar-row${active_class}" onclick="selectProject('${example}')" data-project="${example}">
     <span class="sidebar-dot sidebar-dot--passed"></span>
     <span class="sidebar-name">${example}</span>
-  </div>
-EOF
-done
-
-cat >> "$OUTPUT" << EOF
-  <div class="sidebar-section" style="margin-top:var(--sp-md)"><div class="sidebar-label">Not compared <span class="sidebar-label-count">${UNAVAILABLE_COUNT}</span></div></div>
-EOF
-for example in $(printf '%s\n' "${UNAVAILABLE_EXAMPLES[@]-}" | sort); do
-  active_class=""
-  if [ -z "$first_project" ]; then
-    first_project="$example"
-    active_class=" active"
-  fi
-  cat >> "$OUTPUT" << EOF
-  <div class="sidebar-row${active_class}" onclick="selectProject('${example}')" data-project="${example}">
-    <span class="sidebar-dot sidebar-dot--changed"></span><span class="sidebar-name">${example}</span>
   </div>
 EOF
 done
@@ -337,16 +328,6 @@ for example in $(printf '%s\n' "${PASSED_EXAMPLES[@]-}" | sort); do
 EOF
 done
 
-for example in $(printf '%s\n' "${UNAVAILABLE_EXAMPLES[@]-}" | sort); do
-  active_class=""
-  [ "$example" = "$first_project" ] && active_class=" active"
-  cat >> "$OUTPUT" << EOF
-<div class="pass-panel${active_class}" data-panel="${example}">
-  <span class="pass-text">Comparison unavailable. Check the job log for baseline readiness or test errors.</span>
-</div>
-EOF
-done
-
 # Close main, shell, add JS
 cat >> "$OUTPUT" << 'JSBLOCK'
 </div></div>
@@ -380,6 +361,4 @@ JSBLOCK
 
 echo "Generated $OUTPUT with $TOTAL_DIFFS diff(s) across $CHANGED_COUNT example(s)."
 
-# Always refresh the comment, including when an earlier diff has disappeared.
-node "$(dirname "$0")/summarize.mjs" "$RESULTS_DIR" > "$DIFF_SUMMARY"
 echo "HAS_DIFFS=${HAS_DIFFS}" >> "$GITHUB_ENV"
