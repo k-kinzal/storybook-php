@@ -20,7 +20,7 @@
 <script>try{var t=localStorage.getItem("docgen-theme");if(t){document.documentElement.dataset.theme=t}document.documentElement.dataset.diffMode=localStorage.getItem("docgen-diff-mode")||"inline"}catch(e){}</script>
 </head>
 <body data-root="../../../../">
-<nav class="sidebar" id="sidebar"><div class="sb-head"><a class="sb-site" href="../../../../index.html">storybook-php</a></div><div class="sb-pkg"><a href="../../../../k-kinzal/storybook-php/index.html">k-kinzal/storybook-php</a></div><nav class="sb-block"><div class="sb-title">Package</div><ul class="sb-list"><li data-diff="same"><a href="../../../../k-kinzal/storybook-php/all-items.html">All items</a></li><li data-diff="modified"><a href="../../../../k-kinzal/storybook-php/index.html#documents">Documents</a></li></ul></nav></nav>
+<nav class="sidebar" id="sidebar"><div class="sb-head"><a class="sb-site" href="../../../../index.html">storybook-php</a></div><div class="sb-pkg"><a href="../../../../k-kinzal/storybook-php/index.html">k-kinzal/storybook-php</a></div><nav class="sb-block"><div class="sb-title">Package</div><ul class="sb-list"><li data-diff="same"><a href="../../../../k-kinzal/storybook-php/all-items.html">All items</a></li><li data-diff="same"><a href="../../../../k-kinzal/storybook-php/index.html#documents">Documents</a></li></ul></nav></nav>
 <div class="page">
 <header class="topbar">
 <button class="nav-toggle" id="nav-toggle" title="Toggle navigation">☰</button>
@@ -35,13 +35,8 @@
 <main class="content">
 <p class="diff-empty" id="diff-empty" data-changes="Nothing on this page changed between b7befac and working tree." data-off="This page documents what b7befac had and working tree no longer has. Switch to Diff to read it." hidden></p>
 <div class="symbol-head"><h1><span class="chip chip-kind k-document">document</span>Testing and Types</h1><div class="symbol-meta"><span class="src-link">docs/testing-and-types.md</span></div></div>
-<section class="readme" data-diff="modified"><div class="doc-block" data-diff="same"><h2>Testing and Types</h2>
+<section class="readme" data-diff="same"><div class="doc-block" data-diff="same"><h2>Testing and Types</h2>
 </div><div class="doc-block" data-diff="same"><p><code>storybook-php</code> includes tooling for TypeScript editor support, generated declaration files, and Storybook test runs.</p>
-</div><div class="doc-block" data-diff="added"><h3>Repository development and CI</h3>
-</div><div class="doc-block" data-diff="added"><p>Use the Node version in <code>.nvmrc</code> (24.22.1) for repository development. The root toolchain uses Vite Plus 1.4.0 and Vitest / coverage-v8 5.0.5. The examples retain their separate Vitest 4 environment for the visual comparison plugins. These development versions do not change the addon&#039;s public Node compatibility range.</p>
-</div><div class="doc-block" data-diff="added"><p>The eMudhra fixes are in <a href="https://github.com/voidzero-dev/vite-plus/releases/tag/v1.4.0">Vite Plus 1.4.0</a> and <a href="https://nodejs.org/en/blog/vulnerability/october-2026-security-releases">Node 24.22.1</a>. Every CI job checks the hosted runner&#039;s <strong>own</strong> Node 24 binary before executing JavaScript actions; <code>actions/setup-node</code> only changes the Node used by build commands. An older embedded runtime stops the job and requires an updated hosted runner. The preflight also updates an older system CA package to the <a href="https://ubuntu.com/security/notices/USN-8944-1">USN-8944-1</a> minimum.</p>
-</div><div class="doc-block" data-diff="added"><p>VRT uses the pinned Playwright container in <code>examples/_shared/vrt-environment.json</code> on an internal Docker network. The browser can reach the local test server through Playwright&#039;s loopback tunnel, but cannot connect to the internet. Before running stories, <code>.github/vrt/check-browser-network.mjs</code> checks both local access and blocked external HTTP/HTTPS, even with certificate errors ignored as they are by the Vitest provider. Story images live in <code>examples/_shared/public/fixtures</code>.</p>
-</div><div class="doc-block" data-diff="added"><p>This network isolation is a CI mitigation, not a claim that Playwright 1.64.1 rejects the compromised certificates. A local browser run without the isolated container has no such network boundary. Keep external assets out of the examples; add fixtures when a new story needs an image.</p>
 </div><div class="doc-block" data-diff="same"><h3>TypeScript Editor Support</h3>
 </div><div class="doc-block" data-diff="same"><p>Add the client types and TS plugin to <code>tsconfig.json</code>:</p>
 </div><div class="doc-block" data-diff="same"><pre class="code-block"><code>{
