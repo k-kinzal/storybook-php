@@ -2,33 +2,6 @@
 
 `storybook-php` includes tooling for TypeScript editor support, generated declaration files, and Storybook test runs.
 
-## Repository development and CI
-
-Use the Node version in `.nvmrc` (24.22.1) for repository development. The root
-toolchain uses Vite Plus 1.4.0 and Vitest / coverage-v8 5.0.5. The examples retain
-their separate Vitest 4 environment for the visual comparison plugins. These
-development versions do not change the addon's public Node compatibility range.
-
-The eMudhra fixes are in [Vite Plus 1.4.0](https://github.com/voidzero-dev/vite-plus/releases/tag/v1.4.0)
-and [Node 24.22.1](https://nodejs.org/en/blog/vulnerability/october-2026-security-releases).
-Every CI job checks the hosted runner's **own** Node 24 binary before executing
-JavaScript actions; `actions/setup-node` only changes the Node used by build
-commands. An older embedded runtime stops the job and requires an updated hosted
-runner. The preflight also updates an older system CA package to the
-[USN-8944-1](https://ubuntu.com/security/notices/USN-8944-1) minimum.
-
-VRT uses the pinned Playwright container in `examples/_shared/vrt-environment.json`
-on an internal Docker network. The browser can reach the local test server through
-Playwright's loopback tunnel, but cannot connect to the internet. Before running
-stories, `.github/vrt/check-browser-network.mjs` checks both local access and
-blocked external HTTP/HTTPS, even with certificate errors ignored as they are by
-the Vitest provider. Story images live in `examples/_shared/public/fixtures`.
-
-This network isolation is a CI mitigation, not a claim that Playwright 1.64.1
-rejects the compromised certificates. A local browser run without the isolated
-container has no such network boundary. Keep external assets out of the examples;
-add fixtures when a new story needs an image.
-
 ## TypeScript Editor Support
 
 Add the client types and TS plugin to `tsconfig.json`:
