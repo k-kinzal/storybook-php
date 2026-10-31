@@ -19,7 +19,6 @@ jobs:
     timeout-minutes: 20
     env:
       TZ: UTC
-      VRT_BROWSER_WS_ENDPOINT: ws://127.0.0.1:6677/
     strategy:
       fail-fast: false
       matrix:
@@ -90,6 +89,37 @@ jobs:
             composer: false
 
     steps:
+      - &require-patched-runtime
+        name: Require patched Actions Node and system certificates
+        id: runtime
+        shell: bash
+        run: |
+          # setup-node does not replace the Node executable used by JavaScript actions.
+          runner_root="$(dirname "$(dirname "$(readlink -f "/proc/$PPID/exe")")")"
+          runner_node="$runner_root/externals/node24/bin/node"
+          if [[ ! -x "$runner_node" ]]; then
+            echo '::error::Cannot locate the Actions Node 24 runtime.'
+            exit 1
+          fi
+          "$runner_node" -e '
+            const [major, minor, patch] = process.versions.node.split(".").map(Number);
+            console.log("Actions runtime:", process.version, process.execPath);
+            if (major !== 24 || minor < 22 || (minor === 22 && patch < 1)) {
+              console.error("::error::The hosted runner needs Node >=24.22.1 in the Node 24 release line. Retry on an updated runner image.");
+              process.exit(1);
+            }
+          '
+          # USN-8944-1 removes the compromised emSign trust path for OS TLS clients.
+          source /etc/os-release
+          minimum="20260816ubuntu0.${VERSION_ID}.1"
+          installed="$(dpkg-query -W -f='${Version}' ca-certificates)"
+          if ! dpkg --compare-versions "$installed" ge "$minimum"; then
+            sudo apt-get update
+            sudo apt-get install --only-upgrade --yes ca-certificates
+          fi
+          installed="$(dpkg-query -W -f='${Version}' ca-certificates)"
+          echo "ca-certificates: $installed (minimum $minimum)"
+          dpkg --compare-versions "$installed" ge "$minimum"
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - name: Setup PHP
@@ -132,13 +162,22 @@ jobs:
       - name: Start pinned Playwright browser
         run: |
           image="$(node -p "require('./examples/_shared/vrt-environment.json').image")"
+          docker network create --internal vrt-browser
           docker run --detach --rm --init --ipc=host --platform linux/amd64 \
-            --name vrt-browser --publish 127.0.0.1:6677:6677 \
+            --name vrt-browser --network vrt-browser \
             --volume "$GITHUB_WORKSPACE:/work:ro" "$image" \
             node /work/examples/${{ matrix.example }}/node_modules/playwright/cli.js \
             run-server --port 6677 --host 0.0.0.0
+          # Internal networks do not publish ports. The Linux host can reach
+          # the container directly; Playwright tunnels only loopback traffic back.
+          browser_ip="$(docker inspect --format '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' vrt-browser)"
+          echo "VRT_BROWSER_WS_ENDPOINT=ws://$browser_ip:6677/" >> "$GITHUB_ENV"
           curl --fail --retry 30 --retry-all-errors --retry-delay 1 --max-time 2 \
-            http://127.0.0.1:6677/
+            "http://$browser_ip:6677/"
+
+      - name: Verify browser network isolation
+        working-directory: examples/${{ matrix.example }}
+        run: node "$GITHUB_WORKSPACE/.github/vrt/check-browser-network.mjs"
 
       - name: Restore VRT baselines (PR)
         id: baseline
@@ -186,10 +225,12 @@ jobs:
 
       - name: Stop browser
         if: always()
-        run: docker stop vrt-browser || true
+        run: |
+          docker stop vrt-browser || true
+          docker network rm vrt-browser || true
 
       - name: Upload VRT results
-        if: ${{ !cancelled() && github.event_name == 'pull_request' }}
+        if: ${{ !cancelled() && steps.runtime.outcome == 'success' && github.event_name == 'pull_request' }}
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: vrt-results-${{ matrix.example }}
@@ -206,6 +247,7 @@ jobs:
     if: ${{ !cancelled() && github.event_name == 'pull_request' }}
     runs-on: ubuntu-latest
     steps:
+      - *require-patched-runtime
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           sparse-checkout: .github/vrt
