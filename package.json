@@ -64,7 +64,7 @@
   },
   "devDependencies": {
     "@storybook/builder-vite": "^10.6.3",
-    "@types/node": "^25.5.0",
+    "@types/node": "^26.0.0",
     "@vitest/coverage-v8": "5.0.5",
     "jsdom": "^29.0.0",
     "storybook": "^10.6.3",
