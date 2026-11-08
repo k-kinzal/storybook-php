@@ -8,7 +8,7 @@
     "packages": [
         {
             "name": "cakephp/core",
-            "version": "5.4.3",
+            "version": "5.4.4",
             "source": {
                 "type": "git",
                 "url": "https://github.com/cakephp/core.git",
@@ -71,7 +71,8 @@
                 "issues": "https://github.com/cakephp/cakephp/issues",
                 "source": "https://github.com/cakephp/core"
             },
-            "time": "2026-08-24T11:32:41+00:00"
+            "time": "2026-08-24T11:32:41+00:00",
+            "published-time": "2026-11-01T00:48:43+00:00"
         },
         {
             "name": "cakephp/utility",
@@ -135,7 +136,8 @@
                 "issues": "https://github.com/cakephp/cakephp/issues",
                 "source": "https://github.com/cakephp/utility"
             },
-            "time": "2026-09-26T06:05:31+00:00"
+            "time": "2026-09-26T06:05:31+00:00",
+            "published-time": "2026-10-03T03:42:11+00:00"
         },
         {
             "name": "league/container",
@@ -218,7 +220,8 @@
                     "type": "github"
                 }
             ],
-            "time": "2025-05-28T07:37:56+00:00"
+            "time": "2025-05-28T07:37:56+00:00",
+            "published-time": "2025-05-28T07:39:05+00:00"
         },
         {
             "name": "psr/container",
@@ -271,7 +274,8 @@
                 "issues": "https://github.com/php-fig/container/issues",
                 "source": "https://github.com/php-fig/container/tree/2.0.2"
             },
-            "time": "2021-11-05T16:47:00+00:00"
+            "time": "2021-11-05T16:47:00+00:00",
+            "published-time": "2021-11-05T16:53:27+00:00"
         }
     ],
     "packages-dev": [],
@@ -287,5 +291,5 @@
     "platform-overrides": {
         "php": "8.2.0"
     },
-    "plugin-api-version": "2.9.0"
+    "plugin-api-version": "2.11.0"
 }
